@@ -131,8 +131,28 @@ def test_documented_threatfox_timestamp_is_parsed_as_utc() -> None:
     assert record.first_seen == datetime(2020, 12, 8, 13, 36, 27, tzinfo=timezone.utc)
 
 
+@pytest.mark.parametrize(
+    ("threatfox_type", "expected_type"),
+    [
+        ("md5_hash", IOCType.MD5),
+        ("sha1_hash", IOCType.SHA1),
+        ("sha256_hash", IOCType.SHA256),
+    ],
+)
+def test_hash_types_preserve_value_and_map_to_ioc_type(
+    threatfox_type: str, expected_type: IOCType
+) -> None:
+    hash_value = "ABCDEF0123456789"
+    session = make_session([{"ioc": hash_value, "ioc_type": threatfox_type}])
+
+    record = ThreatFoxCollector("secret", session).fetch_recent_iocs()[0]
+
+    assert record.value == hash_value
+    assert record.ioc_type is expected_type
+
+
 def test_unsupported_type_becomes_unknown() -> None:
-    session = make_session([{"ioc": "abc123", "ioc_type": "md5_hash"}])
+    session = make_session([{"ioc": "abc123", "ioc_type": "sha512_hash"}])
 
     record = ThreatFoxCollector("secret", session).fetch_recent_iocs()[0]
 

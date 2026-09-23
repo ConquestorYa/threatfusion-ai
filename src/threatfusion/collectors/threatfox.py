@@ -65,6 +65,10 @@ def _record_from_threatfox_item(item: Mapping[str, Any]) -> IOCRecord:
         ioc_type = IOCType.DOMAIN
     elif threatfox_type == "url":
         ioc_type = IOCType.URL
+    elif threatfox_type == "md5_hash":
+        ioc_type = IOCType.MD5
+    elif threatfox_type == "sha1_hash":
+        ioc_type = IOCType.SHA1
     elif threatfox_type == "sha256_hash":
         ioc_type = IOCType.SHA256
     elif threatfox_type == "ip:port":
