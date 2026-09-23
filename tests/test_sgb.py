@@ -1,0 +1,186 @@
+import pytest
+import requests
+
+from threatfusion.collectors.sgb import SGB_API_URL, SGBCollector
+from threatfusion.models import IOCType
+
+
+class FakeResponse:
+    def __init__(self, payload: object, error: Exception | None = None) -> None:
+        self.payload = payload
+        self.error = error
+
+    def raise_for_status(self) -> None:
+        if self.error is not None:
+            raise self.error
+
+    def json(self) -> object:
+        return self.payload
+
+
+class FakeSession:
+    def __init__(self, response: FakeResponse) -> None:
+        self.response = response
+        self.get_calls: list[tuple[str, dict[str, int], int, bool]] = []
+
+    def get(
+        self,
+        url: str,
+        *,
+        params: dict[str, int],
+        timeout: int,
+        allow_redirects: bool,
+    ) -> FakeResponse:
+        self.get_calls.append((url, params, timeout, allow_redirects))
+        return self.response
+
+
+def make_session(models: list[dict[str, object]]) -> FakeSession:
+    return FakeSession(FakeResponse({"totalCount": len(models), "models": models}))
+
+
+def test_domain_mapping() -> None:
+    session = make_session(
+        [{"url": "example.com", "type": "domain", "date": "2026-09-23 12:00:00"}]
+    )
+
+    record = SGBCollector(session).fetch_addresses()[0]
+
+    assert record.value == "example.com"
+    assert record.ioc_type is IOCType.DOMAIN
+    assert record.source == "SGB"
+    assert record.first_seen is not None
+    assert record.first_seen.isoformat() == "2026-09-23T12:00:00"
+
+
+@pytest.mark.parametrize(
+    ("address_type", "value", "expected_type"),
+    [
+        ("url", "https://malicious.example/path", IOCType.URL),
+        ("ipv4", "192.0.2.10", IOCType.IPV4),
+        ("ipv6", "2001:db8::10", IOCType.IPV6),
+    ],
+)
+def test_supported_address_mapping(
+    address_type: str, value: str, expected_type: IOCType
+) -> None:
+    session = make_session([{"url": value, "type": address_type}])
+
+    record = SGBCollector(session).fetch_addresses()[0]
+
+    assert record.value == value
+    assert record.ioc_type is expected_type
+    assert record.source == "SGB"
+
+
+def test_short_ip_aliases_map_to_host_types() -> None:
+    session = make_session(
+        [
+            {"url": "192.0.2.10", "type": "ip"},
+            {"url": "2001:db8::10", "type": "ip6"},
+        ]
+    )
+
+    records = SGBCollector(session).fetch_addresses()
+
+    assert [record.ioc_type for record in records] == [IOCType.IPV4, IOCType.IPV6]
+
+
+def test_ipv6_network_is_preserved_as_unknown() -> None:
+    value = "2001:db8::/32"
+    session = make_session([{"url": value, "type": "ipv6net"}])
+
+    record = SGBCollector(session).fetch_addresses()[0]
+
+    assert record.value == value
+    assert record.ioc_type is IOCType.UNKNOWN
+
+
+def test_short_ipv6_network_alias_is_preserved_as_unknown() -> None:
+    value = "2001:db8::/32"
+    session = make_session([{"url": value, "type": "ip6net"}])
+
+    record = SGBCollector(session).fetch_addresses()[0]
+
+    assert record.value == value
+    assert record.ioc_type is IOCType.UNKNOWN
+
+
+def test_unknown_type_preserves_value() -> None:
+    value = "unclassified.example"
+    session = make_session([{"url": value, "type": "other"}])
+
+    record = SGBCollector(session).fetch_addresses()[0]
+
+    assert record.value == value
+    assert record.ioc_type is IOCType.UNKNOWN
+
+
+def test_missing_optional_metadata_is_safe() -> None:
+    session = make_session([{"url": "example.com", "type": "domain"}])
+
+    record = SGBCollector(session).fetch_addresses()[0]
+
+    assert record.first_seen is None
+    assert record.last_seen is None
+    assert record.threat_type is None
+    assert record.confidence is None
+    assert record.tags == []
+
+
+def test_malformed_records_are_ignored() -> None:
+    session = make_session(
+        [
+            {"type": "domain"},
+            {"url": "", "type": "domain"},
+            {"url": "not-an-url", "type": "url"},
+            {"url": "not-an-ip", "type": "ipv4"},
+            {"url": "valid.example", "type": "domain"},
+        ]
+    )
+
+    records = SGBCollector(session).fetch_addresses()
+
+    assert [record.value for record in records] == ["valid.example"]
+
+
+def test_pagination_parameters_and_official_endpoint() -> None:
+    session = make_session([])
+
+    SGBCollector(session).fetch_addresses(page=3)
+
+    assert session.get_calls == [(SGB_API_URL, {"page": 3}, 30, False)]
+
+
+@pytest.mark.parametrize("page", [0, -1, True])
+def test_invalid_page_is_rejected(page: int) -> None:
+    session = make_session([])
+
+    with pytest.raises(ValueError, match="positive integer"):
+        SGBCollector(session).fetch_addresses(page)
+
+    assert session.get_calls == []
+
+
+def test_http_errors_are_propagated() -> None:
+    error = requests.HTTPError("service unavailable")
+    session = FakeSession(FakeResponse({}, error=error))
+
+    with pytest.raises(requests.HTTPError, match="service unavailable"):
+        SGBCollector(session).fetch_addresses()
+
+
+def test_multiple_records_and_ioc_urls_are_not_requested() -> None:
+    malicious_url = "https://malicious.example/payload"
+    session = make_session(
+        [
+            {"url": malicious_url, "type": "url"},
+            {"url": "bad.example", "type": "domain"},
+        ]
+    )
+
+    records = SGBCollector(session).fetch_addresses()
+
+    assert [record.value for record in records] == [malicious_url, "bad.example"]
+    assert len(session.get_calls) == 1
+    assert session.get_calls[0][0] == SGB_API_URL
