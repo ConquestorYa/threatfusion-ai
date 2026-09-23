@@ -1,6 +1,6 @@
 # Architecture
 
-This document distinguishes the current implementation from the planned system. The current architecture ends at correlated IOC groups and two feed collectors. The downstream DNS, ML, campaign, risk, and dashboard components are planned only.
+This document distinguishes the current implementation from the planned system. The current architecture ends at correlated IOC groups and three feed collectors. The downstream DNS, ML, campaign, risk, and dashboard components are planned only.
 
 ## Current Data Flow
 
@@ -8,12 +8,12 @@ This document distinguishes the current implementation from the planned system. 
 flowchart LR
     ThreatFox[ThreatFox collector] --> Record[IOCRecord]
     URLhaus[URLhaus collector] --> Record
-    USOM[USOM planned] -.-> Record
+    SGB[SGB collector] --> Record
     Record --> Correlate[correlate_iocs]
     Correlate -. uses internally .-> Normalize[normalize_ioc_value]
 ```
 
-ThreatFox and URLhaus are implemented external sources that produce `IOCRecord` objects. USOM is shown as a planned source and does not currently have a collector. `correlate_iocs()` performs grouping and internally uses `normalize_ioc_value()` to compute canonical comparison values. It groups equivalent records while retaining all original evidence records; it does not rewrite all `IOCRecord` objects through a separate normalization pipeline.
+ThreatFox, URLhaus, and SGB are implemented external sources that produce `IOCRecord` objects. `correlate_iocs()` performs grouping and internally uses `normalize_ioc_value()` to compute canonical comparison values. It groups equivalent records while retaining all original evidence records; it does not rewrite all `IOCRecord` objects through a separate normalization pipeline.
 
 ## Planned Analysis and Presentation Flow
 
@@ -66,9 +66,17 @@ The planned flow is not available in the current codebase. In particular, there 
 - Maps valid URL rows into `IOCRecord` objects with timestamps, threat fields, and tags.
 - Treats dataset URLs as text only; it does not follow them and sanitizes authenticated request errors.
 
+### `src/threatfusion/collectors/sgb.py`
+
+- Integrates with the official T.C. Siber Guvenlik Baskanligi malicious-address API.
+- Performs single-page bounded fetching through a one-based public `page` argument.
+- Maps domains, URLs, IPv4, and IPv6 indicators into `IOCRecord` objects.
+- Handles IPv6 networks conservatively as `IOCType.UNKNOWN` because the current model represents host IPs, not networks.
+- Treats returned IOC values only as data and never requests them.
+
 ## Tests and Tooling
 
-The repository uses `pytest.ini` to expose the `src` layout to pytest. The test suite covers the implemented model, normalization, correlation, ThreatFox, and URLhaus behavior. Ruff is used for lint checks. Collector tests inject fake sessions and do not make real feed requests.
+The repository uses `pytest.ini` to expose the `src` layout to pytest. The test suite covers the implemented model, normalization, correlation, ThreatFox, URLhaus, and SGB behavior. Ruff is used for lint checks. Collector tests inject fake sessions and do not make real feed requests.
 
 ## Planned Stack
 

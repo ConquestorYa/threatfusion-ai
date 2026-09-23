@@ -32,9 +32,10 @@ The repository currently implements:
 - IOC correlation through `IOCGroup` and `correlate_iocs()`, which groups equivalent IOCs while preserving all original source records.
 - A ThreatFox collector for recent API IOC data, including conservative type mapping and timestamp/tag parsing.
 - A URLhaus collector for the recent CSV export, including named-column discovery and malformed-row handling.
+- An SGB collector using the official T.C. Siber Guvenlik Baskanligi malicious-address API, with domain, URL, IPv4, and IPv6 mapping into `IOCRecord`. IPv6 network/CIDR records that do not fit the current IOC model are preserved as `IOCType.UNKNOWN`, and retrieval is safe and bounded through page-based requests.
 - Automated pytest tests for the model, normalization, correlation, and collectors.
 - Ruff checks for code quality.
-- Real live-data validation for the ThreatFox and URLhaus collectors in addition to network-free automated tests.
+- Real live-data validation for the ThreatFox, URLhaus, and SGB collectors in addition to network-free automated tests.
 
 Threat URLs, domains, IP addresses, and hashes are treated strictly as data. The collectors do not visit, resolve, open, or follow IOC URLs returned by feeds. Authenticated feed requests are limited to their official collection endpoints, and collector tests use injected fake sessions.
 
@@ -42,7 +43,6 @@ Threat URLs, domains, IP addresses, and hashes are treated strictly as data. The
 
 The following capabilities are planned and are not implemented in the current repository:
 
-- USOM integration.
 - Broader multi-source correlation workflows.
 - DNS telemetry CSV upload.
 - Matching known IOCs against DNS telemetry.

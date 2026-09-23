@@ -77,3 +77,9 @@
 **Decision:** Use SQLite as the initial local persistence layer when storage is implemented.
 
 **Reason:** SQLite is lightweight, reproducible, and appropriate for a local educational prototype before any need for a larger database service is demonstrated.
+
+## DEC-013: Use the current SGB API rather than build against legacy USOM naming/endpoints
+
+**Decision:** Use the current official Siber Guvenlik Baskanligi API as the Turkish public threat-intelligence source. The code uses the neutral/current source label `SGB`.
+
+**Reason:** The project should integrate with the current official service while preserving the original project goal of incorporating Turkish national threat intelligence.
