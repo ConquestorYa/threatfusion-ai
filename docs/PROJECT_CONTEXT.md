@@ -29,7 +29,7 @@ The repository currently implements:
 - `IOCType`, an enum for domains, URLs, IPv4, IPv6, common hashes, and unknown values.
 - `IOCRecord`, the common dataclass used to represent an indicator.
 - IOC value normalization for domains, hashes, IP addresses, URLs, and unknown values.
-- IOC correlation and deduplication through `IOCGroup` and `correlate_iocs()`.
+- IOC correlation through `IOCGroup` and `correlate_iocs()`, which groups equivalent IOCs while preserving all original source records.
 - A ThreatFox collector for recent API IOC data, including conservative type mapping and timestamp/tag parsing.
 - A URLhaus collector for the recent CSV export, including named-column discovery and malformed-row handling.
 - Automated pytest tests for the model, normalization, correlation, and collectors.

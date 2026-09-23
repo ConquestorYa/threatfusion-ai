@@ -1,6 +1,6 @@
 # Architecture
 
-This document distinguishes the current implementation from the planned system. The current architecture ends at normalized, correlated IOC records and two feed collectors. The downstream DNS, ML, campaign, risk, and dashboard components are planned only.
+This document distinguishes the current implementation from the planned system. The current architecture ends at correlated IOC groups and two feed collectors. The downstream DNS, ML, campaign, risk, and dashboard components are planned only.
 
 ## Current Data Flow
 
@@ -9,11 +9,11 @@ flowchart LR
     ThreatFox[ThreatFox collector] --> Record[IOCRecord]
     URLhaus[URLhaus collector] --> Record
     USOM[USOM planned] -.-> Record
-    Record --> Normalize[normalize_ioc_value]
-    Normalize --> Correlate[correlate_iocs]
+    Record --> Correlate[correlate_iocs]
+    Correlate -. uses internally .-> Normalize[normalize_ioc_value]
 ```
 
-ThreatFox and URLhaus are implemented external sources. USOM is shown as a planned source and does not currently have a collector. Each implemented collector creates `IOCRecord` objects; normalization provides canonical comparison values, and correlation groups equivalent records while retaining the original evidence records.
+ThreatFox and URLhaus are implemented external sources that produce `IOCRecord` objects. USOM is shown as a planned source and does not currently have a collector. `correlate_iocs()` performs grouping and internally uses `normalize_ioc_value()` to compute canonical comparison values. It groups equivalent records while retaining all original evidence records; it does not rewrite all `IOCRecord` objects through a separate normalization pipeline.
 
 ## Planned Analysis and Presentation Flow
 

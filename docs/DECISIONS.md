@@ -8,7 +8,7 @@
 
 ## DEC-002: Common `IOCRecord` model
 
-**Decision:** Normalize provider records into one internal `IOCRecord` representation.
+**Decision:** Map provider records into one common internal `IOCRecord` representation.
 
 **Reason:** Different CTI providers must be represented consistently before correlation, matching, and later analysis can be reliable.
 
