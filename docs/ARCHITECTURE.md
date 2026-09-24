@@ -103,7 +103,8 @@ campaign.
 
 ```mermaid
 flowchart TD
-    Dashboard[Streamlit dashboard] --> Container[Non-root container + public mode]
+    Dashboard[Streamlit dashboard] --> Bundle[Sanitized CTI + model runtime bundle]
+    Bundle --> Container[Non-root container + public mode]
     Container --> Hosted[Hosted deployment planned]
     Holdout[Later disjoint snapshot] --> Eval[Frozen artifact holdout evaluator]
     Eval --> Hosted
@@ -320,3 +321,15 @@ The planned technology stack is:
 - Ruff.
 
 The stack describes project direction; it does not mean that every planned component is currently implemented or wired into the application.
+
+### `src/threatfusion/deployment_bundle.py`
+
+- Creates a minimal hosted-runtime directory from local development assets.
+- Rebuilds a fresh SQLite database containing CTI records and refresh metadata
+  only.
+- Does not copy local analysis-history tables, DNS uploads, or dataset
+  snapshots.
+- Validates the trusted local ML artifact before copying `model.joblib` and
+  `metadata.json`.
+- Refuses to overwrite a non-empty output directory unless explicitly
+  requested and performs no network activity.

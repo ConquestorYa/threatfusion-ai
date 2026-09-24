@@ -46,21 +46,54 @@ docker build -t threatfusion-ai .
 The image intentionally excludes local `data/`, model artifacts, SQLite
 databases, `.env` files, tests, and Git metadata.
 
+## Prepare a sanitized runtime bundle
+
+Do not mount the developer's whole local `data/` tree into a public
+container. It can contain dataset snapshots and local analysis history.
+
+Instead create a minimal hosted-runtime bundle:
+
+```text
+python scripts/prepare_deployment_bundle.py
+```
+
+The default output is:
+
+```text
+data/deployment/runtime/
+  threatfusion.sqlite
+  models/
+    development-001/
+      model.joblib
+      metadata.json
+```
+
+The generated SQLite database contains only the CTI cache and refresh metadata.
+Local analysis-history tables, DNS uploads, and ML dataset snapshots are not
+copied. The trusted model artifact is validated before it is copied.
+
+If the output directory already contains files, rebuild explicitly with:
+
+```text
+python scripts/prepare_deployment_bundle.py --overwrite
+```
+
 ## Local public-mode container test
 
-On a machine where the prepared runtime data exists under `data/`:
+Mount only the sanitized runtime directory:
 
 ```text
 docker run --rm -p 8501:8501 \
   -e THREATFUSION_PUBLIC_MODE=1 \
   -e THREATFUSION_DB_PATH=/app/runtime/threatfusion.sqlite \
   -e THREATFUSION_MODEL_DIR=/app/runtime/models/development-001 \
-  -v ./data:/app/runtime \
+  -v ./data/deployment/runtime:/app/runtime:ro \
   threatfusion-ai
 ```
 
 On Windows PowerShell, use a resolved absolute path if Docker does not accept
-the relative volume path.
+the relative volume path. The runtime volume can be mounted read-only because
+public mode does not save shared analysis history.
 
 The container runs as a non-root user and exposes Streamlit on port 8501.
 

@@ -148,4 +148,15 @@ THREATFUSION_DB_PATH
 THREATFUSION_MODEL_DIR
 ```
 
+Before hosting, create a sanitized runtime bundle instead of mounting the
+developer data directory:
+
+```powershell
+python scripts\prepare_deployment_bundle.py
+```
+
+This copies only the CTI cache and trusted ML artifact into
+`data/deployment/runtime`; saved local analysis history and dataset snapshots
+are not included.
+
 See `docs/DEPLOYMENT.md` for container and hosting guidance.
