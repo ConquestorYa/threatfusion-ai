@@ -36,6 +36,7 @@ from threatfusion.persistence import (
     list_analysis_runs,
     save_runtime_analysis,
 )
+from threatfusion.reporting import build_analysis_report
 from threatfusion.runtime_analysis import analyze_dns_csv
 
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
@@ -305,6 +306,30 @@ def _show_analysis_result(
                 "No possible related-activity groups were found among Known "
                 "Threat, High Risk, or Review domains."
             )
+
+    report = build_analysis_report(
+        result,
+        model_name=artifact.metadata.model_name,
+    )
+    export_columns = st.columns(2)
+    export_columns[0].download_button(
+        "Download JSON report",
+        data=report.json_text,
+        file_name="threatfusion_analysis.json",
+        mime="application/json",
+        width="stretch",
+    )
+    export_columns[1].download_button(
+        "Download CSV findings",
+        data=report.csv_text,
+        file_name="threatfusion_findings.csv",
+        mime="text/csv",
+        width="stretch",
+    )
+    st.caption(
+        "Exports contain aggregate/per-domain findings only. Raw DNS rows, "
+        "client IP values, and response IP values are not included."
+    )
 
     if history_enabled and st.button("Save aggregate analysis history"):
         run_id = save_runtime_analysis(

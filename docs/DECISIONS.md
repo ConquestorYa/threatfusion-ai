@@ -413,3 +413,24 @@ ML artifact before copying its model and metadata files.
 **Reason:** A hosted bundle should fail early if the configured model artifact
 is missing or incompatible rather than creating a partially valid runtime
 directory.
+
+
+## DEC-048: Keep downloadable reports aggregate and privacy-safe
+
+**Decision:** JSON and CSV exports contain analysis summary information and
+per-domain aggregate findings, but exclude raw DNS rows, client IP values, and
+response IP values.
+
+**Reason:** Portable reports are useful for sharing findings and portfolio
+demonstration, but exporting raw local telemetry would unnecessarily increase
+privacy risk. Counts and evidence labels provide useful analyst context without
+including those identifiers.
+
+## DEC-049: Generate reports from the current in-memory result
+
+**Decision:** Report export is built from the existing `RuntimeAnalysisResult`
+and does not query external services or require the analysis to be saved in
+SQLite first.
+
+**Reason:** Report generation should remain independent of persistence and work
+in public mode, where shared history is intentionally disabled.
