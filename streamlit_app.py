@@ -461,7 +461,11 @@ def _show_history(db_path: Path) -> None:
             )
             note = st.text_area(
                 "Optional analyst note",
-                value=current.note if current is not None and current.note else "",
+                value=(
+                    current.note
+                    if current is not None and current.note
+                    else ""
+                ),
                 max_chars=500,
             )
             submitted = st.form_submit_button("Save analyst feedback")
