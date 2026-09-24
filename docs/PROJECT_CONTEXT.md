@@ -33,19 +33,36 @@ The repository currently implements:
 - A ThreatFox collector for recent API IOC data, including conservative type mapping and timestamp/tag parsing.
 - A URLhaus collector for the recent CSV export, including named-column discovery and malformed-row handling.
 - An SGB collector using the official T.C. Siber Guvenlik Baskanligi malicious-address API, with domain, URL, IPv4, and IPv6 mapping into `IOCRecord`. IPv6 network/CIDR records that do not fit the current IOC model are preserved as `IOCType.UNKNOWN`, and retrieval is safe and bounded through page-based requests.
-- Automated pytest tests for the model, normalization, correlation, and collectors.
+- DNS telemetry ingestion via `DNSEvent` and `parse_dns_csv()`, with evidence-preserving field parsing and local-only CSV handling.
+- Known IOC matching through `DNSIOCMatch` and `match_dns_events()`, which compares DNS queries and responses against IOC records while preserving the original evidence objects.
+- Automated pytest tests for the model, normalization, correlation, collectors, DNS ingestion, and matching behavior.
 - Ruff checks for code quality.
 - Real live-data validation for the ThreatFox, URLhaus, and SGB collectors in addition to network-free automated tests.
 
-Threat URLs, domains, IP addresses, and hashes are treated strictly as data. The collectors do not visit, resolve, open, or follow IOC URLs returned by feeds. Authenticated feed requests are limited to their official collection endpoints, and collector tests use injected fake sessions.
+DNS telemetry ingestion includes:
+
+- `DNSEvent` model
+- CSV parsing for `timestamp`, `client_ip`, `query_name`, `query_type`, and `response_ip`
+- `query_name` evidence preserved verbatim from the CSV input
+- optional timestamp/client IP/query type/response IP handling
+- local-only parsing with no DNS or network requests performed
+
+Known IOC matching includes:
+
+- `DNSEvent` matched against `IOCRecord`
+- DOMAIN IOC matching by normalized DNS query
+- URL IOC hostname matching using local `urllib.parse` logic only
+- IPv4 / IPv6 IOC matching against `response_ip`
+- multiple CTI source records preserved as separate evidence matches
+- malformed IOC values ignored safely without breaking the batch
+
+Threat URLs, domains, IP addresses, and hashes are treated strictly as data. The collectors and DNS parser do not visit, resolve, open, or follow IOC URLs returned by feeds or query values from telemetry. Authenticated feed requests are limited to their official collection endpoints, and collector tests use injected fake sessions.
 
 ## Planned Core Features
 
 The following capabilities are planned and are not implemented in the current repository:
 
 - Broader multi-source correlation workflows.
-- DNS telemetry CSV upload.
-- Matching known IOCs against DNS telemetry.
 - ML-based detection of previously unseen suspicious domains.
 - Explainable domain-risk output.
 - Campaign clustering.

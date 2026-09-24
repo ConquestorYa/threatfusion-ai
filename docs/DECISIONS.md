@@ -83,3 +83,21 @@
 **Decision:** Use the current official Siber Guvenlik Baskanligi API as the Turkish public threat-intelligence source. The code uses the neutral/current source label `SGB`.
 
 **Reason:** The project should integrate with the current official service while preserving the original project goal of incorporating Turkish national threat intelligence.
+
+## DEC-014: Preserve raw DNS query evidence during ingestion
+
+**Decision:** Do not lowercase or otherwise canonicalize `query_name` when ingesting DNS CSV telemetry.
+
+**Reason:** The original observation should remain intact. Normalization is applied only when comparing values during matching.
+
+## DEC-015: Match URL IOCs by hostname without visiting them
+
+**Decision:** For URL IOC records, extract the hostname locally with `urllib.parse` and compare it with DNS queries.
+
+**Reason:** DNS telemetry observes domains and hostnames rather than full URLs, while threat URLs must remain inert data and must never be visited or resolved.
+
+## DEC-016: Preserve source evidence during DNS IOC matching
+
+**Decision:** Return one `DNSIOCMatch` per matching `IOCRecord` rather than deduplicating matches from multiple sources.
+
+**Reason:** A ThreatFox and SGB record referring to the same indicator are independent evidence and should remain visible to later scoring and reporting logic.

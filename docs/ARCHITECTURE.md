@@ -1,6 +1,6 @@
 # Architecture
 
-This document distinguishes the current implementation from the planned system. The current architecture ends at correlated IOC groups and three feed collectors. The downstream DNS, ML, campaign, risk, and dashboard components are planned only.
+This document distinguishes the current implementation from the planned system. The current architecture includes IOC collection, correlation, DNS telemetry ingestion, and in-memory matching against known indicators. The downstream ML, campaign, risk, and dashboard components remain planned only.
 
 ## Current Data Flow
 
@@ -11,24 +11,36 @@ flowchart LR
     SGB[SGB collector] --> Record
     Record --> Correlate[correlate_iocs]
     Correlate -. uses internally .-> Normalize[normalize_ioc_value]
+    DNSCSV[DNS CSV telemetry] --> DNS[DNSEvent]
+    DNS --> Match[match_dns_events]
+    Record --> Match
+    Match --> MatchResult[DNSIOCMatch evidence]
 ```
 
 ThreatFox, URLhaus, and SGB are implemented external sources that produce `IOCRecord` objects. `correlate_iocs()` performs grouping and internally uses `normalize_ioc_value()` to compute canonical comparison values. It groups equivalent records while retaining all original evidence records; it does not rewrite all `IOCRecord` objects through a separate normalization pipeline.
+
+The DNS ingestion layer parses CSV telemetry into `DNSEvent` objects without performing any network lookup or resolution. The matching layer then compares normalized DNS queries and response IPs against known IOC records while preserving the original `DNSEvent` and `IOCRecord` evidence objects.
+
+The matcher currently supports:
+
+- DOMAIN -> DNS query_name
+- URL hostname -> DNS query_name
+- IPv4 / IPv6 -> DNS response_ip
+
+Normalization is used for comparison only. URL IOC values are parsed locally with `urllib.parse` and are never visited or resolved. Matching is in-memory and performs no network activity.
 
 ## Planned Analysis and Presentation Flow
 
 ```mermaid
 flowchart TD
-    DNS[DNS telemetry planned] --> Match[Known IOC matching planned]
-    DNS --> Detect[ML suspicious-domain detection planned]
+    DNS[DNSEvent / unmatched domains] --> Detect[ML suspicious-domain detection planned]
     DNS --> Cluster[Campaign clustering planned]
     Detect --> Risk[Explainable risk planned]
-    Match --> Risk
     Cluster --> Risk
     Risk --> Dashboard[Streamlit dashboard planned]
 ```
 
-The planned flow is not available in the current codebase. In particular, there is no DNS telemetry importer, known-IOC matcher, ML detector, campaign clustering implementation, risk scorer, database, or Streamlit application yet.
+The planned flow is not available in the current codebase. In particular, there is no ML detector, campaign clustering implementation, risk scorer, SQLite persistence, or Streamlit dashboard yet.
 
 ## Current Modules
 
@@ -51,6 +63,27 @@ The planned flow is not available in the current codebase. In particular, there 
 - Provides `correlate_iocs()`.
 - Groups records only when both normalized value and `IOCType` match.
 - Preserves every original `IOCRecord`, including duplicate evidence from one source.
+
+### `src/threatfusion/dns.py`
+
+- Defines `DNSEvent` for a DNS observation with optional timestamp, client IP, query type, and response IP.
+- Provides `parse_dns_csv()` for safe CSV ingestion using the Python standard library.
+- Accepts the project CSV schema: `timestamp,client_ip,query_name,query_type,response_ip`.
+- Preserves `query_name` evidence exactly as observed, while trimming surrounding whitespace.
+- Validates canonical response IP values with Python's `ipaddress` module and keeps malformed values as `None`.
+- Performs no network operations, DNS lookups, or external requests while parsing telemetry.
+
+### `src/threatfusion/matching.py`
+
+- Defines `DNSIOCMatch` for a matched DNS event and IOC record with a simple match type.
+- Provides `match_dns_events()` for local in-memory matching.
+- Builds lightweight lookup indexes instead of performing a naive full nested scan.
+- Matches DOMAIN IOC values against normalized DNS query names.
+- Matches URL IOC hostnames against DNS query names using local parsing only.
+- Matches IPv4 and IPv6 IOC values against `DNSEvent.response_ip` values.
+- Preserves original `DNSEvent` and `IOCRecord` objects as evidence.
+- Ignores malformed IOC values without breaking the whole batch.
+- Ignores unsupported hash and `UNKNOWN` IOC types for DNS matching.
 
 ### `src/threatfusion/collectors/threatfox.py`
 
@@ -76,7 +109,7 @@ The planned flow is not available in the current codebase. In particular, there 
 
 ## Tests and Tooling
 
-The repository uses `pytest.ini` to expose the `src` layout to pytest. The test suite covers the implemented model, normalization, correlation, ThreatFox, URLhaus, and SGB behavior. Ruff is used for lint checks. Collector tests inject fake sessions and do not make real feed requests.
+The repository uses `pytest.ini` to expose the `src` layout to pytest. The test suite covers the implemented model, normalization, correlation, collectors, DNS ingestion, and matching behavior. Ruff is used for lint checks. Collector tests inject fake sessions and do not make real feed requests.
 
 ## Planned Stack
 
