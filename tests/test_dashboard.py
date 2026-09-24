@@ -33,6 +33,7 @@ from threatfusion.persistence import (
 )
 from threatfusion.runtime_analysis import RuntimeAnalysisResult
 
+
 def make_result() -> RuntimeAnalysisResult:
     event = DNSEvent(
         query_name="known.bad",
