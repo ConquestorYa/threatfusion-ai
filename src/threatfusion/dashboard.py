@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
@@ -106,6 +107,11 @@ def ml_tier_label(value: str | None) -> str:
     if value is None:
         return "Below threshold"
     return _ML_TIER_LABELS.get(value, value.title())
+
+
+def content_fingerprint(content: bytes) -> str:
+    """Return a stable fingerprint for uploaded content."""
+    return hashlib.sha256(content).hexdigest()
 
 
 def format_timestamp(value: str) -> str:
