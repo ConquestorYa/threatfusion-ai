@@ -130,3 +130,14 @@ basis for final performance claims.
 **Reason:** Repeatedly inspecting test results indirectly tunes development to
 that data. Final reported performance should later be measured on a fresh
 source-aware or time-aware holdout.
+
+
+## DEC-020: Use source-wise recall as diagnosis, not model tuning
+
+**Decision:** Report malicious-domain recall separately by retained CTI source
+on the development test split, but do not use those source-wise test results to
+retune thresholds or select a final model.
+
+**Reason:** Aggregate recall can hide that one feed type is much harder than
+another. Source-wise diagnostics help explain failure modes, while keeping
+model selection on validation data avoids additional test leakage.
