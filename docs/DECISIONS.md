@@ -101,3 +101,9 @@
 **Decision:** Return one `DNSIOCMatch` per matching `IOCRecord` rather than deduplicating matches from multiple sources.
 
 **Reason:** A ThreatFox and SGB record referring to the same indicator are independent evidence and should remain visible to later scoring and reporting logic.
+
+## DEC-017: Tune high-recall thresholds on validation data only
+
+**Decision:** High-recall operating thresholds are selected on a dedicated validation split and are never selected by inspecting test-set performance.
+
+**Reason:** Lowering a classifier threshold can increase malicious-domain recall, but choosing that threshold on the test set would leak evaluation information and make the reported result optimistic. An untouched test set provides a more credible final measurement of each validation-selected operating point.
