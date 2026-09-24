@@ -103,3 +103,36 @@ time-related patterns may inflate results. Later evaluation should include a
 source-aware split that holds out malicious-source data, and time-aware
 evaluation should be considered when timestamp metadata is preserved in the
 ML dataset. Source-aware and time-aware splitting are not implemented here.
+
+## Reproducible dataset snapshots
+
+The snapshot layer assembles an in-memory labeled dataset from already-
+collected `IOCRecord` objects and already-loaded benign domain strings. It
+does not download data or contact ThreatFox, URLhaus, SGB, Tranco, DNS, or any
+other network service. Real feed acquisition remains outside this module.
+
+The Tranco standard list is rank/domain CSV, such as `1,example.com`. The
+parser consumes only caller-supplied CSV text, takes the second column as
+inert domain text, preserves valid-row order, and supports an optional row
+limit. It does not interpret values as URLs or resolve them. Automated tests
+use synthetic inert data rather than live lists or feeds.
+
+A real experiment should record the following snapshot metadata and counts:
+
+- benign dataset source
+- Tranco list or snapshot identifier
+- snapshot or list date
+- malicious counts by retained source
+- malicious and benign counts before and after deduplication
+- malicious/benign overlap removed
+- final dataset size
+
+The snapshot statistics distinguish malicious IOC-derived candidates from
+unique retained malicious domains, caller-supplied benign rows from valid
+unique benign domains, and the final label counts after malicious overlap
+precedence is applied. Malicious source counts describe the final retained
+malicious samples, so the first source for a duplicate normalized domain wins
+deterministically under the existing dataset rules.
+
+Model training is still not implemented. Snapshot construction also does not
+invoke the baseline split, calculate metrics, or write files to disk.
