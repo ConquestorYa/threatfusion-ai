@@ -202,3 +202,23 @@ hybrid assessment before adding Streamlit presentation logic.
 **Reason:** The analysis workflow should be independently testable and reusable
 outside the web interface. Keeping Streamlit separate from detection logic
 prevents UI code from becoming the source of security or ML behavior.
+
+
+## DEC-027: Persist analysis history without raw DNS telemetry by default
+
+**Decision:** Store completed analysis summaries and per-domain findings in
+SQLite, but do not persist raw uploaded DNS rows or client IP values by default.
+
+**Reason:** The dashboard needs history and explainable findings, while DNS
+telemetry can contain sensitive browsing and internal-network information.
+Keeping raw telemetry ephemeral reduces unnecessary privacy risk and still
+supports useful analysis history.
+
+## DEC-028: Keep persistence separate from runtime detection logic
+
+**Decision:** The runtime analysis pipeline returns in-memory evidence and
+assessments; SQLite persistence is an explicit separate step.
+
+**Reason:** Detection should remain testable without a database, and callers
+should be able to choose whether an analysis is saved. This separation also
+makes a future privacy mode straightforward.
