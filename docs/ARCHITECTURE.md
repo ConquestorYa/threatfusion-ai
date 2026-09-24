@@ -83,17 +83,31 @@ flowchart TD
     History --> Dashboard[Streamlit history view]
 ```
 
+## Current Related-Activity Flow
+
+```mermaid
+flowchart TD
+    Runtime[Runtime analysis] --> Suspicious[Known Threat / High Risk / Review domains]
+    Suspicious --> Evidence[Shared client / shared response IP evidence]
+    Evidence --> Cluster[Possible related-activity groups]
+    Cluster --> Dashboard[Streamlit related-activity view]
+```
+
+The related-activity layer is an explainable baseline. A relationship requires
+shared local DNS evidence; time proximity is supporting context only. Groups
+are presented as possible related activity and do not prove one malware
+campaign.
+
 ## Planned Analysis Extensions
 
 ```mermaid
 flowchart TD
-    Hybrid[Hybrid assessment] --> Cluster[Campaign clustering planned]
-    Cluster --> Dashboard[Streamlit dashboard]
-    Dashboard --> Hosted[Hosted demo packaging planned]
+    Dashboard[Streamlit dashboard] --> Hosted[Hosted demo packaging planned]
+    Eval[Fresh final holdout planned] --> Hosted
 ```
 
-Fresh source-aware or time-aware final evaluation, campaign clustering, and
-hosted deployment packaging remain planned. Local model artifact persistence,
+Fresh source-aware or time-aware final evaluation and hosted deployment
+packaging remain planned. Local model artifact persistence,
 domain-probability inference, privacy-conscious SQLite analysis history, a
 local SQLite CTI cache, and a Streamlit MVP are implemented.
 
@@ -237,6 +251,14 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 - Does not persist raw uploaded DNS rows or client IP values by default.
 - Uses parameterized SQL, foreign-key constraints, and deterministic read ordering.
 - Provides run-history and per-run assessment read helpers for the future dashboard.
+
+### `src/threatfusion/campaign.py`
+
+- Builds local-only relationships among Known Threat / High Risk / Review domains.
+- Requires at least one shared client observation or shared response IP to create a relationship.
+- Uses time proximity only as supporting context, never as the sole edge condition.
+- Builds deterministic connected components and omits singleton groups.
+- Returns aggregate relationship counts/reason codes without exposing raw client IP values.
 
 ### `src/threatfusion/dashboard.py` and `streamlit_app.py`
 
