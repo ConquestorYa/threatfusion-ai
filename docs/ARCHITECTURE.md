@@ -1,6 +1,6 @@
 # Architecture
 
-This document distinguishes the current implementation from the planned system. The current architecture includes IOC collection, correlation, DNS telemetry ingestion, and in-memory matching against known indicators. The downstream ML, campaign, risk, and dashboard components remain planned only.
+This document distinguishes the current implementation from the planned system. The current architecture includes IOC collection, correlation, DNS telemetry ingestion, in-memory matching against known indicators, reproducible ML dataset snapshots, and a baseline malicious-domain classifier. Campaign, risk, dashboard, and runtime DNS-to-ML integration remain planned.
 
 ## Current Data Flow
 
@@ -29,18 +29,38 @@ The matcher currently supports:
 
 Normalization is used for comparison only. URL IOC values are parsed locally with `urllib.parse` and are never visited or resolved. Matching is in-memory and performs no network activity.
 
+## Current ML Development Flow
+
+```mermaid
+flowchart LR
+    CTI[Collected IOC records] --> Samples[DomainSample dataset]
+    Tranco[Pinned Tranco domains] --> Samples
+    Samples --> Snapshot[Persisted snapshot]
+    Snapshot --> Split[80/20 stratified split]
+    Split --> TFIDF[Character n-gram TF-IDF]
+    TFIDF --> LR[Logistic Regression]
+    LR --> Metrics[Precision / Recall / F1 / FPR]
+```
+
+The baseline vectorizer and classifier are fitted after splitting, so held-out
+test domains do not influence TF-IDF fitting. The current random stratified
+split is explicitly a development baseline rather than the final evaluation
+protocol.
+
 ## Planned Analysis and Presentation Flow
 
 ```mermaid
 flowchart TD
-    DNS[DNSEvent / unmatched domains] --> Detect[ML suspicious-domain detection planned]
+    DNS[DNSEvent / unmatched domains] --> Detect[Baseline ML inference integration planned]
     DNS --> Cluster[Campaign clustering planned]
     Detect --> Risk[Explainable risk planned]
     Cluster --> Risk
     Risk --> Dashboard[Streamlit dashboard planned]
 ```
 
-The planned flow is not available in the current codebase. In particular, there is no ML detector, campaign clustering implementation, risk scorer, SQLite persistence, or Streamlit dashboard yet.
+Runtime integration of the classifier with unmatched DNS observations,
+source-aware/time-aware evaluation, campaign clustering, explainable risk,
+SQLite persistence, and the Streamlit dashboard are not implemented yet.
 
 ## Current Modules
 
@@ -85,6 +105,31 @@ The planned flow is not available in the current codebase. In particular, there 
 - Ignores malformed IOC values without breaking the whole batch.
 - Ignores unsupported hash and `UNKNOWN` IOC types for DNS matching.
 
+### `src/threatfusion/ml_dataset.py`
+
+- Extracts normalized malicious domain samples from DOMAIN and URL IOC records.
+- Builds benign samples from caller-supplied domain strings.
+- Deduplicates at normalized-domain level and gives malicious labels precedence on overlap.
+
+### `src/threatfusion/ml_split.py`
+
+- Provides the deterministic 80/20-style stratified development split.
+- Rejects duplicate/conflicting normalized domains and preserves original sample objects.
+- Uses a fixed default `random_state=42`.
+
+### `src/threatfusion/ml_snapshot.py` and `ml_snapshot_io.py`
+
+- Assemble reproducible in-memory dataset snapshots with aggregate statistics.
+- Persist exact local `dataset.csv` and `metadata.json` experiment snapshots.
+- Keep local snapshot data outside Git through `data/snapshots/`.
+
+### `src/threatfusion/ml_baseline.py`
+
+- Builds character 3-5 gram TF-IDF features and a Logistic Regression classifier.
+- Fits only on the training side of the existing stratified split.
+- Reports precision, recall, F1, false-positive rate, and TN/FP/FN/TP counts.
+- Performs no networking and does not depend on live CTI collection during training.
+
 ### `src/threatfusion/collectors/threatfox.py`
 
 - Integrates with the ThreatFox Community API for recent IOCs.
@@ -109,7 +154,7 @@ The planned flow is not available in the current codebase. In particular, there 
 
 ## Tests and Tooling
 
-The repository uses `pytest.ini` to expose the `src` layout to pytest. The test suite covers the implemented model, normalization, correlation, collectors, DNS ingestion, and matching behavior. Ruff is used for lint checks. Collector tests inject fake sessions and do not make real feed requests.
+The repository uses `pytest.ini` to expose the `src` layout to pytest. The test suite covers the implemented model, normalization, correlation, collectors, DNS ingestion, matching, ML dataset preparation, splitting, snapshot persistence, and baseline model evaluation. Ruff is used for lint checks. Collector tests inject fake sessions and do not make real feed requests. GitHub Actions runs Ruff and pytest automatically on pull requests and pushes to `main`.
 
 ## Planned Stack
 
