@@ -191,3 +191,14 @@ generated locally by this project and are trusted.
 **Reason:** Python pickle-compatible formats can execute code during loading.
 They are suitable for this local educational workflow but must not be treated
 as safe interchange formats for untrusted files.
+
+
+## DEC-026: Use one local runtime orchestration layer before building the UI
+
+**Decision:** Route DNS telemetry through a reusable runtime module that combines
+known IOC matching, persisted ML inference, DNS behavior aggregation, and
+hybrid assessment before adding Streamlit presentation logic.
+
+**Reason:** The analysis workflow should be independently testable and reusable
+outside the web interface. Keeping Streamlit separate from detection logic
+prevents UI code from becoming the source of security or ML behavior.
