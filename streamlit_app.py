@@ -15,6 +15,7 @@ from threatfusion.cti_cache import (
     load_ioc_records,
 )
 from threatfusion.dashboard import (
+    assessment_detail,
     assessment_rows,
     cti_status_rows,
     history_rows,
@@ -81,24 +82,75 @@ def _show_system_status(db_path: Path, model_dir: Path) -> None:
         st.sidebar.warning("CTI cache is empty")
 
 
+def _show_domain_detail(result, domain: str) -> None:
+    assessment = next(
+        item for item in result.assessments if item.domain == domain
+    )
+    detail = assessment_detail(assessment)
+
+    st.markdown(f"#### Domain detail: {detail['domain']}")
+
+    columns = st.columns(4)
+    columns[0].metric("Verdict", detail["verdict"])
+    ml_score = detail["ml_score"]
+    columns[1].metric(
+        "ML score",
+        f"{ml_score:.4f}" if ml_score is not None else "N/A",
+    )
+    columns[2].metric("ML tier", detail["ml_tier"])
+    columns[3].metric("DNS events", detail["event_count"])
+
+    behavior_columns = st.columns(3)
+    behavior_columns[0].metric("Unique clients", detail["client_count"])
+    behavior_columns[1].metric(
+        "Unique response IPs",
+        detail["response_ip_count"],
+    )
+    behavior_columns[2].metric(
+        "Query types",
+        ", ".join(detail["query_types"]) or "None",
+    )
+
+    sources = detail["known_sources"]
+    if sources:
+        st.write("**Known CTI sources:** " + ", ".join(sources))
+    else:
+        st.write("**Known CTI sources:** No cached IOC match")
+
+    evidence = detail["evidence"]
+    st.write("**Why this verdict?**")
+    if evidence:
+        for item in evidence:
+            st.markdown(f"- {item}")
+    else:
+        st.caption("No strong CTI, ML-tier, or DNS-behavior signal was recorded.")
+
+
 def _show_analysis_result(result, artifact, db_path: Path) -> None:
     summary = summarize_runtime_result(result)
 
     st.subheader("Analysis summary")
-    columns = st.columns(5)
+    columns = st.columns(6)
     columns[0].metric("DNS events", summary.event_count)
-    columns[1].metric("Known threat", summary.known_threat_count)
-    columns[2].metric("High risk", summary.high_risk_count)
-    columns[3].metric("Review", summary.review_count)
-    columns[4].metric("Low", summary.low_count)
+    columns[1].metric("Unique domains", summary.domain_count)
+    columns[2].metric("Known threat", summary.known_threat_count)
+    columns[3].metric("High risk", summary.high_risk_count)
+    columns[4].metric("Review", summary.review_count)
+    columns[5].metric("Low", summary.low_count)
+
+    st.caption(
+        "Verdicts are assigned per unique domain; DNS events count individual "
+        "telemetry rows."
+    )
 
     chart_data = _verdict_chart(summary)
     figure = px.bar(
         chart_data,
         x="verdict",
         y="count",
-        title="Verdict distribution",
+        title="Domain verdict distribution",
         text_auto=True,
+        labels={"verdict": "Verdict", "count": "Domains"},
     )
     st.plotly_chart(figure, width="stretch")
 
@@ -110,7 +162,7 @@ def _show_analysis_result(result, artifact, db_path: Path) -> None:
         rows = assessment_rows(result)
         if rows:
             frame = pd.DataFrame(rows)
-            frame["ml_score"] = frame["ml_score"].map(
+            frame["ML score"] = frame["ML score"].map(
                 lambda value: (
                     f"{value:.4f}" if value is not None else ""
                 )
@@ -120,6 +172,13 @@ def _show_analysis_result(result, artifact, db_path: Path) -> None:
                 hide_index=True,
                 width="stretch",
             )
+
+            selected_domain = st.selectbox(
+                "Inspect a domain",
+                [row["Domain"] for row in rows],
+                key="live_domain_detail",
+            )
+            _show_domain_detail(result, selected_domain)
         else:
             st.info("No domain assessments were produced.")
 
@@ -170,8 +229,14 @@ def _show_history(db_path: Path) -> None:
     assessments = get_analysis_assessments(db_path, int(selected_id))
     rows = persisted_assessment_rows(assessments)
     if rows:
+        frame = pd.DataFrame(rows)
+        frame["ML score"] = frame["ML score"].map(
+            lambda value: (
+                f"{value:.4f}" if value is not None else ""
+            )
+        )
         st.dataframe(
-            pd.DataFrame(rows),
+            frame,
             hide_index=True,
             width="stretch",
         )
