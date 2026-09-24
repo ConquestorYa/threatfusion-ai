@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .campaign import RelatedActivityReport
 from .cti_cache import CTICacheStatus
 from .hybrid_assessment import HybridAssessment
 from .persistence import AnalysisRunSummary, PersistedDomainAssessment
@@ -39,6 +40,12 @@ _ML_TIER_LABELS = {
     "low": "Low",
 }
 
+_RELATION_REASON_LABELS = {
+    "shared_client": "Shared client observation",
+    "shared_response_ip": "Shared response IP observation",
+    "time_proximity": "Observed close together in time",
+}
+
 _REASON_LABELS = {
     "known_ioc_match": "Known threat intelligence match",
     "ml_high_confidence": "High ML score tier",
@@ -50,6 +57,47 @@ _REASON_LABELS = {
     "query_type_diversity": "Multiple DNS query types observed",
     "rapid_query_burst": "Rapid DNS query burst",
 }
+
+
+
+def relationship_reason_label(value: str) -> str:
+    return _RELATION_REASON_LABELS.get(
+        value,
+        value.replace("_", " ").title(),
+    )
+
+
+def cluster_rows(
+    report: RelatedActivityReport,
+) -> list[dict[str, object]]:
+    return [
+        {
+            "Group": cluster.cluster_id,
+            "Domains": ", ".join(cluster.domains),
+            "Domain count": len(cluster.domains),
+            "Relationships": len(cluster.relationships),
+        }
+        for cluster in report.clusters
+    ]
+
+
+def relationship_rows(
+    report: RelatedActivityReport,
+) -> list[dict[str, object]]:
+    return [
+        {
+            "Domain A": relationship.domain_a,
+            "Domain B": relationship.domain_b,
+            "Shared clients": relationship.shared_client_count,
+            "Shared response IPs": relationship.shared_response_ip_count,
+            "Closest time delta (s)": relationship.min_time_delta_seconds,
+            "Evidence": "; ".join(
+                relationship_reason_label(reason)
+                for reason in relationship.reasons
+            ),
+        }
+        for relationship in report.relationships
+    ]
 
 
 def verdict_label(value: str) -> str:
