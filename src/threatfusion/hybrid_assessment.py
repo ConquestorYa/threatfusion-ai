@@ -113,7 +113,7 @@ def _normalize_probability_mapping(
 
     for raw_domain, raw_probability in probabilities.items():
         if not isinstance(raw_domain, str):
-            raise ValueError("ML probability keys must be domain strings")
+            raise TypeError("ML probability keys must be domain strings")
 
         domain = normalize_ioc_value(raw_domain, IOCType.DOMAIN)
         if not domain:
@@ -202,9 +202,9 @@ def assess_dns_domains(
 
         if sources:
             verdict = HybridVerdict.KNOWN_THREAT
-        elif tier == "high":
-            verdict = HybridVerdict.HIGH_RISK
-        elif tier == "medium" and len(behavior_signals) >= 2:
+        elif tier == "high" or (
+            tier == "medium" and len(behavior_signals) >= 2
+        ):
             verdict = HybridVerdict.HIGH_RISK
         elif tier in {"medium", "low"} or len(behavior_signals) >= 2:
             verdict = HybridVerdict.REVIEW
