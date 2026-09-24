@@ -1,6 +1,6 @@
 # Architecture
 
-This document distinguishes the current implementation from the planned system. The current architecture includes IOC collection, correlation, DNS telemetry ingestion, in-memory matching against known indicators, reproducible ML dataset snapshots, and a baseline malicious-domain classifier. Campaign, risk, dashboard, and runtime DNS-to-ML integration remain planned.
+This document distinguishes the current implementation from the planned system. The current architecture includes IOC collection, correlation, DNS telemetry ingestion, in-memory known-IOC matching, reproducible ML dataset snapshots, persisted development-model inference, DNS behavior aggregation, and explainable hybrid runtime assessment. Campaign clustering, SQLite application persistence, final holdout evaluation, and the Streamlit dashboard remain planned.
 
 ## Current Data Flow
 
@@ -51,10 +51,15 @@ protocol.
 
 ```mermaid
 flowchart TD
-    DNS[DNSEvent] --> Match[Known IOC matching]
-    DNS --> Behavior[DNS behavior aggregation]
-    ML[Caller-supplied ML probability + validation thresholds] --> Hybrid[Hybrid assessment]
-    Match --> Hybrid
+    CSV[DNS CSV] --> DNS[DNSEvent]
+    DNS --> Runtime[Runtime analysis]
+    IOC[Already-loaded IOCRecord values] --> Runtime
+    Artifact[Trusted local ML artifact] --> Runtime
+    Runtime --> Match[Known IOC matching]
+    Runtime --> ML[Domain probability inference]
+    Runtime --> Behavior[DNS behavior aggregation]
+    Match --> Hybrid[Hybrid assessment]
+    ML --> Hybrid
     Behavior --> Hybrid
     Hybrid --> Verdict[known_threat / high_risk / review / low]
 ```
@@ -195,6 +200,14 @@ current development candidate.
   never be accepted from untrusted sources.
 - Normalizes runtime domain strings and returns malicious-domain probabilities
   without networking.
+
+### `src/threatfusion/runtime_analysis.py`
+
+- Provides the reusable local orchestration layer for the implemented analysis path.
+- Accepts already-loaded DNS events, IOC records, and a trusted local ML artifact.
+- Runs known IOC matching, normalized ML probability inference, DNS behavior aggregation, and hybrid assessment without networking.
+- Preserves original DNS/IOC evidence and returns matches, probabilities, and per-domain assessments together.
+- Provides a convenience helper that starts directly from DNS CSV text.
 
 ### `src/threatfusion/ml_source_diagnostics.py`
 
