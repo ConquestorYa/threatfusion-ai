@@ -14,8 +14,10 @@ from threatfusion.models import IOCRecord, IOCType
 from threatfusion.persistence import (
     get_analysis_assessments,
     get_analysis_run,
+    get_analyst_feedback,
     initialize_database,
     list_analysis_runs,
+    save_analyst_feedback,
     save_runtime_analysis,
 )
 from threatfusion.runtime_analysis import RuntimeAnalysisResult
@@ -115,6 +117,7 @@ def test_initialize_database_creates_expected_tables(tmp_path) -> None:
 
     assert "analysis_runs" in tables
     assert "analysis_assessments" in tables
+    assert "analyst_feedback" in tables
 
 
 def test_save_runtime_analysis_persists_summary_counts(tmp_path) -> None:
@@ -227,3 +230,87 @@ def test_persistence_does_not_perform_networking(
     run_id = save_runtime_analysis(db_path, make_result())
 
     assert get_analysis_run(db_path, run_id) is not None
+
+def test_analyst_feedback_roundtrip_and_update(tmp_path) -> None:
+    db_path = tmp_path / "history.sqlite"
+    run_id = save_runtime_analysis(db_path, make_result())
+    first_time = datetime(2026, 9, 24, 19, 0, tzinfo=timezone.utc)
+    second_time = datetime(2026, 9, 24, 19, 5, tzinfo=timezone.utc)
+
+    first = save_analyst_feedback(
+        db_path,
+        run_id,
+        "review.example",
+        "uncertain",
+        note="Needs manual review",
+        updated_at=first_time,
+    )
+    updated = save_analyst_feedback(
+        db_path,
+        run_id,
+        "review.example",
+        "benign",
+        note="Expected internal service",
+        updated_at=second_time,
+    )
+    rows = get_analyst_feedback(db_path, run_id)
+
+    assert first.label == "uncertain"
+    assert updated.label == "benign"
+    assert len(rows) == 1
+    assert rows[0].domain == "review.example"
+    assert rows[0].label == "benign"
+    assert rows[0].note == "Expected internal service"
+    assert rows[0].updated_at == second_time.isoformat()
+
+
+def test_analyst_feedback_rejects_unknown_domain_and_label(tmp_path) -> None:
+    db_path = tmp_path / "history.sqlite"
+    run_id = save_runtime_analysis(db_path, make_result())
+
+    with pytest.raises(ValueError, match="label"):
+        save_analyst_feedback(
+            db_path,
+            run_id,
+            "review.example",
+            "maybe",
+        )
+
+    with pytest.raises(ValueError, match="not part"):
+        save_analyst_feedback(
+            db_path,
+            run_id,
+            "missing.example",
+            "uncertain",
+        )
+
+
+def test_analyst_feedback_note_is_bounded(tmp_path) -> None:
+    db_path = tmp_path / "history.sqlite"
+    run_id = save_runtime_analysis(db_path, make_result())
+
+    with pytest.raises(ValueError, match="too long"):
+        save_analyst_feedback(
+            db_path,
+            run_id,
+            "review.example",
+            "uncertain",
+            note="x" * 501,
+        )
+
+
+def test_feedback_does_not_change_original_assessment(tmp_path) -> None:
+    db_path = tmp_path / "history.sqlite"
+    run_id = save_runtime_analysis(db_path, make_result())
+
+    save_analyst_feedback(
+        db_path,
+        run_id,
+        "known.bad",
+        "benign",
+    )
+
+    assessments = get_analysis_assessments(db_path, run_id)
+
+    known = next(row for row in assessments if row.domain == "known.bad")
+    assert known.verdict == "known_threat"

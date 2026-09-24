@@ -8,7 +8,11 @@ from datetime import datetime, timezone
 from .campaign import RelatedActivityReport
 from .cti_cache import CTICacheStatus
 from .hybrid_assessment import HybridAssessment
-from .persistence import AnalysisRunSummary, PersistedDomainAssessment
+from .persistence import (
+    AnalysisRunSummary,
+    AnalystFeedback,
+    PersistedDomainAssessment,
+)
 from .runtime_analysis import RuntimeAnalysisResult
 
 
@@ -69,6 +73,12 @@ _ML_TIER_LABELS = {
     "high": "High",
     "medium": "Medium",
     "low": "Low",
+}
+
+_FEEDBACK_LABELS = {
+    "confirmed_threat": "Confirmed Threat",
+    "benign": "Benign",
+    "uncertain": "Uncertain",
 }
 
 _RELATION_REASON_LABELS = {
@@ -223,6 +233,26 @@ def ml_tier_label(value: str | None) -> str:
     if value is None:
         return "Below threshold"
     return _ML_TIER_LABELS.get(value, value.title())
+
+
+def feedback_label(value: str | None) -> str:
+    if value is None:
+        return "Not reviewed"
+    return _FEEDBACK_LABELS.get(value, value.replace("_", " ").title())
+
+
+def feedback_rows(
+    feedback: list[AnalystFeedback],
+) -> list[dict[str, object]]:
+    return [
+        {
+            "Domain": item.domain,
+            "Analyst feedback": feedback_label(item.label),
+            "Analyst note": item.note or "",
+            "Updated at": format_timestamp(item.updated_at),
+        }
+        for item in feedback
+    ]
 
 
 def content_fingerprint(content: bytes) -> str:

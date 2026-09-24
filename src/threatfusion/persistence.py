@@ -43,6 +43,23 @@ class PersistedDomainAssessment:
     reasons: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class AnalystFeedback:
+    analysis_run_id: int
+    domain: str
+    label: str
+    note: str | None
+    updated_at: str
+
+
+_FEEDBACK_LABELS = {
+    "confirmed_threat",
+    "benign",
+    "uncertain",
+}
+_MAX_FEEDBACK_NOTE_LENGTH = 500
+
+
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS analysis_runs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,6 +102,21 @@ CREATE INDEX IF NOT EXISTS idx_assessments_run_id
 
 CREATE INDEX IF NOT EXISTS idx_assessments_verdict
     ON analysis_assessments(verdict);
+
+CREATE TABLE IF NOT EXISTS analyst_feedback (
+    analysis_run_id INTEGER NOT NULL,
+    domain TEXT NOT NULL,
+    label TEXT NOT NULL,
+    note TEXT,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (analysis_run_id, domain),
+    FOREIGN KEY (analysis_run_id)
+        REFERENCES analysis_runs(id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_analyst_feedback_run_id
+    ON analyst_feedback(analysis_run_id);
 """
 
 
@@ -334,6 +366,124 @@ def get_analysis_assessments(
                 row["behavior_signals_json"]
             ),
             reasons=_decode_string_tuple(row["reasons_json"]),
+        )
+        for row in rows
+    ]
+
+
+def _feedback_time_text(updated_at: datetime | None) -> str:
+    value = updated_at or datetime.now(timezone.utc)
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("updated_at must be timezone-aware")
+    return value.isoformat()
+
+
+def save_analyst_feedback(
+    db_path: Path,
+    run_id: int,
+    domain: str,
+    label: str,
+    *,
+    note: str | None = None,
+    updated_at: datetime | None = None,
+) -> AnalystFeedback:
+    """Save one current analyst label for a persisted run/domain finding."""
+    if not isinstance(label, str):
+        raise TypeError("analyst feedback label must be a string")
+    if label not in _FEEDBACK_LABELS:
+        raise ValueError("unsupported analyst feedback label")
+    if not isinstance(domain, str):
+        raise TypeError("feedback domain must be a string")
+    if not domain.strip():
+        raise ValueError("feedback domain must be a non-empty string")
+    if note is not None and not isinstance(note, str):
+        raise TypeError("analyst feedback note must be a string")
+
+    normalized_domain = domain.strip()
+    normalized_note = note.strip() if note is not None else None
+    if normalized_note == "":
+        normalized_note = None
+    if (
+        normalized_note is not None
+        and len(normalized_note) > _MAX_FEEDBACK_NOTE_LENGTH
+    ):
+        raise ValueError("analyst feedback note is too long")
+
+    initialize_database(db_path)
+    timestamp = _feedback_time_text(updated_at)
+
+    with _connect(Path(db_path)) as connection:
+        exists = connection.execute(
+            """
+            SELECT 1
+            FROM analysis_assessments
+            WHERE analysis_run_id = ? AND domain = ?
+            LIMIT 1
+            """,
+            (run_id, normalized_domain),
+        ).fetchone()
+        if exists is None:
+            raise ValueError("feedback domain is not part of the analysis run")
+
+        connection.execute(
+            """
+            INSERT INTO analyst_feedback (
+                analysis_run_id,
+                domain,
+                label,
+                note,
+                updated_at
+            )
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(analysis_run_id, domain) DO UPDATE SET
+                label = excluded.label,
+                note = excluded.note,
+                updated_at = excluded.updated_at
+            """,
+            (
+                run_id,
+                normalized_domain,
+                label,
+                normalized_note,
+                timestamp,
+            ),
+        )
+
+    return AnalystFeedback(
+        analysis_run_id=run_id,
+        domain=normalized_domain,
+        label=label,
+        note=normalized_note,
+        updated_at=timestamp,
+    )
+
+
+def get_analyst_feedback(
+    db_path: Path,
+    run_id: int,
+) -> list[AnalystFeedback]:
+    """Load analyst feedback for one saved run in deterministic domain order."""
+    initialize_database(db_path)
+
+    with _connect(Path(db_path)) as connection:
+        connection.row_factory = sqlite3.Row
+        rows = connection.execute(
+            """
+            SELECT analysis_run_id, domain, label, note, updated_at
+            FROM analyst_feedback
+            WHERE analysis_run_id = ?
+            ORDER BY domain ASC
+            """,
+            (run_id,),
+        ).fetchall()
+
+    return [
+        AnalystFeedback(
+            analysis_run_id=int(row["analysis_run_id"]),
+            domain=str(row["domain"]),
+            label=str(row["label"]),
+            note=row["note"],
+            updated_at=str(row["updated_at"]),
         )
         for row in rows
     ]
