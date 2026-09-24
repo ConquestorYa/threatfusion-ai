@@ -50,3 +50,6 @@ temp/
 
 # Local ML dataset snapshots
 data/snapshots/
+
+# Local trained ML artifacts
+data/models/
