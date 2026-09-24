@@ -42,6 +42,7 @@ trigger review. Behavioral signals are not treated as proof of malware.
 - character n-gram TF-IDF + Logistic Regression development model
 - validation-only threshold selection under explicit false-positive budgets
 - source-wise ML diagnostics
+- frozen-model fresh holdout evaluation workflow
 - trusted local model artifact persistence
 - DNS behavior aggregation
 - explainable hybrid verdicts
@@ -118,7 +119,7 @@ fresh source-aware or time-aware holdout.
 
 Remaining planned work includes:
 
-- stronger final holdout evaluation
+- collect and run the fresh final holdout dataset
 - deployment packaging for a hosted demo
 - optional analyst feedback
 - optional LLM-generated explanations and reports
