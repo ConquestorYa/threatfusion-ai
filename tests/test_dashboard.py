@@ -278,8 +278,6 @@ def test_campaign_rows_are_human_readable_and_privacy_preserving() -> None:
         "Shared client observation"
     )
 
-
-
 def test_timestamp_formatting_and_upload_fingerprint_are_deterministic() -> None:
     assert format_timestamp("2026-09-24T21:30:45+03:00") == (
         "2026-09-24 18:30 UTC"
