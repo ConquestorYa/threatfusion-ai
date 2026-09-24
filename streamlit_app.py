@@ -24,6 +24,7 @@ from threatfusion.dashboard import (
     cluster_rows,
     content_fingerprint,
     cti_status_rows,
+    feedback_label,
     history_rows,
     match_rows,
     persisted_assessment_rows,
@@ -39,7 +40,9 @@ from threatfusion.ml_artifact import load_trusted_ml_artifact
 from threatfusion.ml_evaluation_report import read_frozen_holdout_report
 from threatfusion.persistence import (
     get_analysis_assessments,
+    get_analyst_feedback,
     list_analysis_runs,
+    save_analyst_feedback,
     save_runtime_analysis,
 )
 from threatfusion.reporting import build_analysis_report
@@ -377,13 +380,31 @@ def _show_history(db_path: Path) -> None:
         "Inspect saved run",
         [summary.id for summary in summaries],
     )
-    assessments = get_analysis_assessments(db_path, int(selected_id))
+    run_id = int(selected_id)
+    assessments = get_analysis_assessments(db_path, run_id)
+    feedback = get_analyst_feedback(db_path, run_id)
+    feedback_by_domain = {item.domain: item for item in feedback}
+
     rows = persisted_assessment_rows(assessments)
     if rows:
         frame = pd.DataFrame(rows)
         frame["ML score"] = frame["ML score"].map(
             lambda value: (
                 f"{value:.4f}" if value is not None else ""
+            )
+        )
+        frame["Analyst feedback"] = frame["Domain"].map(
+            lambda domain: feedback_label(
+                feedback_by_domain.get(domain).label
+                if domain in feedback_by_domain
+                else None
+            )
+        )
+        frame["Analyst note"] = frame["Domain"].map(
+            lambda domain: (
+                feedback_by_domain[domain].note or ""
+                if domain in feedback_by_domain
+                else ""
             )
         )
         st.dataframe(
@@ -396,8 +417,68 @@ def _show_history(db_path: Path) -> None:
                     width="medium"
                 ),
                 "Evidence": st.column_config.TextColumn(width="large"),
+                "Analyst feedback": st.column_config.TextColumn(
+                    width="medium"
+                ),
+                "Analyst note": st.column_config.TextColumn(width="large"),
             },
         )
+
+        st.write("**Analyst feedback**")
+        st.caption(
+            "Feedback is local analyst context only. It does not change the "
+            "original verdict, retrain the model, or alter frozen evaluation."
+        )
+
+        feedback_domain = st.selectbox(
+            "Finding to review",
+            [assessment.domain for assessment in assessments],
+            key=f"feedback_domain_{run_id}",
+        )
+        current = feedback_by_domain.get(feedback_domain)
+        feedback_options = {
+            "Confirmed Threat": "confirmed_threat",
+            "Benign": "benign",
+            "Uncertain": "uncertain",
+        }
+        option_labels = list(feedback_options)
+        current_label = (
+            feedback_label(current.label)
+            if current is not None
+            else "Uncertain"
+        )
+        current_index = (
+            option_labels.index(current_label)
+            if current_label in option_labels
+            else option_labels.index("Uncertain")
+        )
+
+        with st.form(f"analyst_feedback_{run_id}_{feedback_domain}"):
+            selected_feedback = st.selectbox(
+                "Analyst label",
+                option_labels,
+                index=current_index,
+            )
+            note = st.text_area(
+                "Optional analyst note",
+                value=current.note if current is not None and current.note else "",
+                max_chars=500,
+            )
+            submitted = st.form_submit_button("Save analyst feedback")
+
+        if submitted:
+            save_analyst_feedback(
+                db_path,
+                run_id,
+                feedback_domain,
+                feedback_options[selected_feedback],
+                note=note,
+            )
+            st.success(
+                "Analyst feedback saved. The original ThreatFusion verdict "
+                "was not changed."
+            )
+            st.rerun()
 
 def _show_model_evaluation(report_path: Path) -> None:
     st.subheader("Model evaluation")
