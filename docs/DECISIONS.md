@@ -222,3 +222,23 @@ assessments; SQLite persistence is an explicit separate step.
 **Reason:** Detection should remain testable without a database, and callers
 should be able to choose whether an analysis is saved. This separation also
 makes a future privacy mode straightforward.
+
+
+## DEC-029: Refresh CTI separately from user analysis
+
+**Decision:** Cache ThreatFox, URLhaus, and SGB IOC records locally in SQLite
+and refresh that cache through an explicit maintenance workflow rather than
+calling external CTI services during each DNS analysis.
+
+**Reason:** User analyses should be fast, reproducible, and independent of
+temporary feed/API availability. Separating refresh from analysis also avoids
+needlessly exposing credentials to the interactive application path.
+
+## DEC-030: Replace cached CTI per source only after successful fetch
+
+**Decision:** The cache replacement operation is source-scoped and atomic.
+Existing records for a source are replaced only after the caller has already
+obtained a complete successful result for that source.
+
+**Reason:** A failed network request must not erase the previous usable cache.
+The storage layer itself remains network-free.

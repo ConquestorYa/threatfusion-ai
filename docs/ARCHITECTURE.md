@@ -81,8 +81,8 @@ flowchart TD
 
 Fresh source-aware or time-aware final evaluation, campaign clustering, and
 the Streamlit dashboard remain planned. Local model artifact persistence,
-domain-probability inference, and privacy-conscious SQLite analysis history are
-implemented.
+domain-probability inference, privacy-conscious SQLite analysis history, and a
+local SQLite CTI cache are implemented.
 
 ## Current Modules
 
@@ -208,6 +208,14 @@ implemented.
 - Runs known IOC matching, normalized ML probability inference, DNS behavior aggregation, and hybrid assessment without networking.
 - Preserves original DNS/IOC evidence and returns matches, probabilities, and per-domain assessments together.
 - Provides a convenience helper that starts directly from DNS CSV text.
+
+### `src/threatfusion/cti_cache.py`
+
+- Stores IOCRecord values from ThreatFox, URLhaus, and SGB in a local SQLite cache.
+- Replaces one source atomically only after that source's caller-supplied fetch has succeeded.
+- Stores source refresh time and aggregate record count.
+- Loads cached IOC records deterministically for runtime matching.
+- Performs no network activity itself; explicit collector orchestration lives in the refresh CLI.
 
 ### `src/threatfusion/persistence.py`
 
