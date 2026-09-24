@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
-from typing import Sequence
 
 from .ml_artifact import TrainedMLArtifact
 from .ml_dataset import DomainSample, normalize_domain_candidate
