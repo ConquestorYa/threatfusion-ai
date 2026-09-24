@@ -10,6 +10,7 @@ import streamlit as st
 _PROJECT_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(_PROJECT_ROOT / "src"))
 
+from threatfusion.campaign import find_related_activity
 from threatfusion.cti_cache import (
     list_cti_cache_status,
     load_ioc_records,
@@ -17,10 +18,12 @@ from threatfusion.cti_cache import (
 from threatfusion.dashboard import (
     assessment_detail,
     assessment_rows,
+    cluster_rows,
     cti_status_rows,
     history_rows,
     match_rows,
     persisted_assessment_rows,
+    relationship_rows,
     summarize_runtime_result,
 )
 from threatfusion.ml_artifact import load_trusted_ml_artifact
@@ -154,8 +157,8 @@ def _show_analysis_result(result, artifact, db_path: Path) -> None:
     )
     st.plotly_chart(figure, width="stretch")
 
-    findings_tab, matches_tab = st.tabs(
-        ["Domain findings", "Known IOC evidence"]
+    findings_tab, matches_tab, campaign_tab = st.tabs(
+        ["Domain findings", "Known IOC evidence", "Related activity"]
     )
 
     with findings_tab:
@@ -197,6 +200,38 @@ def _show_analysis_result(result, artifact, db_path: Path) -> None:
             )
         else:
             st.info("No cached IOC matches were found.")
+
+
+
+    with campaign_tab:
+        report = find_related_activity(result)
+        if report.clusters:
+            st.info(
+                "These groups show possible related suspicious activity based "
+                "on shared local DNS evidence. They do not prove one malware "
+                "campaign."
+            )
+            st.write("**Possible related-activity groups**")
+            st.dataframe(
+                pd.DataFrame(cluster_rows(report)),
+                hide_index=True,
+                width="stretch",
+            )
+            st.write("**Relationship evidence**")
+            st.dataframe(
+                pd.DataFrame(relationship_rows(report)),
+                hide_index=True,
+                width="stretch",
+            )
+            st.caption(
+                "Raw client IP values are not shown. Relationship rows expose "
+                "aggregate shared counts only."
+            )
+        else:
+            st.info(
+                "No possible related-activity groups were found among Known "
+                "Threat, High Risk, or Review domains."
+            )
 
     if st.button("Save aggregate analysis history"):
         run_id = save_runtime_analysis(
