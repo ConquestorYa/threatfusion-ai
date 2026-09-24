@@ -6,6 +6,7 @@ import pytest
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 
+import threatfusion.ml_high_recall as high_recall
 from threatfusion.ml_dataset import DomainSample
 from threatfusion.ml_high_recall import (
     build_high_recall_pipeline,
@@ -161,3 +162,63 @@ def test_high_recall_training_does_not_perform_networking(
     result = run_high_recall_experiment(make_samples(), recall_targets=(0.90,))
 
     assert result.target_evaluations
+
+
+def test_optimized_threshold_selection_matches_brute_force_semantics() -> None:
+    labels = [0, 1, 0, 1, 0, 1]
+    probabilities = [0.95, 0.90, 0.70, 0.65, 0.30, 0.20]
+    target_recall = 2 / 3
+
+    candidates = sorted({0.0, 1.0, *probabilities}, reverse=True)
+    feasible = [
+        calculate_threshold_metrics(
+            labels,
+            probabilities,
+            threshold=threshold,
+        )
+        for threshold in candidates
+    ]
+    feasible = [
+        metrics
+        for metrics in feasible
+        if metrics.recall + 1e-12 >= target_recall
+    ]
+    expected = min(
+        feasible,
+        key=lambda metrics: (
+            metrics.false_positive_rate,
+            -metrics.precision,
+            -metrics.recall,
+            -metrics.threshold,
+        ),
+    )
+
+    actual = select_threshold_for_recall(
+        labels,
+        probabilities,
+        target_recall=target_recall,
+    )
+
+    assert actual == expected
+
+
+def test_threshold_selection_does_not_recompute_full_predictions_per_candidate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail(*args: object, **kwargs: object) -> object:
+        raise AssertionError(
+            "threshold selection must not rebuild full predictions for each candidate"
+        )
+
+    monkeypatch.setattr(high_recall, "calculate_threshold_metrics", fail)
+
+    labels = [index % 2 for index in range(2000)]
+    probabilities = [(index + 1) / 2001 for index in range(2000)]
+
+    result = high_recall.select_threshold_for_recall(
+        labels,
+        probabilities,
+        target_recall=0.90,
+    )
+
+    assert result.recall >= 0.90
