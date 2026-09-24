@@ -52,6 +52,7 @@ trigger review. Behavioral signals are not treated as proof of malware.
 - Streamlit analysis dashboard
 - explainable related-activity clustering
 - privacy-preserving relationship graph
+- public-mode privacy controls and non-root Docker packaging
 - pytest + Ruff CI
 
 ## Local dashboard
@@ -120,10 +121,31 @@ fresh source-aware or time-aware holdout.
 Remaining planned work includes:
 
 - collect and run the fresh final holdout dataset
-- deployment packaging for a hosted demo
+- deploy the prepared container to a hosted environment/domain
 - optional analyst feedback
 - optional LLM-generated explanations and reports
 
 Principle:
 
 **ML detects. LLM explains.**
+
+
+## Hosted demo preparation
+
+The repository includes a non-root Dockerfile and an explicit public mode:
+
+```text
+THREATFUSION_PUBLIC_MODE=1
+```
+
+Public mode disables shared analysis-history saving/browsing so anonymous
+visitors cannot inspect another visitor's persisted domain findings.
+
+Runtime paths can be configured with:
+
+```text
+THREATFUSION_DB_PATH
+THREATFUSION_MODEL_DIR
+```
+
+See `docs/DEPLOYMENT.md` for container and hosting guidance.

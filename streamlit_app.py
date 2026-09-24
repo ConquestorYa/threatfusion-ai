@@ -11,6 +11,7 @@ import streamlit as st
 _PROJECT_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(_PROJECT_ROOT / "src"))
 
+from threatfusion.app_config import load_app_config
 from threatfusion.campaign import find_related_activity
 from threatfusion.cti_cache import (
     list_cti_cache_status,
@@ -37,8 +38,6 @@ from threatfusion.persistence import (
 )
 from threatfusion.runtime_analysis import analyze_dns_csv
 
-DEFAULT_DB_PATH = Path("data/threatfusion.sqlite")
-DEFAULT_MODEL_DIR = Path("data/models/development-001")
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 
 
@@ -187,7 +186,13 @@ def _show_domain_detail(result, domain: str) -> None:
     else:
         st.caption("No strong CTI, ML-tier, or DNS-behavior signal was recorded.")
 
-def _show_analysis_result(result, artifact, db_path: Path) -> None:
+def _show_analysis_result(
+    result,
+    artifact,
+    db_path: Path,
+    *,
+    history_enabled: bool,
+) -> None:
     summary = summarize_runtime_result(result)
 
     st.subheader("Analysis summary")
@@ -301,7 +306,7 @@ def _show_analysis_result(result, artifact, db_path: Path) -> None:
                 "Threat, High Risk, or Review domains."
             )
 
-    if st.button("Save aggregate analysis history"):
+    if history_enabled and st.button("Save aggregate analysis history"):
         run_id = save_runtime_analysis(
             db_path,
             result,
@@ -367,13 +372,28 @@ def main() -> None:
         "and DNS behavior analysis in one explainable workflow."
     )
 
-    db_path = DEFAULT_DB_PATH
-    model_dir = DEFAULT_MODEL_DIR
+    try:
+        config = load_app_config()
+    except ValueError as error:
+        st.error(f"Application configuration is invalid: {error}")
+        return
+
+    db_path = config.db_path
+    model_dir = config.model_dir
     _show_system_status(db_path, model_dir)
 
-    analysis_tab, history_tab = st.tabs(
-        ["Analyze DNS telemetry", "Analysis history"]
-    )
+    if config.public_mode:
+        st.info(
+            "Public mode is enabled. Shared analysis history is disabled so "
+            "one visitor cannot browse another visitor's saved findings."
+        )
+        tabs = st.tabs(["Analyze DNS telemetry"])
+        analysis_tab = tabs[0]
+        history_tab = None
+    else:
+        analysis_tab, history_tab = st.tabs(
+            ["Analyze DNS telemetry", "Analysis history"]
+        )
 
     with analysis_tab:
         st.info(
@@ -440,10 +460,16 @@ def main() -> None:
 
         result = st.session_state.get("analysis_result")
         if result is not None:
-            _show_analysis_result(result, artifact, db_path)
+            _show_analysis_result(
+                result,
+                artifact,
+                db_path,
+                history_enabled=config.history_enabled,
+            )
 
-    with history_tab:
-        _show_history(db_path)
+    if history_tab is not None:
+        with history_tab:
+            _show_history(db_path)
 
 
 if __name__ == "__main__":
