@@ -75,7 +75,7 @@ def _show_system_status(db_path: Path, model_dir: Path) -> None:
         st.sidebar.dataframe(
             pd.DataFrame(cti_status_rows(statuses)),
             hide_index=True,
-            use_container_width=True,
+            width="stretch",
         )
     else:
         st.sidebar.warning("CTI cache is empty")
@@ -100,7 +100,7 @@ def _show_analysis_result(result, artifact, db_path: Path) -> None:
         title="Verdict distribution",
         text_auto=True,
     )
-    st.plotly_chart(figure, use_container_width=True)
+    st.plotly_chart(figure, width="stretch")
 
     findings_tab, matches_tab = st.tabs(
         ["Domain findings", "Known IOC evidence"]
@@ -118,7 +118,7 @@ def _show_analysis_result(result, artifact, db_path: Path) -> None:
             st.dataframe(
                 frame,
                 hide_index=True,
-                use_container_width=True,
+                width="stretch",
             )
         else:
             st.info("No domain assessments were produced.")
@@ -134,7 +134,7 @@ def _show_analysis_result(result, artifact, db_path: Path) -> None:
             st.dataframe(
                 pd.DataFrame(rows),
                 hide_index=True,
-                use_container_width=True,
+                width="stretch",
             )
         else:
             st.info("No cached IOC matches were found.")
@@ -160,7 +160,7 @@ def _show_history(db_path: Path) -> None:
     st.dataframe(
         pd.DataFrame(history_rows(summaries)),
         hide_index=True,
-        use_container_width=True,
+        width="stretch",
     )
 
     selected_id = st.selectbox(
@@ -173,7 +173,7 @@ def _show_history(db_path: Path) -> None:
         st.dataframe(
             pd.DataFrame(rows),
             hide_index=True,
-            use_container_width=True,
+            width="stretch",
         )
 
 
