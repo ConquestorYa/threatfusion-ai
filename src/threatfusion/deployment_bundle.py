@@ -12,6 +12,7 @@ from .cti_cache import (
     replace_source_records,
 )
 from .ml_artifact import load_trusted_ml_artifact
+from .ml_evaluation_report import read_frozen_holdout_report
 from .models import IOCRecord
 
 
@@ -20,6 +21,7 @@ class DeploymentBundle:
     output_dir: Path
     db_path: Path
     model_dir: Path
+    evaluation_report_path: Path | None
     cti_status: tuple[CTICacheStatus, ...]
 
 
@@ -38,6 +40,7 @@ def _validate_output_location(
     source_db: Path,
     source_model_dir: Path,
     output_dir: Path,
+    source_evaluation_report: Path | None,
 ) -> None:
     output = output_dir.resolve()
     source_db_resolved = source_db.resolve()
@@ -47,6 +50,12 @@ def _validate_output_location(
         raise ValueError("output directory must not contain the source database")
     if source_model_resolved.is_relative_to(output):
         raise ValueError("output directory must not contain the source model")
+    if source_evaluation_report is not None:
+        report_resolved = source_evaluation_report.resolve()
+        if report_resolved.is_relative_to(output):
+            raise ValueError(
+                "output directory must not contain the source evaluation report"
+            )
 
 
 def create_deployment_bundle(
@@ -54,19 +63,34 @@ def create_deployment_bundle(
     source_model_dir: Path,
     output_dir: Path,
     *,
+    source_evaluation_report: Path | None = None,
     overwrite: bool = False,
 ) -> DeploymentBundle:
     """Create a sanitized CTI + model runtime directory for hosted deployment."""
     source_db = Path(source_db)
     source_model_dir = Path(source_model_dir)
     output_dir = Path(output_dir)
+    evaluation_source = (
+        Path(source_evaluation_report)
+        if source_evaluation_report is not None
+        else None
+    )
 
-    _validate_output_location(source_db, source_model_dir, output_dir)
+    _validate_output_location(
+        source_db,
+        source_model_dir,
+        output_dir,
+        evaluation_source,
+    )
 
     if not source_db.is_file():
         raise FileNotFoundError("source CTI database does not exist")
 
     load_trusted_ml_artifact(source_model_dir)
+    if evaluation_source is not None:
+        if not evaluation_source.is_file():
+            raise FileNotFoundError("source evaluation report does not exist")
+        read_frozen_holdout_report(evaluation_source)
 
     records = load_ioc_records(source_db)
     statuses = list_cti_cache_status(source_db)
@@ -109,9 +133,24 @@ def create_deployment_bundle(
         target_model_dir / "metadata.json",
     )
 
+    target_evaluation_report: Path | None = None
+    if evaluation_source is not None:
+        target_evaluation_report = (
+            output_dir / "evaluation" / "final_holdout.json"
+        )
+        target_evaluation_report.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+        shutil.copy2(
+            evaluation_source,
+            target_evaluation_report,
+        )
+
     return DeploymentBundle(
         output_dir=output_dir,
         db_path=target_db,
         model_dir=target_model_dir,
+        evaluation_report_path=target_evaluation_report,
         cti_status=tuple(list_cti_cache_status(target_db)),
     )
