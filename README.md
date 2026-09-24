@@ -49,6 +49,8 @@ trigger review. Behavioral signals are not treated as proof of malware.
 - SQLite CTI cache
 - privacy-conscious SQLite analysis history
 - Streamlit analysis dashboard
+- explainable related-activity clustering
+- privacy-preserving relationship graph
 - pytest + Ruff CI
 
 ## Local dashboard
@@ -117,7 +119,6 @@ fresh source-aware or time-aware holdout.
 Remaining planned work includes:
 
 - stronger final holdout evaluation
-- campaign clustering / relationship analysis
 - deployment packaging for a hosted demo
 - optional analyst feedback
 - optional LLM-generated explanations and reports
