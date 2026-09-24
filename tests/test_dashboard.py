@@ -15,6 +15,8 @@ from threatfusion.dashboard import (
     cluster_rows,
     content_fingerprint,
     cti_status_rows,
+    feedback_label,
+    feedback_rows,
     format_timestamp,
     history_rows,
     match_rows,
@@ -33,6 +35,7 @@ from threatfusion.matching import DNSIOCMatch
 from threatfusion.models import IOCRecord, IOCType
 from threatfusion.persistence import (
     AnalysisRunSummary,
+    AnalystFeedback,
     PersistedDomainAssessment,
 )
 from threatfusion.runtime_analysis import RuntimeAnalysisResult
@@ -335,3 +338,29 @@ def test_relationship_graph_data_is_deterministic_and_privacy_preserving() -> No
     assert "Shared response IPs: 1" in edge.hover_text
     assert "Closest time delta: 12.5 s" in edge.hover_text
     assert "10.0.0.1" not in edge.hover_text
+
+
+
+def test_analyst_feedback_rows_are_human_readable() -> None:
+    rows = feedback_rows(
+        [
+            AnalystFeedback(
+                analysis_run_id=7,
+                domain="review.example",
+                label="confirmed_threat",
+                note="Corroborated by analyst investigation",
+                updated_at="2026-09-24T20:15:00+00:00",
+            )
+        ]
+    )
+
+    assert feedback_label(None) == "Not reviewed"
+    assert feedback_label("benign") == "Benign"
+    assert rows == [
+        {
+            "Domain": "review.example",
+            "Analyst feedback": "Confirmed Threat",
+            "Analyst note": "Corroborated by analyst investigation",
+            "Updated at": "2026-09-24 20:15 UTC",
+        }
+    ]
