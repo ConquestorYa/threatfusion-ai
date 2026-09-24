@@ -265,7 +265,8 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 - Convert runtime results into deterministic presentation rows and summary counts.
 - Provide separate DNS-event and unique-domain metrics so domain-level verdict counts are unambiguous.
 - Provide DNS CSV upload, a domain-level Plotly verdict chart, human-readable evidence labels, per-domain detail inspection, domain findings, and known-IOC evidence views.
-- Display local CTI cache status and saved analysis history.
+- Display local CTI cache status and saved analysis history with compact human-readable timestamps.
+- Invalidate in-memory displayed results when uploaded CSV content changes or is removed, preventing stale-result/file mismatches.
 - Keep raw uploaded DNS telemetry in memory and make aggregate history saving explicit.
 - Do not refresh external CTI sources during interactive user analysis.
 

@@ -300,3 +300,13 @@ counts and reason labels, not the actual client IP values.
 
 **Reason:** Client IPs are sensitive local telemetry. The dashboard can explain
 why two domains were linked without exposing the underlying identifiers.
+
+
+## DEC-037: Invalidate displayed analysis when upload content changes
+
+**Decision:** The Streamlit layer fingerprints uploaded CSV bytes and clears the
+current in-memory analysis whenever the upload is changed or removed.
+
+**Reason:** Showing results from a previous file beside a newly selected file
+would be misleading. The fingerprint is used only for local UI state and does
+not persist the uploaded DNS content.
