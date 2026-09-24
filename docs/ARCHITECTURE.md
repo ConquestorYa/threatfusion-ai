@@ -47,20 +47,36 @@ test domains do not influence TF-IDF fitting. The current random stratified
 split is explicitly a development baseline rather than the final evaluation
 protocol.
 
+## Current Hybrid Analysis Flow
+
+```mermaid
+flowchart TD
+    DNS[DNSEvent] --> Match[Known IOC matching]
+    DNS --> Behavior[DNS behavior aggregation]
+    ML[Caller-supplied ML probability + validation thresholds] --> Hybrid[Hybrid assessment]
+    Match --> Hybrid
+    Behavior --> Hybrid
+    Hybrid --> Verdict[known_threat / high_risk / review / low]
+```
+
+The hybrid assessment is an explainable educational risk layer, not a
+calibrated malware probability. Known IOC evidence takes precedence. DNS
+behavior can strengthen an assessment or trigger review, but it is not treated
+as proof of malware.
+
 ## Planned Analysis and Presentation Flow
 
 ```mermaid
 flowchart TD
-    DNS[DNSEvent / unmatched domains] --> Detect[Baseline ML inference integration planned]
-    DNS --> Cluster[Campaign clustering planned]
-    Detect --> Risk[Explainable risk planned]
-    Cluster --> Risk
-    Risk --> Dashboard[Streamlit dashboard planned]
+    Hybrid[Hybrid assessment] --> Persist[SQLite persistence planned]
+    Hybrid --> Cluster[Campaign clustering planned]
+    Persist --> Dashboard[Streamlit dashboard planned]
+    Cluster --> Dashboard
 ```
 
-Runtime integration of the classifier with unmatched DNS observations,
-source-aware/time-aware evaluation, campaign clustering, explainable risk,
-SQLite persistence, and the Streamlit dashboard are not implemented yet.
+Model artifact persistence/inference orchestration, fresh source-aware or
+time-aware final evaluation, campaign clustering, SQLite persistence, and the
+Streamlit dashboard remain planned.
 
 ## Current Modules
 
@@ -104,6 +120,24 @@ SQLite persistence, and the Streamlit dashboard are not implemented yet.
 - Preserves original `DNSEvent` and `IOCRecord` objects as evidence.
 - Ignores malformed IOC values without breaking the whole batch.
 - Ignores unsupported hash and `UNKNOWN` IOC types for DNS matching.
+
+### `src/threatfusion/dns_behavior.py`
+
+- Aggregates local DNS events by normalized query domain.
+- Reports query volume, unique clients, unique response IPs, query types, and
+  comparable observation span.
+- Preserves the original `DNSEvent` ingestion model and performs no network
+  requests or DNS resolution.
+
+### `src/threatfusion/hybrid_assessment.py`
+
+- Combines known IOC match evidence, caller-supplied ML probability tiers, and
+  local DNS behavior signals.
+- Produces explainable `known_threat`, `high_risk`, `review`, or `low`
+  verdicts.
+- Requires ML thresholds to be supplied by the caller rather than hardcoding
+  snapshot-specific operating points.
+- Treats behavior rules as heuristic context, not malware proof.
 
 ### `src/threatfusion/ml_dataset.py`
 

@@ -141,3 +141,32 @@ retune thresholds or select a final model.
 **Reason:** Aggregate recall can hide that one feed type is much harder than
 another. Source-wise diagnostics help explain failure modes, while keeping
 model selection on validation data avoids additional test leakage.
+
+
+## DEC-021: Keep the wider Logistic Regression model as the development candidate
+
+**Decision:** Use character 2-6 TF-IDF with sublinear term frequency and
+balanced Logistic Regression as the current development candidate.
+
+**Reason:** It achieved the highest validation recall among the three tested
+classical candidates at every evaluated false-positive-rate budget. This is a
+development choice only; final claims still require a fresh holdout.
+
+## DEC-022: Use hybrid evidence instead of treating string-only ML as the whole detector
+
+**Decision:** Combine known IOC matches, domain-string ML evidence, and local
+DNS behavior in an explainable hybrid assessment.
+
+**Reason:** Source-wise diagnostics show that domain-string ML alone misses a
+substantial fraction of retained ThreatFox and URLhaus malicious domains at
+usable false-positive rates. Some malicious activity cannot be inferred from a
+domain string alone.
+
+## DEC-023: DNS behavior signals are heuristic context, not malware proof
+
+**Decision:** DNS behavior features may strengthen a risk assessment or trigger
+review, but behavior alone is not described as confirming malware.
+
+**Reason:** High query volume, multiple clients, IP diversity, and similar
+patterns can also occur in benign services. The prototype should expose these
+signals transparently without overstating what they prove.

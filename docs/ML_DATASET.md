@@ -329,3 +329,52 @@ python scripts/evaluate_ml_source_diagnostics.py --snapshot-dir data/snapshots/b
 ```
 
 The output is aggregate-only and never prints domain values.
+
+
+## Development source-diagnostic findings
+
+On `baseline-001`, the wider character 2-6 TF-IDF + sublinear TF + balanced
+Logistic Regression candidate had the highest VALIDATION recall at every tested
+false-positive-rate budget, so it is the current development candidate rather
+than a final production choice.
+
+Its development-test source recall was:
+
+- at about 1% FPR: SGB 0.6364, ThreatFox 0.2691, URLhaus 0.3030
+- at about 5% FPR: SGB 0.7045, ThreatFox 0.4763, URLhaus 0.4343
+- at about 10% FPR: SGB 0.7955, ThreatFox 0.5876, URLhaus 0.5354
+
+These numbers are diagnostic only. The SGB test subset contains only 44
+malicious samples, compared with 970 retained ThreatFox samples and 99
+URLhaus samples, so the source percentages should not be treated as equally
+precise estimates.
+
+The result supports a hybrid design: known IOC matching remains the strongest
+deterministic signal, while domain-string ML is one signal for previously
+unseen domains and local DNS behavior provides additional context.
+
+## Hybrid DNS assessment
+
+The first hybrid analysis layer is intentionally explainable and does not claim
+to be a calibrated malware probability.
+
+It combines:
+
+- existing known IOC matches
+- caller-supplied ML probabilities plus validation-selected thresholds
+- local DNS behavior summaries
+
+DNS behavior is aggregated by normalized query domain and includes query count,
+unique client count, unique response-IP count, observed query types, and a
+comparable observation time span when timestamps permit it.
+
+The hybrid verdicts are:
+
+- `known_threat`: at least one known IOC match exists
+- `high_risk`: strong ML evidence, or medium ML evidence strengthened by
+  multiple DNS behavior signals
+- `review`: weaker ML evidence or multiple behavior signals
+- `low`: insufficient evidence for the stronger categories
+
+Behavior-only signals are heuristic context, not proof of malware. Snapshot-
+specific ML thresholds are not hardcoded into the reusable module.
