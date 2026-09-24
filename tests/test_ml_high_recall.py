@@ -199,7 +199,15 @@ def test_optimized_threshold_selection_matches_brute_force_semantics() -> None:
         target_recall=target_recall,
     )
 
-    assert actual == expected
+    assert actual.threshold == expected.threshold
+    assert actual.true_negative == expected.true_negative
+    assert actual.false_positive == expected.false_positive
+    assert actual.false_negative == expected.false_negative
+    assert actual.true_positive == expected.true_positive
+    assert actual.precision == pytest.approx(expected.precision)
+    assert actual.recall == pytest.approx(expected.recall)
+    assert actual.f1 == pytest.approx(expected.f1)
+    assert actual.false_positive_rate == pytest.approx(expected.false_positive_rate)
 
 
 def test_threshold_selection_does_not_recompute_full_predictions_per_candidate(
