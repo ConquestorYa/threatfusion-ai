@@ -50,6 +50,7 @@ The repository currently implements:
 - A Streamlit MVP with DNS CSV upload, separate event/domain metrics, domain-level verdict distribution, human-readable evidence labels, per-domain detail inspection, known IOC evidence, possible related-activity groups, a privacy-preserving relationship graph, CTI cache status, and opt-in aggregate analysis history.
 - Explainable related-activity clustering that groups suspicious domains only when local DNS telemetry shows a shared client or shared response IP; time proximity is supporting context rather than proof.
 - Public-deployment preparation with environment-configurable runtime paths, a public mode that disables shared analysis history, non-root Docker packaging, and a sanitized deployment-bundle builder that copies only the CTI cache plus trusted ML artifact.
+- Privacy-safe JSON and CSV report export for the current in-memory analysis, containing aggregate/per-domain findings without raw DNS rows or client/response IP values.
 - Automated pytest tests for the model, normalization, correlation, collectors, DNS ingestion, matching, ML dataset, snapshot, split, and baseline evaluation behavior.
 - Ruff checks for code quality.
 - Real live-data validation for the ThreatFox, URLhaus, and SGB collectors in addition to network-free automated tests.
