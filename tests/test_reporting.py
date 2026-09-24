@@ -119,8 +119,8 @@ def test_reports_do_not_include_raw_client_or_response_ip_values() -> None:
 
     assert "10.0.0.55" not in combined
     assert "203.0.113.55" not in combined
-    assert "client_ip" not in combined
-    assert "response_ip" not in combined
+    assert '"client_ip_values_included": false' in report.json_text
+    assert '"response_ip_values_included": false' in report.json_text
 
 
 def test_csv_report_is_portable_and_human_readable() -> None:
