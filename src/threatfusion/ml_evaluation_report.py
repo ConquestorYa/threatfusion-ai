@@ -130,7 +130,7 @@ def write_frozen_holdout_report(
 
 def _metric_from_mapping(raw: object) -> HoldoutMetricReport:
     if not isinstance(raw, dict):
-        raise ValueError("holdout metric report must be an object")
+        raise TypeError("holdout metric report must be an object")
     try:
         return HoldoutMetricReport(**raw)
     except TypeError as error:
@@ -139,7 +139,7 @@ def _metric_from_mapping(raw: object) -> HoldoutMetricReport:
 
 def _source_from_mapping(raw: object) -> HoldoutSourceRecallReport:
     if not isinstance(raw, dict):
-        raise ValueError("holdout source recall must be an object")
+        raise TypeError("holdout source recall must be an object")
     try:
         return HoldoutSourceRecallReport(**raw)
     except TypeError as error:
@@ -154,7 +154,7 @@ def read_frozen_holdout_report(path: Path) -> FrozenHoldoutReport:
         raise ValueError("holdout report is invalid JSON") from error
 
     if not isinstance(raw, dict):
-        raise ValueError("holdout report must be a JSON object")
+        raise TypeError("holdout report must be a JSON object")
 
     if raw.get("schema_version") != _SCHEMA_VERSION:
         raise ValueError("unsupported holdout report schema version")
@@ -163,7 +163,7 @@ def read_frozen_holdout_report(path: Path) -> FrozenHoldoutReport:
 
     source_raw = raw.get("source_recalls")
     if not isinstance(source_raw, list):
-        raise ValueError("holdout source recalls must be a list")
+        raise TypeError("holdout source recalls must be a list")
 
     try:
         report = FrozenHoldoutReport(
