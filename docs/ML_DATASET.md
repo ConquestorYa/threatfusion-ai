@@ -78,13 +78,20 @@ Dataset construction is intentionally a separate concern from model training. Th
 
 The project intentionally keeps this layer simple: it is a static data contract, not a machine-learning pipeline.
 
-## Planned baseline model
+## Baseline model
 
-**Not implemented yet.** The planned first baseline is character n-gram TF-IDF
-features followed by Logistic Regression. This is intended to be an
-explainable and reproducible starting point, not the final model.
+The first baseline is implemented as character n-gram TF-IDF features
+(`analyzer="char"`, n-grams 3 through 5) followed by Logistic Regression.
+The vectorizer and classifier are fitted only after the deterministic
+train/test split so the held-out test domains do not influence the learned
+vocabulary or IDF statistics.
 
-No model training or evaluation currently exists in this layer.
+The baseline reports precision, recall, F1, false-positive rate, and the
+TN/FP/FN/TP confusion-matrix counts. Accuracy is intentionally not the primary
+metric because the persisted baseline dataset is class-imbalanced.
+
+This is the first explainable and reproducible development baseline, not the
+final model or final evaluation protocol.
 
 ## Baseline development split
 
@@ -138,9 +145,10 @@ precedence is applied. Malicious source counts describe the final retained
 malicious samples, so the first source for a duplicate normalized domain wins
 deterministically under the existing dataset rules.
 
-Model training is still not implemented. Snapshot construction also does not
-invoke the baseline split, calculate metrics, or perform collection. The
-separate snapshot I/O layer persists completed snapshots locally.
+Snapshot construction itself does not train a model, invoke the baseline
+split, calculate metrics, or perform collection. The separate snapshot I/O
+layer persists completed snapshots locally, and the baseline evaluation layer
+loads those saved samples for training and held-out development evaluation.
 
 ## First pinned live snapshot
 
@@ -196,3 +204,22 @@ The first live collection run produced these aggregate results:
 
 These numbers describe that one live collection run and may differ in later
 runs as the live CTI sources change.
+
+## Running the baseline evaluation
+
+The command-line evaluation utility reads an existing local snapshot rather
+than re-fetching live feeds:
+
+```text
+python scripts/evaluate_ml_baseline.py --snapshot-dir data/snapshots/baseline-001
+```
+
+Defaults are an 80/20 stratified development split and `random_state=42`.
+Output is aggregate-only: split sizes, confusion-matrix counts, precision,
+recall, F1, and false-positive rate. It does not print domain values and does
+not perform networking.
+
+The random stratified split remains a development baseline. Source-aware
+evaluation and time-aware evaluation are still required as stronger later
+checks before treating the measured performance as representative of
+real-world DNS traffic.
