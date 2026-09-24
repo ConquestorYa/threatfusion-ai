@@ -44,6 +44,7 @@ The repository currently implements:
 - An explainable hybrid domain assessment that combines known IOC evidence, ML probability tiers, and local DNS behavior into known_threat / high_risk / review / low verdicts.
 - Local persistence and trusted loading of the selected development ML pipeline together with validation-selected high / medium / low thresholds, plus normalized runtime probability inference.
 - A reusable runtime analysis pipeline that connects DNS CSV / DNSEvent input, known IOC matching, persisted ML inference, DNS behavior aggregation, and explainable hybrid verdicts in one local workflow.
+- Privacy-conscious SQLite analysis history that stores run summaries and per-domain findings without retaining raw uploaded DNS rows or client IP values by default.
 - Automated pytest tests for the model, normalization, correlation, collectors, DNS ingestion, matching, ML dataset, snapshot, split, and baseline evaluation behavior.
 - Ruff checks for code quality.
 - Real live-data validation for the ThreatFox, URLhaus, and SGB collectors in addition to network-free automated tests.
@@ -75,7 +76,7 @@ The following capabilities are planned and are not implemented in the current re
 - A fresh source-aware or time-aware final holdout after the current development diagnostics.
 - Campaign clustering.
 - A model evaluation dashboard.
-- A Streamlit dashboard using the implemented runtime analysis pipeline.
+- A Streamlit dashboard using the implemented runtime analysis pipeline and SQLite analysis history.
 - An optional threat relationship graph.
 - Optional analyst feedback.
 - Optional LLM-generated analyst reports.
