@@ -107,3 +107,26 @@
 **Decision:** High-recall operating thresholds are selected on a dedicated validation split and are never selected by inspecting test-set performance.
 
 **Reason:** Lowering a classifier threshold can increase malicious-domain recall, but choosing that threshold on the test set would leak evaluation information and make the reported result optimistic. An untouched test set provides a more credible final measurement of each validation-selected operating point.
+
+
+## DEC-018: Compare useful recall under explicit false-positive budgets
+
+**Decision:** After the high-recall experiment, compare a small predefined set
+of classical domain-string models at validation false-positive-rate budgets of
+0.1%, 1%, 5%, and 10%.
+
+**Reason:** Maximizing recall without constraining false positives can produce
+an unusable detector. Security operations need to understand how much malicious
+coverage is achievable at an acceptable alert cost. Model and threshold
+selection therefore happen on validation data under explicit false-positive
+constraints.
+
+## DEC-019: Treat the repeatedly inspected test split as development-only
+
+**Decision:** The current shared test split is a development test once its
+results have influenced further model choices. It must not be used as the sole
+basis for final performance claims.
+
+**Reason:** Repeatedly inspecting test results indirectly tunes development to
+that data. Final reported performance should later be measured on a fresh
+source-aware or time-aware holdout.
