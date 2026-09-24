@@ -10,6 +10,7 @@ from pathlib import Path
 class AppConfig:
     db_path: Path
     model_dir: Path
+    evaluation_report_path: Path
     public_mode: bool
 
     @property
@@ -59,6 +60,11 @@ def load_app_config(
             values,
             "THREATFUSION_MODEL_DIR",
             "data/models/development-001",
+        ),
+        evaluation_report_path=_path_value(
+            values,
+            "THREATFUSION_EVALUATION_REPORT",
+            "data/evaluation/final_holdout.json",
         ),
         public_mode=_parse_bool(
             values.get("THREATFUSION_PUBLIC_MODE"),

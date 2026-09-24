@@ -10,6 +10,9 @@ def test_default_config_is_local_mode() -> None:
 
     assert config.db_path == Path("data/threatfusion.sqlite")
     assert config.model_dir == Path("data/models/development-001")
+    assert config.evaluation_report_path == Path(
+        "data/evaluation/final_holdout.json"
+    )
     assert config.public_mode is False
     assert config.history_enabled is True
 
@@ -20,6 +23,7 @@ def test_public_mode_disables_history_and_supports_custom_paths() -> None:
             "THREATFUSION_PUBLIC_MODE": "true",
             "THREATFUSION_DB_PATH": "/runtime/threatfusion.sqlite",
             "THREATFUSION_MODEL_DIR": "/runtime/model",
+            "THREATFUSION_EVALUATION_REPORT": "/runtime/evaluation/final_holdout.json",
         }
     )
 
@@ -27,6 +31,9 @@ def test_public_mode_disables_history_and_supports_custom_paths() -> None:
     assert config.history_enabled is False
     assert config.db_path == Path("/runtime/threatfusion.sqlite")
     assert config.model_dir == Path("/runtime/model")
+    assert config.evaluation_report_path == Path(
+        "/runtime/evaluation/final_holdout.json"
+    )
 
 
 @pytest.mark.parametrize("value", ["1", "TRUE", "yes", "On"])
@@ -47,3 +54,9 @@ def test_invalid_public_mode_value_is_rejected() -> None:
 def test_empty_runtime_path_is_rejected() -> None:
     with pytest.raises(ValueError, match="THREATFUSION_DB_PATH"):
         load_app_config({"THREATFUSION_DB_PATH": "   "})
+
+
+
+def test_empty_evaluation_report_path_is_rejected() -> None:
+    with pytest.raises(ValueError, match="THREATFUSION_EVALUATION_REPORT"):
+        load_app_config({"THREATFUSION_EVALUATION_REPORT": "   "})

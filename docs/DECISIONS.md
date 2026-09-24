@@ -434,3 +434,23 @@ SQLite first.
 
 **Reason:** Report generation should remain independent of persistence and work
 in public mode, where shared history is intentionally disabled.
+
+
+## DEC-050: Persist final holdout results as aggregate-only JSON
+
+**Decision:** The frozen holdout evaluator may write a deterministic JSON
+report containing snapshot metadata, aggregate operating-point metrics, and
+source-wise malicious recall, but no domain rows.
+
+**Reason:** The dashboard and hosted demo should be able to show model
+evaluation evidence without shipping the holdout dataset itself or exposing
+individual malicious/benign domains.
+
+## DEC-051: Treat the model-evaluation dashboard as read-only evidence
+
+**Decision:** The Streamlit Model evaluation tab reads an already-generated
+holdout report and never retrains the model or changes thresholds.
+
+**Reason:** Final evaluation must remain separated from model development.
+Turning the dashboard into a tuning surface would weaken the frozen-holdout
+boundary.

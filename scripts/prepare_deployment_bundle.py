@@ -30,6 +30,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path("data/deployment/runtime"),
     )
+    parser.add_argument(
+        "--evaluation-report",
+        type=Path,
+        default=None,
+    )
     parser.add_argument("--overwrite", action="store_true")
     return parser
 
@@ -42,6 +47,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.source_db,
             args.model_dir,
             args.output_dir,
+            source_evaluation_report=args.evaluation_report,
             overwrite=args.overwrite,
         )
     except (FileNotFoundError, OSError, TypeError, ValueError) as error:
@@ -53,6 +59,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"  Output directory: {bundle.output_dir}")
     print(f"  CTI database: {bundle.db_path}")
     print(f"  Model directory: {bundle.model_dir}")
+    if bundle.evaluation_report_path is not None:
+        print(
+            "  Evaluation report: "
+            f"{bundle.evaluation_report_path}"
+        )
+    else:
+        print("  Evaluation report: not included")
     print("  CTI cache:")
     for status in bundle.cti_status:
         print(f"    {status.source}: {status.record_count} records")

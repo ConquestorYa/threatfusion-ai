@@ -1,6 +1,6 @@
 # Architecture
 
-This document distinguishes the current implementation from the planned system. The current architecture includes IOC collection, correlation, DNS telemetry ingestion, in-memory known-IOC matching, reproducible ML dataset snapshots, persisted development-model inference, DNS behavior aggregation, explainable hybrid runtime assessment, SQLite persistence/cache layers, related-activity clustering, a Streamlit dashboard, and container/public-mode deployment packaging. The actual fresh final holdout measurement and hosted domain deployment remain planned.
+This document distinguishes the current implementation from the planned system. The current architecture includes IOC collection, correlation, DNS telemetry ingestion, in-memory known-IOC matching, reproducible ML dataset snapshots, persisted development-model inference, DNS behavior aggregation, explainable hybrid runtime assessment, SQLite persistence/cache layers, related-activity clustering, a Streamlit dashboard, and container/public-mode deployment packaging. The actual fresh final holdout measurement and hosted domain deployment remain planned; the evaluator can now persist an aggregate report that the dashboard can render.
 
 ## Current Data Flow
 
@@ -108,7 +108,9 @@ flowchart TD
     Bundle --> Container[Non-root container + public mode]
     Container --> Hosted[Hosted deployment planned]
     Holdout[Later disjoint snapshot] --> Eval[Frozen artifact holdout evaluator]
-    Eval --> Hosted
+    Eval --> EvalReport[Aggregate JSON evaluation report]
+    EvalReport --> Dashboard[Model evaluation tab]
+    Dashboard --> Hosted
 ```
 
 Fresh source-aware or time-aware final evaluation and hosted deployment
@@ -274,6 +276,13 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 - Invalidate in-memory displayed results when uploaded CSV content changes or is removed, preventing stale-result/file mismatches.
 - Keep raw uploaded DNS telemetry in memory and make aggregate history saving explicit.
 - Do not refresh external CTI sources during interactive user analysis.
+
+### `src/threatfusion/ml_evaluation_report.py` and `evaluation_dashboard.py`
+
+- Serialize frozen final-holdout metrics into an aggregate-only JSON report.
+- Preserve model name, snapshot dates, overlap-removal counts, frozen operating-point metrics, and source-wise malicious recall without storing domain rows.
+- Provide deterministic dashboard rows for the model-evaluation tab.
+- Keep evaluation reporting separate from model training and threshold selection.
 
 ### `src/threatfusion/ml_source_diagnostics.py`
 

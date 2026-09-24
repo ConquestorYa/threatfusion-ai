@@ -129,3 +129,25 @@ A public demo should also provide:
 
 ThreatFusion AI remains an educational/portfolio security prototype and should
 not be presented as a production SIEM, EDR, or guaranteed malware detector.
+
+
+## Optional final-evaluation report
+
+The public dashboard can display an aggregate frozen-holdout report through:
+
+```text
+THREATFUSION_EVALUATION_REPORT=/runtime/evaluation/final_holdout.json
+```
+
+The report is optional. Before the final holdout is collected, the Model
+evaluation tab shows a clear development-status message.
+
+To include a completed aggregate report in the sanitized runtime bundle:
+
+```powershell
+python scripts\prepare_deployment_bundle.py \
+  --evaluation-report data\evaluation\final_holdout.json
+```
+
+The report contains aggregate metrics and source-level recall only; it does not
+contain holdout domain rows.

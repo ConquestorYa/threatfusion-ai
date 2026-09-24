@@ -42,14 +42,14 @@ trigger review. Behavioral signals are not treated as proof of malware.
 - character n-gram TF-IDF + Logistic Regression development model
 - validation-only threshold selection under explicit false-positive budgets
 - source-wise ML diagnostics
-- frozen-model fresh holdout evaluation workflow
+- frozen-model fresh holdout evaluation workflow and aggregate JSON reporting
 - trusted local model artifact persistence
 - DNS behavior aggregation
 - explainable hybrid verdicts
 - reusable runtime analysis pipeline
 - SQLite CTI cache
 - privacy-conscious SQLite analysis history
-- Streamlit analysis dashboard
+- Streamlit analysis dashboard with a dedicated model-evaluation view
 - explainable related-activity clustering
 - privacy-preserving relationship graph
 - public-mode privacy controls and non-root Docker packaging
@@ -114,8 +114,11 @@ The current local artifact uses validation-selected score thresholds at 1%,
 5%, and 10% false-positive-rate budgets. These scores are model decision
 outputs, not literal probabilities that a domain is malware.
 
-The current evaluation is development-only. Final performance claims require a
-fresh source-aware or time-aware holdout.
+The current model artifact remains development-only until a separately
+collected disjoint holdout is measured. When that evaluation is run with
+`--json-output data/evaluation/final_holdout.json`, the Streamlit
+`Model evaluation` tab displays the frozen operating-point metrics and
+source-wise malicious recall.
 
 ## Project direction
 
@@ -147,13 +150,15 @@ Runtime paths can be configured with:
 ```text
 THREATFUSION_DB_PATH
 THREATFUSION_MODEL_DIR
+THREATFUSION_EVALUATION_REPORT
 ```
 
 Before hosting, create a sanitized runtime bundle instead of mounting the
 developer data directory:
 
 ```powershell
-python scripts\prepare_deployment_bundle.py
+python scripts\prepare_deployment_bundle.py \
+  --evaluation-report data\evaluation\final_holdout.json
 ```
 
 This copies only the CTI cache and trusted ML artifact into

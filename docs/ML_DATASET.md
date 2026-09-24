@@ -447,11 +447,11 @@ The evaluator is local and network-free:
 python scripts/evaluate_ml_final_holdout.py \
   --artifact-dir data/models/development-001 \
   --development-snapshot-dir data/snapshots/baseline-001 \
-  --holdout-snapshot-dir data/snapshots/holdout-001
+  --holdout-snapshot-dir data/snapshots/holdout-001 \
+  --json-output data/evaluation/final_holdout.json
 ```
 
-The holdout snapshot itself should be collected separately with a newer pinned
-benign snapshot date. For example, the existing live snapshot collector can be
+The optional JSON output contains aggregate metrics/source recall only and is what the Streamlit Model evaluation tab reads. It does not contain domain rows.\n\nThe holdout snapshot itself should be collected separately with a newer pinned\nbenign snapshot date. For example, the existing live snapshot collector can be
 used with an explicitly newer Tranco list ID/date and a new output directory.
 
 This is a **fresh-collection disjoint holdout**, not a strict IOC first-seen

@@ -30,7 +30,13 @@ from threatfusion.dashboard import (
     relationship_rows,
     summarize_runtime_result,
 )
+from threatfusion.evaluation_dashboard import (
+    operating_point_rows,
+    source_recall_rows,
+    summarize_holdout_report,
+)
 from threatfusion.ml_artifact import load_trusted_ml_artifact
+from threatfusion.ml_evaluation_report import read_frozen_holdout_report
 from threatfusion.persistence import (
     get_analysis_assessments,
     list_analysis_runs,
@@ -117,7 +123,11 @@ def _relationship_figure(report, result) -> go.Figure:
     return figure
 
 
-def _show_system_status(db_path: Path, model_dir: Path) -> None:
+def _show_system_status(
+    db_path: Path,
+    model_dir: Path,
+    evaluation_report_path: Path,
+) -> None:
     st.sidebar.header("System status")
 
     model_path = model_dir / "model.joblib"
@@ -137,6 +147,11 @@ def _show_system_status(db_path: Path, model_dir: Path) -> None:
         )
     else:
         st.sidebar.warning("CTI cache is empty")
+
+    if evaluation_report_path.is_file():
+        st.sidebar.success("Final holdout report available")
+    else:
+        st.sidebar.info("Final holdout report not collected yet")
 
 def _show_domain_detail(result, domain: str) -> None:
     assessment = next(
@@ -384,6 +399,116 @@ def _show_history(db_path: Path) -> None:
             },
         )
 
+def _show_model_evaluation(report_path: Path) -> None:
+    st.subheader("Model evaluation")
+
+    if not report_path.is_file():
+        st.info(
+            "No final holdout report is available yet. The model remains in "
+            "development status until a separately collected disjoint holdout "
+            "is evaluated with the frozen artifact and thresholds."
+        )
+        st.code(
+            "python scripts\\evaluate_ml_final_holdout.py "
+            "--artifact-dir data\\models\\development-001 "
+            "--development-snapshot-dir data\\snapshots\\baseline-001 "
+            "--holdout-snapshot-dir data\\snapshots\\holdout-001 "
+            "--json-output data\\evaluation\\final_holdout.json",
+            language="powershell",
+        )
+        return
+
+    try:
+        report = read_frozen_holdout_report(report_path)
+    except (OSError, TypeError, ValueError) as error:
+        st.error("The final holdout report could not be loaded.")
+        st.caption(type(error).__name__)
+        return
+
+    summary = summarize_holdout_report(report)
+
+    st.success(
+        "Frozen-model holdout report loaded. No retraining or threshold "
+        "tuning was performed on this holdout."
+    )
+    st.write(f"**Model:** {summary.model_name}")
+    st.write(
+        "**Snapshot dates:** "
+        f"development {summary.development_snapshot_date} → "
+        f"holdout {summary.holdout_snapshot_date}"
+    )
+
+    columns = st.columns(5)
+    columns[0].metric("Input samples", summary.input_count)
+    columns[1].metric("Overlap removed", summary.overlap_removed)
+    columns[2].metric("Retained", summary.retained_count)
+    columns[3].metric("Malicious", summary.malicious_count)
+    columns[4].metric("Benign", summary.benign_count)
+
+    rows = operating_point_rows(report)
+    frame = pd.DataFrame(rows)
+    display_frame = frame.copy()
+    for column in (
+        "Precision",
+        "Recall",
+        "F1",
+        "False-positive rate",
+    ):
+        display_frame[column] = display_frame[column].map(
+            lambda value: f"{value:.2%}"
+        )
+    display_frame["Threshold"] = display_frame["Threshold"].map(
+        lambda value: f"{value:.6f}"
+    )
+
+    st.write("**Frozen operating points**")
+    st.dataframe(
+        display_frame,
+        hide_index=True,
+        width="stretch",
+    )
+
+    chart_frame = frame[
+        ["Operating point", "Recall", "False-positive rate"]
+    ].melt(
+        id_vars="Operating point",
+        var_name="Metric",
+        value_name="Rate",
+    )
+    figure = px.bar(
+        chart_frame,
+        x="Operating point",
+        y="Rate",
+        color="Metric",
+        barmode="group",
+        title="Final holdout recall vs false-positive rate",
+        labels={"Rate": "Rate"},
+    )
+    figure.update_yaxes(tickformat=".0%")
+    st.plotly_chart(figure, width="stretch")
+
+    source_rows = source_recall_rows(report)
+    if source_rows:
+        source_frame = pd.DataFrame(source_rows)
+        for column in ("High recall", "Medium recall", "Low recall"):
+            source_frame[column] = source_frame[column].map(
+                lambda value: f"{value:.2%}"
+            )
+        st.write("**Malicious recall by retained source**")
+        st.dataframe(
+            source_frame,
+            hide_index=True,
+            width="stretch",
+        )
+
+    st.caption(
+        "Protocol: fresh-collection disjoint holdout. Every domain seen in "
+        "the development snapshot is removed before evaluation. This is not "
+        "a strict IOC first-seen temporal split because DomainSample does not "
+        "store malicious IOC first_seen timestamps."
+    )
+
+
 def main() -> None:
     st.set_page_config(
         page_title="ThreatFusion AI",
@@ -405,19 +530,28 @@ def main() -> None:
 
     db_path = config.db_path
     model_dir = config.model_dir
-    _show_system_status(db_path, model_dir)
+    _show_system_status(
+        db_path,
+        model_dir,
+        config.evaluation_report_path,
+    )
 
     if config.public_mode:
         st.info(
             "Public mode is enabled. Shared analysis history is disabled so "
             "one visitor cannot browse another visitor's saved findings."
         )
-        tabs = st.tabs(["Analyze DNS telemetry"])
-        analysis_tab = tabs[0]
+        analysis_tab, evaluation_tab = st.tabs(
+            ["Analyze DNS telemetry", "Model evaluation"]
+        )
         history_tab = None
     else:
-        analysis_tab, history_tab = st.tabs(
-            ["Analyze DNS telemetry", "Analysis history"]
+        analysis_tab, evaluation_tab, history_tab = st.tabs(
+            [
+                "Analyze DNS telemetry",
+                "Model evaluation",
+                "Analysis history",
+            ]
         )
 
     with analysis_tab:
@@ -491,6 +625,9 @@ def main() -> None:
                 db_path,
                 history_enabled=config.history_enabled,
             )
+
+    with evaluation_tab:
+        _show_model_evaluation(config.evaluation_report_path)
 
     if history_tab is not None:
         with history_tab:

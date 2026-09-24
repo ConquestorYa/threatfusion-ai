@@ -14,6 +14,11 @@ from threatfusion.ml_artifact import (
     write_ml_artifact,
 )
 from threatfusion.ml_dataset import DomainSample
+from threatfusion.ml_evaluation_report import (
+    FrozenHoldoutReport,
+    HoldoutMetricReport,
+    write_frozen_holdout_report,
+)
 from threatfusion.models import IOCRecord, IOCType
 
 
@@ -28,6 +33,39 @@ def make_model_samples(count_per_label: int = 30) -> list[DomainSample]:
             for index in range(count_per_label)
         ],
     ]
+
+
+def make_evaluation_report(path):
+    metric = HoldoutMetricReport(
+        threshold=0.8,
+        precision=0.5,
+        recall=0.4,
+        f1=0.4444,
+        false_positive_rate=0.01,
+        true_negative=99,
+        false_positive=1,
+        false_negative=6,
+        true_positive=4,
+    )
+    report = FrozenHoldoutReport(
+        schema_version=1,
+        protocol="fresh_collection_disjoint",
+        generated_at="2026-09-25T12:00:00+00:00",
+        model_name="model-a",
+        development_snapshot_date="2026-09-23",
+        holdout_snapshot_date="2026-09-25",
+        input_count=120,
+        retained_count=110,
+        overlap_removed=10,
+        malicious_count=10,
+        benign_count=100,
+        high=metric,
+        medium=metric,
+        low=metric,
+        source_recalls=(),
+    )
+    write_frozen_holdout_report(report, path)
+    return path
 
 
 def prepare_sources(tmp_path):
@@ -76,6 +114,7 @@ def test_bundle_contains_cti_and_model_but_not_analysis_history(tmp_path) -> Non
     assert (bundle.model_dir / "model.joblib").exists()
     assert (bundle.model_dir / "metadata.json").exists()
     assert len(load_ioc_records(bundle.db_path)) == 2
+    assert bundle.evaluation_report_path is None
     assert [status.source for status in bundle.cti_status] == [
         "SGB",
         "ThreatFox",
@@ -163,3 +202,36 @@ def test_bundle_creation_does_not_perform_networking(
     )
 
     assert bundle.db_path.exists()
+
+
+
+def test_bundle_optionally_includes_valid_evaluation_report(tmp_path) -> None:
+    source_db, model_dir = prepare_sources(tmp_path)
+    report_path = make_evaluation_report(tmp_path / "final_holdout.json")
+
+    bundle = create_deployment_bundle(
+        source_db,
+        model_dir,
+        tmp_path / "runtime-with-report",
+        source_evaluation_report=report_path,
+    )
+
+    assert bundle.evaluation_report_path is not None
+    assert bundle.evaluation_report_path.exists()
+    assert bundle.evaluation_report_path.parent.name == "evaluation"
+    assert (
+        bundle.evaluation_report_path.read_text(encoding="utf-8")
+        == report_path.read_text(encoding="utf-8")
+    )
+
+
+def test_bundle_rejects_missing_evaluation_report(tmp_path) -> None:
+    source_db, model_dir = prepare_sources(tmp_path)
+
+    with pytest.raises(FileNotFoundError, match="evaluation report"):
+        create_deployment_bundle(
+            source_db,
+            model_dir,
+            tmp_path / "runtime-missing-report",
+            source_evaluation_report=tmp_path / "missing.json",
+        )
