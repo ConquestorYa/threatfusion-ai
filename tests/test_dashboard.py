@@ -2,15 +2,23 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from threatfusion.campaign import (
+    DomainRelationship,
+    RelatedActivityCluster,
+    RelatedActivityReport,
+)
 from threatfusion.cti_cache import CTICacheStatus
 from threatfusion.dashboard import (
     assessment_detail,
     assessment_rows,
+    cluster_rows,
     cti_status_rows,
     history_rows,
     match_rows,
     persisted_assessment_rows,
     reason_label,
+    relationship_reason_label,
+    relationship_rows,
     summarize_runtime_result,
     verdict_label,
 )
@@ -224,3 +232,51 @@ def test_persisted_assessment_rows_are_friendly_and_sorted() -> None:
     assert [row["Domain"] for row in rows] == ["a.example", "z.example"]
     assert rows[0]["Verdict"] == "High Risk"
     assert rows[0]["Evidence"] == "High ML score tier"
+
+
+
+def test_campaign_rows_are_human_readable_and_privacy_preserving() -> None:
+    relationship = DomainRelationship(
+        domain_a="a.example",
+        domain_b="b.example",
+        shared_client_count=2,
+        shared_response_ip_count=1,
+        min_time_delta_seconds=30.0,
+        reasons=(
+            "shared_client",
+            "shared_response_ip",
+            "time_proximity",
+        ),
+    )
+    report = RelatedActivityReport(
+        clusters=(
+            RelatedActivityCluster(
+                cluster_id="group-1",
+                domains=("a.example", "b.example"),
+                relationships=(relationship,),
+            ),
+        ),
+        relationships=(relationship,),
+    )
+
+    groups = cluster_rows(report)
+    relationships = relationship_rows(report)
+
+    assert groups == [
+        {
+            "Group": "group-1",
+            "Domains": "a.example, b.example",
+            "Domain count": 2,
+            "Relationships": 1,
+        }
+    ]
+    assert relationships[0]["Shared clients"] == 2
+    assert relationships[0]["Shared response IPs"] == 1
+    assert relationships[0]["Evidence"] == (
+        "Shared client observation; Shared response IP observation; "
+        "Observed close together in time"
+    )
+    assert "client_ip" not in relationships[0]
+    assert relationship_reason_label("shared_client") == (
+        "Shared client observation"
+    )
