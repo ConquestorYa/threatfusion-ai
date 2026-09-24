@@ -40,6 +40,7 @@ The repository currently implements:
 - A high-recall development evaluation using balanced Logistic Regression plus validation-only threshold selection.
 - A small classical-model comparison that selects thresholds under explicit validation false-positive-rate budgets before measuring the shared development test split.
 - Source-wise malicious recall diagnostics that show how ThreatFox, URLhaus, SGB, or other retained malicious sources behave under the same validation-selected thresholds.
+- A frozen-model fresh holdout evaluator that removes all development-snapshot domain overlap and measures the unchanged artifact thresholds on a separately collected later snapshot.
 - DNS behavior aggregation for query volume, client spread, response-IP diversity, query-type diversity, and observation span.
 - An explainable hybrid domain assessment that combines known IOC evidence, ML probability tiers, and local DNS behavior into known_threat / high_risk / review / low verdicts.
 - Local persistence and trusted loading of the selected development ML pipeline together with validation-selected high / medium / low thresholds, plus normalized runtime probability inference.
@@ -76,7 +77,7 @@ Threat URLs, domains, IP addresses, and hashes are treated strictly as data. The
 The following capabilities are planned and are not implemented in the current repository:
 
 - Broader multi-source correlation workflows.
-- A fresh source-aware or time-aware final holdout after the current development diagnostics.
+- Collection and one-time measurement of a fresh final holdout snapshot using the implemented frozen-model evaluator.
 - A model evaluation dashboard.
 - Optional analyst feedback.
 - Optional LLM-generated analyst reports.
