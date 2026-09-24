@@ -388,13 +388,19 @@ def save_analyst_feedback(
     updated_at: datetime | None = None,
 ) -> AnalystFeedback:
     """Save one current analyst label for a persisted run/domain finding."""
+    if not isinstance(label, str):
+        raise TypeError("analyst feedback label must be a string")
     if label not in _FEEDBACK_LABELS:
         raise ValueError("unsupported analyst feedback label")
-    if not isinstance(domain, str) or not domain.strip():
+    if not isinstance(domain, str):
+        raise TypeError("feedback domain must be a string")
+    if not domain.strip():
         raise ValueError("feedback domain must be a non-empty string")
+    if note is not None and not isinstance(note, str):
+        raise TypeError("analyst feedback note must be a string")
 
     normalized_domain = domain.strip()
-    normalized_note = note.strip() if isinstance(note, str) else None
+    normalized_note = note.strip() if note is not None else None
     if normalized_note == "":
         normalized_note = None
     if (
