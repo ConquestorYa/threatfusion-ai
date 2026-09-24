@@ -19,6 +19,7 @@ from threatfusion.dashboard import (
     assessment_detail,
     assessment_rows,
     cluster_rows,
+    content_fingerprint,
     cti_status_rows,
     history_rows,
     match_rows,
@@ -117,8 +118,14 @@ def _show_domain_detail(result, domain: str) -> None:
     else:
         st.write("**Known CTI sources:** No cached IOC match")
 
+    if detail["verdict"] == "Known Threat" and sources:
+        st.caption(
+            "Known CTI evidence determines the Known Threat verdict. "
+            "ML and DNS-behavior signals are shown as additional context."
+        )
+
     evidence = detail["evidence"]
-    st.write("**Why this verdict?**")
+    st.write("**Evidence observed**")
     if evidence:
         for item in evidence:
             st.markdown(f"- {item}")
@@ -170,6 +177,13 @@ def _show_analysis_result(result, artifact, db_path: Path) -> None:
                 frame,
                 hide_index=True,
                 width="stretch",
+                column_config={
+                    "Domain": st.column_config.TextColumn(width="medium"),
+                    "Known CTI sources": st.column_config.TextColumn(
+                        width="medium"
+                    ),
+                    "Evidence": st.column_config.TextColumn(width="large"),
+                },
             )
 
             selected_domain = st.selectbox(
@@ -183,7 +197,8 @@ def _show_analysis_result(result, artifact, db_path: Path) -> None:
 
         st.caption(
             "ML score is a model decision score, not a literal probability "
-            "that a domain is malware."
+            "that a domain is malware. Known IOC matches take precedence "
+            "over ML score tiers."
         )
 
     with matches_tab:
@@ -267,6 +282,13 @@ def _show_history(db_path: Path) -> None:
             frame,
             hide_index=True,
             width="stretch",
+            column_config={
+                "Domain": st.column_config.TextColumn(width="medium"),
+                "Known CTI sources": st.column_config.TextColumn(
+                    width="medium"
+                ),
+                "Evidence": st.column_config.TextColumn(width="large"),
+            },
         )
 
 def main() -> None:
@@ -293,8 +315,7 @@ def main() -> None:
     with analysis_tab:
         st.info(
             "Uploaded DNS data is processed in memory. Raw DNS rows and "
-            "client IP values are not stored unless future functionality "
-            "explicitly changes that policy."
+            "client IP values are not persisted by this application."
         )
 
         try:
@@ -324,8 +345,15 @@ def main() -> None:
             ),
         )
 
-        if uploaded is not None:
+        if uploaded is None:
+            if st.session_state.pop("upload_fingerprint", None) is not None:
+                st.session_state.pop("analysis_result", None)
+        else:
             content_bytes = uploaded.getvalue()
+            fingerprint = content_fingerprint(content_bytes)
+            if st.session_state.get("upload_fingerprint") != fingerprint:
+                st.session_state["upload_fingerprint"] = fingerprint
+                st.session_state.pop("analysis_result", None)
 
             if len(content_bytes) > MAX_UPLOAD_BYTES:
                 st.error("Uploaded CSV exceeds the 10 MB application limit.")
