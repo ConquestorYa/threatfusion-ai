@@ -35,7 +35,9 @@ The repository currently implements:
 - An SGB collector using the official T.C. Siber Guvenlik Baskanligi malicious-address API, with domain, URL, IPv4, and IPv6 mapping into `IOCRecord`. IPv6 network/CIDR records that do not fit the current IOC model are preserved as `IOCType.UNKNOWN`, and retrieval is safe and bounded through page-based requests.
 - DNS telemetry ingestion via `DNSEvent` and `parse_dns_csv()`, with evidence-preserving field parsing and local-only CSV handling.
 - Known IOC matching through `DNSIOCMatch` and `match_dns_events()`, which compares DNS queries and responses against IOC records while preserving the original evidence objects.
-- Automated pytest tests for the model, normalization, correlation, collectors, DNS ingestion, and matching behavior.
+- Reproducible malicious-domain ML dataset preparation, stratified development splitting, local snapshot persistence, and pinned Tranco acquisition.
+- A baseline malicious-domain classifier using character n-gram TF-IDF with Logistic Regression, evaluated with precision, recall, F1, false-positive rate, and confusion-matrix counts.
+- Automated pytest tests for the model, normalization, correlation, collectors, DNS ingestion, matching, ML dataset, snapshot, split, and baseline evaluation behavior.
 - Ruff checks for code quality.
 - Real live-data validation for the ThreatFox, URLhaus, and SGB collectors in addition to network-free automated tests.
 
@@ -63,7 +65,8 @@ Threat URLs, domains, IP addresses, and hashes are treated strictly as data. The
 The following capabilities are planned and are not implemented in the current repository:
 
 - Broader multi-source correlation workflows.
-- ML-based detection of previously unseen suspicious domains.
+- Integration of the baseline malicious-domain classifier into the DNS analysis workflow for previously unseen domains.
+- Stronger source-aware and time-aware ML evaluation.
 - Explainable domain-risk output.
 - Campaign clustering.
 - A model evaluation dashboard.

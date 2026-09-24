@@ -38,9 +38,9 @@
 
 ## DEC-007: Start with explainable baseline ML
 
-**Status:** PLANNED.
+**Status:** IMPLEMENTED.
 
-**Decision:** The planned initial malicious-domain approach is character n-gram TF-IDF with Logistic Regression. Other classical models may be compared later.
+**Decision:** The initial malicious-domain approach uses character n-gram TF-IDF with Logistic Regression. Other classical models may be compared later.
 
 **Reason:** This baseline is understandable, reproducible, and suitable for measuring feature and model behavior in a student project.
 
