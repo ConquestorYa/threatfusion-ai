@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta, timezone
 import socket
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -55,7 +55,9 @@ def test_mixed_naive_and_aware_timestamps_are_not_compared() -> None:
     events = [
         DNSEvent(
             query_name="example.com",
-            timestamp=datetime(2026, 9, 24, 10, 0),
+            timestamp=datetime(
+                2026, 9, 24, 10, 0, tzinfo=timezone.utc
+            ).replace(tzinfo=None),
         ),
         DNSEvent(
             query_name="example.com",
