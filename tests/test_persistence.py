@@ -1,0 +1,229 @@
+from __future__ import annotations
+
+import socket
+import sqlite3
+from datetime import datetime, timezone
+
+import pytest
+
+from threatfusion.dns import DNSEvent
+from threatfusion.dns_behavior import DomainBehavior
+from threatfusion.hybrid_assessment import HybridAssessment, HybridVerdict
+from threatfusion.matching import DNSIOCMatch
+from threatfusion.models import IOCRecord, IOCType
+from threatfusion.persistence import (
+    get_analysis_assessments,
+    get_analysis_run,
+    initialize_database,
+    list_analysis_runs,
+    save_runtime_analysis,
+)
+from threatfusion.runtime_analysis import RuntimeAnalysisResult
+
+
+def make_result() -> RuntimeAnalysisResult:
+    first_event = DNSEvent(
+        query_name="known.bad",
+        timestamp=datetime(2026, 9, 24, 10, 0, tzinfo=timezone.utc),
+        client_ip="10.0.0.77",
+        query_type="A",
+        response_ip="203.0.113.7",
+    )
+    second_event = DNSEvent(
+        query_name="review.example",
+        timestamp=datetime(2026, 9, 24, 10, 1, tzinfo=timezone.utc),
+        client_ip="10.0.0.88",
+        query_type="AAAA",
+        response_ip="2001:db8::1",
+    )
+    indicator = IOCRecord("known.bad", IOCType.DOMAIN, "ThreatFox")
+    match = DNSIOCMatch(
+        event=first_event,
+        indicator=indicator,
+        match_type="query_domain",
+    )
+
+    known_behavior = DomainBehavior(
+        domain="known.bad",
+        event_count=1,
+        unique_client_count=1,
+        unique_response_ip_count=1,
+        query_types=("A",),
+        first_seen=first_event.timestamp,
+        last_seen=first_event.timestamp,
+        observed_span_seconds=0.0,
+    )
+    review_behavior = DomainBehavior(
+        domain="review.example",
+        event_count=1,
+        unique_client_count=1,
+        unique_response_ip_count=1,
+        query_types=("AAAA",),
+        first_seen=second_event.timestamp,
+        last_seen=second_event.timestamp,
+        observed_span_seconds=0.0,
+    )
+
+    assessments = (
+        HybridAssessment(
+            domain="known.bad",
+            verdict=HybridVerdict.KNOWN_THREAT,
+            known_ioc_sources=("ThreatFox",),
+            known_match_types=("query_domain",),
+            ml_probability=0.20,
+            ml_tier=None,
+            behavior=known_behavior,
+            behavior_signals=(),
+            reasons=("known_ioc_match",),
+        ),
+        HybridAssessment(
+            domain="review.example",
+            verdict=HybridVerdict.REVIEW,
+            known_ioc_sources=(),
+            known_match_types=(),
+            ml_probability=0.55,
+            ml_tier="low",
+            behavior=review_behavior,
+            behavior_signals=(),
+            reasons=("ml_low_confidence",),
+        ),
+    )
+
+    return RuntimeAnalysisResult(
+        events=(first_event, second_event),
+        matches=(match,),
+        ml_probabilities={
+            "known.bad": 0.20,
+            "review.example": 0.55,
+        },
+        assessments=assessments,
+    )
+
+
+def test_initialize_database_creates_expected_tables(tmp_path) -> None:
+    db_path = tmp_path / "nested" / "history.sqlite"
+
+    initialize_database(db_path)
+
+    with sqlite3.connect(db_path) as connection:
+        tables = {
+            row[0]
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            )
+        }
+
+    assert "analysis_runs" in tables
+    assert "analysis_assessments" in tables
+
+
+def test_save_runtime_analysis_persists_summary_counts(tmp_path) -> None:
+    db_path = tmp_path / "history.sqlite"
+    created_at = datetime(2026, 9, 24, 18, 0, tzinfo=timezone.utc)
+
+    run_id = save_runtime_analysis(
+        db_path,
+        make_result(),
+        model_name="lr_char_2_6_sublinear_balanced",
+        created_at=created_at,
+    )
+    summary = get_analysis_run(db_path, run_id)
+
+    assert summary is not None
+    assert summary.created_at == created_at.isoformat()
+    assert summary.event_count == 2
+    assert summary.match_count == 1
+    assert summary.assessment_count == 2
+    assert summary.known_threat_count == 1
+    assert summary.high_risk_count == 0
+    assert summary.review_count == 1
+    assert summary.low_count == 0
+    assert summary.model_name == "lr_char_2_6_sublinear_balanced"
+
+
+def test_assessment_roundtrip_preserves_aggregate_evidence(tmp_path) -> None:
+    db_path = tmp_path / "history.sqlite"
+    run_id = save_runtime_analysis(db_path, make_result())
+
+    rows = get_analysis_assessments(db_path, run_id)
+
+    assert [row.domain for row in rows] == ["known.bad", "review.example"]
+
+    known = rows[0]
+    assert known.verdict == "known_threat"
+    assert known.ml_probability == pytest.approx(0.20)
+    assert known.query_types == ("A",)
+    assert known.known_ioc_sources == ("ThreatFox",)
+    assert known.known_match_types == ("query_domain",)
+    assert known.reasons == ("known_ioc_match",)
+
+    review = rows[1]
+    assert review.verdict == "review"
+    assert review.ml_tier == "low"
+    assert review.reasons == ("ml_low_confidence",)
+
+
+def test_raw_dns_rows_and_client_ips_are_not_persisted(tmp_path) -> None:
+    db_path = tmp_path / "history.sqlite"
+    save_runtime_analysis(db_path, make_result())
+
+    with sqlite3.connect(db_path) as connection:
+        dump = "\n".join(connection.iterdump())
+
+    assert "10.0.0.77" not in dump
+    assert "10.0.0.88" not in dump
+    assert "DNSEvent" not in dump
+
+
+def test_list_analysis_runs_is_newest_first(tmp_path) -> None:
+    db_path = tmp_path / "history.sqlite"
+    first_id = save_runtime_analysis(
+        db_path,
+        make_result(),
+        created_at=datetime(2026, 9, 24, 18, 0, tzinfo=timezone.utc),
+    )
+    second_id = save_runtime_analysis(
+        db_path,
+        make_result(),
+        created_at=datetime(2026, 9, 24, 18, 1, tzinfo=timezone.utc),
+    )
+
+    rows = list_analysis_runs(db_path)
+
+    assert [row.id for row in rows] == [second_id, first_id]
+
+
+def test_missing_run_returns_none_and_no_assessments(tmp_path) -> None:
+    db_path = tmp_path / "history.sqlite"
+
+    assert get_analysis_run(db_path, 999) is None
+    assert get_analysis_assessments(db_path, 999) == []
+
+
+def test_naive_created_at_is_rejected(tmp_path) -> None:
+    db_path = tmp_path / "history.sqlite"
+
+    with pytest.raises(ValueError, match="timezone-aware"):
+        save_runtime_analysis(
+            db_path,
+            make_result(),
+            created_at=datetime(2026, 9, 24, 18, 0, tzinfo=timezone.utc).replace(
+                tzinfo=None
+            ),
+        )
+
+
+def test_persistence_does_not_perform_networking(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail(*args: object, **kwargs: object) -> object:
+        raise AssertionError("persistence must not use networking")
+
+    monkeypatch.setattr(socket, "getaddrinfo", fail)
+    monkeypatch.setattr(socket, "create_connection", fail)
+
+    db_path = tmp_path / "history.sqlite"
+    run_id = save_runtime_analysis(db_path, make_result())
+
+    assert get_analysis_run(db_path, run_id) is not None
