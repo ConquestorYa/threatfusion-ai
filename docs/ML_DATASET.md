@@ -300,3 +300,32 @@ python scripts/evaluate_ml_fpr_comparison.py --snapshot-dir data/snapshots/basel
 ```
 
 The script prints aggregate metrics only and never prints domain values.
+
+
+## Source-wise malicious recall diagnostics
+
+Aggregate recall can hide source-specific weaknesses. The source diagnostic
+layer reuses the fitted FPR-budget comparison and breaks malicious recall down
+by the retained `DomainSample.source` value on the development test split.
+
+For each candidate and validation-selected FPR budget, it reports:
+
+- malicious sample count per source
+- detected count
+- missed count
+- source-wise recall
+
+This is diagnostic only. It does not change model thresholds or select a model
+from development-test source results.
+
+Because duplicate malicious domains keep the first retained source under the
+existing dataset rules, source-wise recall reflects that retained source label,
+not every original CTI source that may have observed the domain.
+
+Run locally with:
+
+```text
+python scripts/evaluate_ml_source_diagnostics.py --snapshot-dir data/snapshots/baseline-001
+```
+
+The output is aggregate-only and never prints domain values.
