@@ -9,6 +9,10 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT / "src"))
 
 from threatfusion.ml_artifact import load_trusted_ml_artifact
+from threatfusion.ml_evaluation_report import (
+    build_frozen_holdout_report,
+    write_frozen_holdout_report,
+)
 from threatfusion.ml_holdout import (
     evaluate_frozen_artifact_on_holdout,
     validate_fresh_snapshot_dates,
@@ -23,6 +27,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--artifact-dir", type=Path, required=True)
     parser.add_argument("--development-snapshot-dir", type=Path, required=True)
     parser.add_argument("--holdout-snapshot-dir", type=Path, required=True)
+    parser.add_argument("--json-output", type=Path, default=None)
+    parser.add_argument("--overwrite", action="store_true")
     return parser
 
 
@@ -54,6 +60,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             development.samples,
             holdout.samples,
         )
+        report_path = None
+        if args.json_output is not None:
+            report = build_frozen_holdout_report(
+                evaluation,
+                model_name=artifact.metadata.model_name,
+                development_snapshot_date=(
+                    development.metadata.benign_snapshot_date
+                ),
+                holdout_snapshot_date=holdout.metadata.benign_snapshot_date,
+            )
+            report_path = write_frozen_holdout_report(
+                report,
+                args.json_output,
+                overwrite=args.overwrite,
+            )
     except (OSError, TypeError, ValueError) as error:
         raise SystemExit(
             f"Final holdout evaluation failed: {type(error).__name__}"
@@ -97,6 +118,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         "This is a fresh-collection disjoint holdout, not a strict IOC "
         "first-seen time split."
     )
+    if report_path is not None:
+        print(f"Aggregate JSON report: {report_path}")
     return 0
 
 
