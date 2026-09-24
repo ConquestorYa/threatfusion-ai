@@ -420,7 +420,7 @@ def _show_model_evaluation(report_path: Path) -> None:
 
     try:
         report = read_frozen_holdout_report(report_path)
-    except (OSError, ValueError) as error:
+    except (OSError, TypeError, ValueError) as error:
         st.error("The final holdout report could not be loaded.")
         st.caption(type(error).__name__)
         return
