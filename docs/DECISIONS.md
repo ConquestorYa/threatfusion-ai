@@ -391,3 +391,25 @@ Streamlit's health endpoint for process health.
 
 **Reason:** This provides a reproducible hosting boundary without embedding
 local SQLite/model artifacts or credentials in the image.
+
+
+## DEC-046: Deploy a sanitized CTI/model bundle instead of the developer data tree
+
+**Decision:** Hosted runtime preparation creates a new minimal directory
+containing a CTI-only SQLite database and the trusted local ML artifact. The
+developer's full `data/` directory is never the recommended public runtime
+mount.
+
+**Reason:** Local development data can contain saved analysis history and
+dataset snapshots that are unnecessary for public analysis. Rebuilding a
+CTI-only database makes the privacy boundary explicit and reduces accidental
+data exposure.
+
+## DEC-047: Validate the trusted model before copying it into a deployment bundle
+
+**Decision:** Deployment-bundle creation loads and validates the trusted local
+ML artifact before copying its model and metadata files.
+
+**Reason:** A hosted bundle should fail early if the configured model artifact
+is missing or incompatible rather than creating a partially valid runtime
+directory.
