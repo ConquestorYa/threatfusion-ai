@@ -361,3 +361,33 @@ IOC evaluation.
 first_seen timestamps. Snapshot collection date provides a later collection
 boundary, but it does not prove each malicious IOC first appeared after model
 development.
+
+
+## DEC-043: Disable shared analysis history in public mode
+
+**Decision:** When `THREATFUSION_PUBLIC_MODE=1`, the interactive dashboard
+does not expose saved-analysis history and does not offer the save-history
+action.
+
+**Reason:** A public multi-user demo must not allow one anonymous visitor to
+browse another visitor's persisted domain findings. Local mode keeps the
+existing explicit-save history workflow.
+
+## DEC-044: Keep CTI refresh credentials out of the public request path
+
+**Decision:** The public dashboard reads an already-prepared local CTI cache and
+trusted model artifact. ThreatFox/URLhaus credentials are not required by the
+interactive application.
+
+**Reason:** Feed refresh is a maintenance concern. Separating it from user
+analysis reduces credential exposure and keeps user requests independent of
+external feed availability.
+
+## DEC-045: Package the hosted demo as a non-root container
+
+**Decision:** Provide a minimal Python 3.12 container that runs Streamlit as a
+non-root user, excludes local data/secrets from the build context, and uses
+Streamlit's health endpoint for process health.
+
+**Reason:** This provides a reproducible hosting boundary without embedding
+local SQLite/model artifacts or credentials in the image.
