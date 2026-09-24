@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
@@ -20,6 +21,34 @@ class DashboardSummary:
     high_risk_count: int
     review_count: int
     low_count: int
+
+
+@dataclass(frozen=True)
+class RelationshipGraphNode:
+    domain: str
+    cluster_id: str
+    verdict: str
+    ml_tier: str
+    known_sources: tuple[str, ...]
+    x: float
+    y: float
+
+
+@dataclass(frozen=True)
+class RelationshipGraphEdge:
+    domain_a: str
+    domain_b: str
+    x0: float
+    y0: float
+    x1: float
+    y1: float
+    hover_text: str
+
+
+@dataclass(frozen=True)
+class RelationshipGraphData:
+    nodes: tuple[RelationshipGraphNode, ...]
+    edges: tuple[RelationshipGraphEdge, ...]
 
 
 _VERDICT_ORDER = {
@@ -59,6 +88,93 @@ _REASON_LABELS = {
     "query_type_diversity": "Multiple DNS query types observed",
     "rapid_query_burst": "Rapid DNS query burst",
 }
+
+
+def build_relationship_graph(
+    report: RelatedActivityReport,
+    result: RuntimeAnalysisResult,
+) -> RelationshipGraphData:
+    """Build deterministic, privacy-preserving graph presentation data."""
+    assessment_by_domain = {
+        assessment.domain: assessment
+        for assessment in result.assessments
+    }
+    positions: dict[str, tuple[float, float]] = {}
+    nodes: list[RelationshipGraphNode] = []
+
+    for cluster_index, cluster in enumerate(report.clusters):
+        domain_count = len(cluster.domains)
+        radius = max(1.0, domain_count * 0.35)
+        center_x = cluster_index * 3.5
+
+        for domain_index, domain in enumerate(cluster.domains):
+            angle = (2.0 * math.pi * domain_index) / domain_count
+            x = center_x + radius * math.cos(angle)
+            y = radius * math.sin(angle)
+            positions[domain] = (x, y)
+
+            assessment = assessment_by_domain.get(domain)
+            if assessment is None:
+                verdict = "Unknown"
+                tier = "Below threshold"
+                sources: tuple[str, ...] = ()
+            else:
+                verdict = verdict_label(assessment.verdict.value)
+                tier = ml_tier_label(assessment.ml_tier)
+                sources = assessment.known_ioc_sources
+
+            nodes.append(
+                RelationshipGraphNode(
+                    domain=domain,
+                    cluster_id=cluster.cluster_id,
+                    verdict=verdict,
+                    ml_tier=tier,
+                    known_sources=sources,
+                    x=x,
+                    y=y,
+                )
+            )
+
+    edges: list[RelationshipGraphEdge] = []
+    for relationship in report.relationships:
+        left = positions.get(relationship.domain_a)
+        right = positions.get(relationship.domain_b)
+        if left is None or right is None:
+            continue
+
+        time_text = (
+            f"{relationship.min_time_delta_seconds:.1f} s"
+            if relationship.min_time_delta_seconds is not None
+            else "not comparable"
+        )
+        evidence = "; ".join(
+            relationship_reason_label(reason)
+            for reason in relationship.reasons
+        )
+        hover_text = (
+            f"{relationship.domain_a} ↔ {relationship.domain_b}<br>"
+            f"Shared clients: {relationship.shared_client_count}<br>"
+            f"Shared response IPs: {relationship.shared_response_ip_count}<br>"
+            f"Closest time delta: {time_text}<br>"
+            f"Evidence: {evidence}"
+        )
+        edges.append(
+            RelationshipGraphEdge(
+                domain_a=relationship.domain_a,
+                domain_b=relationship.domain_b,
+                x0=left[0],
+                y0=left[1],
+                x1=right[0],
+                y1=right[1],
+                hover_text=hover_text,
+            )
+        )
+
+    return RelationshipGraphData(
+        nodes=tuple(nodes),
+        edges=tuple(edges),
+    )
+
 
 def relationship_reason_label(value: str) -> str:
     return _RELATION_REASON_LABELS.get(

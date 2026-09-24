@@ -11,6 +11,7 @@ from threatfusion.cti_cache import CTICacheStatus
 from threatfusion.dashboard import (
     assessment_detail,
     assessment_rows,
+    build_relationship_graph,
     cluster_rows,
     content_fingerprint,
     cti_status_rows,
@@ -290,3 +291,47 @@ def test_timestamp_formatting_and_upload_fingerprint_are_deterministic() -> None
 
     assert first == second
     assert first != different
+
+
+
+def test_relationship_graph_data_is_deterministic_and_privacy_preserving() -> None:
+    relationship = DomainRelationship(
+        domain_a="known.bad",
+        domain_b="review.example",
+        shared_client_count=2,
+        shared_response_ip_count=1,
+        min_time_delta_seconds=12.5,
+        reasons=(
+            "shared_client",
+            "shared_response_ip",
+            "time_proximity",
+        ),
+    )
+    report = RelatedActivityReport(
+        clusters=(
+            RelatedActivityCluster(
+                cluster_id="group-1",
+                domains=("known.bad", "review.example"),
+                relationships=(relationship,),
+            ),
+        ),
+        relationships=(relationship,),
+    )
+
+    first = build_relationship_graph(report, make_result())
+    second = build_relationship_graph(report, make_result())
+
+    assert first == second
+    assert [node.domain for node in first.nodes] == [
+        "known.bad",
+        "review.example",
+    ]
+    assert first.nodes[0].verdict == "Known Threat"
+    assert first.nodes[0].known_sources == ("ThreatFox",)
+    assert first.nodes[1].verdict == "Review"
+    assert len(first.edges) == 1
+    edge = first.edges[0]
+    assert "Shared clients: 2" in edge.hover_text
+    assert "Shared response IPs: 1" in edge.hover_text
+    assert "Closest time delta: 12.5 s" in edge.hover_text
+    assert "10.0.0.1" not in edge.hover_text
