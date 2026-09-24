@@ -133,11 +133,20 @@ SQLite persistence, and the Streamlit dashboard are not implemented yet.
 ### `src/threatfusion/ml_high_recall.py`
 
 - Uses the same character TF-IDF representation with `class_weight="balanced"`.
-- Creates deterministic train, validation, and untouched test partitions.
+- Creates deterministic train, validation, and development-test partitions.
 - Fits the representation and classifier on train only.
 - Selects operating thresholds on validation only for requested recall targets.
-- Measures the selected thresholds once on the untouched test partition.
+- Measures the selected thresholds on the development-test partition.
 - Reports the precision/recall/F1/false-positive tradeoff instead of claiming guaranteed perfect detection.
+
+### `src/threatfusion/ml_fpr_comparison.py`
+
+- Compares three predefined classical text-classification candidates.
+- Reuses one shared deterministic train/validation/development-test split.
+- Selects candidate thresholds on validation only under explicit false-positive-rate budgets.
+- Maximizes recall subject to each validation false-positive-rate limit.
+- Applies each selected threshold to the shared development-test split.
+- Uses no networking and adds no third-party dependency beyond the existing scikit-learn stack.
 
 ### `src/threatfusion/collectors/threatfox.py`
 
