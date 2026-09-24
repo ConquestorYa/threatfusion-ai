@@ -1,6 +1,6 @@
 # Architecture
 
-This document distinguishes the current implementation from the planned system. The current architecture includes IOC collection, correlation, DNS telemetry ingestion, in-memory known-IOC matching, reproducible ML dataset snapshots, persisted development-model inference, DNS behavior aggregation, explainable hybrid runtime assessment, SQLite persistence/cache layers, related-activity clustering, and a Streamlit dashboard. Fresh final holdout evaluation and hosted deployment packaging remain planned.
+This document distinguishes the current implementation from the planned system. The current architecture includes IOC collection, correlation, DNS telemetry ingestion, in-memory known-IOC matching, reproducible ML dataset snapshots, persisted development-model inference, DNS behavior aggregation, explainable hybrid runtime assessment, SQLite persistence/cache layers, related-activity clustering, a Streamlit dashboard, and container/public-mode deployment packaging. The actual fresh final holdout measurement and hosted domain deployment remain planned.
 
 ## Current Data Flow
 
@@ -103,7 +103,8 @@ campaign.
 
 ```mermaid
 flowchart TD
-    Dashboard[Streamlit dashboard] --> Hosted[Hosted demo packaging planned]
+    Dashboard[Streamlit dashboard] --> Container[Non-root container + public mode]
+    Container --> Hosted[Hosted deployment planned]
     Holdout[Later disjoint snapshot] --> Eval[Frozen artifact holdout evaluator]
     Eval --> Hosted
 ```
