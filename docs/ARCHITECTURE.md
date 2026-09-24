@@ -73,16 +73,16 @@ as proof of malware.
 
 ```mermaid
 flowchart TD
-    Hybrid[Hybrid assessment] --> Persist[SQLite persistence planned]
+    Hybrid[Hybrid assessment] --> Persist[SQLite analysis history]
     Hybrid --> Cluster[Campaign clustering planned]
     Persist --> Dashboard[Streamlit dashboard planned]
     Cluster --> Dashboard
 ```
 
-Fresh source-aware or time-aware final evaluation, campaign clustering,
-SQLite persistence, and the Streamlit dashboard remain planned. Local model
-artifact persistence and domain-probability inference are implemented for the
-current development candidate.
+Fresh source-aware or time-aware final evaluation, campaign clustering, and
+the Streamlit dashboard remain planned. Local model artifact persistence,
+domain-probability inference, and privacy-conscious SQLite analysis history are
+implemented.
 
 ## Current Modules
 
@@ -208,6 +208,14 @@ current development candidate.
 - Runs known IOC matching, normalized ML probability inference, DNS behavior aggregation, and hybrid assessment without networking.
 - Preserves original DNS/IOC evidence and returns matches, probabilities, and per-domain assessments together.
 - Provides a convenience helper that starts directly from DNS CSV text.
+
+### `src/threatfusion/persistence.py`
+
+- Stores completed analysis summaries and per-domain hybrid assessment results in SQLite.
+- Persists verdict counts, ML output, aggregate DNS behavior, CTI source names, and reason codes.
+- Does not persist raw uploaded DNS rows or client IP values by default.
+- Uses parameterized SQL, foreign-key constraints, and deterministic read ordering.
+- Provides run-history and per-run assessment read helpers for the future dashboard.
 
 ### `src/threatfusion/ml_source_diagnostics.py`
 
