@@ -74,9 +74,10 @@ flowchart TD
     Cluster --> Dashboard
 ```
 
-Model artifact persistence/inference orchestration, fresh source-aware or
-time-aware final evaluation, campaign clustering, SQLite persistence, and the
-Streamlit dashboard remain planned.
+Fresh source-aware or time-aware final evaluation, campaign clustering,
+SQLite persistence, and the Streamlit dashboard remain planned. Local model
+artifact persistence and domain-probability inference are implemented for the
+current development candidate.
 
 ## Current Modules
 
@@ -181,6 +182,19 @@ Streamlit dashboard remain planned.
 - Maximizes recall subject to each validation false-positive-rate limit.
 - Applies each selected threshold to the shared development-test split.
 - Uses no networking and adds no third-party dependency beyond the existing scikit-learn stack.
+
+### `src/threatfusion/ml_artifact.py`
+
+- Trains the selected development candidate from an existing `DomainSample`
+  snapshot using the deterministic train/validation/development-test split.
+- Selects high / medium / low operating thresholds on validation only at 1%,
+  5%, and 10% FPR budgets.
+- Persists the fitted sklearn pipeline to a local joblib file and aggregate
+  configuration to JSON metadata.
+- Loads only explicitly trusted local artifacts; joblib/pickle files must
+  never be accepted from untrusted sources.
+- Normalizes runtime domain strings and returns malicious-domain probabilities
+  without networking.
 
 ### `src/threatfusion/ml_source_diagnostics.py`
 
