@@ -1,6 +1,6 @@
 # Architecture
 
-This document distinguishes the current implementation from the planned system. The current architecture includes IOC collection, correlation, DNS telemetry ingestion, in-memory known-IOC matching, reproducible ML dataset snapshots, persisted development-model inference, DNS behavior aggregation, and explainable hybrid runtime assessment. Campaign clustering, SQLite application persistence, final holdout evaluation, and the Streamlit dashboard remain planned.
+This document distinguishes the current implementation from the planned system. The current architecture includes IOC collection, correlation, DNS telemetry ingestion, in-memory known-IOC matching, reproducible ML dataset snapshots, persisted development-model inference, DNS behavior aggregation, explainable hybrid runtime assessment, SQLite persistence/cache layers, related-activity clustering, and a Streamlit dashboard. Fresh final holdout evaluation and hosted deployment packaging remain planned.
 
 ## Current Data Flow
 
@@ -90,7 +90,8 @@ flowchart TD
     Runtime[Runtime analysis] --> Suspicious[Known Threat / High Risk / Review domains]
     Suspicious --> Evidence[Shared client / shared response IP evidence]
     Evidence --> Cluster[Possible related-activity groups]
-    Cluster --> Dashboard[Streamlit related-activity view]
+    Cluster --> Graph[Privacy-preserving relationship graph]
+    Graph --> Dashboard[Streamlit related-activity view]
 ```
 
 The related-activity layer is an explainable baseline. A relationship requires
@@ -264,7 +265,7 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 
 - Convert runtime results into deterministic presentation rows and summary counts.
 - Provide separate DNS-event and unique-domain metrics so domain-level verdict counts are unambiguous.
-- Provide DNS CSV upload, a domain-level Plotly verdict chart, human-readable evidence labels, per-domain detail inspection, domain findings, and known-IOC evidence views.
+- Provide DNS CSV upload, a domain-level Plotly verdict chart, human-readable evidence labels, per-domain detail inspection, domain findings, known-IOC evidence views, and a privacy-preserving relationship graph.
 - Display local CTI cache status and saved analysis history with compact human-readable timestamps.
 - Invalidate in-memory displayed results when uploaded CSV content changes or is removed, preventing stale-result/file mismatches.
 - Keep raw uploaded DNS telemetry in memory and make aggregate history saving explicit.
