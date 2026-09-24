@@ -242,3 +242,22 @@ obtained a complete successful result for that source.
 
 **Reason:** A failed network request must not erase the previous usable cache.
 The storage layer itself remains network-free.
+
+
+## DEC-031: Keep the Streamlit dashboard as a thin presentation layer
+
+**Decision:** The Streamlit application calls the existing runtime, cache, and
+persistence modules rather than implementing detection logic inside UI code.
+
+**Reason:** Security and ML behavior must remain independently testable. A thin
+UI also makes it easier to replace Streamlit later without rewriting the core
+analysis pipeline.
+
+## DEC-032: Raw DNS persistence remains opt-in by design and disabled in the MVP
+
+**Decision:** The Streamlit MVP analyzes uploaded DNS CSV content in memory and
+does not persist raw DNS rows or client IP values. Saving aggregate/per-domain
+analysis history requires an explicit user action.
+
+**Reason:** DNS telemetry can reveal sensitive browsing and internal-network
+information. The portfolio demo should minimize retention by default.
