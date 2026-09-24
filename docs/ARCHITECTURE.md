@@ -104,7 +104,8 @@ campaign.
 ```mermaid
 flowchart TD
     Dashboard[Streamlit dashboard] --> Hosted[Hosted demo packaging planned]
-    Eval[Fresh final holdout planned] --> Hosted
+    Holdout[Later disjoint snapshot] --> Eval[Frozen artifact holdout evaluator]
+    Eval --> Hosted
 ```
 
 Fresh source-aware or time-aware final evaluation and hosted deployment
