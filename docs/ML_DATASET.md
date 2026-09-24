@@ -419,3 +419,46 @@ load a model artifact from an untrusted source.
 This remains a development artifact rather than a final production model.
 Final performance claims still require a fresh holdout and a new final model
 selection/evaluation cycle.
+
+
+## Frozen-model fresh holdout evaluation
+
+The repository now includes a final-evaluation workflow for the already-frozen
+development artifact. This workflow is intentionally separate from development
+model selection.
+
+The protocol is:
+
+1. keep the existing persisted model artifact unchanged
+2. collect a separate later dataset snapshot
+3. require the holdout benign snapshot date to be later than the development
+   snapshot date
+4. remove every normalized domain that appeared anywhere in the development
+   snapshot
+5. evaluate the frozen high / medium / low thresholds exactly as stored in the
+   artifact
+6. report aggregate precision, recall, F1, false-positive rate, confusion
+   counts, and malicious recall by retained source
+7. do not retrain the model or tune thresholds from holdout results
+
+The evaluator is local and network-free:
+
+```text
+python scripts/evaluate_ml_final_holdout.py \
+  --artifact-dir data/models/development-001 \
+  --development-snapshot-dir data/snapshots/baseline-001 \
+  --holdout-snapshot-dir data/snapshots/holdout-001
+```
+
+The holdout snapshot itself should be collected separately with a newer pinned
+benign snapshot date. For example, the existing live snapshot collector can be
+used with an explicitly newer Tranco list ID/date and a new output directory.
+
+This is a **fresh-collection disjoint holdout**, not a strict IOC first-seen
+time split. The current `DomainSample` schema does not retain IOC
+`first_seen` timestamps, so the project must not describe this protocol as a
+strict temporal event split.
+
+The final holdout should be inspected only after the model and thresholds are
+frozen. If its results later influence another model change, that holdout
+becomes development evidence and a new final holdout would be required.
