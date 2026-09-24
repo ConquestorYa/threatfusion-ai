@@ -56,3 +56,6 @@ data/models/
 
 # Local generated demo data
 data/demo/
+
+# Local sanitized deployment bundles
+data/deployment/
