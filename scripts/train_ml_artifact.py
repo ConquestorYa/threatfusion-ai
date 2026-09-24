@@ -49,7 +49,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.output_dir,
             overwrite=args.overwrite,
         )
-    except (OSError, ValueError, FileExistsError) as error:
+    except (OSError, ValueError) as error:
         raise SystemExit(
             f"ML artifact training failed: {type(error).__name__}"
         ) from None
