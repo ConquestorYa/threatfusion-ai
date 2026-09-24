@@ -19,7 +19,7 @@ It does not perform:
 - requests to public services
 - feature extraction
 - model training
-- train/test splitting
+- final evaluation or model selection
 
 ## Malicious class
 
@@ -81,3 +81,25 @@ features followed by Logistic Regression. This is intended to be an
 explainable and reproducible starting point, not the final model.
 
 No model training or evaluation currently exists in this layer.
+
+## Baseline development split
+
+The project now provides a baseline development split for an already-clean
+`DomainSample` dataset:
+
+- 80/20 train/test by default
+- stratified by the binary label
+- deterministic with `random_state=42` by default
+- no pandas, feature extraction, or model training
+
+Domain-level deduplication must happen before splitting. The split validates
+that each normalized domain appears only once, and the same normalized domain
+cannot appear in both the train and test sets. Both sets must contain benign
+and malicious samples.
+
+This random stratified split is for baseline development only. It is not
+sufficient as the only final evaluation protocol because source-specific and
+time-related patterns may inflate results. Later evaluation should include a
+source-aware split that holds out malicious-source data, and time-aware
+evaluation should be considered when timestamp metadata is preserved in the
+ML dataset. Source-aware and time-aware splitting are not implemented here.
