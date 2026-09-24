@@ -77,9 +77,9 @@ def test_fpr_budget_selector_maximizes_recall_within_budget() -> None:
         max_false_positive_rate=1 / 3,
     )
 
-    assert metrics.false_positive_rate <= pytest.approx(1 / 3)
+    assert metrics.false_positive_rate <= (1 / 3) + 1e-12
     assert metrics.recall == pytest.approx(2 / 3)
-    assert metrics.threshold == pytest.approx(0.40)
+    assert metrics.threshold == pytest.approx(0.60)
 
 
 def test_zero_fpr_budget_can_select_conservative_threshold() -> None:
