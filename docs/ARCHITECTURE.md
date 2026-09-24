@@ -69,20 +69,33 @@ calibrated malware probability. Known IOC evidence takes precedence. DNS
 behavior can strengthen an assessment or trigger review, but it is not treated
 as proof of malware.
 
-## Planned Analysis and Presentation Flow
+## Current Presentation Flow
 
 ```mermaid
 flowchart TD
-    Hybrid[Hybrid assessment] --> Persist[SQLite analysis history]
-    Hybrid --> Cluster[Campaign clustering planned]
-    Persist --> Dashboard[Streamlit dashboard planned]
-    Cluster --> Dashboard
+    Upload[DNS CSV upload] --> Runtime[Runtime analysis]
+    Cache[SQLite CTI cache] --> Runtime
+    Model[Trusted local ML artifact] --> Runtime
+    Runtime --> Findings[Domain findings]
+    Runtime --> Evidence[Known IOC evidence]
+    Runtime --> Chart[Verdict chart]
+    Runtime -. explicit save .-> History[SQLite analysis history]
+    History --> Dashboard[Streamlit history view]
+```
+
+## Planned Analysis Extensions
+
+```mermaid
+flowchart TD
+    Hybrid[Hybrid assessment] --> Cluster[Campaign clustering planned]
+    Cluster --> Dashboard[Streamlit dashboard]
+    Dashboard --> Hosted[Hosted demo packaging planned]
 ```
 
 Fresh source-aware or time-aware final evaluation, campaign clustering, and
-the Streamlit dashboard remain planned. Local model artifact persistence,
-domain-probability inference, privacy-conscious SQLite analysis history, and a
-local SQLite CTI cache are implemented.
+hosted deployment packaging remain planned. Local model artifact persistence,
+domain-probability inference, privacy-conscious SQLite analysis history, a
+local SQLite CTI cache, and a Streamlit MVP are implemented.
 
 ## Current Modules
 
@@ -224,6 +237,14 @@ local SQLite CTI cache are implemented.
 - Does not persist raw uploaded DNS rows or client IP values by default.
 - Uses parameterized SQL, foreign-key constraints, and deterministic read ordering.
 - Provides run-history and per-run assessment read helpers for the future dashboard.
+
+### `src/threatfusion/dashboard.py` and `streamlit_app.py`
+
+- Convert runtime results into deterministic presentation rows and summary counts.
+- Provide DNS CSV upload, verdict metrics, a Plotly verdict chart, domain findings, and known-IOC evidence views.
+- Display local CTI cache status and saved analysis history.
+- Keep raw uploaded DNS telemetry in memory and make aggregate history saving explicit.
+- Do not refresh external CTI sources during interactive user analysis.
 
 ### `src/threatfusion/ml_source_diagnostics.py`
 
