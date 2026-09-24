@@ -8,7 +8,11 @@ from datetime import datetime, timezone
 from .campaign import RelatedActivityReport
 from .cti_cache import CTICacheStatus
 from .hybrid_assessment import HybridAssessment
-from .persistence import (\n    AnalysisRunSummary,\n    AnalystFeedback,\n    PersistedDomainAssessment,\n)
+from .persistence import (
+    AnalysisRunSummary,
+    AnalystFeedback,
+    PersistedDomainAssessment,
+)
 from .runtime_analysis import RuntimeAnalysisResult
 
 
