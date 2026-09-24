@@ -81,7 +81,8 @@ flowchart TD
     Runtime --> Chart[Verdict chart]
     Runtime --> Export[Privacy-safe JSON / CSV report]
     Runtime -. explicit save .-> History[SQLite analysis history]
-    History --> Dashboard[Streamlit history view]
+    History --> Feedback[Local analyst feedback]
+    Feedback --> Dashboard[Streamlit history view]
 ```
 
 ## Current Related-Activity Flow
@@ -254,6 +255,7 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 ### `src/threatfusion/persistence.py`
 
 - Stores completed analysis summaries and per-domain hybrid assessment results in SQLite.
+- Stores one current local analyst feedback label/note per saved run and domain without modifying the original verdict.
 - Persists verdict counts, ML output, aggregate DNS behavior, CTI source names, and reason codes.
 - Does not persist raw uploaded DNS rows or client IP values by default.
 - Uses parameterized SQL, foreign-key constraints, and deterministic read ordering.
