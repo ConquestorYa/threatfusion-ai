@@ -148,6 +148,13 @@ SQLite persistence, and the Streamlit dashboard are not implemented yet.
 - Applies each selected threshold to the shared development-test split.
 - Uses no networking and adds no third-party dependency beyond the existing scikit-learn stack.
 
+### `src/threatfusion/ml_source_diagnostics.py`
+
+- Breaks development-test malicious recall down by retained CTI source.
+- Reuses validation-selected thresholds from the FPR-budget comparison.
+- Reports total, detected, missed, and recall per source.
+- Does not use source-wise development-test results to retune thresholds.
+
 ### `src/threatfusion/collectors/threatfox.py`
 
 - Integrates with the ThreatFox Community API for recent IOCs.
