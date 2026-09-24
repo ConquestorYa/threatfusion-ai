@@ -35,9 +35,13 @@ indicators, not domain samples for the malicious-domain classifier.
 ## Benign class
 
 The planned benign source is a reproducible Tranco popular-domain snapshot.
-The current code does **not** download Tranco; benign domains must be supplied
-by the caller. When real collection is added, the Tranco list identifier,
-version, and collection date should be recorded with the dataset metadata.
+`ml_dataset.py` and `ml_snapshot.py` do **not** download Tranco; reusable
+dataset construction remains network-free. The explicit `TrancoCollector`
+performs pinned-list acquisition, while `parse_tranco_csv()` consumes
+caller-supplied CSV text. The live inspection script orchestrates the
+collector and parser. When real collection is used, the Tranco list
+identifier, version, and collection date should be recorded with the dataset
+metadata.
 
 ## Data model
 
@@ -136,3 +140,29 @@ deterministically under the existing dataset rules.
 
 Model training is still not implemented. Snapshot construction also does not
 invoke the baseline split, calculate metrics, or write files to disk.
+
+## First pinned live snapshot
+
+The first live snapshot inspection experiment uses these parameters:
+
+- Tranco ID: `L5PV4`
+- Tranco list date: `2026-09-23`
+- Tranco maximum rows used: `50,000`
+- ThreatFox recent window: 7 days
+- SGB bounded pages: 10
+- URLhaus recent export
+
+These are experiment parameters, not hardcoded behavior in the reusable
+collectors. The inspection script accepts overrides, while the Tranco
+collector always requires a caller-supplied list ID. Tranco is pinned to a
+fixed list ID for reproducibility; the malicious feeds are live, so their
+exact CTI contents depend on collection time.
+
+The live inspection script prints aggregate configuration, source record
+counts, dataset counts, overlap removal, and malicious source counts only. It
+does not print IOC values, domains, URLs, or IP addresses, and it does not
+train a model.
+
+Using popular Tranco domains as benign examples may make the first baseline
+easier than real-world DNS traffic. Later evaluation should include more
+realistic benign DNS observations when they are available.
