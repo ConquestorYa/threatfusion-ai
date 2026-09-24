@@ -231,8 +231,6 @@ def test_persistence_does_not_perform_networking(
 
     assert get_analysis_run(db_path, run_id) is not None
 
-
-
 def test_analyst_feedback_roundtrip_and_update(tmp_path) -> None:
     db_path = tmp_path / "history.sqlite"
     run_id = save_runtime_analysis(db_path, make_result())
