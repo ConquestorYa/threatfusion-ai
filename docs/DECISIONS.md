@@ -330,3 +330,34 @@ time distance, and human-readable evidence labels only.
 
 **Reason:** The graph should explain why domains are linked without exposing raw
 client IP identifiers or other sensitive local telemetry.
+
+
+## DEC-040: Freeze the model and thresholds before final holdout evaluation
+
+**Decision:** Final holdout evaluation loads the existing trusted development
+artifact and applies its stored high / medium / low thresholds without
+retraining or retuning.
+
+**Reason:** The final holdout must measure a decision that was made before its
+labels/results were inspected. Retraining or threshold selection on the
+holdout would turn it into development data.
+
+## DEC-041: Remove all development-snapshot domain overlap from the holdout
+
+**Decision:** Any normalized domain present anywhere in the development
+snapshot is excluded from the final holdout before metrics are calculated.
+
+**Reason:** This conservative rule prevents direct domain memorization/leakage
+from inflating final metrics. It is stricter than checking only the model's
+training partition and makes the evaluation boundary easy to explain.
+
+## DEC-042: Describe the protocol as fresh-collection disjoint, not strict temporal
+
+**Decision:** The implemented final evaluator is described as a
+fresh-collection disjoint holdout. It is not labeled a strict time-based
+IOC evaluation.
+
+**Reason:** DomainSample currently stores domain, label, and source but not IOC
+first_seen timestamps. Snapshot collection date provides a later collection
+boundary, but it does not prove each malicious IOC first appeared after model
+development.
