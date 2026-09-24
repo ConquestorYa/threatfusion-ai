@@ -12,6 +12,7 @@ from .cti_cache import (
     replace_source_records,
 )
 from .ml_artifact import load_trusted_ml_artifact
+from .models import IOCRecord
 
 
 @dataclass(frozen=True)
@@ -71,7 +72,7 @@ def create_deployment_bundle(
     statuses = list_cti_cache_status(source_db)
     status_by_source = {status.source: status for status in statuses}
 
-    records_by_source: dict[str, list] = {}
+    records_by_source: dict[str, list[IOCRecord]] = {}
     for record in records:
         records_by_source.setdefault(record.source, []).append(record)
 
