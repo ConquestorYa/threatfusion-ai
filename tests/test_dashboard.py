@@ -12,9 +12,12 @@ from threatfusion.dashboard import (
     assessment_detail,
     assessment_rows,
     cluster_rows,
+    content_fingerprint,
     cti_status_rows,
+    format_timestamp,
     history_rows,
     match_rows,
+    ml_tier_label,
     persisted_assessment_rows,
     reason_label,
     relationship_reason_label,
@@ -107,6 +110,7 @@ def test_human_readable_verdict_and_reason_labels() -> None:
     assert verdict_label("high_risk") == "High Risk"
     assert reason_label("known_ioc_match") == "Known threat intelligence match"
     assert reason_label("rapid_query_burst") == "Rapid DNS query burst"
+    assert ml_tier_label(None) == "Below threshold"
 
 def test_assessment_rows_are_friendly_and_severity_sorted() -> None:
     rows = assessment_rows(make_result())
@@ -156,6 +160,7 @@ def test_cti_status_rows() -> None:
 
     assert rows[0]["Source"] == "ThreatFox"
     assert rows[0]["Records"] == 123
+    assert rows[0]["Refreshed at"] == "2026-09-24 18:00 UTC"
 
 def test_history_rows() -> None:
     rows = history_rows(
@@ -176,6 +181,7 @@ def test_history_rows() -> None:
     )
 
     assert rows[0]["Run ID"] == 7
+    assert rows[0]["Created at"] == "2026-09-24 18:00 UTC"
     assert rows[0]["Model"] == "model-a"
     assert rows[0]["Domains"] == 25
 
@@ -224,6 +230,7 @@ def test_persisted_assessment_rows_are_friendly_and_sorted() -> None:
     assert [row["Domain"] for row in rows] == ["a.example", "z.example"]
     assert rows[0]["Verdict"] == "High Risk"
     assert rows[0]["Evidence"] == "High ML score tier"
+    assert rows[1]["ML tier"] == "Below threshold"
 
 def test_campaign_rows_are_human_readable_and_privacy_preserving() -> None:
     relationship = DomainRelationship(
@@ -270,3 +277,18 @@ def test_campaign_rows_are_human_readable_and_privacy_preserving() -> None:
     assert relationship_reason_label("shared_client") == (
         "Shared client observation"
     )
+
+
+
+def test_timestamp_formatting_and_upload_fingerprint_are_deterministic() -> None:
+    assert format_timestamp("2026-09-24T21:30:45+03:00") == (
+        "2026-09-24 18:30 UTC"
+    )
+    assert format_timestamp("not-a-timestamp") == "not-a-timestamp"
+
+    first = content_fingerprint(b"same-content")
+    second = content_fingerprint(b"same-content")
+    different = content_fingerprint(b"different-content")
+
+    assert first == second
+    assert first != different
