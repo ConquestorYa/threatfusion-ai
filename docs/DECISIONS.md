@@ -72,7 +72,7 @@
 
 ## DEC-012: SQLite for initial local persistence
 
-**Status:** PLANNED.
+**Status:** IMPLEMENTED.
 
 **Decision:** Use SQLite as the initial local persistence layer when storage is implemented.
 
@@ -310,3 +310,23 @@ current in-memory analysis whenever the upload is changed or removed.
 **Reason:** Showing results from a previous file beside a newly selected file
 would be misleading. The fingerprint is used only for local UI state and does
 not persist the uploaded DNS content.
+
+
+## DEC-038: Use a deterministic presentation-only relationship graph
+
+**Decision:** Render related-activity clusters with a deterministic circular
+layout computed from already-derived relationship objects, without adding a
+graph-analysis dependency.
+
+**Reason:** The graph is a visual explanation of existing clustering evidence,
+not a second clustering algorithm. Keeping layout logic presentation-only
+avoids changing detection semantics and keeps the dependency stack simple.
+
+## DEC-039: Keep relationship graph hover data aggregate-only
+
+**Decision:** Graph nodes may show domain verdict/ML tier/CTI source metadata,
+while edge hover text shows shared-client counts, shared-response-IP counts,
+time distance, and human-readable evidence labels only.
+
+**Reason:** The graph should explain why domains are linked without exposing raw
+client IP identifiers or other sensitive local telemetry.
