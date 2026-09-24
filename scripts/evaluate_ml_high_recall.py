@@ -33,7 +33,13 @@ def _print_metrics(prefix: str, metrics) -> None:
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
+        print("Loading local snapshot...", flush=True)
         snapshot = read_domain_snapshot(args.snapshot_dir)
+        print(
+            f"Loaded {len(snapshot.samples)} samples. "
+            "Training and evaluating high-recall candidates...",
+            flush=True,
+        )
         result = run_high_recall_experiment(snapshot.samples)
     except (OSError, ValueError) as error:
         raise SystemExit(

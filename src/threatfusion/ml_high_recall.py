@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
@@ -141,30 +142,99 @@ def calculate_threshold_metrics(
     )
 
 
+def _threshold_metrics_from_counts(
+    *,
+    threshold: float,
+    true_positive: int,
+    false_positive: int,
+    positive_count: int,
+    negative_count: int,
+) -> ThresholdMetrics:
+    false_negative = positive_count - true_positive
+    true_negative = negative_count - false_positive
+
+    predicted_positive = true_positive + false_positive
+    precision = true_positive / predicted_positive if predicted_positive else 0.0
+    recall = true_positive / positive_count
+    f1 = (
+        2.0 * precision * recall / (precision + recall)
+        if precision + recall
+        else 0.0
+    )
+    false_positive_rate = false_positive / negative_count
+
+    return ThresholdMetrics(
+        threshold=float(threshold),
+        true_negative=true_negative,
+        false_positive=false_positive,
+        false_negative=false_negative,
+        true_positive=true_positive,
+        precision=float(precision),
+        recall=float(recall),
+        f1=float(f1),
+        false_positive_rate=float(false_positive_rate),
+    )
+
+
 def select_threshold_for_recall(
     labels: Sequence[int],
     probabilities: Sequence[float],
     *,
     target_recall: float,
 ) -> ThresholdMetrics:
-    """Choose a validation threshold with minimum FPR for a recall target."""
+    """Choose a validation threshold with minimum FPR for a recall target.
+
+    Threshold candidates are evaluated with a single descending probability
+    scan rather than rebuilding full predictions for every candidate.
+    """
     if not 0 < target_recall <= 1:
         raise ValueError("target_recall must be greater than 0 and at most 1")
     if len(labels) != len(probabilities):
         raise ValueError("labels and probabilities must have the same length")
     if not probabilities:
         raise ValueError("cannot select a threshold from empty inputs")
+    if set(labels) != {0, 1}:
+        raise ValueError("threshold selection requires both binary labels")
 
-    candidates = sorted({0.0, 1.0, *(float(value) for value in probabilities)}, reverse=True)
-    feasible = [
-        calculate_threshold_metrics(labels, probabilities, threshold=threshold)
-        for threshold in candidates
-    ]
-    feasible = [
-        metrics
-        for metrics in feasible
-        if metrics.recall + 1e-12 >= target_recall
-    ]
+    pairs: list[tuple[float, int]] = []
+    for probability, label in zip(probabilities, labels, strict=True):
+        value = float(probability)
+        if not math.isfinite(value) or not 0.0 <= value <= 1.0:
+            raise ValueError("probabilities must be finite values between 0 and 1")
+        pairs.append((value, label))
+
+    pairs.sort(key=lambda item: item[0], reverse=True)
+    positive_count = sum(label == 1 for label in labels)
+    negative_count = len(labels) - positive_count
+    thresholds = sorted(
+        {0.0, 1.0, *(probability for probability, _ in pairs)},
+        reverse=True,
+    )
+
+    true_positive = 0
+    false_positive = 0
+    pair_index = 0
+    feasible: list[ThresholdMetrics] = []
+
+    for threshold in thresholds:
+        while pair_index < len(pairs) and pairs[pair_index][0] >= threshold:
+            _, label = pairs[pair_index]
+            if label == 1:
+                true_positive += 1
+            else:
+                false_positive += 1
+            pair_index += 1
+
+        metrics = _threshold_metrics_from_counts(
+            threshold=threshold,
+            true_positive=true_positive,
+            false_positive=false_positive,
+            positive_count=positive_count,
+            negative_count=negative_count,
+        )
+        if metrics.recall + 1e-12 >= target_recall:
+            feasible.append(metrics)
+
     if not feasible:
         raise ValueError("no threshold satisfies the requested recall target")
 
