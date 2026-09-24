@@ -66,6 +66,17 @@ $env:URLHAUS_AUTH_KEY="..."
 python scripts\refresh_cti_cache.py
 ```
 
+Generate a safe local demo DNS CSV:
+
+```powershell
+python scripts\generate_demo_dns_csv.py
+```
+
+This creates `data/demo/demo_dns.csv`. If the local CTI cache contains at
+least one domain IOC, the demo includes one cached IOC value as inert text so
+the known-threat matching path can be exercised. The generator does not print,
+visit, or resolve that IOC.
+
 Run the dashboard:
 
 ```powershell
