@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 from .campaign import RelatedActivityReport
 from .cti_cache import CTICacheStatus
@@ -103,8 +104,22 @@ def reason_label(value: str) -> str:
 
 def ml_tier_label(value: str | None) -> str:
     if value is None:
-        return "None"
+        return "Below threshold"
     return _ML_TIER_LABELS.get(value, value.title())
+
+
+def format_timestamp(value: str) -> str:
+    """Format stored ISO timestamps for compact dashboard display."""
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return value
+
+    if parsed.tzinfo is not None and parsed.utcoffset() is not None:
+        parsed = parsed.astimezone(timezone.utc)
+        return parsed.strftime("%Y-%m-%d %H:%M UTC")
+
+    return parsed.strftime("%Y-%m-%d %H:%M")
 
 def summarize_runtime_result(
     result: RuntimeAnalysisResult,
@@ -204,7 +219,7 @@ def cti_status_rows(
         {
             "Source": status.source,
             "Records": status.record_count,
-            "Refreshed at": status.refreshed_at,
+            "Refreshed at": format_timestamp(status.refreshed_at),
         }
         for status in statuses
     ]
@@ -215,7 +230,7 @@ def history_rows(
     return [
         {
             "Run ID": summary.id,
-            "Created at": summary.created_at,
+            "Created at": format_timestamp(summary.created_at),
             "DNS events": summary.event_count,
             "Domains": summary.assessment_count,
             "Matches": summary.match_count,
