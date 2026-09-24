@@ -223,3 +223,46 @@ The random stratified split remains a development baseline. Source-aware
 evaluation and time-aware evaluation are still required as stronger later
 checks before treating the measured performance as representative of
 real-world DNS traffic.
+
+## High-recall development evaluation
+
+The first saved-snapshot baseline produced very high precision but low recall
+on `baseline-001`:
+
+- precision: `0.9865`
+- recall: `0.1312`
+- F1: `0.2316`
+- false-positive rate: `0.0002`
+- TN: `9997`
+- FP: `2`
+- FN: `967`
+- TP: `146`
+
+This means the default baseline was extremely conservative: it produced very
+few false alarms but missed most malicious test domains.
+
+The high-recall experiment therefore keeps the same character 3-5 gram TF-IDF
+representation and compares a Logistic Regression classifier using
+`class_weight="balanced"`. It uses a deterministic train/validation/test
+split. The model and TF-IDF representation are fitted on TRAIN only.
+Decision thresholds are selected on VALIDATION only, and the untouched TEST
+set is used only for the final measurement.
+
+The evaluation reports candidate operating points for validation recall
+targets of 0.80, 0.90, 0.95, and 0.99. For each target, the validation
+threshold with the lowest false-positive rate that still reaches the requested
+recall is selected, then that exact threshold is measured on TEST.
+
+This does not guarantee detection of every malicious domain. A detector can
+achieve 100% recall trivially by labeling every domain malicious, but that
+would also create an unusable false-positive rate. The project therefore
+measures the recall/false-positive tradeoff explicitly rather than claiming
+perfect detection.
+
+Run the local saved-snapshot experiment with:
+
+```text
+python scripts/evaluate_ml_high_recall.py --snapshot-dir data/snapshots/baseline-001
+```
+
+The output is aggregate-only and does not print domain values.

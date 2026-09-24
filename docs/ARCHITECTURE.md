@@ -130,6 +130,15 @@ SQLite persistence, and the Streamlit dashboard are not implemented yet.
 - Reports precision, recall, F1, false-positive rate, and TN/FP/FN/TP counts.
 - Performs no networking and does not depend on live CTI collection during training.
 
+### `src/threatfusion/ml_high_recall.py`
+
+- Uses the same character TF-IDF representation with `class_weight="balanced"`.
+- Creates deterministic train, validation, and untouched test partitions.
+- Fits the representation and classifier on train only.
+- Selects operating thresholds on validation only for requested recall targets.
+- Measures the selected thresholds once on the untouched test partition.
+- Reports the precision/recall/F1/false-positive tradeoff instead of claiming guaranteed perfect detection.
+
 ### `src/threatfusion/collectors/threatfox.py`
 
 - Integrates with the ThreatFox Community API for recent IOCs.
