@@ -4,12 +4,15 @@ from datetime import datetime, timezone
 
 from threatfusion.cti_cache import CTICacheStatus
 from threatfusion.dashboard import (
+    assessment_detail,
     assessment_rows,
     cti_status_rows,
     history_rows,
     match_rows,
     persisted_assessment_rows,
+    reason_label,
     summarize_runtime_result,
+    verdict_label,
 )
 from threatfusion.dns import DNSEvent
 from threatfusion.dns_behavior import DomainBehavior
@@ -81,7 +84,7 @@ def make_result() -> RuntimeAnalysisResult:
     )
 
 
-def test_runtime_summary_counts_verdicts() -> None:
+def test_runtime_summary_counts_verdicts_and_domains() -> None:
     summary = summarize_runtime_result(make_result())
 
     assert summary.event_count == 1
@@ -93,12 +96,35 @@ def test_runtime_summary_counts_verdicts() -> None:
     assert summary.low_count == 0
 
 
-def test_assessment_rows_are_severity_then_domain_sorted() -> None:
+def test_human_readable_verdict_and_reason_labels() -> None:
+    assert verdict_label("known_threat") == "Known Threat"
+    assert verdict_label("high_risk") == "High Risk"
+    assert reason_label("known_ioc_match") == "Known threat intelligence match"
+    assert reason_label("rapid_query_burst") == "Rapid DNS query burst"
+
+
+def test_assessment_rows_are_friendly_and_severity_sorted() -> None:
     rows = assessment_rows(make_result())
 
-    assert [row["domain"] for row in rows] == ["known.bad", "review.example"]
-    assert rows[0]["known_sources"] == "ThreatFox"
-    assert rows[1]["ml_tier"] == "low"
+    assert [row["Domain"] for row in rows] == ["known.bad", "review.example"]
+    assert rows[0]["Verdict"] == "Known Threat"
+    assert rows[0]["Known CTI sources"] == "ThreatFox"
+    assert rows[0]["Evidence"] == "Known threat intelligence match"
+    assert rows[1]["ML tier"] == "Low"
+    assert rows[1]["Evidence"] == "Low ML score tier"
+
+
+def test_assessment_detail_explains_domain() -> None:
+    assessment = next(
+        item for item in make_result().assessments if item.domain == "known.bad"
+    )
+
+    detail = assessment_detail(assessment)
+
+    assert detail["verdict"] == "Known Threat"
+    assert detail["known_sources"] == ("ThreatFox",)
+    assert detail["event_count"] == 1
+    assert detail["evidence"] == ("Known threat intelligence match",)
 
 
 def test_match_rows_do_not_expose_indicator_value() -> None:
@@ -106,10 +132,10 @@ def test_match_rows_do_not_expose_indicator_value() -> None:
 
     assert rows == [
         {
-            "query_name": "known.bad",
-            "source": "ThreatFox",
-            "match_type": "query_domain",
-            "ioc_type": "domain",
+            "Query name": "known.bad",
+            "Source": "ThreatFox",
+            "Match type": "Query Domain",
+            "IOC type": "DOMAIN",
         }
     ]
     assert "value" not in rows[0]
@@ -126,8 +152,8 @@ def test_cti_status_rows() -> None:
         ]
     )
 
-    assert rows[0]["source"] == "ThreatFox"
-    assert rows[0]["records"] == 123
+    assert rows[0]["Source"] == "ThreatFox"
+    assert rows[0]["Records"] == 123
 
 
 def test_history_rows() -> None:
@@ -148,11 +174,12 @@ def test_history_rows() -> None:
         ]
     )
 
-    assert rows[0]["run_id"] == 7
-    assert rows[0]["model"] == "model-a"
+    assert rows[0]["Run ID"] == 7
+    assert rows[0]["Model"] == "model-a"
+    assert rows[0]["Domains"] == 25
 
 
-def test_persisted_assessment_rows_are_sorted() -> None:
+def test_persisted_assessment_rows_are_friendly_and_sorted() -> None:
     rows = persisted_assessment_rows(
         [
             PersistedDomainAssessment(
@@ -194,4 +221,6 @@ def test_persisted_assessment_rows_are_sorted() -> None:
         ]
     )
 
-    assert [row["domain"] for row in rows] == ["a.example", "z.example"]
+    assert [row["Domain"] for row in rows] == ["a.example", "z.example"]
+    assert rows[0]["Verdict"] == "High Risk"
+    assert rows[0]["Evidence"] == "High ML score tier"
