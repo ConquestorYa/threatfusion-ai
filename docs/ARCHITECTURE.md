@@ -79,6 +79,7 @@ flowchart TD
     Runtime --> Findings[Domain findings]
     Runtime --> Evidence[Known IOC evidence]
     Runtime --> Chart[Verdict chart]
+    Runtime --> Export[Privacy-safe JSON / CSV report]
     Runtime -. explicit save .-> History[SQLite analysis history]
     History --> Dashboard[Streamlit history view]
 ```
@@ -333,3 +334,15 @@ The stack describes project direction; it does not mean that every planned compo
   `metadata.json`.
 - Refuses to overwrite a non-empty output directory unless explicitly
   requested and performs no network activity.
+
+
+### `src/threatfusion/reporting.py`
+
+- Builds portable JSON and CSV exports from the current in-memory runtime
+  result.
+- Includes aggregate summary metrics and per-domain verdict, ML tier/score,
+  behavior counts, query types, CTI source names, and human-readable evidence.
+- Does not include raw DNS rows, raw client IP values, or raw response IP
+  values.
+- Performs no networking and does not persist the generated report unless the
+  user downloads it.
