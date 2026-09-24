@@ -169,7 +169,7 @@ def _read_metadata(metadata_path: Path) -> MLArtifactMetadata:
         raise ValueError("ML artifact metadata is invalid JSON") from error
 
     if not isinstance(raw, dict):
-        raise ValueError("ML artifact metadata must be a JSON object")
+        raise TypeError("ML artifact metadata must be a JSON object")
 
     try:
         metadata = MLArtifactMetadata(**raw)
@@ -208,7 +208,7 @@ def load_trusted_ml_artifact(input_dir: Path) -> TrainedMLArtifact:
     model = joblib.load(model_path)
 
     if not isinstance(model, Pipeline):
-        raise ValueError("ML artifact model must be an sklearn Pipeline")
+        raise TypeError("ML artifact model must be an sklearn Pipeline")
     if not hasattr(model, "predict_proba"):
         raise ValueError("ML artifact model must support predict_proba")
 
