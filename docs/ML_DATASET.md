@@ -266,3 +266,37 @@ python scripts/evaluate_ml_high_recall.py --snapshot-dir data/snapshots/baseline
 ```
 
 The output is aggregate-only and does not print domain values.
+
+## FPR-budget model comparison
+
+The high-recall experiment showed that lowering the decision threshold can
+raise recall, but at the cost of an impractically large false-positive rate.
+The next development comparison therefore reverses the question: for a fixed
+false-positive-rate budget, how much malicious-domain recall can each model
+recover?
+
+The comparison uses the same deterministic train/validation/development-test
+split and evaluates a deliberately small, explainable candidate set:
+
+- character 3-5 TF-IDF + balanced Logistic Regression
+- character 2-6 TF-IDF with sublinear term frequency + balanced Logistic Regression
+- character 3-5 TF-IDF + balanced SGDClassifier with logistic loss
+
+For each candidate, thresholds are selected on VALIDATION only at false-positive
+rate budgets of 0.1%, 1%, 5%, and 10%. Within each budget, the selected
+validation threshold maximizes recall without exceeding the requested
+false-positive rate. That exact threshold is then measured on the shared
+development TEST split.
+
+Because development test results have already been inspected while iterating on
+the model, this split is not treated as a final unbiased benchmark. Final
+performance claims require a fresh holdout, preferably with source-aware or
+time-aware separation.
+
+Run the comparison locally with:
+
+```text
+python scripts/evaluate_ml_fpr_comparison.py --snapshot-dir data/snapshots/baseline-001
+```
+
+The script prints aggregate metrics only and never prints domain values.
