@@ -4,7 +4,7 @@ import csv
 import io
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Iterable
+from collections.abc import Iterable
 
 from .models import IOCRecord, IOCType
 
