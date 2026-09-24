@@ -37,6 +37,7 @@ The repository currently implements:
 - Known IOC matching through `DNSIOCMatch` and `match_dns_events()`, which compares DNS queries and responses against IOC records while preserving the original evidence objects.
 - Reproducible malicious-domain ML dataset preparation, stratified development splitting, local snapshot persistence, and pinned Tranco acquisition.
 - A baseline malicious-domain classifier using character n-gram TF-IDF with Logistic Regression, evaluated with precision, recall, F1, false-positive rate, and confusion-matrix counts.
+- A high-recall development evaluation using balanced Logistic Regression plus validation-only threshold selection, with an untouched test set for final measurement.
 - Automated pytest tests for the model, normalization, correlation, collectors, DNS ingestion, matching, ML dataset, snapshot, split, and baseline evaluation behavior.
 - Ruff checks for code quality.
 - Real live-data validation for the ThreatFox, URLhaus, and SGB collectors in addition to network-free automated tests.
@@ -66,7 +67,7 @@ The following capabilities are planned and are not implemented in the current re
 
 - Broader multi-source correlation workflows.
 - Integration of the baseline malicious-domain classifier into the DNS analysis workflow for previously unseen domains.
-- Stronger source-aware and time-aware ML evaluation.
+- Stronger source-aware and time-aware ML evaluation after the high-recall development comparison.
 - Explainable domain-risk output.
 - Campaign clustering.
 - A model evaluation dashboard.
