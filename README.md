@@ -48,7 +48,7 @@ trigger review. Behavioral signals are not treated as proof of malware.
 - explainable hybrid verdicts
 - reusable runtime analysis pipeline
 - SQLite CTI cache
-- privacy-conscious SQLite analysis history
+- privacy-conscious SQLite analysis history with local analyst feedback
 - Streamlit analysis dashboard with a dedicated model-evaluation view
 - explainable related-activity clustering
 - privacy-preserving relationship graph
@@ -100,7 +100,10 @@ Only `query_name` is required. The Streamlit uploader is configured with a 10 MB
 
 Uploaded DNS telemetry is analyzed in memory. The current dashboard does not
 persist raw uploaded DNS rows or client IP values. Saving analysis history is
-explicit and stores aggregate/per-domain findings only.
+explicit and stores aggregate/per-domain findings only. In local mode, an
+analyst can add a Confirmed Threat / Benign / Uncertain label and an optional
+short note to a saved finding. This feedback does not alter the original
+ThreatFusion verdict or retrain the model.
 
 Threat URLs and domains received from CTI feeds are treated as inert data; the
 analysis pipeline does not visit or resolve them.
@@ -126,7 +129,6 @@ Remaining planned work includes:
 
 - collect and run the fresh final holdout dataset
 - deploy the prepared container to a hosted environment/domain
-- optional analyst feedback
 - optional LLM-generated explanations and reports
 
 Principle:
