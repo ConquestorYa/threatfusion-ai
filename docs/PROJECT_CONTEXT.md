@@ -40,14 +40,14 @@ The repository currently implements:
 - A high-recall development evaluation using balanced Logistic Regression plus validation-only threshold selection.
 - A small classical-model comparison that selects thresholds under explicit validation false-positive-rate budgets before measuring the shared development test split.
 - Source-wise malicious recall diagnostics that show how ThreatFox, URLhaus, SGB, or other retained malicious sources behave under the same validation-selected thresholds.
-- A frozen-model fresh holdout evaluator that removes all development-snapshot domain overlap and measures the unchanged artifact thresholds on a separately collected later snapshot.
+- A frozen-model fresh holdout evaluator that removes all development-snapshot domain overlap, measures the unchanged artifact thresholds on a separately collected later snapshot, and can persist an aggregate JSON evaluation report.
 - DNS behavior aggregation for query volume, client spread, response-IP diversity, query-type diversity, and observation span.
 - An explainable hybrid domain assessment that combines known IOC evidence, ML probability tiers, and local DNS behavior into known_threat / high_risk / review / low verdicts.
 - Local persistence and trusted loading of the selected development ML pipeline together with validation-selected high / medium / low thresholds, plus normalized runtime probability inference.
 - A reusable runtime analysis pipeline that connects DNS CSV / DNSEvent input, known IOC matching, persisted ML inference, DNS behavior aggregation, and explainable hybrid verdicts in one local workflow.
 - Privacy-conscious SQLite analysis history that stores run summaries and per-domain findings without retaining raw uploaded DNS rows or client IP values by default.
 - A local SQLite CTI cache plus explicit refresh CLI, allowing ThreatFox, URLhaus, and SGB data to be refreshed separately from user analysis and then loaded locally by the runtime pipeline.
-- A Streamlit MVP with DNS CSV upload, separate event/domain metrics, domain-level verdict distribution, human-readable evidence labels, per-domain detail inspection, known IOC evidence, possible related-activity groups, a privacy-preserving relationship graph, CTI cache status, and opt-in aggregate analysis history.
+- A Streamlit MVP with DNS CSV upload, separate event/domain metrics, domain-level verdict distribution, human-readable evidence labels, per-domain detail inspection, known IOC evidence, possible related-activity groups, a privacy-preserving relationship graph, model-evaluation reporting, CTI cache status, and opt-in aggregate analysis history.
 - Explainable related-activity clustering that groups suspicious domains only when local DNS telemetry shows a shared client or shared response IP; time proximity is supporting context rather than proof.
 - Public-deployment preparation with environment-configurable runtime paths, a public mode that disables shared analysis history, non-root Docker packaging, and a sanitized deployment-bundle builder that copies only the CTI cache plus trusted ML artifact.
 - Privacy-safe JSON and CSV report export for the current in-memory analysis, containing aggregate/per-domain findings without raw DNS rows or client/response IP values.
@@ -80,7 +80,6 @@ The following capabilities are planned and are not implemented in the current re
 
 - Broader multi-source correlation workflows.
 - Collection and one-time measurement of a fresh final holdout snapshot using the implemented frozen-model evaluator.
-- A model evaluation dashboard.
 - Optional analyst feedback.
 - Optional LLM-generated analyst reports.
 
