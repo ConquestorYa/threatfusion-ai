@@ -454,3 +454,33 @@ holdout report and never retrains the model or changes thresholds.
 **Reason:** Final evaluation must remain separated from model development.
 Turning the dashboard into a tuning surface would weaken the frozen-holdout
 boundary.
+
+
+## DEC-052: Keep analyst feedback separate from detector output
+
+**Decision:** Analyst feedback is stored as local review context for a saved
+run/domain and does not overwrite the original hybrid verdict, ML score, or
+evidence.
+
+**Reason:** Human review is useful operational context, but silently rewriting
+the detector's historical output would make the system harder to audit and
+evaluate.
+
+## DEC-053: Do not retrain automatically from analyst feedback
+
+**Decision:** Confirmed Threat / Benign / Uncertain feedback is not consumed by
+the model-training pipeline automatically.
+
+**Reason:** Feedback can be noisy or inconsistent. Any future use as training
+data should require a separate curated dataset/versioning workflow so model
+changes remain reproducible.
+
+## DEC-054: Keep analyst feedback local/private
+
+**Decision:** Analyst feedback is available only through saved local history.
+Public mode keeps shared history and feedback disabled, and sanitized
+deployment bundles do not copy the developer analysis-history database.
+
+**Reason:** Analyst notes and reviewed domain findings may contain
+organization-specific context that should not be exposed to anonymous hosted
+demo users.
