@@ -16,7 +16,7 @@ class DomainSample:
     source: str
 
 
-def _normalize_domain_candidate(value: str) -> str | None:
+def normalize_domain_candidate(value: str) -> str | None:
     if not isinstance(value, str):
         return None
 
@@ -70,7 +70,7 @@ def extract_malicious_domains(indicators: Iterable[IOCRecord]) -> list[DomainSam
 
     for indicator in indicators:
         if indicator.ioc_type is IOCType.DOMAIN:
-            normalized = _normalize_domain_candidate(indicator.value)
+            normalized = normalize_domain_candidate(indicator.value)
             if normalized is not None:
                 samples.append(
                     DomainSample(domain=normalized, label=1, source=indicator.source)
@@ -80,7 +80,7 @@ def extract_malicious_domains(indicators: Iterable[IOCRecord]) -> list[DomainSam
             if hostname is None:
                 continue
 
-            normalized = _normalize_domain_candidate(hostname)
+            normalized = normalize_domain_candidate(hostname)
             if normalized is not None:
                 samples.append(
                     DomainSample(domain=normalized, label=1, source=indicator.source)
@@ -102,7 +102,7 @@ def build_benign_samples(
     seen: set[str] = set()
 
     for value in domains:
-        normalized = _normalize_domain_candidate(value)
+        normalized = normalize_domain_candidate(value)
         if normalized is None or normalized in seen:
             continue
 
@@ -128,7 +128,7 @@ def build_domain_dataset(
     for sample in malicious_samples:
         if not isinstance(sample, DomainSample):
             continue
-        normalized = _normalize_domain_candidate(sample.domain)
+        normalized = normalize_domain_candidate(sample.domain)
         if normalized is None:
             continue
         malicious_by_domain.setdefault(
@@ -139,7 +139,7 @@ def build_domain_dataset(
     for sample in benign_samples:
         if not isinstance(sample, DomainSample):
             continue
-        normalized = _normalize_domain_candidate(sample.domain)
+        normalized = normalize_domain_candidate(sample.domain)
         if normalized is None:
             continue
         benign_by_domain.setdefault(

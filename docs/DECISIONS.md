@@ -170,3 +170,24 @@ review, but behavior alone is not described as confirming malware.
 **Reason:** High query volume, multiple clients, IP diversity, and similar
 patterns can also occur in benign services. The prototype should expose these
 signals transparently without overstating what they prove.
+
+
+## DEC-024: Persist the train-only development model with validation-selected thresholds
+
+**Decision:** Persist the selected character 2-6 sublinear TF-IDF + balanced
+Logistic Regression pipeline together with validation-selected thresholds at
+1%, 5%, and 10% FPR budgets.
+
+**Reason:** Runtime inference should not retrain the model every time the
+application starts. The thresholds were selected for the train-only fitted
+model, so refitting on validation or development-test data would change model
+scores and invalidate those operating points.
+
+## DEC-025: Treat joblib model files as trusted local artifacts only
+
+**Decision:** Load joblib/pickle-compatible model artifacts only when they were
+generated locally by this project and are trusted.
+
+**Reason:** Python pickle-compatible formats can execute code during loading.
+They are suitable for this local educational workflow but must not be treated
+as safe interchange formats for untrusted files.

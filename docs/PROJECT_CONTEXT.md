@@ -42,6 +42,7 @@ The repository currently implements:
 - Source-wise malicious recall diagnostics that show how ThreatFox, URLhaus, SGB, or other retained malicious sources behave under the same validation-selected thresholds.
 - DNS behavior aggregation for query volume, client spread, response-IP diversity, query-type diversity, and observation span.
 - An explainable hybrid domain assessment that combines known IOC evidence, ML probability tiers, and local DNS behavior into known_threat / high_risk / review / low verdicts.
+- Local persistence and trusted loading of the selected development ML pipeline together with validation-selected high / medium / low thresholds, plus normalized runtime probability inference.
 - Automated pytest tests for the model, normalization, correlation, collectors, DNS ingestion, matching, ML dataset, snapshot, split, and baseline evaluation behavior.
 - Ruff checks for code quality.
 - Real live-data validation for the ThreatFox, URLhaus, and SGB collectors in addition to network-free automated tests.
@@ -70,7 +71,6 @@ Threat URLs, domains, IP addresses, and hashes are treated strictly as data. The
 The following capabilities are planned and are not implemented in the current repository:
 
 - Broader multi-source correlation workflows.
-- Persisting and loading the selected development ML model plus its validation-selected operating thresholds for runtime inference.
 - A fresh source-aware or time-aware final holdout after the current development diagnostics.
 - Campaign clustering.
 - A model evaluation dashboard.
