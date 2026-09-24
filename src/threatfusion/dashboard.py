@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .campaign import RelatedActivityReport
 from .cti_cache import CTICacheStatus
 from .hybrid_assessment import HybridAssessment
 from .persistence import AnalysisRunSummary, PersistedDomainAssessment
@@ -39,6 +40,12 @@ _ML_TIER_LABELS = {
     "low": "Low",
 }
 
+_RELATION_REASON_LABELS = {
+    "shared_client": "Shared client observation",
+    "shared_response_ip": "Shared response IP observation",
+    "time_proximity": "Observed close together in time",
+}
+
 _REASON_LABELS = {
     "known_ioc_match": "Known threat intelligence match",
     "ml_high_confidence": "High ML score tier",
@@ -51,20 +58,53 @@ _REASON_LABELS = {
     "rapid_query_burst": "Rapid DNS query burst",
 }
 
+def relationship_reason_label(value: str) -> str:
+    return _RELATION_REASON_LABELS.get(
+        value,
+        value.replace("_", " ").title(),
+    )
+
+def cluster_rows(
+    report: RelatedActivityReport,
+) -> list[dict[str, object]]:
+    return [
+        {
+            "Group": cluster.cluster_id,
+            "Domains": ", ".join(cluster.domains),
+            "Domain count": len(cluster.domains),
+            "Relationships": len(cluster.relationships),
+        }
+        for cluster in report.clusters
+    ]
+
+def relationship_rows(
+    report: RelatedActivityReport,
+) -> list[dict[str, object]]:
+    return [
+        {
+            "Domain A": relationship.domain_a,
+            "Domain B": relationship.domain_b,
+            "Shared clients": relationship.shared_client_count,
+            "Shared response IPs": relationship.shared_response_ip_count,
+            "Closest time delta (s)": relationship.min_time_delta_seconds,
+            "Evidence": "; ".join(
+                relationship_reason_label(reason)
+                for reason in relationship.reasons
+            ),
+        }
+        for relationship in report.relationships
+    ]
 
 def verdict_label(value: str) -> str:
     return _VERDICT_LABELS.get(value, value.replace("_", " ").title())
 
-
 def reason_label(value: str) -> str:
     return _REASON_LABELS.get(value, value.replace("_", " ").title())
-
 
 def ml_tier_label(value: str | None) -> str:
     if value is None:
         return "None"
     return _ML_TIER_LABELS.get(value, value.title())
-
 
 def summarize_runtime_result(
     result: RuntimeAnalysisResult,
@@ -88,10 +128,8 @@ def summarize_runtime_result(
         low_count=counts["low"],
     )
 
-
 def _evidence_text(reasons: tuple[str, ...]) -> str:
     return "; ".join(reason_label(reason) for reason in reasons)
-
 
 def assessment_rows(
     result: RuntimeAnalysisResult,
@@ -128,7 +166,6 @@ def assessment_rows(
         )
     ]
 
-
 def assessment_detail(
     assessment: HybridAssessment,
 ) -> dict[str, object]:
@@ -147,7 +184,6 @@ def assessment_detail(
         "evidence": tuple(reason_label(reason) for reason in assessment.reasons),
     }
 
-
 def match_rows(
     result: RuntimeAnalysisResult,
 ) -> list[dict[str, str]]:
@@ -161,7 +197,6 @@ def match_rows(
         for match in result.matches
     ]
 
-
 def cti_status_rows(
     statuses: list[CTICacheStatus],
 ) -> list[dict[str, object]]:
@@ -173,7 +208,6 @@ def cti_status_rows(
         }
         for status in statuses
     ]
-
 
 def history_rows(
     summaries: list[AnalysisRunSummary],
@@ -193,7 +227,6 @@ def history_rows(
         }
         for summary in summaries
     ]
-
 
 def persisted_assessment_rows(
     assessments: list[PersistedDomainAssessment],

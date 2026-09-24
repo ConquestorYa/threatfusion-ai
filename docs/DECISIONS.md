@@ -281,3 +281,22 @@ dashboard layer.
 **Reason:** Internal codes are useful for tests and storage, while portfolio and
 analyst-facing UI should explain findings without requiring knowledge of code
 identifiers.
+
+
+## DEC-035: Treat campaign discovery as possible related activity
+
+**Decision:** Group non-low domains into possible related-activity components
+only when local DNS telemetry shows at least one shared client observation or
+shared response IP. Time proximity is supporting context only.
+
+**Reason:** Temporal coincidence by itself is weak evidence. Requiring a shared
+local observation keeps the first clustering baseline conservative and easy to
+explain.
+
+## DEC-036: Do not expose raw client IP values in relationship output
+
+**Decision:** Campaign/relationship presentation reports aggregate shared-client
+counts and reason labels, not the actual client IP values.
+
+**Reason:** Client IPs are sensitive local telemetry. The dashboard can explain
+why two domains were linked without exposing the underlying identifiers.

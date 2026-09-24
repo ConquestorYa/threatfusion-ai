@@ -58,7 +58,7 @@ def build_demo_dns_csv(indicators: Iterable[IOCRecord]) -> DemoDNSDataset:
         writer.writerow(
             [
                 start.isoformat().replace("+00:00", "Z"),
-                "192.0.2.10",
+                "192.0.2.21",
                 known_domain,
                 "A",
                 "198.51.100.10",

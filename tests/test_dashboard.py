@@ -2,15 +2,23 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from threatfusion.campaign import (
+    DomainRelationship,
+    RelatedActivityCluster,
+    RelatedActivityReport,
+)
 from threatfusion.cti_cache import CTICacheStatus
 from threatfusion.dashboard import (
     assessment_detail,
     assessment_rows,
+    cluster_rows,
     cti_status_rows,
     history_rows,
     match_rows,
     persisted_assessment_rows,
     reason_label,
+    relationship_reason_label,
+    relationship_rows,
     summarize_runtime_result,
     verdict_label,
 )
@@ -83,7 +91,6 @@ def make_result() -> RuntimeAnalysisResult:
         assessments=(review, known),
     )
 
-
 def test_runtime_summary_counts_verdicts_and_domains() -> None:
     summary = summarize_runtime_result(make_result())
 
@@ -95,13 +102,11 @@ def test_runtime_summary_counts_verdicts_and_domains() -> None:
     assert summary.review_count == 1
     assert summary.low_count == 0
 
-
 def test_human_readable_verdict_and_reason_labels() -> None:
     assert verdict_label("known_threat") == "Known Threat"
     assert verdict_label("high_risk") == "High Risk"
     assert reason_label("known_ioc_match") == "Known threat intelligence match"
     assert reason_label("rapid_query_burst") == "Rapid DNS query burst"
-
 
 def test_assessment_rows_are_friendly_and_severity_sorted() -> None:
     rows = assessment_rows(make_result())
@@ -112,7 +117,6 @@ def test_assessment_rows_are_friendly_and_severity_sorted() -> None:
     assert rows[0]["Evidence"] == "Known threat intelligence match"
     assert rows[1]["ML tier"] == "Low"
     assert rows[1]["Evidence"] == "Low ML score tier"
-
 
 def test_assessment_detail_explains_domain() -> None:
     assessment = next(
@@ -125,7 +129,6 @@ def test_assessment_detail_explains_domain() -> None:
     assert detail["known_sources"] == ("ThreatFox",)
     assert detail["event_count"] == 1
     assert detail["evidence"] == ("Known threat intelligence match",)
-
 
 def test_match_rows_do_not_expose_indicator_value() -> None:
     rows = match_rows(make_result())
@@ -140,7 +143,6 @@ def test_match_rows_do_not_expose_indicator_value() -> None:
     ]
     assert "value" not in rows[0]
 
-
 def test_cti_status_rows() -> None:
     rows = cti_status_rows(
         [
@@ -154,7 +156,6 @@ def test_cti_status_rows() -> None:
 
     assert rows[0]["Source"] == "ThreatFox"
     assert rows[0]["Records"] == 123
-
 
 def test_history_rows() -> None:
     rows = history_rows(
@@ -177,7 +178,6 @@ def test_history_rows() -> None:
     assert rows[0]["Run ID"] == 7
     assert rows[0]["Model"] == "model-a"
     assert rows[0]["Domains"] == 25
-
 
 def test_persisted_assessment_rows_are_friendly_and_sorted() -> None:
     rows = persisted_assessment_rows(
@@ -224,3 +224,49 @@ def test_persisted_assessment_rows_are_friendly_and_sorted() -> None:
     assert [row["Domain"] for row in rows] == ["a.example", "z.example"]
     assert rows[0]["Verdict"] == "High Risk"
     assert rows[0]["Evidence"] == "High ML score tier"
+
+def test_campaign_rows_are_human_readable_and_privacy_preserving() -> None:
+    relationship = DomainRelationship(
+        domain_a="a.example",
+        domain_b="b.example",
+        shared_client_count=2,
+        shared_response_ip_count=1,
+        min_time_delta_seconds=30.0,
+        reasons=(
+            "shared_client",
+            "shared_response_ip",
+            "time_proximity",
+        ),
+    )
+    report = RelatedActivityReport(
+        clusters=(
+            RelatedActivityCluster(
+                cluster_id="group-1",
+                domains=("a.example", "b.example"),
+                relationships=(relationship,),
+            ),
+        ),
+        relationships=(relationship,),
+    )
+
+    groups = cluster_rows(report)
+    relationships = relationship_rows(report)
+
+    assert groups == [
+        {
+            "Group": "group-1",
+            "Domains": "a.example, b.example",
+            "Domain count": 2,
+            "Relationships": 1,
+        }
+    ]
+    assert relationships[0]["Shared clients"] == 2
+    assert relationships[0]["Shared response IPs"] == 1
+    assert relationships[0]["Evidence"] == (
+        "Shared client observation; Shared response IP observation; "
+        "Observed close together in time"
+    )
+    assert "client_ip" not in relationships[0]
+    assert relationship_reason_label("shared_client") == (
+        "Shared client observation"
+    )
