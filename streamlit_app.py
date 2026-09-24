@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 
 _PROJECT_ROOT = Path(__file__).resolve().parent
@@ -18,6 +19,7 @@ from threatfusion.cti_cache import (
 from threatfusion.dashboard import (
     assessment_detail,
     assessment_rows,
+    build_relationship_graph,
     cluster_rows,
     content_fingerprint,
     cti_status_rows,
@@ -61,6 +63,59 @@ def _verdict_chart(summary) -> pd.DataFrame:
             ],
         }
     )
+
+
+def _relationship_figure(report, result) -> go.Figure:
+    graph = build_relationship_graph(report, result)
+    figure = go.Figure()
+
+    for edge in graph.edges:
+        figure.add_trace(
+            go.Scatter(
+                x=[edge.x0, edge.x1],
+                y=[edge.y0, edge.y1],
+                mode="lines",
+                line={"width": 2},
+                hoverinfo="text",
+                text=[edge.hover_text, edge.hover_text],
+                showlegend=False,
+            )
+        )
+
+    if graph.nodes:
+        figure.add_trace(
+            go.Scatter(
+                x=[node.x for node in graph.nodes],
+                y=[node.y for node in graph.nodes],
+                mode="markers+text",
+                marker={"size": 18},
+                text=[node.domain for node in graph.nodes],
+                textposition="top center",
+                hoverinfo="text",
+                hovertext=[
+                    (
+                        f"{node.domain}<br>"
+                        f"Group: {node.cluster_id}<br>"
+                        f"Verdict: {node.verdict}<br>"
+                        f"ML tier: {node.ml_tier}<br>"
+                        f"Known CTI sources: "
+                        f"{', '.join(node.known_sources) or 'None'}"
+                    )
+                    for node in graph.nodes
+                ],
+                showlegend=False,
+            )
+        )
+
+    figure.update_layout(
+        title="Possible related-activity graph",
+        xaxis={"visible": False},
+        yaxis={"visible": False},
+        hovermode="closest",
+        margin={"l": 20, "r": 20, "t": 50, "b": 20},
+    )
+    return figure
+
 
 def _show_system_status(db_path: Path, model_dir: Path) -> None:
     st.sidebar.header("System status")
@@ -219,6 +274,10 @@ def _show_analysis_result(result, artifact, db_path: Path) -> None:
                 "These groups show possible related suspicious activity based "
                 "on shared local DNS evidence. They do not prove one malware "
                 "campaign."
+            )
+            st.plotly_chart(
+                _relationship_figure(report, result),
+                width="stretch",
             )
             st.write("**Possible related-activity groups**")
             st.dataframe(
