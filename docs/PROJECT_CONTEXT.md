@@ -46,7 +46,7 @@ The repository currently implements:
 - A reusable runtime analysis pipeline that connects DNS CSV / DNSEvent input, known IOC matching, persisted ML inference, DNS behavior aggregation, and explainable hybrid verdicts in one local workflow.
 - Privacy-conscious SQLite analysis history that stores run summaries and per-domain findings without retaining raw uploaded DNS rows or client IP values by default.
 - A local SQLite CTI cache plus explicit refresh CLI, allowing ThreatFox, URLhaus, and SGB data to be refreshed separately from user analysis and then loaded locally by the runtime pipeline.
-- A Streamlit MVP with DNS CSV upload, verdict summary metrics, Plotly verdict distribution, per-domain findings, known IOC evidence, CTI cache status, and opt-in aggregate analysis history.
+- A Streamlit MVP with DNS CSV upload, separate event/domain metrics, domain-level verdict distribution, human-readable evidence labels, per-domain detail inspection, known IOC evidence, CTI cache status, and opt-in aggregate analysis history.
 - Automated pytest tests for the model, normalization, correlation, collectors, DNS ingestion, matching, ML dataset, snapshot, split, and baseline evaluation behavior.
 - Ruff checks for code quality.
 - Real live-data validation for the ThreatFox, URLhaus, and SGB collectors in addition to network-free automated tests.

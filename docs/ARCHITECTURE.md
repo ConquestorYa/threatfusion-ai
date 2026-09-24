@@ -241,7 +241,8 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 ### `src/threatfusion/dashboard.py` and `streamlit_app.py`
 
 - Convert runtime results into deterministic presentation rows and summary counts.
-- Provide DNS CSV upload, verdict metrics, a Plotly verdict chart, domain findings, and known-IOC evidence views.
+- Provide separate DNS-event and unique-domain metrics so domain-level verdict counts are unambiguous.
+- Provide DNS CSV upload, a domain-level Plotly verdict chart, human-readable evidence labels, per-domain detail inspection, domain findings, and known-IOC evidence views.
 - Display local CTI cache status and saved analysis history.
 - Keep raw uploaded DNS telemetry in memory and make aggregate history saving explicit.
 - Do not refresh external CTI sources during interactive user analysis.

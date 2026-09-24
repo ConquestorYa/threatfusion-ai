@@ -261,3 +261,23 @@ analysis history requires an explicit user action.
 
 **Reason:** DNS telemetry can reveal sensitive browsing and internal-network
 information. The portfolio demo should minimize retention by default.
+
+
+## DEC-033: Present verdicts explicitly at domain level
+
+**Decision:** Dashboard verdict counts and charts are labeled as domain-level
+results, while DNS event counts are shown separately.
+
+**Reason:** Multiple DNS telemetry rows can belong to one normalized domain.
+Separating these units avoids making users think that event counts should sum
+to verdict counts.
+
+## DEC-034: Translate internal reason codes at the presentation boundary
+
+**Decision:** Keep stable machine-readable reason codes inside the analysis and
+persistence layers, but translate them into human-readable evidence text in the
+dashboard layer.
+
+**Reason:** Internal codes are useful for tests and storage, while portfolio and
+analyst-facing UI should explain findings without requiring knowledge of code
+identifiers.
