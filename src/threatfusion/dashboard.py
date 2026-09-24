@@ -58,14 +58,11 @@ _REASON_LABELS = {
     "rapid_query_burst": "Rapid DNS query burst",
 }
 
-
-
 def relationship_reason_label(value: str) -> str:
     return _RELATION_REASON_LABELS.get(
         value,
         value.replace("_", " ").title(),
     )
-
 
 def cluster_rows(
     report: RelatedActivityReport,
@@ -79,7 +76,6 @@ def cluster_rows(
         }
         for cluster in report.clusters
     ]
-
 
 def relationship_rows(
     report: RelatedActivityReport,
@@ -99,20 +95,16 @@ def relationship_rows(
         for relationship in report.relationships
     ]
 
-
 def verdict_label(value: str) -> str:
     return _VERDICT_LABELS.get(value, value.replace("_", " ").title())
 
-
 def reason_label(value: str) -> str:
     return _REASON_LABELS.get(value, value.replace("_", " ").title())
-
 
 def ml_tier_label(value: str | None) -> str:
     if value is None:
         return "None"
     return _ML_TIER_LABELS.get(value, value.title())
-
 
 def summarize_runtime_result(
     result: RuntimeAnalysisResult,
@@ -136,10 +128,8 @@ def summarize_runtime_result(
         low_count=counts["low"],
     )
 
-
 def _evidence_text(reasons: tuple[str, ...]) -> str:
     return "; ".join(reason_label(reason) for reason in reasons)
-
 
 def assessment_rows(
     result: RuntimeAnalysisResult,
@@ -176,7 +166,6 @@ def assessment_rows(
         )
     ]
 
-
 def assessment_detail(
     assessment: HybridAssessment,
 ) -> dict[str, object]:
@@ -195,7 +184,6 @@ def assessment_detail(
         "evidence": tuple(reason_label(reason) for reason in assessment.reasons),
     }
 
-
 def match_rows(
     result: RuntimeAnalysisResult,
 ) -> list[dict[str, str]]:
@@ -209,7 +197,6 @@ def match_rows(
         for match in result.matches
     ]
 
-
 def cti_status_rows(
     statuses: list[CTICacheStatus],
 ) -> list[dict[str, object]]:
@@ -221,7 +208,6 @@ def cti_status_rows(
         }
         for status in statuses
     ]
-
 
 def history_rows(
     summaries: list[AnalysisRunSummary],
@@ -241,7 +227,6 @@ def history_rows(
         }
         for summary in summaries
     ]
-
 
 def persisted_assessment_rows(
     assessments: list[PersistedDomainAssessment],
