@@ -263,6 +263,10 @@ def _show_history(db_path: Path) -> None:
         pd.DataFrame(history_rows(summaries)),
         hide_index=True,
         width="stretch",
+        column_config={
+            "Created at": st.column_config.TextColumn(width="medium"),
+            "Model": st.column_config.TextColumn(width="large"),
+        },
     )
 
     selected_id = st.selectbox(
