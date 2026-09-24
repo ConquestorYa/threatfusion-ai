@@ -39,6 +39,7 @@ The repository currently implements:
 - A baseline malicious-domain classifier using character n-gram TF-IDF with Logistic Regression, evaluated with precision, recall, F1, false-positive rate, and confusion-matrix counts.
 - A high-recall development evaluation using balanced Logistic Regression plus validation-only threshold selection.
 - A small classical-model comparison that selects thresholds under explicit validation false-positive-rate budgets before measuring the shared development test split.
+- Source-wise malicious recall diagnostics that show how ThreatFox, URLhaus, SGB, or other retained malicious sources behave under the same validation-selected thresholds.
 - Automated pytest tests for the model, normalization, correlation, collectors, DNS ingestion, matching, ML dataset, snapshot, split, and baseline evaluation behavior.
 - Ruff checks for code quality.
 - Real live-data validation for the ThreatFox, URLhaus, and SGB collectors in addition to network-free automated tests.
@@ -68,7 +69,7 @@ The following capabilities are planned and are not implemented in the current re
 
 - Broader multi-source correlation workflows.
 - Integration of the baseline malicious-domain classifier into the DNS analysis workflow for previously unseen domains.
-- Stronger source-aware and time-aware ML evaluation after the high-recall development comparison.
+- A fresh source-aware or time-aware final holdout after the current development diagnostics.
 - Explainable domain-risk output.
 - Campaign clustering.
 - A model evaluation dashboard.
