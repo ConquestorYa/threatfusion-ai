@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-import threatfusion.runtime_analysis as runtime_analysis
+from threatfusion import runtime_analysis
 from threatfusion.dns import DNSEvent
 from threatfusion.hybrid_assessment import HybridVerdict, MLThresholds
 from threatfusion.models import IOCRecord, IOCType
