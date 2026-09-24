@@ -78,7 +78,7 @@ The DNS CSV schema is:
 timestamp,client_ip,query_name,query_type,response_ip
 ```
 
-Only `query_name` is required.
+Only `query_name` is required. The Streamlit uploader is configured with a 10 MB maximum file size.
 
 ## Privacy defaults
 
