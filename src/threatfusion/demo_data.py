@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import csv
 import io
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from collections.abc import Iterable
 
 from .models import IOCRecord, IOCType
 
