@@ -14,9 +14,8 @@ from threatfusion.ml_holdout import (
 
 
 class FakeProbabilityModel:
-    classes_ = [0, 1]
-
     def __init__(self, probabilities: dict[str, float]) -> None:
+        self.classes_ = [0, 1]
         self.probabilities = probabilities
 
     def predict_proba(self, domains: list[str]) -> list[list[float]]:
