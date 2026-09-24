@@ -20,6 +20,7 @@ from threatfusion.ml_snapshot import (
     build_domain_snapshot,
     parse_tranco_csv,
 )
+from threatfusion.ml_snapshot_io import write_domain_snapshot
 from threatfusion.models import IOCRecord
 
 
@@ -47,6 +48,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--tranco-id", default="L5PV4")
     parser.add_argument("--tranco-date", default="2026-09-23")
     parser.add_argument("--tranco-limit", type=_positive_integer, default=50000)
+    parser.add_argument("--output-dir", type=Path, default=None)
     return parser
 
 
@@ -137,6 +139,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         benign_snapshot_id=args.tranco_id,
         benign_snapshot_date=args.tranco_date,
     )
+    if args.output_dir is not None:
+        dataset_path, metadata_path = write_domain_snapshot(
+            snapshot,
+            args.output_dir,
+            experiment_metadata={
+                "threatfox_days": args.threatfox_days,
+                "sgb_pages": args.sgb_pages,
+                "tranco_limit": args.tranco_limit,
+                "tranco_id": args.tranco_id,
+                "tranco_date": args.tranco_date,
+            },
+        )
+        print(f"Snapshot files written: {dataset_path} and {metadata_path}")
+
     _print_report(
         args,
         len(threatfox_records),

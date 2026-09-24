@@ -47,3 +47,6 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+
+# Local ML dataset snapshots
+data/snapshots/

@@ -139,7 +139,8 @@ malicious samples, so the first source for a duplicate normalized domain wins
 deterministically under the existing dataset rules.
 
 Model training is still not implemented. Snapshot construction also does not
-invoke the baseline split, calculate metrics, or write files to disk.
+invoke the baseline split, calculate metrics, or perform collection. The
+separate snapshot I/O layer persists completed snapshots locally.
 
 ## First pinned live snapshot
 
@@ -166,3 +167,32 @@ train a model.
 Using popular Tranco domains as benign examples may make the first baseline
 easier than real-world DNS traffic. Later evaluation should include more
 realistic benign DNS observations when they are available.
+
+## Persisted experiment snapshots
+
+Live malicious feeds change over time, so an exact experiment dataset must be
+persisted locally rather than re-fetched during model training. The snapshot
+I/O layer writes two deterministic files under an explicitly supplied output
+directory:
+
+- `dataset.csv` stores normalized `domain,label,source` rows in snapshot order.
+- `metadata.json` stores snapshot metadata, statistics, and experiment
+	parameters.
+
+The default local path `data/snapshots/` is ignored by Git. API keys are never
+stored. Future model training should load a saved snapshot instead of
+re-fetching live feeds during training.
+
+The first live collection run produced these aggregate results:
+
+- ThreatFox records: `8575`
+- URLhaus records: `14381`
+- SGB records: `200`
+- malicious candidates: `7021`
+- unique malicious: `5566`
+- Tranco rows: `50000`
+- benign after overlap: `49994`
+- final total: `55560`
+
+These numbers describe that one live collection run and may differ in later
+runs as the live CTI sources change.
