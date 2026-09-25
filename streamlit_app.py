@@ -39,7 +39,7 @@ from threatfusion.dashboard import (
 )
 from threatfusion.evaluation_dashboard import (
     operating_point_rows,
-    source_recall_rows,
+    source_metric_rows,
     summarize_holdout_report,
 )
 from threatfusion.ml_artifact import load_trusted_ml_artifact
@@ -1352,20 +1352,40 @@ def _show_model_evaluation(report_path: Path) -> None:
         config={"displayModeBar": False},
     )
 
-    source_rows = source_recall_rows(report)
+    source_rows = source_metric_rows(report)
     if source_rows:
         source_frame = pd.DataFrame(source_rows)
-        for column in ("High recall", "Medium recall", "Low recall"):
+        for column in (
+            "High recall",
+            "High FPR",
+            "Medium recall",
+            "Medium FPR",
+            "Low recall",
+            "Low FPR",
+        ):
             source_frame[column] = source_frame[column].map(
-                lambda value: f"{value:.2%}"
+                lambda value: (
+                    "n/a" if pd.isna(value) else f"{value:.2%}"
+                )
             )
-        st.write("**Malicious recall by retained source**")
+        st.write("**Source-aware holdout diagnostics**")
         st.dataframe(
             source_frame,
             hide_index=True,
             width="stretch",
         )
+        st.caption(
+            "Recall is shown for malicious samples and false-positive rate "
+            "for benign samples. A source with no samples for one class shows "
+            "n/a for that class-specific rate."
+        )
 
+    st.info(
+        "Dataset precision is not the same as operational positive predictive "
+        "value (PPV). Real DNS traffic may contain a much lower malicious "
+        "base rate, so even a small false-positive rate can produce many "
+        "benign alerts."
+    )
     st.caption(
         "Protocol: fresh-collection disjoint holdout. Every domain seen in "
         "the development snapshot is removed before evaluation. This is not "
