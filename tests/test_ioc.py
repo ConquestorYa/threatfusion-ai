@@ -6,6 +6,24 @@ def test_domain_normalization() -> None:
     assert normalize_ioc_value("  Example.COM.  ", IOCType.DOMAIN) == "example.com"
 
 
+
+
+def test_unicode_domain_normalizes_to_idna_ascii() -> None:
+    assert (
+        normalize_ioc_value("BÜCHER.Example.", IOCType.DOMAIN)
+        == "xn--bcher-kva.example"
+    )
+
+
+def test_ipv6_network_normalization() -> None:
+    assert (
+        normalize_ioc_value(
+            " 2001:0DB8:0000::/32 ",
+            IOCType.IPV6_NETWORK,
+        )
+        == "2001:db8::/32"
+    )
+
 def test_uppercase_hash_normalization() -> None:
     value = "  AABBCCDDEEFF00112233445566778899  "
 

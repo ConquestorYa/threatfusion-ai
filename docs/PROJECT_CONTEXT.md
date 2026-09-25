@@ -32,9 +32,10 @@ The repository currently implements:
 - IOC correlation through `IOCGroup` and `correlate_iocs()`, which groups equivalent IOCs while preserving all original source records.
 - A ThreatFox collector for recent API IOC data, including conservative type mapping and timestamp/tag parsing.
 - A URLhaus collector for the recent CSV export, including named-column discovery and malformed-row handling.
-- An SGB collector using the official T.C. Siber Guvenlik Baskanligi malicious-address API, with domain, URL, IPv4, and IPv6 mapping into `IOCRecord`. IPv6 network/CIDR records that do not fit the current IOC model are preserved as `IOCType.UNKNOWN`, and retrieval is safe and bounded through page-based requests.
-- DNS telemetry ingestion via `DNSEvent`, generic CSV parsing, and Zeek
-  `dns.log` parsing, with evidence-preserving local-only handling.
+- An SGB collector using the official T.C. Siber Guvenlik Baskanligi malicious-address API, with domain, URL, IPv4, IPv6 host, and typed IPv6 network/CIDR mapping into `IOCRecord`, with safe bounded page-based retrieval.
+- DNS telemetry ingestion via `DNSEvent`, generic CSV parsing, Zeek
+  `dns.log` parsing, and in-memory Pi-hole FTL SQLite query-database parsing,
+  with evidence-preserving local-only handling.
 - Known IOC matching through `DNSIOCMatch` and `match_dns_events()`, which compares DNS queries and responses against IOC records while preserving the original evidence objects.
 - Reproducible malicious-domain ML dataset preparation, stratified development splitting, local snapshot persistence, and pinned Tranco acquisition.
 - A baseline malicious-domain classifier using character n-gram TF-IDF with Logistic Regression, evaluated with precision, recall, F1, false-positive rate, and confusion-matrix counts.
@@ -86,7 +87,8 @@ Known IOC matching includes:
 - `DNSEvent` matched against `IOCRecord`
 - DOMAIN IOC matching by normalized DNS query
 - URL IOC hostname matching using local `urllib.parse` logic only
-- IPv4 / IPv6 IOC matching against `response_ip`
+- IPv4 / IPv6 host IOC matching against `response_ip`
+- IPv6 network/CIDR containment matching against IPv6 `response_ip`
 - multiple CTI source records preserved as separate evidence matches
 - malformed IOC values ignored safely without breaking the batch
 

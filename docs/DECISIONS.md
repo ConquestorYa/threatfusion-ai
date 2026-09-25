@@ -644,3 +644,51 @@ excluded from sanitized public deployment bundles.
 rewriting or deleting detector output would reduce auditability and could hide
 future evidence changes.
 
+## DEC-070: Canonicalize Unicode domains to IDNA ASCII form
+
+**Decision:** Domain normalization converts valid Unicode hostnames to their
+lowercase IDNA ASCII representation before matching, ML dataset construction,
+and runtime ML inference.
+
+**Reason:** A Unicode hostname and its punycode representation identify the
+same DNS name. Treating them as different values would create duplicate samples
+and missed IOC matches without requiring any network resolution.
+
+
+## DEC-071: Apply strict public-domain validation at the ML boundary
+
+**Decision:** ML dataset/runtime candidates must contain at least two valid DNS
+labels, use labels of valid length and syntax after IDNA normalization, and not
+be IP literals. Tolerant DNS evidence handling remains separate so malformed or
+local telemetry can still be inspected and matched where appropriate.
+
+**Reason:** The malicious-domain model was trained for internet-domain strings.
+Rejecting clearly out-of-distribution or malformed names prevents meaningless
+scores while preserving raw security evidence outside the model.
+
+
+## DEC-072: Represent and match SGB IPv6 network IOCs explicitly
+
+**Decision:** SGB `ip6net` / `ipv6net` values are stored as
+`IOCType.IPV6_NETWORK`. A DNS response IPv6 address contained by such a
+network creates `response_ip_network` contextual CTI evidence, not an
+automatic Known Threat verdict.
+
+**Reason:** Discarding CIDR semantics loses useful infrastructure evidence, but
+a network-level match is broader than an exact domain IOC and must not be
+treated as proof that the queried domain itself is malicious.
+
+
+## DEC-073: Import Pi-hole query databases in memory
+
+**Decision:** ThreatFusion accepts uploaded Pi-hole FTL SQLite query databases
+by deserializing them into an in-memory SQLite connection and reading the
+standard `queries` view. The `forward` field is not mapped to
+`DNSEvent.response_ip`.
+
+**Reason:** Pi-hole is a realistic small-network DNS telemetry source. Reading
+the established query view removes manual CSV conversion while preserving the
+privacy goal of not writing uploaded raw telemetry to the ThreatFusion history
+database. Pi-hole's forward value identifies an upstream resolver, not the
+answer IP returned for the queried domain.
+

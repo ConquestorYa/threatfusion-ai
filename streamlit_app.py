@@ -58,6 +58,7 @@ from threatfusion.persistence import (
 from threatfusion.reporting import build_analysis_report
 from threatfusion.runtime_analysis import (
     analyze_dns_csv_with_diagnostics,
+    analyze_pihole_query_db_with_diagnostics,
     analyze_zeek_dns_log_with_diagnostics,
 )
 
@@ -998,23 +999,25 @@ def main() -> None:
 
         telemetry_format = st.selectbox(
             "Telemetry format",
-            ["Generic DNS CSV", "Zeek dns.log"],
+            ["Generic DNS CSV", "Zeek dns.log", "Pi-hole FTL database"],
             key="telemetry_format",
         )
 
         input_columns = st.columns(3)
         input_columns[0].markdown("**Input format**")
-        input_columns[0].caption(
-            "Generic DNS CSV · UTF-8 · max 10 MB"
-            if telemetry_format == "Generic DNS CSV"
-            else "Zeek dns.log text export · max 10 MB"
-        )
+        format_caption = {
+            "Generic DNS CSV": "Generic DNS CSV · UTF-8 · max 10 MB",
+            "Zeek dns.log": "Zeek dns.log text export · max 10 MB",
+            "Pi-hole FTL database": "Pi-hole FTL SQLite database · max 10 MB",
+        }
+        required_caption = {
+            "Generic DNS CSV": "query_name; all other fields are optional",
+            "Zeek dns.log": "Zeek #fields header with query",
+            "Pi-hole FTL database": "queries view with standard Pi-hole fields",
+        }
+        input_columns[0].caption(format_caption[telemetry_format])
         input_columns[1].markdown("**Required field**")
-        input_columns[1].caption(
-            "query_name; all other fields are optional"
-            if telemetry_format == "Generic DNS CSV"
-            else "Zeek #fields header with query"
-        )
+        input_columns[1].caption(required_caption[telemetry_format])
         input_columns[2].markdown("**Privacy**")
         input_columns[2].caption("Raw rows stay in memory unless you export them")
 
@@ -1036,28 +1039,37 @@ def main() -> None:
                 "Run scripts/refresh_cti_cache.py to populate the cache."
             )
 
-        upload_label = (
-            "Upload DNS CSV"
-            if telemetry_format == "Generic DNS CSV"
-            else "Upload Zeek dns.log"
-        )
-        uploaded = st.file_uploader(
-            upload_label,
-            type=(
-                ["csv"]
-                if telemetry_format == "Generic DNS CSV"
-                else ["log", "txt"]
-            ),
-            help=(
+        upload_label = {
+            "Generic DNS CSV": "Upload DNS CSV",
+            "Zeek dns.log": "Upload Zeek dns.log",
+            "Pi-hole FTL database": "Upload Pi-hole FTL database",
+        }[telemetry_format]
+        upload_types = {
+            "Generic DNS CSV": ["csv"],
+            "Zeek dns.log": ["log", "txt"],
+            "Pi-hole FTL database": ["db", "sqlite", "sqlite3"],
+        }[telemetry_format]
+        upload_help = {
+            "Generic DNS CSV": (
                 "Expected columns: timestamp, client_ip, query_name, "
                 "query_type, response_ip. Only query_name is required."
-                if telemetry_format == "Generic DNS CSV"
-                else (
-                    "Expected Zeek dns.log text with a #fields header. "
-                    "query, ts, id.orig_h, qtype_name, and answers are "
-                    "used when available."
-                )
             ),
+            "Zeek dns.log": (
+                "Expected Zeek dns.log text with a #fields header. "
+                "query, ts, id.orig_h, qtype_name, and answers are "
+                "used when available."
+            ),
+            "Pi-hole FTL database": (
+                "Expected a Pi-hole FTL SQLite query database containing "
+                "the standard queries view. The database is deserialized "
+                "into memory; the upstream forward field is not treated "
+                "as a DNS response IP."
+            ),
+        }[telemetry_format]
+        uploaded = st.file_uploader(
+            upload_label,
+            type=upload_types,
+            help=upload_help,
             key=f"telemetry_upload_{telemetry_format}",
         )
 
@@ -1078,6 +1090,24 @@ def main() -> None:
 
             if len(content_bytes) > MAX_UPLOAD_BYTES:
                 st.error("Uploaded telemetry exceeds the 10 MB application limit.")
+            elif telemetry_format == "Pi-hole FTL database":
+                if st.button("Analyze", type="primary"):
+                    try:
+                        result, diagnostics = (
+                            analyze_pihole_query_db_with_diagnostics(
+                                content_bytes,
+                                indicators,
+                                artifact,
+                            )
+                        )
+                    except ValueError as error:
+                        st.error(
+                            "DNS telemetry could not be analyzed: "
+                            f"{error}"
+                        )
+                    else:
+                        st.session_state["analysis_result"] = result
+                        st.session_state["dns_parse_diagnostics"] = diagnostics
             else:
                 try:
                     content = content_bytes.decode("utf-8-sig")

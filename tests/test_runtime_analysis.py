@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import socket
+import sqlite3
 from types import SimpleNamespace
 
 import pytest
@@ -14,6 +15,7 @@ from threatfusion.runtime_analysis import (
     analyze_dns_csv,
     analyze_dns_csv_with_diagnostics,
     analyze_dns_events,
+    analyze_pihole_query_db_with_diagnostics,
     analyze_zeek_dns_log_with_diagnostics,
     is_ml_scoring_candidate,
 )
@@ -195,6 +197,49 @@ def test_dns_csv_runtime_helper_returns_input_quality_diagnostics(
     assert diagnostics.invalid_response_ips == 1
 
 
+
+
+
+def test_pihole_runtime_helper_parses_and_analyzes(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = tmp_path / "pihole-FTL.db"
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            CREATE TABLE queries (
+                id INTEGER PRIMARY KEY,
+                timestamp INTEGER,
+                type INTEGER,
+                domain TEXT,
+                client TEXT
+            )
+            """
+        )
+        connection.execute(
+            "INSERT INTO queries VALUES (?, ?, ?, ?, ?)",
+            (1, 1700000000, 1, "example.com", "10.0.0.5"),
+        )
+
+    monkeypatch.setattr(
+        runtime_analysis,
+        "predict_domain_probabilities",
+        lambda artifact, domains: {"example.com": 0.55},
+    )
+
+    result, diagnostics = analyze_pihole_query_db_with_diagnostics(
+        path.read_bytes(),
+        [],
+        fake_artifact(),
+    )
+
+    assert len(result.events) == 1
+    assert result.events[0].client_ip == "10.0.0.5"
+    assert result.events[0].query_type == "A"
+    assert result.events[0].response_ip is None
+    assert result.assessments[0].verdict is HybridVerdict.REVIEW
+    assert diagnostics.accepted_rows == 1
 
 def test_zeek_runtime_helper_parses_and_analyzes(
     monkeypatch: pytest.MonkeyPatch,

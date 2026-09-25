@@ -195,7 +195,12 @@ def assess_dns_domains(
 
         exact_domain_ioc = "query_domain" in match_types
         contextual_ioc = bool(
-            {"url_hostname", "response_ip"} & set(match_types)
+            {
+                "url_hostname",
+                "response_ip",
+                "response_ip_network",
+            }
+            & set(match_types)
         )
 
         reasons: list[str] = []
@@ -205,6 +210,8 @@ def assess_dns_domains(
             reasons.append("url_hostname_ioc_context")
         if "response_ip" in match_types:
             reasons.append("response_ip_ioc_context")
+        if "response_ip_network" in match_types:
+            reasons.append("response_ip_network_ioc_context")
         if tier is not None:
             reasons.append(f"ml_{tier}_confidence")
         reasons.extend(behavior_signals)

@@ -81,6 +81,30 @@ def test_response_ip_ioc_is_contextual_review_not_known_threat() -> None:
     assert assessment.reasons == ("response_ip_ioc_context",)
 
 
+
+
+def test_ipv6_network_ioc_is_contextual_review_not_known_threat() -> None:
+    event = DNSEvent(
+        query_name="network-context.example",
+        response_ip="2001:db8:1234::5",
+    )
+    indicator = IOCRecord(
+        "2001:db8::/32",
+        IOCType.IPV6_NETWORK,
+        "SGB",
+    )
+    match = DNSIOCMatch(
+        event=event,
+        indicator=indicator,
+        match_type="response_ip_network",
+    )
+
+    assessment = assess_dns_domains([event], [match])[0]
+
+    assert assessment.verdict is HybridVerdict.REVIEW
+    assert assessment.known_match_types == ("response_ip_network",)
+    assert assessment.reasons == ("response_ip_network_ioc_context",)
+
 def test_contextual_ioc_plus_high_ml_can_be_high_risk() -> None:
     event = DNSEvent(query_name="suspicious.example")
     indicator = IOCRecord(
