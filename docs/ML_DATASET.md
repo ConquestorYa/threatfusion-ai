@@ -466,3 +466,27 @@ strict temporal event split.
 The final holdout should be inspected only after the model and thresholds are
 frozen. If its results later influence another model change, that holdout
 becomes development evidence and a new final holdout would be required.
+
+## Final-holdout uncertainty and operational base rates
+
+Final-holdout reports include 95% Wilson score confidence intervals for
+precision, recall, and false-positive rate at every frozen operating point.
+Source-aware diagnostics also report malicious recall and benign
+false-positive rate per retained dataset source when that class is present.
+
+These intervals describe sampling uncertainty for the evaluated holdout. They
+do not correct dataset bias, source leakage, missing long-tail benign traffic,
+or the absence of strict IOC first-seen timestamps.
+
+Dataset precision must not be presented as real-world positive predictive
+value (PPV). Operational PPV depends on the malicious base rate in the traffic
+being analyzed:
+
+`PPV = (TPR × prevalence) / ((TPR × prevalence) + (FPR × (1 - prevalence)))`
+
+In real DNS traffic the malicious prevalence may be far lower than in an
+evaluation dataset. As a result, even a seemingly small false-positive rate can
+produce more benign alerts than malicious detections at scale. Final reporting
+must therefore show the measured FPR, its uncertainty, dataset composition,
+and this base-rate limitation alongside precision.
+

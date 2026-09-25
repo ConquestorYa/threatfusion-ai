@@ -29,6 +29,19 @@ class HoldoutSourceRecall:
 
 
 @dataclass(frozen=True)
+class HoldoutSourceMetrics:
+    source: str
+    malicious_total: int
+    benign_total: int
+    high_detected: int
+    high_false_positive: int
+    medium_detected: int
+    medium_false_positive: int
+    low_detected: int
+    low_false_positive: int
+
+
+@dataclass(frozen=True)
 class FrozenHoldoutEvaluation:
     input_count: int
     retained_count: int
@@ -39,6 +52,7 @@ class FrozenHoldoutEvaluation:
     medium: ThresholdMetrics
     low: ThresholdMetrics
     source_recalls: tuple[HoldoutSourceRecall, ...]
+    source_metrics: tuple[HoldoutSourceMetrics, ...] = ()
 
 
 def validate_fresh_snapshot_dates(
@@ -168,6 +182,56 @@ def _source_recalls(
     return tuple(results)
 
 
+def _source_metrics(
+    samples: tuple[DomainSample, ...],
+    probabilities: Sequence[float],
+    *,
+    high_threshold: float,
+    medium_threshold: float,
+    low_threshold: float,
+) -> tuple[HoldoutSourceMetrics, ...]:
+    by_source: dict[str, list[tuple[int, float]]] = {}
+
+    for sample, probability in zip(samples, probabilities, strict=True):
+        by_source.setdefault(sample.source, []).append(
+            (sample.label, float(probability))
+        )
+
+    results: list[HoldoutSourceMetrics] = []
+    for source in sorted(by_source):
+        values = by_source[source]
+        malicious = [probability for label, probability in values if label == 1]
+        benign = [probability for label, probability in values if label == 0]
+
+        results.append(
+            HoldoutSourceMetrics(
+                source=source,
+                malicious_total=len(malicious),
+                benign_total=len(benign),
+                high_detected=sum(
+                    value >= high_threshold for value in malicious
+                ),
+                high_false_positive=sum(
+                    value >= high_threshold for value in benign
+                ),
+                medium_detected=sum(
+                    value >= medium_threshold for value in malicious
+                ),
+                medium_false_positive=sum(
+                    value >= medium_threshold for value in benign
+                ),
+                low_detected=sum(
+                    value >= low_threshold for value in malicious
+                ),
+                low_false_positive=sum(
+                    value >= low_threshold for value in benign
+                ),
+            )
+        )
+
+    return tuple(results)
+
+
 def evaluate_frozen_artifact_on_holdout(
     artifact: TrainedMLArtifact,
     development_samples: Sequence[DomainSample],
@@ -210,6 +274,13 @@ def evaluate_frozen_artifact_on_holdout(
         medium=medium,
         low=low,
         source_recalls=_source_recalls(
+            prepared.samples,
+            probabilities,
+            high_threshold=artifact.thresholds.high_confidence,
+            medium_threshold=artifact.thresholds.medium_confidence,
+            low_threshold=artifact.thresholds.low_confidence,
+        ),
+        source_metrics=_source_metrics(
             prepared.samples,
             probabilities,
             high_threshold=artifact.thresholds.high_confidence,
