@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   quality:
-    name: Quality (Ubuntu): Ruff + pytest + coverage + pip-audit
+    name: "Quality (Ubuntu): Ruff + pytest + coverage + pip-audit"
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
