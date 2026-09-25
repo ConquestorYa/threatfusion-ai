@@ -124,7 +124,7 @@ def _periodicity_metrics(
     ordered = sorted(timestamps)
     intervals = [
         (right - left).total_seconds()
-        for left, right in zip(ordered, ordered[1:], strict=True)
+        for left, right in zip(ordered, ordered[1:])
         if (right - left).total_seconds() > 0
     ]
     if len(intervals) < 2:
