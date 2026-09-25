@@ -42,3 +42,18 @@ Until verified:
 
 - User-uploaded DNS telemetry is analyzed locally/in-memory by default.
 - Public release preparation must not include private telemetry exports, local analyst history, or secrets.
+
+## Local CTI cache lifecycle
+
+A successful refresh no longer deletes indicators that disappeared from the
+latest source snapshot. The cache keeps them as inactive lifecycle history and
+records when an indicator was first cached and last observed in a successful
+refresh. Runtime matching loads active indicators only by default.
+
+This lifecycle state describes ThreatFusion's local cache observations. It must
+not be confused with a feed's own IOC `first_seen` / `last_seen` metadata.
+
+SGB collection is bounded by a caller-controlled maximum page count and stops
+earlier when the API reports that all rows were collected or returns an empty
+page. This avoids treating a fixed page count as the source's actual size.
+
