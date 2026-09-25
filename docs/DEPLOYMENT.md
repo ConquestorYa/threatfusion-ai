@@ -69,8 +69,9 @@ data/deployment/runtime/
 ```
 
 The generated SQLite database contains only the CTI cache and refresh metadata.
-Local analysis-history tables, DNS uploads, and ML dataset snapshots are not
-copied. The trusted model artifact is validated before it is copied.
+Local analysis-history tables, including `analyst_feedback` labels and notes,
+DNS uploads, and ML dataset snapshots are not copied. The trusted model
+artifact is validated before it is copied.
 
 If the output directory already contains files, rebuild explicitly with:
 
