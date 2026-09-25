@@ -54,6 +54,23 @@ def _minimum_time_delta(
     return best
 
 
+
+def _pairs_from_shared_values(
+    values_by_domain: dict[str, set[str]],
+) -> set[tuple[str, str]]:
+    domains_by_value: dict[str, set[str]] = defaultdict(set)
+    for domain, values in values_by_domain.items():
+        for value in values:
+            domains_by_value[value].add(domain)
+
+    pairs: set[tuple[str, str]] = set()
+    for domains in domains_by_value.values():
+        ordered = sorted(domains)
+        for index, left in enumerate(ordered):
+            for right in ordered[index + 1 :]:
+                pairs.add((left, right))
+    return pairs
+
 def find_related_activity(
     result: RuntimeAnalysisResult,
     *,
@@ -89,42 +106,42 @@ def find_related_activity(
             timestamps[domain].append(event.timestamp)
 
     domains = sorted(candidate_domains)
+    candidate_pairs = (
+        _pairs_from_shared_values(clients)
+        | _pairs_from_shared_values(response_ips)
+    )
     relationships: list[DomainRelationship] = []
 
-    for index, domain_a in enumerate(domains):
-        for domain_b in domains[index + 1 :]:
-            shared_clients = clients[domain_a] & clients[domain_b]
-            shared_response_ips = response_ips[domain_a] & response_ips[domain_b]
+    for domain_a, domain_b in sorted(candidate_pairs):
+        shared_clients = clients[domain_a] & clients[domain_b]
+        shared_response_ips = response_ips[domain_a] & response_ips[domain_b]
 
-            if not shared_clients and not shared_response_ips:
-                continue
+        time_delta = _minimum_time_delta(
+            tuple(timestamps[domain_a]),
+            tuple(timestamps[domain_b]),
+        )
 
-            time_delta = _minimum_time_delta(
-                tuple(timestamps[domain_a]),
-                tuple(timestamps[domain_b]),
+        reasons: list[str] = []
+        if shared_clients:
+            reasons.append("shared_client")
+        if shared_response_ips:
+            reasons.append("shared_response_ip")
+        if (
+            time_delta is not None
+            and time_delta <= time_proximity_seconds
+        ):
+            reasons.append("time_proximity")
+
+        relationships.append(
+            DomainRelationship(
+                domain_a=domain_a,
+                domain_b=domain_b,
+                shared_client_count=len(shared_clients),
+                shared_response_ip_count=len(shared_response_ips),
+                min_time_delta_seconds=time_delta,
+                reasons=tuple(reasons),
             )
-
-            reasons: list[str] = []
-            if shared_clients:
-                reasons.append("shared_client")
-            if shared_response_ips:
-                reasons.append("shared_response_ip")
-            if (
-                time_delta is not None
-                and time_delta <= time_proximity_seconds
-            ):
-                reasons.append("time_proximity")
-
-            relationships.append(
-                DomainRelationship(
-                    domain_a=domain_a,
-                    domain_b=domain_b,
-                    shared_client_count=len(shared_clients),
-                    shared_response_ip_count=len(shared_response_ips),
-                    min_time_delta_seconds=time_delta,
-                    reasons=tuple(reasons),
-                )
-            )
+        )
 
     adjacency: dict[str, set[str]] = defaultdict(set)
     for relationship in relationships:
