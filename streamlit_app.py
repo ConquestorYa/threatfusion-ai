@@ -24,10 +24,12 @@ from threatfusion.dashboard import (
     cluster_rows,
     content_fingerprint,
     cti_status_rows,
+    domain_match_rows,
     feedback_label,
     history_rows,
     match_rows,
     persisted_assessment_rows,
+    priority_assessment_rows,
     relationship_rows,
     summarize_runtime_result,
 )
@@ -131,36 +133,54 @@ def _show_system_status(
     model_dir: Path,
     evaluation_report_path: Path,
 ) -> None:
-    st.sidebar.header("System status")
+    st.sidebar.subheader("System health")
 
     model_path = model_dir / "model.joblib"
     metadata_path = model_dir / "metadata.json"
-    if model_path.exists() and metadata_path.exists():
-        st.sidebar.success("ML model artifact available")
-    else:
-        st.sidebar.error("ML model artifact missing")
+    model_ready = model_path.exists() and metadata_path.exists()
+    st.sidebar.markdown(
+        f"**Model** · {':green[Ready]' if model_ready else ':red[Missing]'}"
+    )
 
     statuses = list_cti_cache_status(db_path)
-    if statuses:
-        status_rows = cti_status_rows(statuses)
-        if any(row["Status"] == "Stale" for row in status_rows):
-            st.sidebar.warning(
-                "CTI cache is available, but at least one source is stale."
-            )
-        else:
-            st.sidebar.success("CTI cache available")
-        st.sidebar.dataframe(
-            pd.DataFrame(status_rows),
-            hide_index=True,
-            width="stretch",
-        )
+    status_rows = cti_status_rows(statuses) if statuses else []
+    stale_sources = [
+        row["Source"] for row in status_rows if row["Status"] == "Stale"
+    ]
+    if not statuses:
+        cti_state = ":orange[Empty]"
+    elif stale_sources:
+        cti_state = f":orange[Stale: {len(stale_sources)} source(s)]"
     else:
-        st.sidebar.warning("CTI cache is empty")
+        cti_state = f":green[Ready · {len(statuses)} sources]"
+    st.sidebar.markdown(f"**CTI cache** · {cti_state}")
 
-    if evaluation_report_path.is_file():
-        st.sidebar.success("Final holdout report available")
-    else:
-        st.sidebar.info("Final holdout report not collected yet")
+    holdout_ready = evaluation_report_path.is_file()
+    st.sidebar.markdown(
+        "**Final evaluation** · "
+        + (
+            ":green[Available]"
+            if holdout_ready
+            else ":blue[Pending fresh holdout]"
+        )
+    )
+
+    if status_rows:
+        with st.sidebar.expander("CTI source details", expanded=False):
+            st.dataframe(
+                pd.DataFrame(status_rows),
+                hide_index=True,
+                width="stretch",
+                column_config={
+                    "Refreshed at": st.column_config.TextColumn(width="medium"),
+                    "Age": st.column_config.TextColumn(width="small"),
+                    "Status": st.column_config.TextColumn(width="small"),
+                },
+            )
+    elif not statuses:
+        st.sidebar.caption(
+            "Known-IOC matching is unavailable until the CTI cache is populated."
+        )
 
 def _show_domain_detail(result, domain: str) -> None:
     assessment = next(
