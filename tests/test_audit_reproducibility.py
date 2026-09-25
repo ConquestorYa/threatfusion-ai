@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -263,3 +263,40 @@ def test_history_schema_migrates_legacy_analysis_runs_without_data_loss(
         "cti_context_json",
         "audit_schema_version",
     } <= columns
+
+def test_capture_audit_metadata_supports_source_specific_freshness(
+    tmp_path,
+) -> None:
+    model_dir = tmp_path / "artifact"
+    model_dir.mkdir()
+    (model_dir / "model.joblib").write_bytes(b"model")
+    (model_dir / "metadata.json").write_text("{}", encoding="utf-8")
+    captured_at = datetime(2026, 9, 25, 20, 0, tzinfo=timezone.utc)
+
+    audit = capture_analysis_audit_metadata(
+        model_dir,
+        _artifact(),
+        [
+            CTICacheStatus(
+                source="ThreatFox",
+                refreshed_at="2026-09-25T10:00:00+00:00",
+                record_count=12,
+            ),
+            CTICacheStatus(
+                source="SGB",
+                refreshed_at="2026-09-25T10:00:00+00:00",
+                record_count=4,
+            ),
+        ],
+        captured_at=captured_at,
+        stale_after_by_source={
+            "ThreatFox": timedelta(hours=6),
+            "SGB": timedelta(hours=12),
+        },
+    )
+
+    assert [item.freshness for item in audit.cti_sources] == [
+        "fresh",
+        "stale",
+    ]
+
