@@ -30,8 +30,10 @@ from threatfusion.dashboard import (
     persisted_assessment_rows,
     priority_assessment_rows,
     reason_label,
+    relationship_penalty_label,
     relationship_reason_label,
     relationship_rows,
+    relationship_strength_label,
     summarize_runtime_result,
     verdict_label,
 )
@@ -410,7 +412,13 @@ def test_campaign_rows_are_human_readable_and_privacy_preserving() -> None:
             "shared_client",
             "shared_response_ip",
             "time_proximity",
+            "shared_cti_source",
         ),
+        strength=0.72,
+        shared_cti_source_count=1,
+        shared_cti_tag_count=2,
+        shared_threat_type_count=1,
+        penalties=("shared_response_ip_high_fanout",),
     )
     report = RelatedActivityReport(
         clusters=(
@@ -432,18 +440,33 @@ def test_campaign_rows_are_human_readable_and_privacy_preserving() -> None:
             "Domains": "a.example, b.example",
             "Domain count": 2,
             "Relationships": 1,
+            "Max strength": 0.72,
         }
     ]
+    assert relationships[0]["Strength"] == 0.72
+    assert relationships[0]["Strength label"] == "Moderate"
     assert relationships[0]["Shared clients"] == 2
     assert relationships[0]["Shared response IPs"] == 1
+    assert relationships[0]["Shared CTI sources"] == 1
+    assert relationships[0]["Shared CTI tags"] == 2
+    assert relationships[0]["Shared threat types"] == 1
     assert relationships[0]["Evidence"] == (
         "Shared client observation; Shared response IP observation; "
-        "Observed close together in time"
+        "Observed close together in time; Shared CTI source context"
+    )
+    assert relationships[0]["Noise adjustment"] == (
+        "Shared response IP appears across several suspicious domains"
     )
     assert "client_ip" not in relationships[0]
     assert relationship_reason_label("shared_client") == (
         "Shared client observation"
     )
+    assert relationship_penalty_label(
+        "shared_response_ip_high_fanout"
+    ) == "Shared response IP appears across several suspicious domains"
+    assert relationship_strength_label(0.80) == "Strong"
+    assert relationship_strength_label(0.65) == "Moderate"
+    assert relationship_strength_label(0.45) == "Limited"
 
 def test_timestamp_formatting_and_upload_fingerprint_are_deterministic() -> None:
     assert format_timestamp("2026-09-24T21:30:45+03:00") == (
@@ -472,6 +495,7 @@ def test_relationship_graph_data_is_deterministic_and_privacy_preserving() -> No
             "shared_response_ip",
             "time_proximity",
         ),
+        strength=0.81,
     )
     report = RelatedActivityReport(
         clusters=(
@@ -497,6 +521,8 @@ def test_relationship_graph_data_is_deterministic_and_privacy_preserving() -> No
     assert first.nodes[1].verdict == "Review"
     assert len(first.edges) == 1
     edge = first.edges[0]
+    assert edge.strength == 0.81
+    assert "Strength: 0.81 (Strong)" in edge.hover_text
     assert "Shared clients: 2" in edge.hover_text
     assert "Shared response IPs: 1" in edge.hover_text
     assert "Closest time delta: 12.5 s" in edge.hover_text
