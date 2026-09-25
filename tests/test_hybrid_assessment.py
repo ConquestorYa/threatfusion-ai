@@ -30,7 +30,7 @@ def test_known_ioc_match_takes_precedence() -> None:
     assessment = assess_dns_domains(
         [event],
         [match],
-        ml_probabilities={"known.bad": 0.10},
+        ml_scores={"known.bad": 0.10},
         ml_thresholds=thresholds(),
     )[0]
 
@@ -117,7 +117,7 @@ def test_contextual_ioc_plus_high_ml_can_be_high_risk() -> None:
     assessment = assess_dns_domains(
         [event],
         [match],
-        ml_probabilities={"suspicious.example": 0.90},
+        ml_scores={"suspicious.example": 0.90},
         ml_thresholds=thresholds(),
     )[0]
 
@@ -133,13 +133,13 @@ def test_high_confidence_ml_signal_is_high_risk() -> None:
     assessment = assess_dns_domains(
         [event],
         [],
-        ml_probabilities={"UNKNOWN.EXAMPLE.": 0.85},
+        ml_scores={"UNKNOWN.EXAMPLE.": 0.85},
         ml_thresholds=thresholds(),
     )[0]
 
     assert assessment.verdict is HybridVerdict.HIGH_RISK
     assert assessment.ml_tier == "high"
-    assert assessment.ml_probability == pytest.approx(0.85)
+    assert assessment.ml_score == pytest.approx(0.85)
 
 
 def test_medium_ml_plus_two_behavior_signals_is_high_risk() -> None:
@@ -155,7 +155,7 @@ def test_medium_ml_plus_two_behavior_signals_is_high_risk() -> None:
     assessment = assess_dns_domains(
         events,
         [],
-        ml_probabilities={"unknown.example": 0.65},
+        ml_scores={"unknown.example": 0.65},
         ml_thresholds=thresholds(),
         behavior_config=BehaviorHeuristicConfig(
             high_query_count=100,
@@ -180,7 +180,7 @@ def test_low_ml_signal_requires_review() -> None:
     assessment = assess_dns_domains(
         [event],
         [],
-        ml_probabilities={"unknown.example": 0.55},
+        ml_scores={"unknown.example": 0.55},
         ml_thresholds=thresholds(),
     )[0]
 
@@ -290,7 +290,7 @@ def test_probabilities_and_thresholds_must_be_supplied_together() -> None:
         assess_dns_domains(
             [DNSEvent(query_name="example.com")],
             [],
-            ml_probabilities={"example.com": 0.9},
+            ml_scores={"example.com": 0.9},
         )
 
 
@@ -299,7 +299,7 @@ def test_invalid_probability_is_rejected() -> None:
         assess_dns_domains(
             [DNSEvent(query_name="example.com")],
             [],
-            ml_probabilities={"example.com": 1.5},
+            ml_scores={"example.com": 1.5},
             ml_thresholds=thresholds(),
         )
 
@@ -325,7 +325,7 @@ def test_hybrid_assessment_does_not_perform_networking(
     assessment = assess_dns_domains(
         [DNSEvent(query_name="Example.COM.")],
         [],
-        ml_probabilities={"example.com": 0.85},
+        ml_scores={"example.com": 0.85},
         ml_thresholds=thresholds(),
     )[0]
 
