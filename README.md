@@ -53,7 +53,10 @@ trigger review. Behavioral signals are not treated as proof of malware.
 - explainable related-activity clustering
 - privacy-preserving relationship graph
 - public-mode privacy controls and non-root Docker packaging
-- privacy-safe JSON/CSV analysis report export
+- privacy-safe JSON/CSV analysis report export with spreadsheet-safe CSV cells
+- bounded runtime analysis and ML eligibility filtering for non-internet DNS names
+- CTI freshness/staleness visibility
+- sparse evidence-driven related-activity pair generation
 - pytest + Ruff CI
 
 ## Local dashboard
