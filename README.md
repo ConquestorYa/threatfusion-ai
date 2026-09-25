@@ -83,6 +83,44 @@ See `docs/ARCHITECTURE.md` for full data-flow and module-level details.
 - **Docker build + health:** builds the image, starts the app in public mode,
   and verifies the Streamlit health endpoint.
 
+## Python package installation
+
+ThreatFusion uses a standard `src/` package layout with metadata in
+`pyproject.toml`. For the repository's tested environment, install the pinned
+lock snapshot first and then install the local package without re-resolving
+dependencies:
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pip install --no-deps -e .
+```
+
+After the editable install, the analyzer is available as a normal command:
+
+```powershell
+threatfusion --help
+threatfusion data\demo\demo_dns.csv --format dns-csv
+```
+
+The legacy repository command remains supported:
+
+```powershell
+python scripts\analyze_dns.py data\demo\demo_dns.csv --format dns-csv
+```
+
+Dependency files have distinct roles:
+
+- `pyproject.toml`: package metadata and direct runtime dependencies.
+- `requirements.in`: human-maintained direct runtime dependency list.
+- `requirements-dev.in`: human-maintained direct development/quality tools.
+- `requirements.txt`: fully pinned tested environment used by CI and Docker.
+
+Keeping the pinned environment separate from direct dependency declarations
+prevents package metadata from becoming a copy of every transitive dependency.
+
 ## Local dashboard
 
 The dashboard expects:
