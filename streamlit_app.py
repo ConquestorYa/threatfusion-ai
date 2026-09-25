@@ -187,49 +187,95 @@ def _show_domain_detail(result, domain: str) -> None:
         item for item in result.assessments if item.domain == domain
     )
     detail = assessment_detail(assessment)
+    evidence_rows = domain_match_rows(result, domain)
 
-    st.markdown(f"#### Domain detail: {detail['domain']}")
+    with st.container(border=True):
+        header_left, header_right = st.columns([3, 1])
+        header_left.markdown(f"### {detail['domain']}")
+        header_left.caption("Domain investigation")
+        header_right.metric("Verdict", detail["verdict"])
 
-    columns = st.columns(4)
-    columns[0].metric("Verdict", detail["verdict"])
-    ml_score = detail["ml_score"]
-    columns[1].metric(
-        "ML score",
-        f"{ml_score:.4f}" if ml_score is not None else "N/A",
-    )
-    columns[2].metric("ML tier", detail["ml_tier"])
-    columns[3].metric("DNS events", detail["event_count"])
+        if evidence_rows:
+            st.markdown("**Primary CTI evidence**")
+            primary = evidence_rows[0]
+            st.write(
+                f"{primary['Evidence scope']} · {primary['Source']}"
+                + (
+                    f" · {primary['Threat type']}"
+                    if primary["Threat type"]
+                    else ""
+                )
+            )
+            metadata_columns = st.columns(4)
+            metadata_columns[0].metric(
+                "First seen",
+                primary["First seen"] or "Unknown",
+            )
+            metadata_columns[1].metric(
+                "Last seen",
+                primary["Last seen"] or "Unknown",
+            )
+            metadata_columns[2].metric(
+                "Confidence",
+                (
+                    f"{primary['Confidence']:.2f}"
+                    if primary["Confidence"] is not None
+                    else "Unknown"
+                ),
+            )
+            metadata_columns[3].metric(
+                "Tags",
+                primary["Tags"] or "None",
+            )
 
-    behavior_columns = st.columns(3)
-    behavior_columns[0].metric("Unique clients", detail["client_count"])
-    behavior_columns[1].metric(
-        "Unique response IPs",
-        detail["response_ip_count"],
-    )
-    behavior_columns[2].metric(
-        "Query types",
-        ", ".join(detail["query_types"]) or "None",
-    )
+            if len(evidence_rows) > 1:
+                with st.expander(
+                    f"Show all IOC evidence ({len(evidence_rows)})",
+                    expanded=False,
+                ):
+                    st.dataframe(
+                        pd.DataFrame(evidence_rows),
+                        hide_index=True,
+                        width="stretch",
+                    )
+        else:
+            st.caption("No cached IOC evidence is associated with this domain.")
 
-    sources = detail["known_sources"]
-    if sources:
-        st.write("**Known CTI sources:** " + ", ".join(sources))
-    else:
-        st.write("**Known CTI sources:** No cached IOC match")
-
-    if detail["verdict"] == "Known Threat" and sources:
+        st.markdown("**Detection context**")
+        context_columns = st.columns(5)
+        ml_score = detail["ml_score"]
+        context_columns[0].metric(
+            "ML score",
+            f"{ml_score:.4f}" if ml_score is not None else "Not scored",
+        )
+        context_columns[1].metric("ML tier", detail["ml_tier"])
+        context_columns[2].metric("DNS events", detail["event_count"])
+        context_columns[3].metric("Unique clients", detail["client_count"])
+        context_columns[4].metric(
+            "Response IPs",
+            detail["response_ip_count"],
+        )
         st.caption(
-            "Known CTI evidence determines the Known Threat verdict. "
-            "ML and DNS-behavior signals are shown as additional context."
+            "Query types: "
+            + (", ".join(detail["query_types"]) or "None")
         )
 
-    evidence = detail["evidence"]
-    st.write("**Evidence observed**")
-    if evidence:
-        for item in evidence:
-            st.markdown(f"- {item}")
-    else:
-        st.caption("No strong CTI, ML-tier, or DNS-behavior signal was recorded.")
+        evidence = detail["evidence"]
+        st.markdown("**Why this verdict?**")
+        if evidence:
+            for item in evidence:
+                st.markdown(f"- {item}")
+        else:
+            st.caption(
+                "No strong CTI, ML-tier, or DNS-behavior signal was recorded."
+            )
+
+        if detail["verdict"] == "Known Threat" and evidence_rows:
+            st.caption(
+                "Known IOC evidence takes precedence in the current hybrid "
+                "policy. ML and DNS behavior are supporting context, not proof."
+            )
+
 
 def _show_analysis_result(
     result,
