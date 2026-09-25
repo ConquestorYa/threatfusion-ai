@@ -762,3 +762,16 @@ remain readable.
 CTI state that produced it. Keeping this context aggregate-only improves audit
 and reproduction without storing raw DNS rows, client IP values, secrets, or
 local filesystem paths.
+
+## DEC-080: Keep analyst history maintenance explicit and detector-neutral
+
+**Decision:** Local history may support bulk analyst review for explicitly
+selected findings, deletion of one saved run, keep-latest retention cleanup,
+and comparison with the immediately previous saved run. Retention always keeps
+at least one run, destructive UI actions require explicit confirmation, and
+feedback never rewrites detector verdicts.
+
+**Reason:** Repeated analyst use needs practical history management without
+turning review actions into hidden detection logic or creating an accidental
+database-wipe control. Run deltas should describe saved findings only and stay
+separate from model inference.
