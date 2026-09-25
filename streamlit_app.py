@@ -166,7 +166,7 @@ def _relationship_figure(report, result) -> go.Figure:
                 y=[edge.y0, edge.y1],
                 mode="lines",
                 line={
-                    "width": 1.5,
+                    "width": 1.0 + (edge.strength * 3.0),
                     "color": colors["muted"],
                 },
                 opacity=0.42,
@@ -755,8 +755,9 @@ def _show_analysis_result(
         if related_report is not None and related_report.clusters:
             st.info(
                 "These groups show possible related suspicious activity based "
-                "on shared local DNS evidence. They do not prove one malware "
-                "campaign."
+                "on weighted local DNS and CTI context. High-fan-out shared "
+                "infrastructure is down-weighted or filtered. The groups do "
+                "not prove one malware campaign."
             )
             st.plotly_chart(
                 _relationship_figure(related_report, result),
@@ -775,8 +776,10 @@ def _show_analysis_result(
                 width="stretch",
             )
             st.caption(
-                "Raw client IP values are not shown. Relationship rows expose "
-                "aggregate shared counts only."
+                "Raw client IP values are not shown. Strength is a local "
+                "evidence score, not an attribution probability. Relationship "
+                "rows expose aggregate counts and explainable noise "
+                "adjustments only."
             )
         elif related_report is not None:
             st.info(
