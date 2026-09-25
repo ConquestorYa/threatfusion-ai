@@ -110,3 +110,80 @@ def test_dns_behavior_aggregation_does_not_perform_networking(
     )
 
     assert result[0].domain == "example.com"
+
+
+def test_response_code_and_nxdomain_metrics_are_explainable() -> None:
+    events = [
+        DNSEvent(query_name="example.com", response_code="NOERROR"),
+        DNSEvent(query_name="example.com", response_code="NXDOMAIN"),
+        DNSEvent(query_name="example.com", response_code="NXDOMAIN"),
+    ]
+
+    behavior = aggregate_dns_behavior(events)[0]
+
+    assert behavior.response_code_counts == (("NOERROR", 1), ("NXDOMAIN", 2))
+    assert behavior.nxdomain_count == 2
+    assert behavior.nxdomain_ratio == pytest.approx(2 / 3)
+
+
+def test_domain_shape_metrics_include_depth_numeric_ratio_and_entropy() -> None:
+    behavior = aggregate_dns_behavior(
+        [DNSEvent(query_name="a12.b34.c56.example.com")]
+    )[0]
+
+    assert behavior.label_count == 5
+    assert behavior.subdomain_depth == 3
+    assert behavior.numeric_character_ratio == pytest.approx(6 / 17)
+    assert behavior.hostname_entropy is not None
+
+
+def test_response_ip_churn_rate_uses_observed_responses() -> None:
+    events = [
+        DNSEvent(query_name="example.com", response_ip="203.0.113.1"),
+        DNSEvent(query_name="example.com", response_ip="203.0.113.2"),
+        DNSEvent(query_name="example.com", response_ip="203.0.113.2"),
+    ]
+
+    behavior = aggregate_dns_behavior(events)[0]
+
+    assert behavior.unique_response_ip_count == 2
+    assert behavior.response_ip_churn_rate == pytest.approx(2 / 3)
+
+
+def test_periodicity_metrics_are_derived_when_timestamps_are_comparable() -> None:
+    start = datetime(2026, 9, 24, 10, 0, tzinfo=timezone.utc)
+    events = [
+        DNSEvent(query_name="example.com", timestamp=start + timedelta(seconds=30 * i))
+        for i in range(4)
+    ]
+
+    behavior = aggregate_dns_behavior(events)[0]
+
+    assert behavior.periodic_interval_seconds == pytest.approx(30.0)
+    assert behavior.periodicity_score == pytest.approx(1.0)
+    assert behavior.periodic_query_pattern is True
+
+
+def test_periodicity_metrics_gracefully_skip_mixed_timestamp_awareness() -> None:
+    events = [
+        DNSEvent(
+            query_name="example.com",
+            timestamp=datetime(2026, 9, 24, 10, 0, tzinfo=timezone.utc).replace(
+                tzinfo=None
+            ),
+        ),
+        DNSEvent(
+            query_name="example.com",
+            timestamp=datetime(2026, 9, 24, 10, 1, tzinfo=timezone.utc),
+        ),
+        DNSEvent(
+            query_name="example.com",
+            timestamp=datetime(2026, 9, 24, 10, 2, tzinfo=timezone.utc),
+        ),
+    ]
+
+    behavior = aggregate_dns_behavior(events)[0]
+
+    assert behavior.periodic_interval_seconds is None
+    assert behavior.periodicity_score is None
+    assert behavior.periodic_query_pattern is None

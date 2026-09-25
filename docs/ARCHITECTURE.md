@@ -143,9 +143,10 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 
 ### `src/threatfusion/dns.py`
 
-- Defines `DNSEvent` for a DNS observation with optional timestamp, client IP, query type, and response IP.
+- Defines `DNSEvent` for a DNS observation with optional timestamp, client IP, query type, response IP, and response code.
 - Provides `parse_dns_csv()` for safe CSV ingestion using the Python standard library.
-- Accepts the project CSV schema: `timestamp,client_ip,query_name,query_type,response_ip`.
+- Accepts the project CSV schema:
+  `timestamp,client_ip,query_name,query_type,response_ip[,response_code]`.
 - Preserves `query_name` evidence exactly as observed, while trimming surrounding whitespace.
 - Validates canonical response IP values with Python's `ipaddress` module and keeps malformed values as `None`.
 - Performs no network operations, DNS lookups, or external requests while parsing telemetry.
@@ -168,6 +169,10 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 - Aggregates local DNS events by normalized query domain.
 - Reports query volume, unique clients, unique response IPs, query types, and
   comparable observation span.
+- Adds explainable lexical and timing context such as label depth,
+  numeric-character ratio, hostname entropy/random-like flag, response-IP churn
+  rate, response-code counts/NXDOMAIN ratio, and periodic query timing score
+  when the required telemetry fields exist.
 - Preserves the original `DNSEvent` ingestion model and performs no network
   requests or DNS resolution.
 

@@ -12,6 +12,7 @@ class DNSEvent:
     client_ip: str | None = None
     query_type: str | None = None
     response_ip: str | None = None
+    response_code: str | None = None
 
 
 @dataclass(frozen=True)
@@ -65,6 +66,13 @@ def _parse_response_ip(value: object) -> str | None:
     return str(address)
 
 
+def _parse_response_code(value: object) -> str | None:
+    text = _as_optional_text(value)
+    if text is None:
+        return None
+    return text.upper()
+
+
 def parse_dns_csv_with_diagnostics(content: str) -> DNSParseResult:
     if content is None or not content.strip():
         return DNSParseResult(
@@ -99,6 +107,7 @@ def parse_dns_csv_with_diagnostics(content: str) -> DNSParseResult:
     client_ip_key = normalized_names.get("client_ip")
     query_type_key = normalized_names.get("query_type")
     response_ip_key = normalized_names.get("response_ip")
+    response_code_key = normalized_names.get("response_code")
 
     for row in reader:
         if row is None:
@@ -138,6 +147,11 @@ def parse_dns_csv_with_diagnostics(content: str) -> DNSParseResult:
             ),
             query_type=None,
             response_ip=response_ip,
+            response_code=(
+                _parse_response_code(row.get(response_code_key))
+                if response_code_key
+                else None
+            ),
         )
 
         if query_type_key:

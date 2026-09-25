@@ -425,6 +425,58 @@ def _show_domain_detail(
             "Query types: "
             + (", ".join(detail["query_types"]) or "None")
         )
+        response_codes = ", ".join(
+            f"{code}:{count}" for code, count in detail["response_code_counts"]
+        )
+        st.caption(f"Response codes: {response_codes or 'None'}")
+        st.caption(
+            "NXDOMAIN ratio: "
+            + (
+                f"{detail['nxdomain_ratio']:.2f}"
+                if detail["nxdomain_ratio"] is not None
+                else "N/A"
+            )
+        )
+        st.caption(
+            "Label count / subdomain depth: "
+            + f"{detail['label_count']} / {detail['subdomain_depth']}"
+        )
+        st.caption(
+            "Numeric ratio / entropy: "
+            + (
+                f"{detail['numeric_character_ratio']:.2f}"
+                if detail["numeric_character_ratio"] is not None
+                else "N/A"
+            )
+            + " / "
+            + (
+                f"{detail['hostname_entropy']:.2f}"
+                if detail["hostname_entropy"] is not None
+                else "N/A"
+            )
+        )
+        st.caption(
+            "Response-IP churn rate: "
+            + (
+                f"{detail['response_ip_churn_rate']:.2f}"
+                if detail["response_ip_churn_rate"] is not None
+                else "N/A"
+            )
+        )
+        periodicity = (
+            f"{detail['periodicity_score']:.2f}"
+            if detail["periodicity_score"] is not None
+            else "N/A"
+        )
+        interval = (
+            f"{detail['periodic_interval_seconds']:.1f}s"
+            if detail["periodic_interval_seconds"] is not None
+            else "N/A"
+        )
+        st.caption(
+            "Periodicity score / interval: "
+            + f"{periodicity} / {interval}"
+        )
 
         evidence = detail["evidence"]
         section_label("Why this verdict?")

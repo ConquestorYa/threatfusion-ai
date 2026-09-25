@@ -44,6 +44,13 @@ def _first_answer_ip(answer: object) -> str | None:
     return None
 
 
+def _response_code(value: object) -> str | None:
+    text = _optional_text(value)
+    if text is None:
+        return None
+    return text.upper()
+
+
 def _entries_from_content(content: str) -> list[dict[str, object]]:
     if content is None or not content.strip():
         return []
@@ -88,6 +95,7 @@ def _query_fields(entry: dict[str, object]) -> tuple[
     object,
     object,
     object,
+    object,
 ]:
     question = entry.get("question")
     if isinstance(question, dict):
@@ -97,6 +105,7 @@ def _query_fields(entry: dict[str, object]) -> tuple[
             entry.get("client"),
             question.get("type"),
             entry.get("answer"),
+            entry.get("status"),
         )
 
     return (
@@ -105,6 +114,10 @@ def _query_fields(entry: dict[str, object]) -> tuple[
         entry.get("IP"),
         entry.get("QT"),
         None,
+        entry.get("Status")
+        or entry.get("status")
+        or entry.get("RCODE")
+        or entry.get("rcode"),
     )
 
 
@@ -116,7 +129,9 @@ def parse_adguard_query_log_with_diagnostics(content: str) -> DNSParseResult:
     invalid_timestamps = 0
 
     for entry in entries:
-        raw_query, raw_time, raw_client, raw_type, raw_answer = _query_fields(entry)
+        raw_query, raw_time, raw_client, raw_type, raw_answer, raw_status = _query_fields(
+            entry
+        )
         query_name = _optional_text(raw_query)
         if query_name is None:
             skipped_missing_query_name += 1
@@ -134,6 +149,7 @@ def parse_adguard_query_log_with_diagnostics(content: str) -> DNSParseResult:
                 client_ip=_optional_text(raw_client),
                 query_type=query_type.upper() if query_type else None,
                 response_ip=_first_answer_ip(raw_answer),
+                response_code=_response_code(raw_status),
             )
         )
 

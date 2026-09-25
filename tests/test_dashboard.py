@@ -128,6 +128,12 @@ def test_human_readable_verdict_and_reason_labels() -> None:
     assert verdict_label("high_risk") == "High Risk"
     assert reason_label("known_ioc_match") == "Exact known-domain IOC match"
     assert reason_label("rapid_query_burst") == "Rapid DNS query burst"
+    assert reason_label("nxdomain_heavy_responses") == (
+        "High NXDOMAIN ratio in DNS responses"
+    )
+    assert reason_label("periodic_query_pattern") == (
+        "Periodic repeated query timing pattern"
+    )
     assert ml_tier_label(None) == "Below threshold"
     assert ml_tier_label(None, scored=False) == "Not scored"
     assert match_evidence_scope("query_domain") == "Exact domain IOC"
@@ -199,6 +205,7 @@ def test_assessment_detail_explains_domain() -> None:
     assert detail["verdict"] == "Known Threat"
     assert detail["known_sources"] == ("ThreatFox",)
     assert detail["event_count"] == 1
+    assert detail["label_count"] == 0
     assert detail["evidence"] == ("Exact known-domain IOC match",)
 
 def test_match_rows_do_not_expose_indicator_value() -> None:

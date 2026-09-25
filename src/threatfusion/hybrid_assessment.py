@@ -106,6 +106,28 @@ def _behavior_signals(
     return tuple(signals)
 
 
+def _behavior_context_reasons(behavior: DomainBehavior) -> tuple[str, ...]:
+    reasons: list[str] = []
+    if behavior.nxdomain_ratio is not None and behavior.nxdomain_ratio >= 0.5:
+        reasons.append("nxdomain_heavy_responses")
+    if (
+        behavior.response_ip_churn_rate is not None
+        and behavior.unique_response_ip_count >= 3
+        and behavior.response_ip_churn_rate >= 0.75
+    ):
+        reasons.append("high_response_ip_churn_rate")
+    if (
+        behavior.numeric_character_ratio is not None
+        and behavior.numeric_character_ratio >= 0.3
+    ):
+        reasons.append("numeric_heavy_hostname")
+    if behavior.random_like_hostname:
+        reasons.append("random_like_hostname")
+    if behavior.periodic_query_pattern:
+        reasons.append("periodic_query_pattern")
+    return tuple(reasons)
+
+
 def _normalize_probability_mapping(
     probabilities: Mapping[str, float],
 ) -> dict[str, float]:
@@ -215,6 +237,7 @@ def assess_dns_domains(
         if tier is not None:
             reasons.append(f"ml_{tier}_confidence")
         reasons.extend(behavior_signals)
+        reasons.extend(_behavior_context_reasons(behavior))
 
         if exact_domain_ioc:
             verdict = HybridVerdict.KNOWN_THREAT

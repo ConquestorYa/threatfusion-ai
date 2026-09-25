@@ -52,6 +52,7 @@ def test_parse_adguard_api_export_maps_answer_ip() -> None:
             "host": "api.example",
             "type": "A"
           },
+          "status": "NXDOMAIN",
           "answer": [
             {"ttl": 60, "type": "CNAME", "value": "alias.example"},
             {"ttl": 60, "type": "A", "value": "203.0.113.9"}
@@ -69,6 +70,7 @@ def test_parse_adguard_api_export_maps_answer_ip() -> None:
             client_ip="10.0.0.7",
             query_type="A",
             response_ip="203.0.113.9",
+            response_code="NXDOMAIN",
         )
     ]
 
@@ -91,3 +93,11 @@ def test_invalid_adguard_json_is_rejected() -> None:
 
 def test_empty_adguard_log_is_safe() -> None:
     assert parse_adguard_query_log("") == []
+
+
+def test_parse_adguard_json_lines_maps_response_code() -> None:
+    content = '{"IP":"10.0.0.5","T":"2026-09-25T18:00:00Z","QH":"Example.COM","QT":"A","Status":"servfail"}\n'
+
+    event = parse_adguard_query_log(content)[0]
+
+    assert event.response_code == "SERVFAIL"
