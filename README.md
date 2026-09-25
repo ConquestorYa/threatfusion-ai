@@ -61,7 +61,16 @@ not treated as proof of malware.
 - bounded runtime analysis, IDNA/punycode canonicalization, and strict ML eligibility filtering for valid public-domain candidates, with explicit Not-scored presentation
 - CTI freshness/staleness visibility
 - sparse evidence-driven related-activity pair generation with bounded and optimized timestamp comparison
-- pytest + Ruff CI plus Docker build/health smoke testing
+- CI coverage across Ubuntu quality checks, Windows pytest compatibility, and Docker build/health smoke validation
+
+## CI checks
+
+- **Quality (Ubuntu):** installs dependencies, runs Ruff, runs pytest with
+  coverage reporting, and runs `pip-audit` against `requirements.txt`.
+- **Pytest (Windows, Python 3.12):** verifies cross-platform pytest behavior on
+  the supported Windows runtime without requiring local CTI API credentials.
+- **Docker build + health:** builds the image, starts the app in public mode,
+  and verifies the Streamlit health endpoint.
 
 ## Local dashboard
 
