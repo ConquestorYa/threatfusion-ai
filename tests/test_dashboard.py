@@ -124,7 +124,7 @@ def test_runtime_summary_counts_verdicts_and_domains() -> None:
 def test_human_readable_verdict_and_reason_labels() -> None:
     assert verdict_label("known_threat") == "Known Threat"
     assert verdict_label("high_risk") == "High Risk"
-    assert reason_label("known_ioc_match") == "Known threat intelligence match"
+    assert reason_label("known_ioc_match") == "Exact known-domain IOC match"
     assert reason_label("rapid_query_burst") == "Rapid DNS query burst"
     assert ml_tier_label(None) == "Below threshold"
     assert ml_tier_label(None, scored=False) == "Not scored"
@@ -138,7 +138,7 @@ def test_assessment_rows_are_friendly_and_severity_sorted() -> None:
     assert [row["Domain"] for row in rows] == ["known.bad", "review.example"]
     assert rows[0]["Verdict"] == "Known Threat"
     assert rows[0]["Known CTI sources"] == "ThreatFox"
-    assert rows[0]["Evidence"] == "Known threat intelligence match"
+    assert rows[0]["Evidence"] == "Exact known-domain IOC match"
     assert rows[1]["ML tier"] == "Low"
     assert rows[1]["Evidence"] == "Low ML score tier"
 
@@ -189,7 +189,7 @@ def test_assessment_detail_explains_domain() -> None:
     assert detail["verdict"] == "Known Threat"
     assert detail["known_sources"] == ("ThreatFox",)
     assert detail["event_count"] == 1
-    assert detail["evidence"] == ("Known threat intelligence match",)
+    assert detail["evidence"] == ("Exact known-domain IOC match",)
 
 def test_match_rows_do_not_expose_indicator_value() -> None:
     rows = match_rows(make_result())
