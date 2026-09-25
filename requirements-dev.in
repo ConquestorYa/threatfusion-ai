@@ -1,0 +1,8 @@
+# Direct development/quality tools.
+# CI intentionally installs pytest-cov and pip-audit separately because they
+# are CI tooling rather than application runtime dependencies.
+
+pytest==9.1.1
+ruff==0.16.8
+pytest-cov
+pip-audit
