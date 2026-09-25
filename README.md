@@ -36,6 +36,17 @@ ML is used as an additional signal for previously unseen domains, and DNS
 behavior can strengthen an assessment or trigger review. Behavioral signals are
 not treated as proof of malware.
 
+## Architecture overview
+
+ThreatFusion AI has four core layers:
+
+- **Collection + normalization:** ThreatFox, URLhaus, and SGB IOC ingestion into a common model.
+- **Runtime analysis:** local DNS telemetry parsing, deterministic IOC matching, ML scoring, and behavior signals.
+- **Persistence:** local SQLite CTI cache, optional local analysis history, and trusted local model artifacts.
+- **Presentation:** Streamlit analyst dashboard and privacy-safe JSON/CSV report export.
+
+See `docs/ARCHITECTURE.md` for full data-flow and module-level details.
+
 ## Implemented
 
 - ThreatFox, URLhaus, and SGB collectors
@@ -88,6 +99,21 @@ This creates `data/demo/demo_dns.csv`. If the local CTI cache contains at
 least one domain IOC, the demo includes one cached IOC value as inert text so
 the known-threat matching path can be exercised. The generator does not print,
 visit, or resolve that IOC.
+
+### Fast demo path
+
+1. Generate demo telemetry:
+   ```powershell
+   python scripts\generate_demo_dns_csv.py
+   ```
+2. Run the detector:
+   ```powershell
+   python scripts\analyze_dns.py data\demo\demo_dns.csv --format dns-csv
+   ```
+3. Open the dashboard:
+   ```powershell
+   streamlit run streamlit_app.py
+   ```
 
 Run the dashboard:
 
@@ -155,13 +181,39 @@ source-wise malicious recall.
 
 Remaining planned work includes:
 
-- collect and run the fresh final holdout dataset
+- collect and run the first disjoint final holdout dataset
 - deploy the prepared container to a hosted environment/domain
 - optional LLM-generated explanations and reports
 
 Principle:
 
 **ML detects. LLM explains.**
+
+## Data-source attribution and redistribution
+
+ThreatFusion AI integrates third-party CTI/telemetry sources. Source ownership, endpoint attribution, and redistribution notes are documented in `docs/DATA_SOURCES.md`.
+
+Where source-license or redistribution terms are not explicitly verified in this repository, they are marked as TODO rather than assumed.
+
+## Screenshot placeholders (for release)
+
+Add sanitized images under `docs/images/` before the public portfolio release:
+
+- `overview-dashboard.png` (main dashboard with no private telemetry)
+- `domain-investigation.png` (domain detail/evidence view with inert demo data)
+- `model-evaluation.png` (aggregate-only model metrics view)
+
+Placeholder markup:
+
+```markdown
+![ThreatFusion dashboard overview](docs/images/overview-dashboard.png)
+![ThreatFusion domain investigation](docs/images/domain-investigation.png)
+![ThreatFusion model evaluation](docs/images/model-evaluation.png)
+```
+
+## License status
+
+No repository license file is currently committed. A release-ready public portfolio version requires the repository owner to select and add a license file before visibility changes.
 
 
 ## Hosted demo preparation
