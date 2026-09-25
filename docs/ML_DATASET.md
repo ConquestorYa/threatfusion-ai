@@ -53,10 +53,14 @@ Each dataset entry is represented as a `DomainSample` with:
 
 ## Normalization and deduplication rules
 
-1. Domain strings are normalized using the project `normalize_ioc_value()` logic.
-2. Malware entries may originate from `IOCRecord` objects of type `DOMAIN` or from the hostname extracted from `URL` records.
-3. Benign inputs are accepted as strings already supplied by the caller.
-4. Duplicate domains are removed using the normalized domain value.
+1. Domain strings are canonicalized to lowercase IDNA ASCII form so Unicode
+   hostnames and their punycode representations share one normalized value.
+2. ML candidates must contain at least two valid DNS labels, respect DNS label
+   length/syntax limits, and must not be IP literals.
+3. Malware entries may originate from `IOCRecord` objects of type `DOMAIN`
+   or from the hostname extracted from `URL` records.
+4. Benign inputs are accepted as strings already supplied by the caller.
+5. Duplicate domains are removed using the normalized canonical domain value.
 5. If the same domain appears in both malicious and benign inputs, the malicious label wins.
 6. The output ordering is deterministic and preserves first-seen order for each domain.
 
