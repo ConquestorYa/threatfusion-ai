@@ -101,6 +101,32 @@ def test_cli_selects_zeek_analyzer(tmp_path, monkeypatch) -> None:
     assert calls == ["#fields\tquery\nexample.com\n"]
 
 
+
+
+def test_cli_selects_adguard_analyzer(tmp_path, monkeypatch) -> None:
+    input_path = tmp_path / "querylog.json"
+    input_path.write_text('{"QH":"example.com"}\n', encoding="utf-8")
+    artifact = SimpleNamespace(
+        metadata=SimpleNamespace(model_name="test-model"),
+    )
+    calls: list[str] = []
+
+    monkeypatch.setattr(cli, "load_trusted_ml_artifact", lambda path: artifact)
+    monkeypatch.setattr(cli, "load_ioc_records", lambda path: [])
+
+    def adguard_analyzer(content, indicators, loaded_artifact):
+        calls.append(content)
+        return _result(), _diagnostics()
+
+    monkeypatch.setattr(
+        cli,
+        "analyze_adguard_query_log_with_diagnostics",
+        adguard_analyzer,
+    )
+
+    assert cli.main([str(input_path), "--format", "adguard"]) == 0
+    assert calls == ['{"QH":"example.com"}\n']
+
 def test_cli_reads_pihole_input_as_binary(tmp_path, monkeypatch) -> None:
     input_path = tmp_path / "pihole-FTL.db"
     input_path.write_bytes(b"sqlite-bytes")
