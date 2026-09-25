@@ -229,6 +229,8 @@ def _show_system_status(
     db_path: Path,
     model_dir: Path,
     evaluation_report_path: Path,
+    *,
+    cti_stale_after_by_source=None,
 ) -> None:
     st.sidebar.markdown("### System health")
 
@@ -242,7 +244,14 @@ def _show_system_status(
     )
 
     statuses = list_cti_cache_status(db_path)
-    status_rows = cti_status_rows(statuses) if statuses else []
+    status_rows = (
+        cti_status_rows(
+            statuses,
+            stale_after_by_source=cti_stale_after_by_source,
+        )
+        if statuses
+        else []
+    )
     stale_sources = [
         row["Source"] for row in status_rows if row["Status"] == "Stale"
     ]
@@ -1400,6 +1409,7 @@ def main() -> None:
         db_path,
         model_dir,
         config.evaluation_report_path,
+        cti_stale_after_by_source=config.cti_stale_after_by_source,
     )
 
     if config.public_mode:
