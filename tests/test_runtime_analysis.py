@@ -40,7 +40,7 @@ def test_runtime_pipeline_preserves_events_and_known_ioc_evidence(
 
     monkeypatch.setattr(
         runtime_analysis,
-        "predict_domain_probabilities",
+        "predict_domain_scores",
         lambda artifact, domains: {"known.bad": 0.10},
     )
 
@@ -61,7 +61,7 @@ def test_runtime_pipeline_uses_artifact_thresholds_for_ml_verdict(
 
     monkeypatch.setattr(
         runtime_analysis,
-        "predict_domain_probabilities",
+        "predict_domain_scores",
         lambda artifact, domains: {"unknown.example": 0.85},
     )
 
@@ -70,7 +70,7 @@ def test_runtime_pipeline_uses_artifact_thresholds_for_ml_verdict(
     assessment = result.assessments[0]
     assert assessment.verdict is HybridVerdict.HIGH_RISK
     assert assessment.ml_tier == "high"
-    assert assessment.ml_probability == pytest.approx(0.85)
+    assert assessment.ml_score == pytest.approx(0.85)
 
 
 def test_runtime_pipeline_passes_unique_normalized_probabilities_through(
@@ -87,33 +87,33 @@ def test_runtime_pipeline_passes_unique_normalized_probabilities_through(
         captured.append(values)
         return {"example.com": 0.55}
 
-    monkeypatch.setattr(runtime_analysis, "predict_domain_probabilities", predict)
+    monkeypatch.setattr(runtime_analysis, "predict_domain_scores", predict)
 
     result = analyze_dns_events(events, [], fake_artifact())
 
     assert captured == [["Example.COM.", "example.com"]]
-    assert result.ml_probabilities == {"example.com": 0.55}
+    assert result.ml_scores == {"example.com": 0.55}
     assert len(result.assessments) == 1
     assert result.assessments[0].domain == "example.com"
 
 
-def test_invalid_domain_can_remain_dns_evidence_without_ml_probability(
+def test_invalid_domain_can_remain_dns_evidence_without_ml_score(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     event = DNSEvent(query_name="not a valid domain")
 
     monkeypatch.setattr(
         runtime_analysis,
-        "predict_domain_probabilities",
+        "predict_domain_scores",
         lambda artifact, domains: {},
     )
 
     result = analyze_dns_events([event], [], fake_artifact())
 
     assert result.events == (event,)
-    assert result.ml_probabilities == {}
+    assert result.ml_scores == {}
     assert len(result.assessments) == 1
-    assert result.assessments[0].ml_probability is None
+    assert result.assessments[0].ml_score is None
 
 
 def test_runtime_supports_generator_inputs(
@@ -129,7 +129,7 @@ def test_runtime_supports_generator_inputs(
 
     monkeypatch.setattr(
         runtime_analysis,
-        "predict_domain_probabilities",
+        "predict_domain_scores",
         lambda artifact, domains: {
             "one.example": 0.20,
             "two.example": 0.20,
@@ -157,7 +157,7 @@ def test_dns_csv_convenience_helper_parses_and_analyzes(
 
     monkeypatch.setattr(
         runtime_analysis,
-        "predict_domain_probabilities",
+        "predict_domain_scores",
         lambda artifact, domains: {"example.com": 0.55},
     )
 
@@ -180,7 +180,7 @@ def test_dns_csv_runtime_helper_returns_input_quality_diagnostics(
     )
     monkeypatch.setattr(
         runtime_analysis,
-        "predict_domain_probabilities",
+        "predict_domain_scores",
         lambda artifact, domains: {"example.com": 0.55},
     )
 
@@ -212,7 +212,7 @@ def test_adguard_runtime_helper_parses_and_analyzes(
     )
     monkeypatch.setattr(
         runtime_analysis,
-        "predict_domain_probabilities",
+        "predict_domain_scores",
         lambda artifact, domains: {"example.com": 0.55},
     )
 
@@ -252,7 +252,7 @@ def test_pihole_runtime_helper_parses_and_analyzes(
 
     monkeypatch.setattr(
         runtime_analysis,
-        "predict_domain_probabilities",
+        "predict_domain_scores",
         lambda artifact, domains: {"example.com": 0.55},
     )
 
@@ -279,7 +279,7 @@ def test_zeek_runtime_helper_parses_and_analyzes(
     )
     monkeypatch.setattr(
         runtime_analysis,
-        "predict_domain_probabilities",
+        "predict_domain_scores",
         lambda artifact, domains: {"example.com": 0.55},
     )
 
@@ -306,7 +306,7 @@ def test_response_ip_ioc_match_is_contextual_review(
 
     monkeypatch.setattr(
         runtime_analysis,
-        "predict_domain_probabilities",
+        "predict_domain_scores",
         lambda artifact, domains: {"apparently-benign.example": 0.10},
     )
 
@@ -334,16 +334,16 @@ def test_ml_scoring_skips_reverse_local_and_single_label_queries(
         captured.append(values)
         return {"example.com": 0.55}
 
-    monkeypatch.setattr(runtime_analysis, "predict_domain_probabilities", predict)
+    monkeypatch.setattr(runtime_analysis, "predict_domain_scores", predict)
 
     result = analyze_dns_events(events, [], fake_artifact())
 
     assert captured == [["example.com"]]
-    assert result.ml_probabilities == {"example.com": 0.55}
+    assert result.ml_scores == {"example.com": 0.55}
     by_domain = {item.domain: item for item in result.assessments}
-    assert by_domain["1.0.0.127.in-addr.arpa"].ml_probability is None
-    assert by_domain["printer.local"].ml_probability is None
-    assert by_domain["internalhost"].ml_probability is None
+    assert by_domain["1.0.0.127.in-addr.arpa"].ml_score is None
+    assert by_domain["printer.local"].ml_score is None
+    assert by_domain["internalhost"].ml_score is None
 
 
 def test_ml_scoring_candidate_rules_are_explicit() -> None:
@@ -400,7 +400,7 @@ def test_runtime_analysis_does_not_perform_networking(
     monkeypatch.setattr(socket, "create_connection", fail)
     monkeypatch.setattr(
         runtime_analysis,
-        "predict_domain_probabilities",
+        "predict_domain_scores",
         lambda artifact, domains: {"example.com": 0.10},
     )
 
