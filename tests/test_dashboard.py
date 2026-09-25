@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+import pytest
+
 from threatfusion.campaign import (
     DomainRelationship,
     RelatedActivityCluster,
@@ -20,6 +22,8 @@ from threatfusion.dashboard import (
     format_timestamp,
     history_rows,
     match_rows,
+    ml_status_label,
+    ml_status_note,
     ml_tier_label,
     persisted_assessment_rows,
     reason_label,
@@ -364,3 +368,57 @@ def test_analyst_feedback_rows_are_human_readable() -> None:
             "Updated at": "2026-09-24 20:15 UTC",
         }
     ]
+
+
+def test_ml_status_distinguishes_unscored_from_below_threshold() -> None:
+    assert ml_status_label("public.example", 0.20, None) == "Below threshold"
+    assert ml_status_note("public.example", 0.20) is None
+
+    assert ml_status_label("printer.local", None, None) == "Not scored"
+    note = ml_status_note("printer.local", None)
+
+    assert note is not None
+    assert "outside the ML model scope" in note
+
+
+def test_cti_status_rows_surface_fresh_stale_and_unknown_ages() -> None:
+    now = datetime(2026, 9, 25, 18, 0, tzinfo=timezone.utc)
+    rows = cti_status_rows(
+        [
+            CTICacheStatus(
+                source="Fresh",
+                refreshed_at="2026-09-25T16:00:00+00:00",
+                record_count=10,
+            ),
+            CTICacheStatus(
+                source="Stale",
+                refreshed_at="2026-09-24T12:00:00+00:00",
+                record_count=20,
+            ),
+            CTICacheStatus(
+                source="Unknown",
+                refreshed_at="not-a-timestamp",
+                record_count=30,
+            ),
+        ],
+        now=now,
+        stale_after_hours=24,
+    )
+
+    assert rows[0]["Age"] == "2.0 h"
+    assert rows[0]["Status"] == "Fresh"
+    assert rows[1]["Age"] == "30.0 h"
+    assert rows[1]["Status"] == "Stale"
+    assert rows[2]["Age"] == "Unknown"
+    assert rows[2]["Status"] == "Unknown"
+
+
+def test_cti_status_rows_reject_invalid_freshness_inputs() -> None:
+    with pytest.raises(ValueError, match="stale_after_hours"):
+        cti_status_rows([], stale_after_hours=0)
+
+    with pytest.raises(ValueError, match="timezone-aware"):
+        cti_status_rows(
+            [],
+            now=datetime(2026, 9, 25, 18, 0),
+        )
