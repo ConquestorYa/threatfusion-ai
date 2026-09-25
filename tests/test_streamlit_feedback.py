@@ -13,6 +13,7 @@ from threatfusion.persistence import (
     get_analysis_assessments,
     get_analyst_feedback,
     save_analyst_feedback,
+    save_analyst_suppression,
     save_runtime_analysis,
 )
 from threatfusion.runtime_analysis import RuntimeAnalysisResult
@@ -70,8 +71,12 @@ def test_public_mode_never_reads_or_writes_history_or_feedback(
         "list_analysis_runs",
         "get_analysis_assessments",
         "get_analyst_feedback",
+        "get_latest_analyst_feedback_for_domains",
+        "get_active_analyst_suppressions",
         "save_runtime_analysis",
         "save_analyst_feedback",
+        "save_analyst_suppression",
+        "remove_analyst_suppression",
     ):
         monkeypatch.setattr(app_module, name, forbidden)
 
@@ -90,6 +95,38 @@ def test_public_mode_never_reads_or_writes_history_or_feedback(
     )
     assert db_path.read_bytes() == original_database
 
+
+
+
+def test_live_analysis_surfaces_previous_review_and_local_suppression(
+    feedback_app,
+) -> None:
+    _, db_path, result, run_id = feedback_app
+    save_analyst_feedback(
+        db_path,
+        run_id,
+        "a.example",
+        "benign",
+        note="Expected vendor domain",
+    )
+    save_analyst_suppression(
+        db_path,
+        "a.example",
+        "Approved vendor traffic",
+    )
+
+    app = AppTest.from_string("import streamlit_app\nstreamlit_app.main()")
+    app.session_state["analysis_result"] = result
+    app.run(timeout=15)
+
+    assert not app.exception
+    info_values = [item.value for item in app.info]
+    warning_values = [item.value for item in app.warning]
+    assert any("Previous analyst review: Benign" in value for value in info_values)
+    assert any(
+        "Locally suppressed from the priority queue" in value
+        for value in warning_values
+    )
 
 def test_local_feedback_form_upserts_and_isolates_run_and_domain(feedback_app):
     _, db_path, result, first_run_id = feedback_app
