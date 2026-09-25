@@ -6,7 +6,7 @@ If you discover a potential security issue in ThreatFusion AI, please report it 
 
 - Repository -> **Security** -> **Advisories** -> **Report a vulnerability**
 
-If GitHub Security Advisories are unavailable, open a private issue with the repository owner and avoid posting exploit details publicly until triage is complete.
+If private vulnerability reporting is unavailable, contact the repository owner through a private channel listed on their GitHub profile. If no private channel is available, do not post secrets, private telemetry, or exploit details in a public issue.
 
 Please include:
 
