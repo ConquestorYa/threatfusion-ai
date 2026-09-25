@@ -74,7 +74,7 @@ def _verdict_chart(summary) -> pd.DataFrame:
     )
 
 
-def _relationship_figure(report, result) -> go.Figure:
+def _relationship_figure(related_report, result) -> go.Figure:
     graph = build_relationship_graph(report, result)
     figure = go.Figure()
 
@@ -298,8 +298,16 @@ def _show_analysis_result(
             st.info("No cached IOC matches were found.")
 
     with campaign_tab:
-        report = find_related_activity(result)
-        if report.clusters:
+        try:
+            related_report = find_related_activity(result)
+        except ValueError as error:
+            st.warning(
+                "Related-activity visualization was skipped because the "
+                f"candidate set was too large: {error}"
+            )
+            related_report = None
+
+        if related_report is not None and related_report.clusters:
             st.info(
                 "These groups show possible related suspicious activity based "
                 "on shared local DNS evidence. They do not prove one malware "
@@ -311,13 +319,13 @@ def _show_analysis_result(
             )
             st.write("**Possible related-activity groups**")
             st.dataframe(
-                pd.DataFrame(cluster_rows(report)),
+                pd.DataFrame(cluster_rows(related_report)),
                 hide_index=True,
                 width="stretch",
             )
             st.write("**Relationship evidence**")
             st.dataframe(
-                pd.DataFrame(relationship_rows(report)),
+                pd.DataFrame(relationship_rows(related_report)),
                 hide_index=True,
                 width="stretch",
             )
@@ -325,7 +333,7 @@ def _show_analysis_result(
                 "Raw client IP values are not shown. Relationship rows expose "
                 "aggregate shared counts only."
             )
-        else:
+        elif related_report is not None:
             st.info(
                 "No possible related-activity groups were found among Known "
                 "Threat, High Risk, or Review domains."
