@@ -245,6 +245,18 @@ def test_persistence_does_not_perform_networking(
     feedback = get_analyst_feedback(db_path, run_id)
     assert len(feedback) == 1
     assert feedback[0].domain == "review.example"
+    latest = get_latest_analyst_feedback_for_domains(
+        db_path,
+        ["review.example"],
+    )
+    assert latest["review.example"].label == "uncertain"
+
+    save_analyst_suppression(
+        db_path,
+        "review.example",
+        "Local expected traffic",
+    )
+    assert "review.example" in get_active_analyst_suppressions(db_path)
 
 
 
