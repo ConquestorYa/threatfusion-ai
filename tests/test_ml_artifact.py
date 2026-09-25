@@ -10,7 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from threatfusion.ml_artifact import (
     SELECTED_DEVELOPMENT_MODEL,
     load_trusted_ml_artifact,
-    predict_domain_probabilities,
+    predict_domain_scores,
     train_selected_model_artifact,
     write_ml_artifact,
 )
@@ -69,7 +69,7 @@ def test_artifact_split_counts_are_recorded() -> None:
 
 def test_artifact_roundtrip_preserves_predictions(tmp_path) -> None:
     artifact = train_selected_model_artifact(make_samples())
-    before = predict_domain_probabilities(
+    before = predict_domain_scores(
         artifact,
         ["malware-001.bad-example.test", "popular-001.good-example.test"],
     )
@@ -79,7 +79,7 @@ def test_artifact_roundtrip_preserves_predictions(tmp_path) -> None:
         tmp_path / "model",
     )
     loaded = load_trusted_ml_artifact(tmp_path / "model")
-    after = predict_domain_probabilities(
+    after = predict_domain_scores(
         loaded,
         ["malware-001.bad-example.test", "popular-001.good-example.test"],
     )
@@ -120,7 +120,7 @@ def test_write_refuses_overwrite_by_default(tmp_path) -> None:
 def test_prediction_normalizes_and_deduplicates_domains() -> None:
     artifact = train_selected_model_artifact(make_samples())
 
-    result = predict_domain_probabilities(
+    result = predict_domain_scores(
         artifact,
         [
             "Popular-001.Good-Example.Test.",
@@ -154,7 +154,7 @@ def test_artifact_training_and_inference_do_not_use_networking(
     monkeypatch.setattr(socket, "create_connection", fail)
 
     artifact = train_selected_model_artifact(make_samples())
-    result = predict_domain_probabilities(
+    result = predict_domain_scores(
         artifact,
         ["unknown-example.test"],
     )
