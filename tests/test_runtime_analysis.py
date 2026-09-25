@@ -240,8 +240,6 @@ def test_runtime_rejects_excessive_event_count(
     assert MAX_DNS_EVENTS >= 2
 
 
-
-
 def test_runtime_rejects_excessive_unique_query_count(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -257,6 +255,7 @@ def test_runtime_rejects_excessive_unique_query_count(
             [],
             fake_artifact(),
         )
+
 
 def test_runtime_analysis_does_not_perform_networking(
     monkeypatch: pytest.MonkeyPatch,
