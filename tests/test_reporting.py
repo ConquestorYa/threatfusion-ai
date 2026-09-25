@@ -150,6 +150,32 @@ def test_csv_report_is_portable_and_human_readable() -> None:
     )
 
 
+
+
+def test_report_marks_unscored_domain_distinctly() -> None:
+    result = make_result()
+    assessment = replace(
+        result.assessments[0],
+        ml_probability=None,
+        ml_tier=None,
+        reasons=("known_ioc_match",),
+    )
+    report = build_analysis_report(
+        replace(
+            result,
+            ml_probabilities={},
+            assessments=(assessment,),
+        ),
+        model_name="development-model",
+    )
+
+    payload = json.loads(report.json_text)
+    rows = list(csv.DictReader(io.StringIO(report.csv_text)))
+
+    assert payload["findings"][0]["ml_score"] is None
+    assert payload["findings"][0]["ml_tier"] == "Not scored"
+    assert rows[0]["ml_tier"] == "Not scored"
+
 def test_csv_report_escapes_spreadsheet_formula_prefixes() -> None:
     result = make_result()
     assessment = replace(
