@@ -10,6 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from threatfusion.ml_artifact import (
     SELECTED_DEVELOPMENT_MODEL,
     load_trusted_ml_artifact,
+    predict_domain_probabilities,
     predict_domain_scores,
     train_selected_model_artifact,
     write_ml_artifact,
@@ -28,6 +29,16 @@ def make_samples(count_per_label: int = 50) -> list[DomainSample]:
             for index in range(count_per_label)
         ],
     ]
+
+
+def test_legacy_probability_predictor_alias_matches_score_api() -> None:
+    artifact = train_selected_model_artifact(make_samples())
+    domains = ["popular-001.good-example.test", "malware-001.bad-example.test"]
+
+    assert predict_domain_probabilities(artifact, domains) == predict_domain_scores(
+        artifact,
+        domains,
+    )
 
 
 def test_selected_artifact_uses_wider_logistic_candidate() -> None:
