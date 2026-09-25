@@ -445,18 +445,46 @@ The protocol is:
    counts, and malicious recall by retained source
 7. do not retrain the model or tune thresholds from holdout results
 
-The evaluator is local and network-free:
+Collect the real holdout snapshot first. Use a **new pinned Tranco list ID**
+and the actual date associated with that list; do not reuse `L5PV4` /
+`2026-09-23` from the development snapshot.
 
-```text
-python scripts/evaluate_ml_final_holdout.py \
-  --artifact-dir data/models/development-001 \
-  --development-snapshot-dir data/snapshots/baseline-001 \
-  --holdout-snapshot-dir data/snapshots/holdout-001 \
-  --json-output data/evaluation/final_holdout.json
+```powershell
+$env:THREATFOX_AUTH_KEY="..."
+$env:URLHAUS_AUTH_KEY="..."
+
+python scripts\inspect_live_ml_snapshot.py `
+  --final-holdout-against data\snapshots\baseline-001 `
+  --artifact-dir data\models\development-001 `
+  --tranco-id <NEW_TRANCO_ID> `
+  --tranco-date <YYYY-MM-DD> `
+  --output-dir data\snapshots\holdout-001
 ```
 
-The optional JSON output contains aggregate metrics/source recall only and is what the Streamlit Model evaluation tab reads. It does not contain domain rows.\n\nThe holdout snapshot itself should be collected separately with a newer pinned\nbenign snapshot date. For example, the existing live snapshot collector can be
-used with an explicitly newer Tranco list ID/date and a new output directory.
+Final-holdout mode performs its preflight **before network collection**. It
+refuses to proceed when the benign snapshot date is not later than development,
+when the Tranco list ID is reused, when the holdout output directory is the
+development directory, or when the holdout output directory is already
+non-empty. The persisted experiment metadata also records the
+`fresh_collection_disjoint` protocol, the development/holdout benign
+snapshot identities, frozen model name, and frozen artifact SHA-256 checksum.
+The checksum is an identity record; the model and thresholds are not changed.
+
+After collection, run the evaluator once against the saved holdout. The
+evaluator itself is local and network-free:
+
+```powershell
+python scripts\evaluate_ml_final_holdout.py `
+  --artifact-dir data\models\development-001 `
+  --development-snapshot-dir data\snapshots\baseline-001 `
+  --holdout-snapshot-dir data\snapshots\holdout-001 `
+  --json-output data\evaluation\final_holdout.json
+```
+
+The optional JSON output contains aggregate metrics/source diagnostics only and
+is what the Streamlit Model evaluation tab reads. It does not contain domain
+rows. Both `data/snapshots/` and `data/evaluation/` are ignored by Git by
+default, so the raw holdout remains local.
 
 This is a **fresh-collection disjoint holdout**, not a strict IOC first-seen
 time split. The current `DomainSample` schema does not retain IOC
