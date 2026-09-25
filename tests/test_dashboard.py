@@ -19,6 +19,7 @@ from threatfusion.dashboard import (
     feedback_rows,
     format_timestamp,
     history_rows,
+    match_evidence_scope,
     match_rows,
     ml_tier_label,
     persisted_assessment_rows,
@@ -47,7 +48,16 @@ def make_result() -> RuntimeAnalysisResult:
         client_ip="10.0.0.1",
         query_type="A",
     )
-    indicator = IOCRecord("known.bad", IOCType.DOMAIN, "ThreatFox")
+    indicator = IOCRecord(
+        "known.bad",
+        IOCType.DOMAIN,
+        "ThreatFox",
+        first_seen=datetime(2026, 9, 20, 10, 0, tzinfo=timezone.utc),
+        last_seen=datetime(2026, 9, 24, 12, 0, tzinfo=timezone.utc),
+        threat_type="botnet_cc",
+        confidence=0.9,
+        tags=["c2", "malware"],
+    )
     match = DNSIOCMatch(event, indicator, "query_domain")
 
     known = HybridAssessment(
@@ -115,6 +125,10 @@ def test_human_readable_verdict_and_reason_labels() -> None:
     assert reason_label("known_ioc_match") == "Known threat intelligence match"
     assert reason_label("rapid_query_burst") == "Rapid DNS query burst"
     assert ml_tier_label(None) == "Below threshold"
+    assert ml_tier_label(None, scored=False) == "Not scored"
+    assert match_evidence_scope("query_domain") == "Exact domain IOC"
+    assert match_evidence_scope("url_hostname") == "URL hostname IOC"
+    assert match_evidence_scope("response_ip") == "Response infrastructure IOC"
 
 def test_assessment_rows_are_friendly_and_severity_sorted() -> None:
     rows = assessment_rows(make_result())
@@ -125,6 +139,43 @@ def test_assessment_rows_are_friendly_and_severity_sorted() -> None:
     assert rows[0]["Evidence"] == "Known threat intelligence match"
     assert rows[1]["ML tier"] == "Low"
     assert rows[1]["Evidence"] == "Low ML score tier"
+
+
+
+def test_unscored_assessment_is_not_presented_as_below_threshold() -> None:
+    behavior = DomainBehavior(
+        domain="printer.local",
+        event_count=1,
+        unique_client_count=1,
+        unique_response_ip_count=0,
+        query_types=("A",),
+        first_seen=None,
+        last_seen=None,
+        observed_span_seconds=None,
+    )
+    assessment = HybridAssessment(
+        domain="printer.local",
+        verdict=HybridVerdict.LOW,
+        known_ioc_sources=(),
+        known_match_types=(),
+        ml_probability=None,
+        ml_tier=None,
+        behavior=behavior,
+        behavior_signals=(),
+        reasons=(),
+    )
+    result = RuntimeAnalysisResult(
+        events=(DNSEvent(query_name="printer.local"),),
+        matches=(),
+        ml_probabilities={},
+        assessments=(assessment,),
+    )
+
+    rows = assessment_rows(result)
+
+    assert rows[0]["ML score"] is None
+    assert rows[0]["ML tier"] == "Not scored"
+    assert assessment_detail(assessment)["ml_tier"] == "Not scored"
 
 def test_assessment_detail_explains_domain() -> None:
     assessment = next(
@@ -146,7 +197,13 @@ def test_match_rows_do_not_expose_indicator_value() -> None:
             "Query name": "known.bad",
             "Source": "ThreatFox",
             "Match type": "Query Domain",
+            "Evidence scope": "Exact domain IOC",
             "IOC type": "DOMAIN",
+            "Threat type": "botnet_cc",
+            "Confidence": 0.9,
+            "First seen": "2026-09-20 10:00 UTC",
+            "Last seen": "2026-09-24 12:00 UTC",
+            "Tags": "c2, malware",
         }
     ]
     assert "value" not in rows[0]
