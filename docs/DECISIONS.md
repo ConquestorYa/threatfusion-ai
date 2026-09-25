@@ -775,3 +775,18 @@ feedback never rewrites detector verdicts.
 turning review actions into hidden detection logic or creating an accidental
 database-wipe control. Run deltas should describe saved findings only and stay
 separate from model inference.
+
+## DEC-081: Report holdout uncertainty and source-aware class metrics
+
+**Decision:** Frozen final-holdout reports include 95% Wilson score intervals
+for precision, recall, and false-positive rate. They also retain source-aware
+diagnostics that report malicious recall and benign false-positive rate only
+when the corresponding class exists for that source. Legacy schema-version 1
+reports remain readable.
+
+**Reason:** Point estimates can look more precise than the available sample
+size justifies, especially for small source subsets. Class-specific
+source diagnostics expose uneven performance without inventing undefined
+metrics, while backward-compatible report loading preserves reproducibility of
+older evaluation artifacts.
+
