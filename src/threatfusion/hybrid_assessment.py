@@ -193,20 +193,33 @@ def assess_dns_domains(
         tier = _ml_tier(probability, ml_thresholds)
         behavior_signals = _behavior_signals(behavior, config)
 
+        exact_domain_ioc = "query_domain" in match_types
+        contextual_ioc = bool(
+            {"url_hostname", "response_ip"} & set(match_types)
+        )
+
         reasons: list[str] = []
-        if sources:
+        if exact_domain_ioc:
             reasons.append("known_ioc_match")
+        if "url_hostname" in match_types:
+            reasons.append("url_hostname_ioc_context")
+        if "response_ip" in match_types:
+            reasons.append("response_ip_ioc_context")
         if tier is not None:
             reasons.append(f"ml_{tier}_confidence")
         reasons.extend(behavior_signals)
 
-        if sources:
+        if exact_domain_ioc:
             verdict = HybridVerdict.KNOWN_THREAT
         elif tier == "high" or (
             tier == "medium" and len(behavior_signals) >= 2
         ):
             verdict = HybridVerdict.HIGH_RISK
-        elif tier in {"medium", "low"} or len(behavior_signals) >= 2:
+        elif (
+            contextual_ioc
+            or tier in {"medium", "low"}
+            or len(behavior_signals) >= 2
+        ):
             verdict = HybridVerdict.REVIEW
         else:
             verdict = HybridVerdict.LOW
