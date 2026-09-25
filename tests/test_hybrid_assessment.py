@@ -142,6 +142,18 @@ def test_high_confidence_ml_signal_is_high_risk() -> None:
     assert assessment.ml_score == pytest.approx(0.85)
 
 
+def test_legacy_ml_probabilities_keyword_maps_to_ml_score() -> None:
+    assessment = assess_dns_domains(
+        [DNSEvent(query_name="legacy.example")],
+        [],
+        ml_probabilities={"legacy.example": 0.85},
+        ml_thresholds=thresholds(),
+    )[0]
+
+    assert assessment.ml_score == pytest.approx(0.85)
+    assert assessment.ml_probability == assessment.ml_score
+
+
 def test_medium_ml_plus_two_behavior_signals_is_high_risk() -> None:
     events = [
         DNSEvent(
@@ -285,7 +297,7 @@ def test_periodic_and_churn_context_reasons_are_explainable() -> None:
     assert "numeric_heavy_hostname" in assessment.reasons
 
 
-def test_probabilities_and_thresholds_must_be_supplied_together() -> None:
+def test_scores_and_thresholds_must_be_supplied_together() -> None:
     with pytest.raises(ValueError, match="supplied together"):
         assess_dns_domains(
             [DNSEvent(query_name="example.com")],
@@ -294,7 +306,7 @@ def test_probabilities_and_thresholds_must_be_supplied_together() -> None:
         )
 
 
-def test_invalid_probability_is_rejected() -> None:
+def test_invalid_score_is_rejected() -> None:
     with pytest.raises(ValueError, match="between 0 and 1"):
         assess_dns_domains(
             [DNSEvent(query_name="example.com")],
