@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .audit import AnalysisAuditMetadata, CTISourceAudit
 from .runtime_analysis import RuntimeAnalysisResult
 
 
@@ -22,6 +23,14 @@ class AnalysisRunSummary:
     review_count: int
     low_count: int
     model_name: str | None
+    audit_captured_at: str | None
+    artifact_checksum: str | None
+    artifact_schema_version: int | None
+    high_threshold: float | None
+    medium_threshold: float | None
+    low_threshold: float | None
+    cti_sources: tuple[CTISourceAudit, ...]
+    audit_schema_version: int | None
 
 
 @dataclass(frozen=True)
@@ -80,7 +89,15 @@ CREATE TABLE IF NOT EXISTS analysis_runs (
     high_risk_count INTEGER NOT NULL,
     review_count INTEGER NOT NULL,
     low_count INTEGER NOT NULL,
-    model_name TEXT
+    model_name TEXT,
+    audit_captured_at TEXT,
+    artifact_checksum TEXT,
+    artifact_schema_version INTEGER,
+    high_threshold REAL,
+    medium_threshold REAL,
+    low_threshold REAL,
+    cti_context_json TEXT,
+    audit_schema_version INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS analysis_assessments (
@@ -141,6 +158,31 @@ CREATE INDEX IF NOT EXISTS idx_analyst_suppressions_expires_at
     ON analyst_suppressions(expires_at);
 """
 
+_ANALYSIS_RUN_MIGRATIONS = {
+    "audit_captured_at": "TEXT",
+    "artifact_checksum": "TEXT",
+    "artifact_schema_version": "INTEGER",
+    "high_threshold": "REAL",
+    "medium_threshold": "REAL",
+    "low_threshold": "REAL",
+    "cti_context_json": "TEXT",
+    "audit_schema_version": "INTEGER",
+}
+
+
+def _migrate_analysis_runs(connection: sqlite3.Connection) -> None:
+    existing = {
+        str(row[1])
+        for row in connection.execute("PRAGMA table_info(analysis_runs)")
+    }
+    for column, declaration in _ANALYSIS_RUN_MIGRATIONS.items():
+        if column in existing:
+            continue
+        connection.execute(
+            f"ALTER TABLE analysis_runs ADD COLUMN {column} {declaration}"
+        )
+
+
 
 def _connect(db_path: Path) -> sqlite3.Connection:
     connection = sqlite3.connect(Path(db_path))
@@ -155,6 +197,7 @@ def initialize_database(db_path: Path) -> None:
 
     with _connect(path) as connection:
         connection.executescript(_SCHEMA)
+        _migrate_analysis_runs(connection)
 
 
 def _created_at_text(created_at: datetime | None) -> str:
@@ -172,11 +215,25 @@ def _json_tuple(values: Sequence[str]) -> str:
     return json.dumps(list(values), ensure_ascii=True, separators=(",", ":"))
 
 
+def _cti_context_json(values: Sequence[CTISourceAudit]) -> str:
+    payload = [
+        {
+            "source": item.source,
+            "refreshed_at": item.refreshed_at,
+            "record_count": item.record_count,
+            "freshness": item.freshness,
+        }
+        for item in values
+    ]
+    return json.dumps(payload, ensure_ascii=True, separators=(",", ":"))
+
+
 def save_runtime_analysis(
     db_path: Path,
     result: RuntimeAnalysisResult,
     *,
     model_name: str | None = None,
+    audit_metadata: AnalysisAuditMetadata | None = None,
     created_at: datetime | None = None,
 ) -> int:
     """Persist summary and per-domain assessment data for one analysis run.
@@ -184,6 +241,18 @@ def save_runtime_analysis(
     Raw DNS rows and client IP values are intentionally not persisted.
     """
     initialize_database(db_path)
+
+    if (
+        audit_metadata is not None
+        and model_name is not None
+        and model_name != audit_metadata.model_name
+    ):
+        raise ValueError("model_name does not match audit metadata")
+    persisted_model_name = (
+        audit_metadata.model_name
+        if audit_metadata is not None
+        else model_name
+    )
 
     verdict_counts = {
         "known_threat": 0,
@@ -206,9 +275,17 @@ def save_runtime_analysis(
                 high_risk_count,
                 review_count,
                 low_count,
-                model_name
+                model_name,
+                audit_captured_at,
+                artifact_checksum,
+                artifact_schema_version,
+                high_threshold,
+                medium_threshold,
+                low_threshold,
+                cti_context_json,
+                audit_schema_version
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 _created_at_text(created_at),
@@ -219,7 +296,47 @@ def save_runtime_analysis(
                 verdict_counts["high_risk"],
                 verdict_counts["review"],
                 verdict_counts["low"],
-                model_name,
+                persisted_model_name,
+                (
+                    audit_metadata.captured_at
+                    if audit_metadata is not None
+                    else None
+                ),
+                (
+                    audit_metadata.artifact_checksum
+                    if audit_metadata is not None
+                    else None
+                ),
+                (
+                    audit_metadata.artifact_schema_version
+                    if audit_metadata is not None
+                    else None
+                ),
+                (
+                    audit_metadata.high_threshold
+                    if audit_metadata is not None
+                    else None
+                ),
+                (
+                    audit_metadata.medium_threshold
+                    if audit_metadata is not None
+                    else None
+                ),
+                (
+                    audit_metadata.low_threshold
+                    if audit_metadata is not None
+                    else None
+                ),
+                (
+                    _cti_context_json(audit_metadata.cti_sources)
+                    if audit_metadata is not None
+                    else None
+                ),
+                (
+                    audit_metadata.audit_schema_version
+                    if audit_metadata is not None
+                    else None
+                ),
             ),
         )
         run_id = int(cursor.lastrowid)
@@ -276,6 +393,38 @@ def save_runtime_analysis(
     return run_id
 
 
+def _decode_cti_context(value: str | None) -> tuple[CTISourceAudit, ...]:
+    if value is None:
+        return ()
+    decoded = json.loads(value)
+    if not isinstance(decoded, list):
+        raise ValueError("persisted CTI audit context is invalid")
+    rows: list[CTISourceAudit] = []
+    for item in decoded:
+        if not isinstance(item, dict):
+            raise ValueError("persisted CTI audit context is invalid")
+        try:
+            rows.append(
+                CTISourceAudit(
+                    source=str(item["source"]),
+                    refreshed_at=str(item["refreshed_at"]),
+                    record_count=int(item["record_count"]),
+                    freshness=str(item["freshness"]),
+                )
+            )
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError("persisted CTI audit context is invalid") from error
+    return tuple(rows)
+
+
+def _optional_float(value: object) -> float | None:
+    return float(value) if value is not None else None
+
+
+def _optional_int(value: object) -> int | None:
+    return int(value) if value is not None else None
+
+
 def _summary_from_row(row: sqlite3.Row) -> AnalysisRunSummary:
     return AnalysisRunSummary(
         id=int(row["id"]),
@@ -288,6 +437,14 @@ def _summary_from_row(row: sqlite3.Row) -> AnalysisRunSummary:
         review_count=int(row["review_count"]),
         low_count=int(row["low_count"]),
         model_name=row["model_name"],
+        audit_captured_at=row["audit_captured_at"],
+        artifact_checksum=row["artifact_checksum"],
+        artifact_schema_version=_optional_int(row["artifact_schema_version"]),
+        high_threshold=_optional_float(row["high_threshold"]),
+        medium_threshold=_optional_float(row["medium_threshold"]),
+        low_threshold=_optional_float(row["low_threshold"]),
+        cti_sources=_decode_cti_context(row["cti_context_json"]),
+        audit_schema_version=_optional_int(row["audit_schema_version"]),
     )
 
 
