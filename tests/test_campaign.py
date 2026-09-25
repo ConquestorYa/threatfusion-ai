@@ -239,3 +239,45 @@ def test_campaign_analysis_does_not_perform_networking(
     )
 
     assert report.clusters
+
+
+def test_campaign_rejects_excessive_candidate_domains() -> None:
+    result = result_with(
+        [],
+        [
+            assessment("a.example", HybridVerdict.REVIEW),
+            assessment("b.example", HybridVerdict.HIGH_RISK),
+        ],
+    )
+
+    with pytest.raises(ValueError, match="suspicious-domain limit"):
+        find_related_activity(result, max_candidate_domains=1)
+
+
+def test_campaign_rejects_excessive_candidate_pairs() -> None:
+    result = result_with(
+        [
+            DNSEvent(query_name="a.example", client_ip="192.0.2.1"),
+            DNSEvent(query_name="b.example", client_ip="192.0.2.1"),
+            DNSEvent(query_name="c.example", client_ip="192.0.2.1"),
+        ],
+        [
+            assessment("a.example", HybridVerdict.REVIEW),
+            assessment("b.example", HybridVerdict.REVIEW),
+            assessment("c.example", HybridVerdict.REVIEW),
+        ],
+    )
+
+    with pytest.raises(ValueError, match="candidate-pair limit"):
+        find_related_activity(result, max_relationship_pairs=2)
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["max_candidate_domains", "max_relationship_pairs"],
+)
+def test_campaign_rejects_invalid_processing_limits(name: str) -> None:
+    kwargs = {name: 0}
+
+    with pytest.raises(ValueError, match="positive integer"):
+        find_related_activity(result_with([], []), **kwargs)
