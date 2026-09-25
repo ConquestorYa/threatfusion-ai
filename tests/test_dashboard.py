@@ -131,6 +131,14 @@ def test_human_readable_verdict_and_reason_labels() -> None:
     assert match_evidence_scope("query_domain") == "Exact domain IOC"
     assert match_evidence_scope("url_hostname") == "URL hostname IOC"
     assert match_evidence_scope("response_ip") == "Response infrastructure IOC"
+    assert (
+        match_evidence_scope("response_ip_network")
+        == "Response IPv6 network IOC"
+    )
+    assert (
+        reason_label("response_ip_network_ioc_context")
+        == "Response IPv6 address falls within a known threat network"
+    )
 
 def test_assessment_rows_are_friendly_and_severity_sorted() -> None:
     rows = assessment_rows(make_result())
