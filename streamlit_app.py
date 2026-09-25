@@ -24,10 +24,12 @@ from threatfusion.dashboard import (
     cluster_rows,
     content_fingerprint,
     cti_status_rows,
+    domain_match_rows,
     feedback_label,
     history_rows,
     match_rows,
     persisted_assessment_rows,
+    priority_assessment_rows,
     relationship_rows,
     summarize_runtime_result,
 )
@@ -131,85 +133,149 @@ def _show_system_status(
     model_dir: Path,
     evaluation_report_path: Path,
 ) -> None:
-    st.sidebar.header("System status")
+    st.sidebar.subheader("System health")
 
     model_path = model_dir / "model.joblib"
     metadata_path = model_dir / "metadata.json"
-    if model_path.exists() and metadata_path.exists():
-        st.sidebar.success("ML model artifact available")
-    else:
-        st.sidebar.error("ML model artifact missing")
+    model_ready = model_path.exists() and metadata_path.exists()
+    st.sidebar.markdown(
+        f"**Model** · {':green[Ready]' if model_ready else ':red[Missing]'}"
+    )
 
     statuses = list_cti_cache_status(db_path)
-    if statuses:
-        status_rows = cti_status_rows(statuses)
-        if any(row["Status"] == "Stale" for row in status_rows):
-            st.sidebar.warning(
-                "CTI cache is available, but at least one source is stale."
-            )
-        else:
-            st.sidebar.success("CTI cache available")
-        st.sidebar.dataframe(
-            pd.DataFrame(status_rows),
-            hide_index=True,
-            width="stretch",
-        )
+    status_rows = cti_status_rows(statuses) if statuses else []
+    stale_sources = [
+        row["Source"] for row in status_rows if row["Status"] == "Stale"
+    ]
+    if not statuses:
+        cti_state = ":orange[Empty]"
+    elif stale_sources:
+        cti_state = f":orange[Stale: {len(stale_sources)} source(s)]"
     else:
-        st.sidebar.warning("CTI cache is empty")
+        cti_state = f":green[Ready · {len(statuses)} sources]"
+    st.sidebar.markdown(f"**CTI cache** · {cti_state}")
 
-    if evaluation_report_path.is_file():
-        st.sidebar.success("Final holdout report available")
-    else:
-        st.sidebar.info("Final holdout report not collected yet")
+    holdout_ready = evaluation_report_path.is_file()
+    st.sidebar.markdown(
+        "**Final evaluation** · "
+        + (
+            ":green[Available]"
+            if holdout_ready
+            else ":blue[Pending fresh holdout]"
+        )
+    )
+
+    if status_rows:
+        with st.sidebar.expander("CTI source details", expanded=False):
+            st.dataframe(
+                pd.DataFrame(status_rows),
+                hide_index=True,
+                width="stretch",
+                column_config={
+                    "Refreshed at": st.column_config.TextColumn(width="medium"),
+                    "Age": st.column_config.TextColumn(width="small"),
+                    "Status": st.column_config.TextColumn(width="small"),
+                },
+            )
+    elif not statuses:
+        st.sidebar.caption(
+            "Known-IOC matching is unavailable until the CTI cache is populated."
+        )
 
 def _show_domain_detail(result, domain: str) -> None:
     assessment = next(
         item for item in result.assessments if item.domain == domain
     )
     detail = assessment_detail(assessment)
+    evidence_rows = domain_match_rows(result, domain)
 
-    st.markdown(f"#### Domain detail: {detail['domain']}")
+    with st.container(border=True):
+        header_left, header_right = st.columns([3, 1])
+        header_left.markdown(f"### {detail['domain']}")
+        header_left.caption("Domain investigation")
+        header_right.metric("Verdict", detail["verdict"])
 
-    columns = st.columns(4)
-    columns[0].metric("Verdict", detail["verdict"])
-    ml_score = detail["ml_score"]
-    columns[1].metric(
-        "ML score",
-        f"{ml_score:.4f}" if ml_score is not None else "N/A",
-    )
-    columns[2].metric("ML tier", detail["ml_tier"])
-    columns[3].metric("DNS events", detail["event_count"])
+        if evidence_rows:
+            st.markdown("**Primary CTI evidence**")
+            primary = evidence_rows[0]
+            st.write(
+                f"{primary['Evidence scope']} · {primary['Source']}"
+                + (
+                    f" · {primary['Threat type']}"
+                    if primary["Threat type"]
+                    else ""
+                )
+            )
+            metadata_columns = st.columns(4)
+            metadata_columns[0].metric(
+                "First seen",
+                primary["First seen"] or "Unknown",
+            )
+            metadata_columns[1].metric(
+                "Last seen",
+                primary["Last seen"] or "Unknown",
+            )
+            metadata_columns[2].metric(
+                "Confidence",
+                (
+                    f"{primary['Confidence']:.2f}"
+                    if primary["Confidence"] is not None
+                    else "Unknown"
+                ),
+            )
+            metadata_columns[3].metric(
+                "Tags",
+                primary["Tags"] or "None",
+            )
 
-    behavior_columns = st.columns(3)
-    behavior_columns[0].metric("Unique clients", detail["client_count"])
-    behavior_columns[1].metric(
-        "Unique response IPs",
-        detail["response_ip_count"],
-    )
-    behavior_columns[2].metric(
-        "Query types",
-        ", ".join(detail["query_types"]) or "None",
-    )
+            if len(evidence_rows) > 1:
+                with st.expander(
+                    f"Show all IOC evidence ({len(evidence_rows)})",
+                    expanded=False,
+                ):
+                    st.dataframe(
+                        pd.DataFrame(evidence_rows),
+                        hide_index=True,
+                        width="stretch",
+                    )
+        else:
+            st.caption("No cached IOC evidence is associated with this domain.")
 
-    sources = detail["known_sources"]
-    if sources:
-        st.write("**Known CTI sources:** " + ", ".join(sources))
-    else:
-        st.write("**Known CTI sources:** No cached IOC match")
-
-    if detail["verdict"] == "Known Threat" and sources:
+        st.markdown("**Detection context**")
+        context_columns = st.columns(5)
+        ml_score = detail["ml_score"]
+        context_columns[0].metric(
+            "ML score",
+            f"{ml_score:.4f}" if ml_score is not None else "Not scored",
+        )
+        context_columns[1].metric("ML tier", detail["ml_tier"])
+        context_columns[2].metric("DNS events", detail["event_count"])
+        context_columns[3].metric("Unique clients", detail["client_count"])
+        context_columns[4].metric(
+            "Response IPs",
+            detail["response_ip_count"],
+        )
         st.caption(
-            "Known CTI evidence determines the Known Threat verdict. "
-            "ML and DNS-behavior signals are shown as additional context."
+            "Query types: "
+            + (", ".join(detail["query_types"]) or "None")
         )
 
-    evidence = detail["evidence"]
-    st.write("**Evidence observed**")
-    if evidence:
-        for item in evidence:
-            st.markdown(f"- {item}")
-    else:
-        st.caption("No strong CTI, ML-tier, or DNS-behavior signal was recorded.")
+        evidence = detail["evidence"]
+        st.markdown("**Why this verdict?**")
+        if evidence:
+            for item in evidence:
+                st.markdown(f"- {item}")
+        else:
+            st.caption(
+                "No strong CTI, ML-tier, or DNS-behavior signal was recorded."
+            )
+
+        if detail["verdict"] == "Known Threat" and evidence_rows:
+            st.caption(
+                "Known IOC evidence takes precedence in the current hybrid "
+                "policy. ML and DNS behavior are supporting context, not proof."
+            )
+
 
 def _show_analysis_result(
     result,
@@ -220,7 +286,7 @@ def _show_analysis_result(
 ) -> None:
     summary = summarize_runtime_result(result)
 
-    st.subheader("Analysis summary")
+    st.subheader("Analysis overview")
     columns = st.columns(6)
     columns[0].metric("DNS events", summary.event_count)
     columns[1].metric("Unique domains", summary.domain_count)
@@ -234,16 +300,73 @@ def _show_analysis_result(
         "telemetry rows."
     )
 
-    chart_data = _verdict_chart(summary)
-    figure = px.bar(
-        chart_data,
-        x="verdict",
-        y="count",
-        title="Domain verdict distribution",
-        text_auto=True,
-        labels={"verdict": "Verdict", "count": "Domains"},
-    )
-    st.plotly_chart(figure, width="stretch")
+    priority_rows = priority_assessment_rows(result)
+    overview_left, overview_right = st.columns([2, 1])
+
+    with overview_left:
+        st.markdown("#### Priority findings")
+        if priority_rows:
+            priority_frame = pd.DataFrame(priority_rows)[
+                [
+                    "Domain",
+                    "Verdict",
+                    "ML tier",
+                    "DNS events",
+                    "Known CTI sources",
+                    "Evidence",
+                ]
+            ]
+            st.dataframe(
+                priority_frame,
+                hide_index=True,
+                width="stretch",
+                height=min(300, 72 + (len(priority_frame) * 35)),
+                column_config={
+                    "Domain": st.column_config.TextColumn(width="medium"),
+                    "Verdict": st.column_config.TextColumn(width="small"),
+                    "ML tier": st.column_config.TextColumn(width="small"),
+                    "DNS events": st.column_config.NumberColumn(width="small"),
+                    "Known CTI sources": st.column_config.TextColumn(
+                        width="medium"
+                    ),
+                    "Evidence": st.column_config.TextColumn(width="large"),
+                },
+            )
+        else:
+            st.success("No Known Threat, High Risk, or Review findings.")
+
+    with overview_right:
+        st.markdown("#### Verdict distribution")
+        chart_data = _verdict_chart(summary)
+        figure = px.bar(
+            chart_data,
+            x="verdict",
+            y="count",
+            color="verdict",
+            text_auto=True,
+            labels={"verdict": "Verdict", "count": "Domains"},
+            color_discrete_map={
+                "Known Threat": "#d62728",
+                "High Risk": "#ff7f0e",
+                "Review": "#f2c94c",
+                "Low": "#2ca02c",
+            },
+        )
+        figure.update_layout(
+            height=300,
+            showlegend=False,
+            margin={"l": 20, "r": 20, "t": 10, "b": 20},
+        )
+        st.plotly_chart(figure, width="stretch")
+
+    all_rows = assessment_rows(result)
+    if all_rows:
+        selected_domain = st.selectbox(
+            "Inspect a domain",
+            [row["Domain"] for row in all_rows],
+            key="live_domain_detail",
+        )
+        _show_domain_detail(result, selected_domain)
 
     findings_tab, matches_tab, campaign_tab = st.tabs(
         ["Domain findings", "Known IOC evidence", "Related activity"]
@@ -271,12 +394,6 @@ def _show_analysis_result(
                 },
             )
 
-            selected_domain = st.selectbox(
-                "Inspect a domain",
-                [row["Domain"] for row in rows],
-                key="live_domain_detail",
-            )
-            _show_domain_detail(result, selected_domain)
         else:
             st.info("No domain assessments were produced.")
 
@@ -421,32 +538,108 @@ def _show_history(db_path: Path) -> None:
                 else ""
             )
         )
-        st.dataframe(
-            frame,
-            hide_index=True,
-            width="stretch",
-            column_config={
-                "Domain": st.column_config.TextColumn(width="medium"),
-                "Known CTI sources": st.column_config.TextColumn(
-                    width="medium"
-                ),
-                "Evidence": st.column_config.TextColumn(width="large"),
-                "Analyst feedback": st.column_config.TextColumn(
-                    width="medium"
-                ),
-                "Analyst note": st.column_config.TextColumn(width="large"),
-            },
+        filter_columns = st.columns(3)
+        verdict_filter = filter_columns[0].selectbox(
+            "Verdict",
+            ["All", *sorted(frame["Verdict"].unique())],
+            key=f"history_verdict_filter_{run_id}",
+        )
+        review_filter = filter_columns[1].selectbox(
+            "Review state",
+            [
+                "All",
+                "Unreviewed",
+                "Reviewed",
+                "Confirmed Threat",
+                "Benign",
+                "Uncertain",
+            ],
+            key=f"history_review_filter_{run_id}",
+        )
+        source_values = sorted(
+            {
+                source.strip()
+                for value in frame["Known CTI sources"]
+                for source in value.split(",")
+                if source.strip()
+            }
+        )
+        source_filter = filter_columns[2].selectbox(
+            "CTI source",
+            ["All", *source_values],
+            key=f"history_source_filter_{run_id}",
         )
 
-        st.write("**Analyst feedback**")
+        filtered_frame = frame.copy()
+        if verdict_filter != "All":
+            filtered_frame = filtered_frame[
+                filtered_frame["Verdict"] == verdict_filter
+            ]
+        if review_filter == "Unreviewed":
+            filtered_frame = filtered_frame[
+                filtered_frame["Analyst feedback"] == "Not reviewed"
+            ]
+        elif review_filter == "Reviewed":
+            filtered_frame = filtered_frame[
+                filtered_frame["Analyst feedback"] != "Not reviewed"
+            ]
+        elif review_filter != "All":
+            filtered_frame = filtered_frame[
+                filtered_frame["Analyst feedback"] == review_filter
+            ]
+        if source_filter != "All":
+            filtered_frame = filtered_frame[
+                filtered_frame["Known CTI sources"].map(
+                    lambda value: source_filter
+                    in {item.strip() for item in value.split(",")}
+                )
+            ]
+
+        compact_columns = [
+            "Domain",
+            "Verdict",
+            "ML score",
+            "ML tier",
+            "DNS events",
+            "Known CTI sources",
+            "Analyst feedback",
+        ]
+        if filtered_frame.empty:
+            st.info("No saved findings match the current triage filters.")
+        else:
+            st.dataframe(
+                filtered_frame[compact_columns],
+                hide_index=True,
+                width="stretch",
+                column_config={
+                    "Domain": st.column_config.TextColumn(width="medium"),
+                    "Verdict": st.column_config.TextColumn(width="small"),
+                    "ML score": st.column_config.TextColumn(width="small"),
+                    "ML tier": st.column_config.TextColumn(width="small"),
+                    "DNS events": st.column_config.NumberColumn(width="small"),
+                    "Known CTI sources": st.column_config.TextColumn(
+                        width="medium"
+                    ),
+                    "Analyst feedback": st.column_config.TextColumn(
+                        width="medium"
+                    ),
+                },
+            )
+
+        st.write("**Analyst review**")
         st.caption(
             "Feedback is local analyst context only. It does not change the "
             "original verdict, retrain the model, or alter frozen evaluation."
         )
 
+        review_domains = (
+            filtered_frame["Domain"].tolist()
+            if not filtered_frame.empty
+            else [assessment.domain for assessment in assessments]
+        )
         feedback_domain = st.selectbox(
             "Finding to review",
-            [assessment.domain for assessment in assessments],
+            review_domains,
             key=f"feedback_domain_{run_id}",
         )
         current = feedback_by_domain.get(feedback_domain)
@@ -502,19 +695,25 @@ def _show_model_evaluation(report_path: Path) -> None:
     st.subheader("Model evaluation")
 
     if not report_path.is_file():
-        st.info(
-            "No final holdout report is available yet. The model remains in "
-            "development status until a separately collected disjoint holdout "
-            "is evaluated with the frozen artifact and thresholds."
-        )
-        st.code(
-            "python scripts\\evaluate_ml_final_holdout.py "
-            "--artifact-dir data\\models\\development-001 "
-            "--development-snapshot-dir data\\snapshots\\baseline-001 "
-            "--holdout-snapshot-dir data\\snapshots\\holdout-001 "
-            "--json-output data\\evaluation\\final_holdout.json",
-            language="powershell",
-        )
+        with st.container(border=True):
+            st.markdown("### Final holdout not evaluated")
+            st.write(
+                "The frozen development model has not yet been measured on "
+                "the separately collected fresh disjoint holdout."
+            )
+            st.caption(
+                "Until that report exists, ThreatFusion intentionally keeps "
+                "the model in development status."
+            )
+            with st.expander("Show final-evaluation command", expanded=False):
+                st.code(
+                    "python scripts\\evaluate_ml_final_holdout.py "
+                    "--artifact-dir data\\models\\development-001 "
+                    "--development-snapshot-dir data\\snapshots\\baseline-001 "
+                    "--holdout-snapshot-dir data\\snapshots\\holdout-001 "
+                    "--json-output data\\evaluation\\final_holdout.json",
+                    language="powershell",
+                )
         return
 
     try:
@@ -658,6 +857,14 @@ def main() -> None:
             "Uploaded DNS data is processed in memory. Raw DNS rows and "
             "client IP values are not persisted by this application."
         )
+
+        input_columns = st.columns(3)
+        input_columns[0].markdown("**Input format**")
+        input_columns[0].caption("Generic DNS CSV · UTF-8 · max 10 MB")
+        input_columns[1].markdown("**Required field**")
+        input_columns[1].caption("query_name; all other fields are optional")
+        input_columns[2].markdown("**Privacy**")
+        input_columns[2].caption("Raw rows stay in memory unless you export them")
 
         try:
             artifact = _load_artifact(str(model_dir))
