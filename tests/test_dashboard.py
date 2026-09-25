@@ -15,6 +15,7 @@ from threatfusion.dashboard import (
     cluster_rows,
     content_fingerprint,
     cti_status_rows,
+    domain_match_rows,
     feedback_label,
     feedback_rows,
     format_timestamp,
@@ -23,6 +24,7 @@ from threatfusion.dashboard import (
     match_rows,
     ml_tier_label,
     persisted_assessment_rows,
+    priority_assessment_rows,
     reason_label,
     relationship_reason_label,
     relationship_rows,
@@ -207,6 +209,29 @@ def test_match_rows_do_not_expose_indicator_value() -> None:
         }
     ]
     assert "value" not in rows[0]
+
+
+
+def test_priority_rows_exclude_low_findings_and_keep_severity_order() -> None:
+    result = make_result()
+
+    rows = priority_assessment_rows(result)
+
+    assert [row["Domain"] for row in rows] == [
+        "known.bad",
+        "review.example",
+    ]
+    assert all(row["Verdict"] != "Low" for row in rows)
+
+
+def test_domain_match_rows_returns_only_selected_domain_evidence() -> None:
+    result = make_result()
+
+    rows = domain_match_rows(result, "KNOWN.BAD.")
+
+    assert len(rows) == 1
+    assert rows[0]["Evidence scope"] == "Exact domain IOC"
+    assert rows[0]["Source"] == "ThreatFox"
 
 def test_cti_status_rows() -> None:
     rows = cti_status_rows(
