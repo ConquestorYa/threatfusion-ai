@@ -525,3 +525,55 @@ candidate domain pairs only from shared-client/shared-response-IP evidence.
 out of date. Related-activity analysis should also avoid comparing every
 suspicious domain pair when most pairs have no shared evidence.
 
+## DEC-059: Distinguish unscored DNS names from below-threshold ML scores
+
+**Decision:** Analyst-facing views and exports display `Not scored` when a DNS
+name was intentionally excluded from the internet-domain ML model. `Below
+threshold` is reserved for names that were actually scored but did not reach
+the lowest configured threshold.
+
+**Reason:** Treating an out-of-scope name as if the model scored it creates
+misleading evidence and makes analyst review less auditable.
+
+
+## DEC-060: Preserve DNS ingestion quality diagnostics
+
+**Decision:** CSV parsing records aggregate counts for accepted rows, missing
+query names, malformed timestamps, and invalid response IPs. The runtime can
+return those diagnostics without persisting raw DNS rows.
+
+**Reason:** Analysts need to know whether malformed input reduced the evidence
+available to the detector, while the project's privacy boundary should remain
+aggregate-only.
+
+
+## DEC-061: Present IOC evidence by scope and retain source metadata
+
+**Decision:** Known-IOC presentation distinguishes exact domain IOC evidence,
+URL-hostname evidence, and response-infrastructure IOC evidence. Existing
+first/last-seen timestamps, threat type, confidence, and tags are shown when
+available.
+
+**Reason:** These match types do not imply identical evidence semantics.
+Preserving their scope gives analysts more context without changing the current
+hybrid-verdict policy.
+
+
+## DEC-062: Reject unexpectedly empty multi-source CTI refresh batches
+
+**Decision:** The explicit refresh workflow validates that every expected CTI
+source returned at least one record before replacing any cached source.
+
+**Reason:** A transient upstream/API anomaly that returns an empty result should
+not silently erase a previously healthy local CTI cache.
+
+
+## DEC-063: Use ordered timestamp comparison for related activity
+
+**Decision:** Closest event-time distance between related domains is computed
+with sorted timestamp groups and a two-pointer scan instead of comparing every
+timestamp pair.
+
+**Reason:** Related-activity timing should preserve the same result while
+remaining predictable for domains with many DNS observations.
+
