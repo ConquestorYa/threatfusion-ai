@@ -21,7 +21,7 @@ def assessment(domain: str, verdict: HybridVerdict) -> HybridAssessment:
         verdict=verdict,
         known_ioc_sources=(),
         known_match_types=(),
-        ml_probability=None,
+        ml_score=None,
         ml_tier=None,
         behavior=DomainBehavior(
             domain=domain,
@@ -46,7 +46,7 @@ def result_with(
     return RuntimeAnalysisResult(
         events=tuple(events),
         matches=tuple(matches or ()),
-        ml_probabilities={},
+        ml_scores={},
         assessments=tuple(assessments),
     )
 
