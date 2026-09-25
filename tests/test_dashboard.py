@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime, timezone
 
 from threatfusion.campaign import (
@@ -20,6 +21,7 @@ from threatfusion.dashboard import (
     feedback_rows,
     format_timestamp,
     history_rows,
+    ioc_corroboration_rows,
     match_evidence_scope,
     match_rows,
     ml_tier_label,
@@ -240,6 +242,40 @@ def test_domain_match_rows_returns_only_selected_domain_evidence() -> None:
     assert len(rows) == 1
     assert rows[0]["Evidence scope"] == "Exact domain IOC"
     assert rows[0]["Source"] == "ThreatFox"
+
+
+
+def test_ioc_corroboration_rows_count_distinct_sources() -> None:
+    result = make_result()
+    known = next(
+        item for item in result.assessments if item.domain == "known.bad"
+    )
+    corroborated = replace(
+        known,
+        known_ioc_sources=("SGB", "ThreatFox"),
+        known_match_types=("query_domain", "url_hostname"),
+    )
+    result = replace(
+        result,
+        assessments=(
+            corroborated,
+            *(
+                item
+                for item in result.assessments
+                if item.domain != "known.bad"
+            ),
+        ),
+    )
+
+    rows = ioc_corroboration_rows(result)
+
+    assert rows[0] == {
+        "Domain": "known.bad",
+        "Source count": 2,
+        "Sources": "SGB, ThreatFox",
+        "Evidence scopes": "Exact domain IOC, URL hostname IOC",
+        "Corroborated": "Yes",
+    }
 
 def test_cti_status_rows() -> None:
     rows = cti_status_rows(
