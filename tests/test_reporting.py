@@ -97,7 +97,7 @@ def test_json_report_contains_summary_and_aggregate_findings() -> None:
     assert payload["findings"][0]["unique_response_ips"] == 1
     assert payload["findings"][0]["known_cti_sources"] == ["ThreatFox"]
     assert payload["findings"][0]["evidence"] == [
-        "Known threat intelligence match",
+        "Exact known-domain IOC match",
         "Low ML score tier",
     ]
 
@@ -146,7 +146,7 @@ def test_csv_report_is_portable_and_human_readable() -> None:
     assert rows[0]["query_types"] == "A"
     assert rows[0]["known_cti_sources"] == "ThreatFox"
     assert rows[0]["evidence"] == (
-        "Known threat intelligence match; Low ML score tier"
+        "Exact known-domain IOC match; Low ML score tier"
     )
 
 
