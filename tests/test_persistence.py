@@ -259,8 +259,6 @@ def test_persistence_does_not_perform_networking(
     assert "review.example" in get_active_analyst_suppressions(db_path)
 
 
-
-
 def test_latest_feedback_is_returned_across_saved_runs(tmp_path) -> None:
     db_path = tmp_path / "history.sqlite"
     first_run = save_runtime_analysis(db_path, make_result())
@@ -355,8 +353,16 @@ def test_suppression_validation_is_bounded(tmp_path) -> None:
             db_path,
             "example.com",
             "Temporary exception",
-            expires_at=datetime(2026, 9, 25, 20, 0),
+            expires_at=datetime(
+                2026,
+                9,
+                25,
+                20,
+                0,
+                tzinfo=timezone.utc,
+            ).replace(tzinfo=None),
         )
+
 
 def test_analyst_feedback_roundtrip_and_update(tmp_path) -> None:
     db_path = tmp_path / "history.sqlite"
