@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
@@ -504,6 +505,7 @@ def cti_status_rows(
     *,
     now: datetime | None = None,
     stale_after: timedelta = timedelta(hours=24),
+    stale_after_by_source: Mapping[str, timedelta] | None = None,
 ) -> list[dict[str, object]]:
     current = now or datetime.now(timezone.utc)
     if current.tzinfo is None or current.utcoffset() is None:
@@ -511,8 +513,16 @@ def cti_status_rows(
     if stale_after.total_seconds() <= 0:
         raise ValueError("stale_after must be positive")
 
+    source_thresholds = dict(stale_after_by_source or {})
+    if any(
+        threshold.total_seconds() <= 0
+        for threshold in source_thresholds.values()
+    ):
+        raise ValueError("source-specific stale_after values must be positive")
+
     rows: list[dict[str, object]] = []
     for status in statuses:
+        threshold = source_thresholds.get(status.source, stale_after)
         try:
             refreshed = datetime.fromisoformat(
                 status.refreshed_at.replace("Z", "+00:00")
@@ -534,14 +544,18 @@ def cti_status_rows(
             )
             age_hours = age.total_seconds() / 3600.0
             age_text = f"{age_hours:.1f} h"
-            freshness = "Stale" if age > stale_after else "Fresh"
+            freshness = "Stale" if age > threshold else "Fresh"
 
         rows.append(
             {
                 "Source": status.source,
                 "Records": status.record_count,
+                "Inactive history": status.inactive_record_count,
                 "Refreshed at": format_timestamp(status.refreshed_at),
                 "Age": age_text,
+                "Stale after": (
+                    f"{threshold.total_seconds() / 3600.0:.1f} h"
+                ),
                 "Status": freshness,
             }
         )

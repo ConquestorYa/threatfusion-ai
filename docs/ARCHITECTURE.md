@@ -265,10 +265,11 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 ### `src/threatfusion/cti_cache.py`
 
 - Stores IOCRecord values from ThreatFox, URLhaus, and SGB in a local SQLite cache.
-- Replaces one source atomically only after that source's caller-supplied fetch has succeeded.
-- The explicit refresh workflow rejects a multi-source refresh batch when any expected source unexpectedly returns zero records, before any cache replacement occurs.
-- Stores source refresh time and aggregate record count.
-- Loads cached IOC records deterministically for runtime matching.
+- Synchronizes one source atomically only after that source's caller-supplied fetch has succeeded.
+- Preserves indicators that disappear from a later refresh as inactive lifecycle history with local first-seen/last-seen-in-refresh timestamps.
+- The explicit refresh workflow rejects a multi-source refresh batch when any expected source unexpectedly returns zero records, before any cache synchronization occurs.
+- Stores source refresh time plus active and inactive aggregate counts.
+- Loads active cached IOC records deterministically for runtime matching by default.
 - Performs no network activity itself; explicit collector orchestration lives in the refresh CLI.
 
 ### `src/threatfusion/persistence.py`
@@ -352,9 +353,9 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 ### `src/threatfusion/collectors/sgb.py`
 
 - Integrates with the official T.C. Siber Guvenlik Baskanligi malicious-address API.
-- Performs single-page bounded fetching through a one-based public `page` argument.
+- Supports one-based page fetching plus bounded multi-page collection that stops when the source reports completion or returns an empty page.
 - Maps domains, URLs, IPv4, and IPv6 indicators into `IOCRecord` objects.
-- Handles IPv6 networks conservatively as `IOCType.UNKNOWN` because the current model represents host IPs, not networks.
+- Preserves valid IPv6 network indicators as `IOCType.IPV6_NETWORK`; runtime matching treats network matches as contextual infrastructure evidence rather than exact-domain proof.
 - Treats returned IOC values only as data and never requests them.
 
 ### `src/threatfusion/dns_adguard.py`

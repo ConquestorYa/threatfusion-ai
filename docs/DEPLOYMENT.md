@@ -24,12 +24,19 @@ Raw uploaded DNS rows and client IP values remain in memory only.
 
 ## Runtime paths
 
-The dashboard accepts two non-secret environment variables:
+The dashboard accepts non-secret runtime configuration through environment
+variables:
 
 ```text
 THREATFUSION_DB_PATH=/app/runtime/threatfusion.sqlite
 THREATFUSION_MODEL_DIR=/app/runtime/models/development-001
+THREATFUSION_CTI_STALE_HOURS_THREATFOX=24
+THREATFUSION_CTI_STALE_HOURS_URLHAUS=24
+THREATFUSION_CTI_STALE_HOURS_SGB=24
 ```
+
+The three freshness values default to 24 hours and can be tuned independently
+to match the maintenance cadence used for each source.
 
 The SQLite database must already contain the CTI cache, and the model directory
 must contain the trusted local `model.joblib` and `metadata.json` artifact.
@@ -68,8 +75,10 @@ data/deployment/runtime/
       metadata.json
 ```
 
-The generated SQLite database contains only the CTI cache and refresh metadata.
-Local analysis-history tables, including `analyst_feedback` labels/notes
+The generated SQLite database contains only the currently active CTI snapshot
+and refresh metadata. Inactive local IOC lifecycle history is intentionally not
+copied into the public deployment bundle. Local analysis-history tables,
+including `analyst_feedback` labels/notes
 and `analyst_suppressions` policy, DNS uploads, and ML dataset snapshots are
 not copied. The trusted model artifact is validated before it is copied.
 

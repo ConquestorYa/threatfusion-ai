@@ -8,6 +8,7 @@ import pytest
 from threatfusion.cti_cache import (
     initialize_cti_cache,
     list_cti_cache_status,
+    list_cti_lifecycle_records,
     load_ioc_records,
     replace_source_records,
     validate_nonempty_refresh_batch,
@@ -194,3 +195,132 @@ def test_cti_cache_does_not_perform_networking(
     replace_source_records(db_path, "ThreatFox", make_records())
 
     assert load_ioc_records(db_path)
+
+def test_refresh_preserves_inactive_ioc_lifecycle_history(tmp_path) -> None:
+    db_path = tmp_path / "threatfusion.sqlite"
+    first_refresh = datetime(2026, 9, 24, 10, 0, tzinfo=timezone.utc)
+    second_refresh = datetime(2026, 9, 25, 10, 0, tzinfo=timezone.utc)
+
+    replace_source_records(
+        db_path,
+        "ThreatFox",
+        [
+            IOCRecord("stays.example", IOCType.DOMAIN, "ThreatFox"),
+            IOCRecord("expires.example", IOCType.DOMAIN, "ThreatFox"),
+        ],
+        refreshed_at=first_refresh,
+    )
+    replace_source_records(
+        db_path,
+        "ThreatFox",
+        [
+            IOCRecord("stays.example", IOCType.DOMAIN, "ThreatFox"),
+            IOCRecord("new.example", IOCType.DOMAIN, "ThreatFox"),
+        ],
+        refreshed_at=second_refresh,
+    )
+
+    assert [record.value for record in load_ioc_records(db_path)] == [
+        "stays.example",
+        "new.example",
+    ]
+    assert [
+        record.value
+        for record in load_ioc_records(db_path, include_inactive=True)
+    ] == [
+        "stays.example",
+        "expires.example",
+        "new.example",
+    ]
+
+    lifecycle = {
+        item.indicator.value: item
+        for item in list_cti_lifecycle_records(db_path)
+    }
+    assert lifecycle["stays.example"].active is True
+    assert lifecycle["stays.example"].first_seen_in_cache == first_refresh.isoformat()
+    assert lifecycle["stays.example"].last_seen_in_refresh == second_refresh.isoformat()
+    assert lifecycle["expires.example"].active is False
+    assert lifecycle["expires.example"].last_seen_in_refresh == first_refresh.isoformat()
+    assert lifecycle["new.example"].active is True
+    assert lifecycle["new.example"].first_seen_in_cache == second_refresh.isoformat()
+
+    status = list_cti_cache_status(db_path)[0]
+    assert status.record_count == 2
+    assert status.inactive_record_count == 1
+
+
+def test_lifecycle_refresh_deduplicates_same_indicator_identity(tmp_path) -> None:
+    db_path = tmp_path / "threatfusion.sqlite"
+
+    count = replace_source_records(
+        db_path,
+        "SGB",
+        [
+            IOCRecord("same.example", IOCType.DOMAIN, "SGB"),
+            IOCRecord("same.example", IOCType.DOMAIN, "SGB"),
+        ],
+    )
+
+    assert count == 1
+    assert len(load_ioc_records(db_path)) == 1
+    assert list_cti_cache_status(db_path)[0].record_count == 1
+
+
+def test_existing_pre_lifecycle_database_is_migrated_in_place(tmp_path) -> None:
+    import sqlite3
+
+    db_path = tmp_path / "legacy.sqlite"
+    with sqlite3.connect(db_path) as connection:
+        connection.executescript(
+            """
+            CREATE TABLE cti_records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                value TEXT NOT NULL,
+                ioc_type TEXT NOT NULL,
+                source TEXT NOT NULL,
+                first_seen TEXT,
+                last_seen TEXT,
+                threat_type TEXT,
+                confidence REAL,
+                tags_json TEXT NOT NULL
+            );
+            CREATE TABLE cti_refreshes (
+                source TEXT PRIMARY KEY,
+                refreshed_at TEXT NOT NULL,
+                record_count INTEGER NOT NULL
+            );
+            INSERT INTO cti_records (
+                value, ioc_type, source, tags_json
+            ) VALUES (
+                'legacy.example', 'domain', 'ThreatFox', '[]'
+            );
+            INSERT INTO cti_refreshes (
+                source, refreshed_at, record_count
+            ) VALUES (
+                'ThreatFox', '2026-09-24T10:00:00+00:00', 1
+            );
+            """
+        )
+
+    initialize_cti_cache(db_path)
+
+    assert [item.value for item in load_ioc_records(db_path)] == [
+        "legacy.example"
+    ]
+    lifecycle = list_cti_lifecycle_records(db_path)
+    assert lifecycle[0].active is True
+    assert lifecycle[0].first_seen_in_cache is None
+    assert lifecycle[0].last_seen_in_refresh is None
+
+    refresh_time = datetime(2026, 9, 25, 10, 0, tzinfo=timezone.utc)
+    replace_source_records(
+        db_path,
+        "ThreatFox",
+        [IOCRecord("legacy.example", IOCType.DOMAIN, "ThreatFox")],
+        refreshed_at=refresh_time,
+    )
+    migrated = list_cti_lifecycle_records(db_path)[0]
+    assert migrated.first_seen_in_cache == refresh_time.isoformat()
+    assert migrated.last_seen_in_refresh == refresh_time.isoformat()
+

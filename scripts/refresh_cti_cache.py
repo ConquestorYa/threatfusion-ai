@@ -34,9 +34,15 @@ def build_parser() -> argparse.ArgumentParser:
         default=7,
     )
     parser.add_argument(
+        "--sgb-max-pages",
         "--sgb-pages",
+        dest="sgb_max_pages",
         type=int,
         default=10,
+        help=(
+            "maximum SGB pages to fetch; collection stops earlier when "
+            "the source reports its end"
+        ),
     )
     return parser
 
@@ -50,8 +56,8 @@ def _required_secret(name: str) -> str:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    if args.sgb_pages < 1:
-        raise SystemExit("--sgb-pages must be at least 1")
+    if args.sgb_max_pages < 1:
+        raise SystemExit("--sgb-max-pages must be at least 1")
 
     threatfox_key = _required_secret("THREATFOX_AUTH_KEY")
     urlhaus_key = _required_secret("URLHAUS_AUTH_KEY")
@@ -69,15 +75,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"  URLhaus records: {len(urlhaus_records)}", flush=True)
 
     print("Fetching SGB...", flush=True)
-    sgb_collector = SGBCollector()
-    sgb_records = []
-    for page in range(1, args.sgb_pages + 1):
-        page_records = sgb_collector.fetch_addresses(page=page)
-        sgb_records.extend(page_records)
-        print(
-            f"  SGB page {page}: {len(page_records)} records",
-            flush=True,
-        )
+    sgb_result = SGBCollector().fetch_bounded_addresses(
+        max_pages=args.sgb_max_pages
+    )
+    sgb_records = list(sgb_result.records)
+    end_text = (
+        "source end reached"
+        if sgb_result.reached_source_end
+        else "maximum page bound reached"
+    )
+    print(
+        f"  SGB pages fetched: {sgb_result.pages_fetched} ({end_text})",
+        flush=True,
+    )
+    print(f"  SGB records: {len(sgb_records)}", flush=True)
 
     refresh_batch = {
         "ThreatFox": threatfox_records,
