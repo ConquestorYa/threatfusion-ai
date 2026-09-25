@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from .campaign import RelatedActivityReport
 from .cti_cache import CTICacheStatus
 from .hybrid_assessment import HybridAssessment
+from .ml_scoring import evaluate_ml_scoring_eligibility
 from .persistence import (
     AnalysisRunSummary,
     AnalystFeedback,
@@ -75,6 +76,16 @@ _ML_TIER_LABELS = {
     "low": "Low",
 }
 
+_ML_SKIP_REASON_LABELS = {
+    "invalid_domain": "The query is not a valid domain candidate.",
+    "single_label": "Single-label/local host names are outside the ML model scope.",
+    "non_public_suffix": "Local, reverse-DNS, or internal namespaces are outside the ML model scope.",
+    "service_discovery": "Service-discovery names are outside the ML model scope.",
+    "invalid_public_domain": "The query does not have valid public-domain syntax.",
+}
+
+_DEFAULT_CTI_STALE_AFTER_HOURS = 24.0
+
 _FEEDBACK_LABELS = {
     "confirmed_threat": "Confirmed Threat",
     "benign": "Benign",
@@ -130,7 +141,11 @@ def build_relationship_graph(
                 sources: tuple[str, ...] = ()
             else:
                 verdict = verdict_label(assessment.verdict.value)
-                tier = ml_tier_label(assessment.ml_tier)
+                tier = ml_status_label(
+                    assessment.domain,
+                    assessment.ml_probability,
+                    assessment.ml_tier,
+                )
                 sources = assessment.known_ioc_sources
 
             nodes.append(
@@ -235,6 +250,37 @@ def ml_tier_label(value: str | None) -> str:
     return _ML_TIER_LABELS.get(value, value.title())
 
 
+def ml_status_label(
+    domain: str,
+    probability: float | None,
+    tier: str | None,
+) -> str:
+    if probability is not None:
+        return ml_tier_label(tier)
+
+    eligibility = evaluate_ml_scoring_eligibility(domain)
+    if not eligibility.eligible:
+        return "Not scored"
+    return "Unavailable"
+
+
+def ml_status_note(
+    domain: str,
+    probability: float | None,
+) -> str | None:
+    if probability is not None:
+        return None
+
+    eligibility = evaluate_ml_scoring_eligibility(domain)
+    if eligibility.eligible:
+        return "ML score is unavailable for this domain."
+
+    return _ML_SKIP_REASON_LABELS.get(
+        eligibility.reason or "",
+        "This query is outside the ML model scope.",
+    )
+
+
 def feedback_label(value: str | None) -> str:
     if value is None:
         return "Not reviewed"
@@ -309,7 +355,11 @@ def assessment_rows(
             "Domain": assessment.domain,
             "Verdict": verdict_label(assessment.verdict.value),
             "ML score": assessment.ml_probability,
-            "ML tier": ml_tier_label(assessment.ml_tier),
+            "ML tier": ml_status_label(
+                assessment.domain,
+                assessment.ml_probability,
+                assessment.ml_tier,
+            ),
             "DNS events": behavior.event_count,
             "Clients": behavior.unique_client_count,
             "Response IPs": behavior.unique_response_ip_count,
@@ -341,7 +391,15 @@ def assessment_detail(
         "domain": assessment.domain,
         "verdict": verdict_label(assessment.verdict.value),
         "ml_score": assessment.ml_probability,
-        "ml_tier": ml_tier_label(assessment.ml_tier),
+        "ml_tier": ml_status_label(
+            assessment.domain,
+            assessment.ml_probability,
+            assessment.ml_tier,
+        ),
+        "ml_note": ml_status_note(
+            assessment.domain,
+            assessment.ml_probability,
+        ),
         "known_sources": assessment.known_ioc_sources,
         "known_match_types": assessment.known_match_types,
         "event_count": behavior.event_count,
@@ -364,17 +422,63 @@ def match_rows(
         for match in result.matches
     ]
 
+def _age_text(age_hours: float) -> str:
+    if age_hours < 48:
+        return f"{age_hours:.1f} h"
+    return f"{age_hours / 24:.1f} d"
+
+
 def cti_status_rows(
     statuses: list[CTICacheStatus],
+    *,
+    now: datetime | None = None,
+    stale_after_hours: float = _DEFAULT_CTI_STALE_AFTER_HOURS,
 ) -> list[dict[str, object]]:
-    return [
-        {
-            "Source": status.source,
-            "Records": status.record_count,
-            "Refreshed at": format_timestamp(status.refreshed_at),
-        }
-        for status in statuses
-    ]
+    if stale_after_hours <= 0:
+        raise ValueError("stale_after_hours must be positive")
+
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None or current.utcoffset() is None:
+        raise ValueError("now must be timezone-aware")
+    current = current.astimezone(timezone.utc)
+
+    rows: list[dict[str, object]] = []
+    for status in statuses:
+        age_hours: float | None = None
+        freshness = "Unknown"
+        try:
+            refreshed = datetime.fromisoformat(
+                status.refreshed_at.replace("Z", "+00:00")
+            )
+        except (TypeError, ValueError):
+            refreshed = None
+
+        if (
+            refreshed is not None
+            and refreshed.tzinfo is not None
+            and refreshed.utcoffset() is not None
+        ):
+            age_hours = max(
+                0.0,
+                (current - refreshed.astimezone(timezone.utc)).total_seconds()
+                / 3600,
+            )
+            freshness = (
+                "Stale"
+                if age_hours > stale_after_hours
+                else "Fresh"
+            )
+
+        rows.append(
+            {
+                "Source": status.source,
+                "Records": status.record_count,
+                "Refreshed at": format_timestamp(status.refreshed_at),
+                "Age": _age_text(age_hours) if age_hours is not None else "Unknown",
+                "Status": freshness,
+            }
+        )
+    return rows
 
 def history_rows(
     summaries: list[AnalysisRunSummary],
@@ -405,7 +509,11 @@ def persisted_assessment_rows(
             "Domain": assessment.domain,
             "Verdict": verdict_label(assessment.verdict),
             "ML score": assessment.ml_probability,
-            "ML tier": ml_tier_label(assessment.ml_tier),
+            "ML tier": ml_status_label(
+                assessment.domain,
+                assessment.ml_probability,
+                assessment.ml_tier,
+            ),
             "DNS events": assessment.event_count,
             "Clients": assessment.unique_client_count,
             "Response IPs": assessment.unique_response_ip_count,
