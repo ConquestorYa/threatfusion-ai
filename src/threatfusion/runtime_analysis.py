@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from .dns import DNSEvent, DNSParseDiagnostics, parse_dns_csv_with_diagnostics
+from .dns_pihole import parse_pihole_query_db_with_diagnostics
 from .dns_zeek import parse_zeek_dns_log_with_diagnostics
 from .hybrid_assessment import (
     BehaviorHeuristicConfig,
@@ -115,6 +116,24 @@ def analyze_dns_csv_with_diagnostics(
 ) -> tuple[RuntimeAnalysisResult, DNSParseDiagnostics]:
     """Parse DNS CSV text, preserve input-quality diagnostics, and analyze it."""
     parsed = parse_dns_csv_with_diagnostics(content)
+    result = analyze_dns_events(
+        parsed.events,
+        indicators,
+        artifact,
+        behavior_config=behavior_config,
+    )
+    return result, parsed.diagnostics
+
+
+def analyze_pihole_query_db_with_diagnostics(
+    content: bytes,
+    indicators: Iterable[IOCRecord],
+    artifact: TrainedMLArtifact,
+    *,
+    behavior_config: BehaviorHeuristicConfig | None = None,
+) -> tuple[RuntimeAnalysisResult, DNSParseDiagnostics]:
+    """Parse an uploaded Pi-hole FTL query database and analyze it."""
+    parsed = parse_pihole_query_db_with_diagnostics(content)
     result = analyze_dns_events(
         parsed.events,
         indicators,
