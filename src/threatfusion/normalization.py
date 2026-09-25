@@ -1,6 +1,19 @@
 import ipaddress
 
+
 from .models import IOCType
+
+
+def normalize_domain_name(value: str) -> str:
+    """Normalize a DNS/domain name with IDNA when the input is valid Unicode."""
+    stripped = value.strip().removesuffix(".")
+    if not stripped:
+        return ""
+
+    try:
+        return stripped.encode("idna").decode("ascii").lower()
+    except UnicodeError:
+        return stripped.lower()
 
 
 def normalize_ioc_value(value: str, ioc_type: IOCType) -> str:
@@ -8,7 +21,7 @@ def normalize_ioc_value(value: str, ioc_type: IOCType) -> str:
     stripped_value = value.strip()
 
     if ioc_type is IOCType.DOMAIN:
-        return stripped_value.lower().removesuffix(".")
+        return normalize_domain_name(stripped_value)
 
     if ioc_type in {IOCType.MD5, IOCType.SHA1, IOCType.SHA256}:
         return stripped_value.lower()
