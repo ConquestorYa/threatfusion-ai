@@ -40,7 +40,7 @@ def make_result() -> RuntimeAnalysisResult:
         verdict=HybridVerdict.KNOWN_THREAT,
         known_ioc_sources=("ThreatFox",),
         known_match_types=("query_domain",),
-        ml_probability=0.52,
+        ml_score=0.52,
         ml_tier="low",
         behavior=DomainBehavior(
             domain="known.example",
@@ -58,7 +58,7 @@ def make_result() -> RuntimeAnalysisResult:
     return RuntimeAnalysisResult(
         events=(event,),
         matches=(match,),
-        ml_probabilities={"known.example": 0.52},
+        ml_scores={"known.example": 0.52},
         assessments=(assessment,),
     )
 
@@ -156,14 +156,14 @@ def test_report_marks_unscored_domain_distinctly() -> None:
     result = make_result()
     assessment = replace(
         result.assessments[0],
-        ml_probability=None,
+        ml_score=None,
         ml_tier=None,
         reasons=("known_ioc_match",),
     )
     report = build_analysis_report(
         replace(
             result,
-            ml_probabilities={},
+            ml_scores={},
             assessments=(assessment,),
         ),
         model_name="development-model",
