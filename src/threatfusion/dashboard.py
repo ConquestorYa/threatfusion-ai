@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import math
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from .campaign import RelatedActivityReport
 from .cti_cache import CTICacheStatus
@@ -366,15 +366,52 @@ def match_rows(
 
 def cti_status_rows(
     statuses: list[CTICacheStatus],
+    *,
+    now: datetime | None = None,
+    stale_after: timedelta = timedelta(hours=24),
 ) -> list[dict[str, object]]:
-    return [
-        {
-            "Source": status.source,
-            "Records": status.record_count,
-            "Refreshed at": format_timestamp(status.refreshed_at),
-        }
-        for status in statuses
-    ]
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None or current.utcoffset() is None:
+        raise ValueError("now must be timezone-aware")
+    if stale_after.total_seconds() <= 0:
+        raise ValueError("stale_after must be positive")
+
+    rows: list[dict[str, object]] = []
+    for status in statuses:
+        try:
+            refreshed = datetime.fromisoformat(
+                status.refreshed_at.replace("Z", "+00:00")
+            )
+        except (AttributeError, TypeError, ValueError):
+            refreshed = None
+
+        freshness = "Unknown"
+        age_text = "Unknown"
+        if (
+            refreshed is not None
+            and refreshed.tzinfo is not None
+            and refreshed.utcoffset() is not None
+        ):
+            age = max(
+                timedelta(0),
+                current.astimezone(timezone.utc)
+                - refreshed.astimezone(timezone.utc),
+            )
+            age_hours = age.total_seconds() / 3600.0
+            age_text = f"{age_hours:.1f} h"
+            freshness = "Stale" if age > stale_after else "Fresh"
+
+        rows.append(
+            {
+                "Source": status.source,
+                "Records": status.record_count,
+                "Refreshed at": format_timestamp(status.refreshed_at),
+                "Age": age_text,
+                "Status": freshness,
+            }
+        )
+
+    return rows
 
 def history_rows(
     summaries: list[AnalysisRunSummary],
