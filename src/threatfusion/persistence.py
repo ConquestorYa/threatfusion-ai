@@ -37,7 +37,7 @@ class AnalysisRunSummary:
 class PersistedDomainAssessment:
     domain: str
     verdict: str
-    ml_probability: float | None
+    ml_score: float | None
     ml_tier: str | None
     event_count: int
     unique_client_count: int
@@ -50,6 +50,11 @@ class PersistedDomainAssessment:
     known_match_types: tuple[str, ...]
     behavior_signals: tuple[str, ...]
     reasons: tuple[str, ...]
+
+    @property
+    def ml_probability(self) -> float | None:
+        """Backward-compatible alias for the legacy persisted field name."""
+        return self.ml_score
 
 
 @dataclass(frozen=True)
@@ -94,6 +99,8 @@ _MAX_FEEDBACK_NOTE_LENGTH = 500
 _MAX_SUPPRESSION_REASON_LENGTH = 300
 
 
+# Storage compatibility: analysis_assessments.ml_probability intentionally keeps
+# its legacy SQLite column name. New Python APIs expose the value as ml_score.
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS analysis_runs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -365,7 +372,7 @@ def save_runtime_analysis(
                     run_id,
                     assessment.domain,
                     assessment.verdict.value,
-                    assessment.ml_probability,
+                    assessment.ml_score,
                     assessment.ml_tier,
                     behavior.event_count,
                     behavior.unique_client_count,
@@ -534,7 +541,7 @@ def get_analysis_assessments(
         PersistedDomainAssessment(
             domain=str(row["domain"]),
             verdict=str(row["verdict"]),
-            ml_probability=(
+            ml_score=(
                 float(row["ml_probability"])
                 if row["ml_probability"] is not None
                 else None
