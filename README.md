@@ -36,8 +36,8 @@ trigger review. Behavioral signals are not treated as proof of malware.
 
 - ThreatFox, URLhaus, and SGB collectors
 - common IOC model, normalization, and correlation
-- DNS CSV ingestion
-- known domain / URL-hostname / response-IP matching
+- DNS CSV ingestion with aggregate input-quality diagnostics
+- known domain / URL-hostname / response-IP matching with evidence-scope metadata
 - reproducible ML dataset snapshots
 - character n-gram TF-IDF + Logistic Regression development model
 - validation-only threshold selection under explicit false-positive budgets
@@ -54,9 +54,9 @@ trigger review. Behavioral signals are not treated as proof of malware.
 - privacy-preserving relationship graph
 - public-mode privacy controls and non-root Docker packaging
 - privacy-safe JSON/CSV analysis report export with spreadsheet-safe CSV cells
-- bounded runtime analysis and ML eligibility filtering for non-internet DNS names
+- bounded runtime analysis and ML eligibility filtering for non-internet DNS names, with explicit Not-scored presentation
 - CTI freshness/staleness visibility
-- sparse evidence-driven related-activity pair generation
+- sparse evidence-driven related-activity pair generation with bounded and optimized timestamp comparison
 - pytest + Ruff CI
 
 ## Local dashboard
@@ -66,7 +66,7 @@ The dashboard expects:
 - a trusted local model artifact at `data/models/development-001`
 - a local SQLite database at `data/threatfusion.sqlite`
 
-Refresh the CTI cache:
+Refresh the CTI cache (the refresh is rejected before cache replacement if an expected source unexpectedly returns zero records):
 
 ```powershell
 $env:THREATFOX_AUTH_KEY="..."
