@@ -577,3 +577,24 @@ timestamp pair.
 **Reason:** Related-activity timing should preserve the same result while
 remaining predictable for domains with many DNS observations.
 
+## DEC-064: Make the dashboard analyst-first rather than chart-first
+
+**Decision:** The primary analysis view presents priority findings and domain
+investigation before secondary charts and full evidence tables. Low findings
+remain available in the complete findings view but do not dominate the initial
+triage surface.
+
+**Reason:** The dashboard should help an analyst decide what needs attention
+before presenting visualization. This improves operational usefulness without
+changing detector output.
+
+
+## DEC-065: Keep dashboard triage controls presentation-only
+
+**Decision:** History verdict/review/source filters and compact system-health
+presentation operate only on already-derived or persisted findings. They do not
+change verdicts, model scores, CTI evidence, analyst feedback, or saved data.
+
+**Reason:** UI ergonomics should improve review speed without creating a second
+hidden decision layer or weakening auditability.
+
