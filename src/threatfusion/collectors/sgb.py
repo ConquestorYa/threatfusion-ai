@@ -62,7 +62,11 @@ def _record_from_sgb_item(item: Mapping[str, Any]) -> IOCRecord | None:
         if not _is_valid_ip(value, ioc_type):
             return None
     elif address_type in {"ip6net", "ipv6net"}:
-        ioc_type = IOCType.UNKNOWN
+        try:
+            ipaddress.IPv6Network(value.strip(), strict=False)
+        except ValueError:
+            return None
+        ioc_type = IOCType.IPV6_NETWORK
     else:
         ioc_type = IOCType.UNKNOWN
 
