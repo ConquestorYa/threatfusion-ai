@@ -12,8 +12,6 @@ from threatfusion.ml_dataset import (
 from threatfusion.models import IOCRecord, IOCType
 
 
-
-
 @pytest.mark.parametrize(
     "value",
     [
