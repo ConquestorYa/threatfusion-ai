@@ -47,10 +47,6 @@ CREATE INDEX IF NOT EXISTS idx_cti_records_source
 
 CREATE INDEX IF NOT EXISTS idx_cti_records_type_value
     ON cti_records(ioc_type, value);
-
-CREATE INDEX IF NOT EXISTS idx_cti_records_source_active
-    ON cti_records(source, active);
-
 CREATE TABLE IF NOT EXISTS cti_refreshes (
     source TEXT PRIMARY KEY,
     refreshed_at TEXT NOT NULL,
