@@ -142,9 +142,15 @@ def _show_system_status(
 
     statuses = list_cti_cache_status(db_path)
     if statuses:
-        st.sidebar.success("CTI cache available")
+        status_rows = cti_status_rows(statuses)
+        if any(row["Status"] == "Stale" for row in status_rows):
+            st.sidebar.warning(
+                "CTI cache is available, but at least one source is stale."
+            )
+        else:
+            st.sidebar.success("CTI cache available")
         st.sidebar.dataframe(
-            pd.DataFrame(cti_status_rows(statuses)),
+            pd.DataFrame(status_rows),
             hide_index=True,
             width="stretch",
         )
