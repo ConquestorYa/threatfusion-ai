@@ -298,8 +298,10 @@ def test_cti_status_rows() -> None:
 
     assert rows[0]["Source"] == "ThreatFox"
     assert rows[0]["Records"] == 123
+    assert rows[0]["Inactive history"] == 0
     assert rows[0]["Refreshed at"] == "2026-09-24 18:00 UTC"
     assert rows[0]["Age"] == "5.0 h"
+    assert rows[0]["Stale after"] == "24.0 h"
     assert rows[0]["Status"] == "Fresh"
 
 
@@ -523,3 +525,44 @@ def test_analyst_feedback_rows_are_human_readable() -> None:
             "Updated at": "2026-09-24 20:15 UTC",
         }
     ]
+
+def test_cti_status_rows_support_source_specific_freshness() -> None:
+    rows = cti_status_rows(
+        [
+            CTICacheStatus(
+                source="ThreatFox",
+                refreshed_at="2026-09-25T10:00:00+00:00",
+                record_count=100,
+                inactive_record_count=7,
+            ),
+            CTICacheStatus(
+                source="SGB",
+                refreshed_at="2026-09-25T10:00:00+00:00",
+                record_count=20,
+                inactive_record_count=3,
+            ),
+        ],
+        now=datetime(2026, 9, 25, 20, 0, tzinfo=timezone.utc),
+        stale_after_by_source={
+            "ThreatFox": timedelta(hours=6),
+            "SGB": timedelta(hours=12),
+        },
+    )
+
+    assert rows[0]["Source"] == "ThreatFox"
+    assert rows[0]["Inactive history"] == 7
+    assert rows[0]["Stale after"] == "6.0 h"
+    assert rows[0]["Status"] == "Stale"
+    assert rows[1]["Source"] == "SGB"
+    assert rows[1]["Inactive history"] == 3
+    assert rows[1]["Stale after"] == "12.0 h"
+    assert rows[1]["Status"] == "Fresh"
+
+
+def test_cti_status_rows_rejects_invalid_source_freshness() -> None:
+    with pytest.raises(ValueError, match="source-specific"):
+        cti_status_rows(
+            [],
+            stale_after_by_source={"ThreatFox": timedelta(0)},
+        )
+
