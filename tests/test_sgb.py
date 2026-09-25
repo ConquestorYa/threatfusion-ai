@@ -86,25 +86,34 @@ def test_short_ip_aliases_map_to_host_types() -> None:
     assert [record.ioc_type for record in records] == [IOCType.IPV4, IOCType.IPV6]
 
 
-def test_ipv6_network_is_preserved_as_unknown() -> None:
+def test_ipv6_network_is_preserved_as_network_ioc() -> None:
     value = "2001:db8::/32"
     session = make_session([{"url": value, "type": "ipv6net"}])
 
     record = SGBCollector(session).fetch_addresses()[0]
 
     assert record.value == value
-    assert record.ioc_type is IOCType.UNKNOWN
+    assert record.ioc_type is IOCType.IPV6_NETWORK
 
 
-def test_short_ipv6_network_alias_is_preserved_as_unknown() -> None:
+def test_short_ipv6_network_alias_is_preserved_as_network_ioc() -> None:
     value = "2001:db8::/32"
     session = make_session([{"url": value, "type": "ip6net"}])
 
     record = SGBCollector(session).fetch_addresses()[0]
 
     assert record.value == value
-    assert record.ioc_type is IOCType.UNKNOWN
+    assert record.ioc_type is IOCType.IPV6_NETWORK
 
+
+
+
+def test_malformed_ipv6_network_is_ignored() -> None:
+    session = make_session(
+        [{"url": "not-a-network", "type": "ip6net"}]
+    )
+
+    assert SGBCollector(session).fetch_addresses() == []
 
 def test_unknown_type_preserves_value() -> None:
     value = "unclassified.example"
