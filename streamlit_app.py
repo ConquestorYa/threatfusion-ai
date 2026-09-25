@@ -695,19 +695,25 @@ def _show_model_evaluation(report_path: Path) -> None:
     st.subheader("Model evaluation")
 
     if not report_path.is_file():
-        st.info(
-            "No final holdout report is available yet. The model remains in "
-            "development status until a separately collected disjoint holdout "
-            "is evaluated with the frozen artifact and thresholds."
-        )
-        st.code(
-            "python scripts\\evaluate_ml_final_holdout.py "
-            "--artifact-dir data\\models\\development-001 "
-            "--development-snapshot-dir data\\snapshots\\baseline-001 "
-            "--holdout-snapshot-dir data\\snapshots\\holdout-001 "
-            "--json-output data\\evaluation\\final_holdout.json",
-            language="powershell",
-        )
+        with st.container(border=True):
+            st.markdown("### Final holdout not evaluated")
+            st.write(
+                "The frozen development model has not yet been measured on "
+                "the separately collected fresh disjoint holdout."
+            )
+            st.caption(
+                "Until that report exists, ThreatFusion intentionally keeps "
+                "the model in development status."
+            )
+            with st.expander("Show final-evaluation command", expanded=False):
+                st.code(
+                    "python scripts\\evaluate_ml_final_holdout.py "
+                    "--artifact-dir data\\models\\development-001 "
+                    "--development-snapshot-dir data\\snapshots\\baseline-001 "
+                    "--holdout-snapshot-dir data\\snapshots\\holdout-001 "
+                    "--json-output data\\evaluation\\final_holdout.json",
+                    language="powershell",
+                )
         return
 
     try:
