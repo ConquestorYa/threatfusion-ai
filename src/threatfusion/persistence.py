@@ -52,12 +52,21 @@ class AnalystFeedback:
     updated_at: str
 
 
+@dataclass(frozen=True)
+class AnalystSuppression:
+    domain: str
+    reason: str
+    expires_at: str | None
+    updated_at: str
+
+
 _FEEDBACK_LABELS = {
     "confirmed_threat",
     "benign",
     "uncertain",
 }
 _MAX_FEEDBACK_NOTE_LENGTH = 500
+_MAX_SUPPRESSION_REASON_LENGTH = 300
 
 
 _SCHEMA = """
@@ -117,6 +126,19 @@ CREATE TABLE IF NOT EXISTS analyst_feedback (
 
 CREATE INDEX IF NOT EXISTS idx_analyst_feedback_run_id
     ON analyst_feedback(analysis_run_id);
+
+CREATE INDEX IF NOT EXISTS idx_analyst_feedback_domain
+    ON analyst_feedback(domain);
+
+CREATE TABLE IF NOT EXISTS analyst_suppressions (
+    domain TEXT PRIMARY KEY,
+    reason TEXT NOT NULL,
+    expires_at TEXT,
+    updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_analyst_suppressions_expires_at
+    ON analyst_suppressions(expires_at);
 """
 
 
@@ -487,3 +509,200 @@ def get_analyst_feedback(
         )
         for row in rows
     ]
+
+def get_latest_analyst_feedback_for_domains(
+    db_path: Path,
+    domains: Sequence[str],
+) -> dict[str, AnalystFeedback]:
+    """Return the latest saved analyst review for each requested domain."""
+    normalized_domains = sorted(
+        {
+            domain.strip().casefold().removesuffix(".")
+            for domain in domains
+            if isinstance(domain, str) and domain.strip()
+        }
+    )
+    if not normalized_domains:
+        return {}
+
+    initialize_database(db_path)
+    placeholders = ", ".join("?" for _ in normalized_domains)
+
+    with _connect(Path(db_path)) as connection:
+        connection.row_factory = sqlite3.Row
+        rows = connection.execute(
+            f"""
+            SELECT
+                analysis_run_id,
+                domain,
+                label,
+                note,
+                updated_at
+            FROM analyst_feedback
+            WHERE domain IN ({placeholders})
+            ORDER BY
+                domain ASC,
+                julianday(updated_at) DESC,
+                analysis_run_id DESC
+            """,
+            tuple(normalized_domains),
+        ).fetchall()
+
+    latest: dict[str, AnalystFeedback] = {}
+    for row in rows:
+        domain = str(row["domain"])
+        if domain in latest:
+            continue
+        latest[domain] = AnalystFeedback(
+            analysis_run_id=int(row["analysis_run_id"]),
+            domain=domain,
+            label=str(row["label"]),
+            note=row["note"],
+            updated_at=str(row["updated_at"]),
+        )
+
+    return latest
+
+
+def _suppression_time_text(value: datetime | None) -> str:
+    timestamp = value or datetime.now(timezone.utc)
+    if timestamp.tzinfo is None or timestamp.utcoffset() is None:
+        raise ValueError("suppression timestamps must be timezone-aware")
+    return timestamp.isoformat()
+
+
+def save_analyst_suppression(
+    db_path: Path,
+    domain: str,
+    reason: str,
+    *,
+    expires_at: datetime | None = None,
+    updated_at: datetime | None = None,
+) -> AnalystSuppression:
+    """Create or replace one local domain suppression policy."""
+    if not isinstance(domain, str) or not domain.strip():
+        raise ValueError("suppression domain must be a non-empty string")
+    if not isinstance(reason, str):
+        raise TypeError("suppression reason must be a string")
+
+    normalized_domain = domain.strip().casefold().removesuffix(".")
+    normalized_reason = reason.strip()
+    if not normalized_reason:
+        raise ValueError("suppression reason must be non-empty")
+    if len(normalized_reason) > _MAX_SUPPRESSION_REASON_LENGTH:
+        raise ValueError("suppression reason is too long")
+
+    expiry_text = (
+        _suppression_time_text(expires_at)
+        if expires_at is not None
+        else None
+    )
+    updated_text = _suppression_time_text(updated_at)
+
+    initialize_database(db_path)
+    with _connect(Path(db_path)) as connection:
+        connection.execute(
+            """
+            INSERT INTO analyst_suppressions (
+                domain,
+                reason,
+                expires_at,
+                updated_at
+            )
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(domain) DO UPDATE SET
+                reason = excluded.reason,
+                expires_at = excluded.expires_at,
+                updated_at = excluded.updated_at
+            """,
+            (
+                normalized_domain,
+                normalized_reason,
+                expiry_text,
+                updated_text,
+            ),
+        )
+
+    return AnalystSuppression(
+        domain=normalized_domain,
+        reason=normalized_reason,
+        expires_at=expiry_text,
+        updated_at=updated_text,
+    )
+
+
+def remove_analyst_suppression(db_path: Path, domain: str) -> bool:
+    """Remove one local suppression policy if it exists."""
+    if not isinstance(domain, str) or not domain.strip():
+        raise ValueError("suppression domain must be a non-empty string")
+
+    normalized_domain = domain.strip().casefold().removesuffix(".")
+    initialize_database(db_path)
+    with _connect(Path(db_path)) as connection:
+        cursor = connection.execute(
+            "DELETE FROM analyst_suppressions WHERE domain = ?",
+            (normalized_domain,),
+        )
+    return cursor.rowcount > 0
+
+
+def get_active_analyst_suppressions(
+    db_path: Path,
+    domains: Sequence[str] | None = None,
+    *,
+    now: datetime | None = None,
+) -> dict[str, AnalystSuppression]:
+    """Return active local suppressions, optionally limited to domains."""
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None or current.utcoffset() is None:
+        raise ValueError("now must be timezone-aware")
+
+    normalized_domains = None
+    if domains is not None:
+        normalized_domains = sorted(
+            {
+                domain.strip().casefold().removesuffix(".")
+                for domain in domains
+                if isinstance(domain, str) and domain.strip()
+            }
+        )
+        if not normalized_domains:
+            return {}
+
+    initialize_database(db_path)
+    parameters: tuple[object, ...]
+    where = ""
+    if normalized_domains is None:
+        parameters = (current.isoformat(),)
+    else:
+        placeholders = ", ".join("?" for _ in normalized_domains)
+        where = f"AND domain IN ({placeholders})"
+        parameters = (
+            current.isoformat(),
+            *normalized_domains,
+        )
+
+    with _connect(Path(db_path)) as connection:
+        connection.row_factory = sqlite3.Row
+        rows = connection.execute(
+            f"""
+            SELECT domain, reason, expires_at, updated_at
+            FROM analyst_suppressions
+            WHERE
+                (expires_at IS NULL OR julianday(expires_at) > julianday(?))
+                {where}
+            ORDER BY domain ASC
+            """,
+            parameters,
+        ).fetchall()
+
+    return {
+        str(row["domain"]): AnalystSuppression(
+            domain=str(row["domain"]),
+            reason=str(row["reason"]),
+            expires_at=row["expires_at"],
+            updated_at=str(row["updated_at"]),
+        )
+        for row in rows
+    }
+

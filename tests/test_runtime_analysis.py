@@ -14,6 +14,7 @@ from threatfusion.runtime_analysis import (
     analyze_dns_csv,
     analyze_dns_csv_with_diagnostics,
     analyze_dns_events,
+    analyze_zeek_dns_log_with_diagnostics,
     is_ml_scoring_candidate,
 )
 
@@ -193,7 +194,35 @@ def test_dns_csv_runtime_helper_returns_input_quality_diagnostics(
     assert diagnostics.invalid_timestamps == 1
     assert diagnostics.invalid_response_ips == 1
 
-def test_response_ip_ioc_match_keeps_known_threat_precedence(
+
+
+def test_zeek_runtime_helper_parses_and_analyzes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    content = (
+        "#separator \\x09\n"
+        "#fields\tts\tid.orig_h\tquery\tqtype_name\tanswers\n"
+        "1700000000.0\t10.0.0.5\texample.com\tA\t203.0.113.7\n"
+    )
+    monkeypatch.setattr(
+        runtime_analysis,
+        "predict_domain_probabilities",
+        lambda artifact, domains: {"example.com": 0.55},
+    )
+
+    result, diagnostics = analyze_zeek_dns_log_with_diagnostics(
+        content,
+        [],
+        fake_artifact(),
+    )
+
+    assert len(result.events) == 1
+    assert result.events[0].client_ip == "10.0.0.5"
+    assert result.events[0].response_ip == "203.0.113.7"
+    assert result.assessments[0].verdict is HybridVerdict.REVIEW
+    assert diagnostics.accepted_rows == 1
+
+def test_response_ip_ioc_match_is_contextual_review(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     event = DNSEvent(
@@ -211,8 +240,9 @@ def test_response_ip_ioc_match_keeps_known_threat_precedence(
     result = analyze_dns_events([event], [indicator], fake_artifact())
 
     assessment = result.assessments[0]
-    assert assessment.verdict is HybridVerdict.KNOWN_THREAT
+    assert assessment.verdict is HybridVerdict.REVIEW
     assert assessment.known_match_types == ("response_ip",)
+    assert assessment.reasons == ("response_ip_ioc_context",)
 
 
 def test_ml_scoring_skips_reverse_local_and_single_label_queries(

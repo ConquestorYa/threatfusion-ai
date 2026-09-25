@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -26,6 +27,7 @@ from threatfusion.dashboard import (
     cti_status_rows,
     domain_match_rows,
     feedback_label,
+    format_timestamp,
     history_rows,
     match_rows,
     persisted_assessment_rows,
@@ -41,14 +43,23 @@ from threatfusion.evaluation_dashboard import (
 from threatfusion.ml_artifact import load_trusted_ml_artifact
 from threatfusion.ml_evaluation_report import read_frozen_holdout_report
 from threatfusion.persistence import (
+    AnalystFeedback,
+    AnalystSuppression,
+    get_active_analyst_suppressions,
     get_analysis_assessments,
     get_analyst_feedback,
+    get_latest_analyst_feedback_for_domains,
     list_analysis_runs,
+    remove_analyst_suppression,
     save_analyst_feedback,
+    save_analyst_suppression,
     save_runtime_analysis,
 )
 from threatfusion.reporting import build_analysis_report
-from threatfusion.runtime_analysis import analyze_dns_csv_with_diagnostics
+from threatfusion.runtime_analysis import (
+    analyze_dns_csv_with_diagnostics,
+    analyze_zeek_dns_log_with_diagnostics,
+)
 
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 
@@ -182,7 +193,15 @@ def _show_system_status(
             "Known-IOC matching is unavailable until the CTI cache is populated."
         )
 
-def _show_domain_detail(result, domain: str) -> None:
+def _show_domain_detail(
+    result,
+    domain: str,
+    *,
+    prior_feedback: AnalystFeedback | None = None,
+    suppression: AnalystSuppression | None = None,
+    db_path: Path | None = None,
+    analyst_policy_enabled: bool = False,
+) -> None:
     assessment = next(
         item for item in result.assessments if item.domain == domain
     )
@@ -194,6 +213,29 @@ def _show_domain_detail(result, domain: str) -> None:
         header_left.markdown(f"### {detail['domain']}")
         header_left.caption("Domain investigation")
         header_right.metric("Verdict", detail["verdict"])
+
+        if prior_feedback is not None:
+            st.info(
+                "Previous analyst review: "
+                f"{feedback_label(prior_feedback.label)} · "
+                f"{format_timestamp(prior_feedback.updated_at)}"
+                + (
+                    f" · {prior_feedback.note}"
+                    if prior_feedback.note
+                    else ""
+                )
+            )
+
+        if suppression is not None:
+            expiry_text = (
+                format_timestamp(suppression.expires_at)
+                if suppression.expires_at is not None
+                else "No expiry"
+            )
+            st.warning(
+                "Locally suppressed from the priority queue · "
+                f"{suppression.reason} · {expiry_text}"
+            )
 
         if evidence_rows:
             st.markdown("**Primary CTI evidence**")
@@ -270,11 +312,64 @@ def _show_domain_detail(result, domain: str) -> None:
                 "No strong CTI, ML-tier, or DNS-behavior signal was recorded."
             )
 
-        if detail["verdict"] == "Known Threat" and evidence_rows:
+        if detail["verdict"] == "Known Threat":
             st.caption(
-                "Known IOC evidence takes precedence in the current hybrid "
-                "policy. ML and DNS behavior are supporting context, not proof."
+                "Known Threat is reserved for an exact known-domain IOC match. "
+                "URL-hostname and response-IP matches are contextual CTI "
+                "evidence and do not prove the queried domain is malicious."
             )
+
+        if analyst_policy_enabled and db_path is not None:
+            st.markdown("**Local analyst policy**")
+            if suppression is not None:
+                if st.button(
+                    "Remove local suppression",
+                    key=f"remove_suppression_{detail['domain']}",
+                ):
+                    remove_analyst_suppression(db_path, detail["domain"])
+                    st.rerun()
+            else:
+                with st.expander(
+                    "Suppress from priority triage",
+                    expanded=False,
+                ):
+                    with st.form(f"suppress_{detail['domain']}"):
+                        reason = st.text_input(
+                            "Suppression reason",
+                            max_chars=300,
+                        )
+                        expiry_days = st.number_input(
+                            "Expiry in days (0 = no expiry)",
+                            min_value=0,
+                            max_value=3650,
+                            value=0,
+                            step=1,
+                        )
+                        submitted = st.form_submit_button(
+                            "Save local suppression"
+                        )
+                    if submitted:
+                        expires_at = (
+                            datetime.now(timezone.utc)
+                            + timedelta(days=int(expiry_days))
+                            if expiry_days
+                            else None
+                        )
+                        try:
+                            save_analyst_suppression(
+                                db_path,
+                                detail["domain"],
+                                reason,
+                                expires_at=expires_at,
+                            )
+                        except (TypeError, ValueError) as error:
+                            st.error(f"Suppression could not be saved: {error}")
+                        else:
+                            st.success(
+                                "Local suppression saved. Detector output was "
+                                "not changed."
+                            )
+                            st.rerun()
 
 
 def _show_analysis_result(
@@ -300,13 +395,43 @@ def _show_analysis_result(
         "telemetry rows."
     )
 
+    domains = [assessment.domain for assessment in result.assessments]
+    if history_enabled:
+        prior_feedback_by_domain = get_latest_analyst_feedback_for_domains(
+            db_path,
+            domains,
+        )
+        suppressions_by_domain = get_active_analyst_suppressions(
+            db_path,
+            domains,
+        )
+    else:
+        prior_feedback_by_domain = {}
+        suppressions_by_domain = {}
+
     priority_rows = priority_assessment_rows(result)
+    suppressed_priority_count = sum(
+        row["Domain"] in suppressions_by_domain for row in priority_rows
+    )
+    include_suppressed = False
+    if suppressed_priority_count:
+        include_suppressed = st.checkbox(
+            f"Include {suppressed_priority_count} locally suppressed finding(s)",
+            value=False,
+            key="include_suppressed_live_findings",
+        )
+    visible_priority_rows = [
+        row
+        for row in priority_rows
+        if include_suppressed or row["Domain"] not in suppressions_by_domain
+    ]
+
     overview_left, overview_right = st.columns([2, 1])
 
     with overview_left:
         st.markdown("#### Priority findings")
-        if priority_rows:
-            priority_frame = pd.DataFrame(priority_rows)[
+        if visible_priority_rows:
+            priority_frame = pd.DataFrame(visible_priority_rows)[
                 [
                     "Domain",
                     "Verdict",
@@ -333,7 +458,13 @@ def _show_analysis_result(
                 },
             )
         else:
-            st.success("No Known Threat, High Risk, or Review findings.")
+            if priority_rows and suppressed_priority_count:
+                st.info(
+                    "All current priority findings are locally suppressed. "
+                    "Enable the checkbox above to include them."
+                )
+            else:
+                st.success("No Known Threat, High Risk, or Review findings.")
 
     with overview_right:
         st.markdown("#### Verdict distribution")
@@ -366,7 +497,14 @@ def _show_analysis_result(
             [row["Domain"] for row in all_rows],
             key="live_domain_detail",
         )
-        _show_domain_detail(result, selected_domain)
+        _show_domain_detail(
+            result,
+            selected_domain,
+            prior_feedback=prior_feedback_by_domain.get(selected_domain),
+            suppression=suppressions_by_domain.get(selected_domain),
+            db_path=db_path,
+            analyst_policy_enabled=history_enabled,
+        )
 
     findings_tab, matches_tab, campaign_tab = st.tabs(
         ["Domain findings", "Known IOC evidence", "Related activity"]
@@ -858,11 +996,25 @@ def main() -> None:
             "client IP values are not persisted by this application."
         )
 
+        telemetry_format = st.selectbox(
+            "Telemetry format",
+            ["Generic DNS CSV", "Zeek dns.log"],
+            key="telemetry_format",
+        )
+
         input_columns = st.columns(3)
         input_columns[0].markdown("**Input format**")
-        input_columns[0].caption("Generic DNS CSV · UTF-8 · max 10 MB")
+        input_columns[0].caption(
+            "Generic DNS CSV · UTF-8 · max 10 MB"
+            if telemetry_format == "Generic DNS CSV"
+            else "Zeek dns.log text export · max 10 MB"
+        )
         input_columns[1].markdown("**Required field**")
-        input_columns[1].caption("query_name; all other fields are optional")
+        input_columns[1].caption(
+            "query_name; all other fields are optional"
+            if telemetry_format == "Generic DNS CSV"
+            else "Zeek #fields header with query"
+        )
         input_columns[2].markdown("**Privacy**")
         input_columns[2].caption("Raw rows stay in memory unless you export them")
 
@@ -884,13 +1036,29 @@ def main() -> None:
                 "Run scripts/refresh_cti_cache.py to populate the cache."
             )
 
+        upload_label = (
+            "Upload DNS CSV"
+            if telemetry_format == "Generic DNS CSV"
+            else "Upload Zeek dns.log"
+        )
         uploaded = st.file_uploader(
-            "Upload DNS CSV",
-            type=["csv"],
+            upload_label,
+            type=(
+                ["csv"]
+                if telemetry_format == "Generic DNS CSV"
+                else ["log", "txt"]
+            ),
             help=(
                 "Expected columns: timestamp, client_ip, query_name, "
                 "query_type, response_ip. Only query_name is required."
+                if telemetry_format == "Generic DNS CSV"
+                else (
+                    "Expected Zeek dns.log text with a #fields header. "
+                    "query, ts, id.orig_h, qtype_name, and answers are "
+                    "used when available."
+                )
             ),
+            key=f"telemetry_upload_{telemetry_format}",
         )
 
         if uploaded is None:
@@ -899,31 +1067,40 @@ def main() -> None:
                 st.session_state.pop("dns_parse_diagnostics", None)
         else:
             content_bytes = uploaded.getvalue()
-            fingerprint = content_fingerprint(content_bytes)
+            fingerprint = (
+                f"{telemetry_format}:"
+                + content_fingerprint(content_bytes)
+            )
             if st.session_state.get("upload_fingerprint") != fingerprint:
                 st.session_state["upload_fingerprint"] = fingerprint
                 st.session_state.pop("analysis_result", None)
                 st.session_state.pop("dns_parse_diagnostics", None)
 
             if len(content_bytes) > MAX_UPLOAD_BYTES:
-                st.error("Uploaded CSV exceeds the 10 MB application limit.")
+                st.error("Uploaded telemetry exceeds the 10 MB application limit.")
             else:
                 try:
                     content = content_bytes.decode("utf-8-sig")
                 except UnicodeDecodeError:
-                    st.error("CSV must use UTF-8 encoding.")
+                    st.error("Telemetry input must use UTF-8 encoding.")
                 else:
                     if st.button("Analyze", type="primary"):
                         try:
-                            result, diagnostics = (
-                                analyze_dns_csv_with_diagnostics(
-                                    content,
-                                    indicators,
-                                    artifact,
-                                )
+                            analyzer = (
+                                analyze_dns_csv_with_diagnostics
+                                if telemetry_format == "Generic DNS CSV"
+                                else analyze_zeek_dns_log_with_diagnostics
+                            )
+                            result, diagnostics = analyzer(
+                                content,
+                                indicators,
+                                artifact,
                             )
                         except ValueError as error:
-                            st.error(f"DNS CSV could not be analyzed: {error}")
+                            st.error(
+                                "DNS telemetry could not be analyzed: "
+                                f"{error}"
+                            )
                         else:
                             st.session_state["analysis_result"] = result
                             st.session_state["dns_parse_diagnostics"] = diagnostics

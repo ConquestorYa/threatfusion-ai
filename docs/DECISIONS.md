@@ -598,3 +598,49 @@ change verdicts, model scores, CTI evidence, analyst feedback, or saved data.
 **Reason:** UI ergonomics should improve review speed without creating a second
 hidden decision layer or weakening auditability.
 
+## DEC-066: Reserve Known Threat for exact known-domain IOC matches
+
+**Decision:** Only a normalized DNS query that directly matches a DOMAIN IOC
+automatically receives the `known_threat` verdict. A URL IOC whose hostname
+matches the query and an IP IOC that matches a DNS response remain deterministic
+CTI context, but by themselves produce at most `review`.
+
+**Reason:** A malicious URL can be hosted on an otherwise shared hostname and a
+malicious IP can be shared by unrelated domains. Treating those infrastructure
+associations as proof that the queried domain itself is malicious overstates
+the evidence.
+
+
+## DEC-067: Support Zeek dns.log as a first real telemetry adapter
+
+**Decision:** ThreatFusion accepts standard Zeek `dns.log` text exports through
+a local parser that maps the standard fields into the existing `DNSEvent`
+model and preserves aggregate ingestion diagnostics.
+
+**Reason:** Requiring users to transform established security telemetry into a
+project-specific CSV adds unnecessary friction. Reusing `DNSEvent` keeps the
+runtime detector independent of input format and adds no networking.
+
+
+## DEC-068: Surface prior analyst review without changing detector output
+
+**Decision:** Local mode may retrieve and display the most recent saved analyst
+feedback for a domain when that domain appears again in a later analysis.
+Public mode does not read this private context.
+
+**Reason:** Analysts should not repeatedly rediscover a previously reviewed
+domain, but historical human judgment must remain separate from the frozen
+detector verdict and ML score.
+
+
+## DEC-069: Keep local suppression as presentation policy only
+
+**Decision:** Local analysts may suppress a domain from the priority triage
+queue with a reason and optional expiry. The domain remains in complete
+findings, reports, and detector output. Suppression is stored locally and is
+excluded from sanitized public deployment bundles.
+
+**Reason:** Repeated expected findings create analyst fatigue, but silently
+rewriting or deleting detector output would reduce auditability and could hide
+future evidence changes.
+

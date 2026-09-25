@@ -12,12 +12,16 @@ from threatfusion.hybrid_assessment import HybridAssessment, HybridVerdict
 from threatfusion.matching import DNSIOCMatch
 from threatfusion.models import IOCRecord, IOCType
 from threatfusion.persistence import (
+    get_active_analyst_suppressions,
     get_analysis_assessments,
     get_analysis_run,
     get_analyst_feedback,
+    get_latest_analyst_feedback_for_domains,
     initialize_database,
     list_analysis_runs,
+    remove_analyst_suppression,
     save_analyst_feedback,
+    save_analyst_suppression,
     save_runtime_analysis,
 )
 from threatfusion.runtime_analysis import RuntimeAnalysisResult
@@ -118,6 +122,7 @@ def test_initialize_database_creates_expected_tables(tmp_path) -> None:
     assert "analysis_runs" in tables
     assert "analysis_assessments" in tables
     assert "analyst_feedback" in tables
+    assert "analyst_suppressions" in tables
 
 
 def test_save_runtime_analysis_persists_summary_counts(tmp_path) -> None:
@@ -240,6 +245,123 @@ def test_persistence_does_not_perform_networking(
     feedback = get_analyst_feedback(db_path, run_id)
     assert len(feedback) == 1
     assert feedback[0].domain == "review.example"
+    latest = get_latest_analyst_feedback_for_domains(
+        db_path,
+        ["review.example"],
+    )
+    assert latest["review.example"].label == "uncertain"
+
+    save_analyst_suppression(
+        db_path,
+        "review.example",
+        "Local expected traffic",
+    )
+    assert "review.example" in get_active_analyst_suppressions(db_path)
+
+
+def test_latest_feedback_is_returned_across_saved_runs(tmp_path) -> None:
+    db_path = tmp_path / "history.sqlite"
+    first_run = save_runtime_analysis(db_path, make_result())
+    second_run = save_runtime_analysis(db_path, make_result())
+    first_time = datetime(2026, 9, 24, 19, 0, tzinfo=timezone.utc)
+    second_time = datetime(2026, 9, 24, 20, 0, tzinfo=timezone.utc)
+
+    save_analyst_feedback(
+        db_path,
+        second_run,
+        "review.example",
+        "uncertain",
+        note="Initial review",
+        updated_at=first_time,
+    )
+    latest = save_analyst_feedback(
+        db_path,
+        first_run,
+        "review.example",
+        "benign",
+        note="Known internal service",
+        updated_at=second_time,
+    )
+
+    rows = get_latest_analyst_feedback_for_domains(
+        db_path,
+        ["review.example", "missing.example"],
+    )
+
+    assert rows == {"review.example": latest}
+
+
+def test_local_suppression_roundtrip_expiry_and_remove(tmp_path) -> None:
+    db_path = tmp_path / "history.sqlite"
+    now = datetime(2026, 9, 24, 20, 0, tzinfo=timezone.utc)
+    expires = datetime(2026, 9, 25, 20, 0, tzinfo=timezone.utc)
+
+    saved = save_analyst_suppression(
+        db_path,
+        "Expected.Example.",
+        "Expected vendor telemetry",
+        expires_at=expires,
+        updated_at=now,
+    )
+
+    active = get_active_analyst_suppressions(
+        db_path,
+        ["expected.example"],
+        now=now,
+    )
+    assert active == {"expected.example": saved}
+
+    assert get_active_analyst_suppressions(
+        db_path,
+        ["expected.example"],
+        now=expires,
+    ) == {}
+
+    updated = save_analyst_suppression(
+        db_path,
+        "expected.example",
+        "Approved service",
+        updated_at=now,
+    )
+    assert updated.expires_at is None
+    assert get_active_analyst_suppressions(
+        db_path,
+        ["expected.example"],
+        now=expires,
+    ) == {"expected.example": updated}
+
+    assert remove_analyst_suppression(db_path, "expected.example")
+    assert not remove_analyst_suppression(db_path, "expected.example")
+    assert get_active_analyst_suppressions(db_path) == {}
+
+
+def test_suppression_validation_is_bounded(tmp_path) -> None:
+    db_path = tmp_path / "history.sqlite"
+
+    with pytest.raises(ValueError, match="reason"):
+        save_analyst_suppression(db_path, "example.com", "   ")
+
+    with pytest.raises(ValueError, match="too long"):
+        save_analyst_suppression(
+            db_path,
+            "example.com",
+            "x" * 301,
+        )
+
+    with pytest.raises(ValueError, match="timezone-aware"):
+        save_analyst_suppression(
+            db_path,
+            "example.com",
+            "Temporary exception",
+            expires_at=datetime(
+                2026,
+                9,
+                25,
+                20,
+                0,
+                tzinfo=timezone.utc,
+            ).replace(tzinfo=None),
+        )
 
 
 def test_analyst_feedback_roundtrip_and_update(tmp_path) -> None:

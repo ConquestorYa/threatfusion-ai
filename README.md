@@ -17,7 +17,8 @@ ThreatFox / URLhaus / SGB
           v
    Local CTI cache
           |
-DNS CSV -> IOC matching
+DNS CSV / Zeek dns.log
+          -> IOC matching
           + ML domain scoring
           + DNS behavior analysis
           |
@@ -28,15 +29,18 @@ DNS CSV -> IOC matching
 known_threat / high_risk / review / low
 ```
 
-Known IOC matches take precedence. ML is used as an additional signal for
-previously unseen domains, and DNS behavior can strengthen an assessment or
-trigger review. Behavioral signals are not treated as proof of malware.
+Exact known-domain IOC matches take precedence and produce the Known Threat
+verdict. URL-hostname and response-IP IOC matches remain deterministic CTI
+context but do not, by themselves, prove that the queried domain is malicious.
+ML is used as an additional signal for previously unseen domains, and DNS
+behavior can strengthen an assessment or trigger review. Behavioral signals are
+not treated as proof of malware.
 
 ## Implemented
 
 - ThreatFox, URLhaus, and SGB collectors
 - common IOC model, normalization, and correlation
-- DNS CSV ingestion with aggregate input-quality diagnostics
+- DNS CSV and Zeek `dns.log` ingestion with aggregate input-quality diagnostics
 - known domain / URL-hostname / response-IP matching with evidence-scope metadata
 - reproducible ML dataset snapshots
 - character n-gram TF-IDF + Logistic Regression development model
@@ -48,7 +52,7 @@ trigger review. Behavioral signals are not treated as proof of malware.
 - explainable hybrid verdicts
 - reusable runtime analysis pipeline
 - SQLite CTI cache
-- privacy-conscious SQLite analysis history with local analyst feedback
+- privacy-conscious SQLite analysis history with local analyst feedback, prior-review context, and expiring local triage suppression
 - analyst-focused Streamlit dashboard with priority triage, evidence-first domain investigation, filtered history, and a dedicated model-evaluation view
 - explainable related-activity clustering
 - privacy-preserving relationship graph
@@ -91,13 +95,18 @@ Run the dashboard:
 streamlit run streamlit_app.py
 ```
 
-The DNS CSV schema is:
+Supported telemetry formats are generic DNS CSV and Zeek `dns.log`.
+
+The generic DNS CSV schema is:
 
 ```text
 timestamp,client_ip,query_name,query_type,response_ip
 ```
 
-Only `query_name` is required. The Streamlit uploader is configured with a 10 MB maximum file size.
+Only `query_name` is required for generic CSV. Zeek imports use the standard
+`#fields` header and map `query`, `ts`, `id.orig_h`, `qtype_name`, and
+`answers` when available. The Streamlit uploader is configured with a 10 MB
+maximum file size.
 
 ## Privacy defaults
 
@@ -105,8 +114,10 @@ Uploaded DNS telemetry is analyzed in memory. The current dashboard does not
 persist raw uploaded DNS rows or client IP values. Saving analysis history is
 explicit and stores aggregate/per-domain findings only. In local mode, an
 analyst can add a Confirmed Threat / Benign / Uncertain label and an optional
-short note to a saved finding. This feedback does not alter the original
-ThreatFusion verdict or retrain the model.
+short note to a saved finding. Later analyses can surface the most recent
+local review for the same domain. Local mode can also suppress a domain from
+the priority queue with a reason and optional expiry. Feedback and suppression
+do not alter the original ThreatFusion verdict, ML score, or model training.
 
 Threat URLs and domains received from CTI feeds are treated as inert data; the
 analysis pipeline does not visit or resolve them.
