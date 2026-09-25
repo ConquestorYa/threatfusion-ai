@@ -48,13 +48,20 @@ The repository currently implements:
   contextual CTI evidence, and combines that evidence with ML score tiers and
   local DNS behavior.
 - Local persistence and trusted loading of the selected development ML pipeline together with validation-selected high / medium / low thresholds, plus normalized runtime probability inference.
-- A reusable runtime analysis pipeline that connects DNS CSV / DNSEvent input, known IOC matching, persisted ML inference, DNS behavior aggregation, and explainable hybrid verdicts in one local workflow.
+- A reusable runtime analysis pipeline that connects generic DNS CSV, Zeek
+  `dns.log`, or already-parsed `DNSEvent` input with IOC matching, persisted
+  ML inference, DNS behavior aggregation, and explainable hybrid verdicts in
+  one local workflow.
 - Privacy-conscious SQLite analysis history that stores run summaries and
   per-domain findings without retaining raw uploaded DNS rows or client IP
   values by default, plus local analyst feedback, cross-run prior-review
   context, and local suppression policy with optional expiry.
 - A local SQLite CTI cache plus explicit refresh CLI, allowing ThreatFox, URLhaus, and SGB data to be refreshed separately from user analysis and then loaded locally by the runtime pipeline.
-- A Streamlit MVP with DNS CSV upload, separate event/domain metrics, domain-level verdict distribution, human-readable evidence labels, per-domain detail inspection, known IOC evidence, possible related-activity groups, a privacy-preserving relationship graph, model-evaluation reporting, CTI cache status, and opt-in aggregate analysis history.
+- An analyst-focused Streamlit MVP with generic DNS CSV / Zeek upload,
+  priority triage, prior-review/suppression context in local mode, separate
+  event/domain metrics, evidence-first domain inspection, known IOC evidence,
+  possible related-activity groups, a privacy-preserving relationship graph,
+  model-evaluation reporting, CTI cache status, and opt-in aggregate history.
 - Explainable related-activity clustering that groups suspicious domains only when local DNS telemetry shows a shared client or shared response IP; time proximity is supporting context rather than proof.
 - Public-deployment preparation with environment-configurable runtime paths, a public mode that disables shared analysis history, non-root Docker packaging, and a sanitized deployment-bundle builder that copies only the CTI cache plus trusted ML artifact.
 - Privacy-safe JSON and CSV report export for the current in-memory analysis, containing aggregate/per-domain findings without raw DNS rows or client/response IP values.
