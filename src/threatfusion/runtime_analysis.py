@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 
-from .dns import DNSEvent, parse_dns_csv
+from .dns import DNSParseDiagnostics, DNSEvent, parse_dns_csv_with_diagnostics
 from .hybrid_assessment import (
     BehaviorHeuristicConfig,
     HybridAssessment,
@@ -105,6 +105,24 @@ def analyze_dns_events(
     )
 
 
+def analyze_dns_csv_with_diagnostics(
+    content: str,
+    indicators: Iterable[IOCRecord],
+    artifact: TrainedMLArtifact,
+    *,
+    behavior_config: BehaviorHeuristicConfig | None = None,
+) -> tuple[RuntimeAnalysisResult, DNSParseDiagnostics]:
+    """Parse DNS CSV text, preserve input-quality diagnostics, and analyze it."""
+    parsed = parse_dns_csv_with_diagnostics(content)
+    result = analyze_dns_events(
+        parsed.events,
+        indicators,
+        artifact,
+        behavior_config=behavior_config,
+    )
+    return result, parsed.diagnostics
+
+
 def analyze_dns_csv(
     content: str,
     indicators: Iterable[IOCRecord],
@@ -113,10 +131,10 @@ def analyze_dns_csv(
     behavior_config: BehaviorHeuristicConfig | None = None,
 ) -> RuntimeAnalysisResult:
     """Parse DNS CSV text and run the local runtime analysis pipeline."""
-    events = parse_dns_csv(content)
-    return analyze_dns_events(
-        events,
+    result, _ = analyze_dns_csv_with_diagnostics(
+        content,
         indicators,
         artifact,
         behavior_config=behavior_config,
     )
+    return result
