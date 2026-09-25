@@ -114,8 +114,8 @@ flowchart TD
     Dashboard --> Hosted
 ```
 
-Fresh source-aware or time-aware final evaluation and hosted deployment
-packaging remain planned. Local model artifact persistence,
+Fresh source-aware or time-aware final evaluation and hosted deployment remain
+planned. Local model artifact persistence,
 domain-probability inference, privacy-conscious SQLite analysis history, a
 local SQLite CTI cache, and a Streamlit MVP are implemented.
 
