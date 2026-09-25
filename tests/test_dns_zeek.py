@@ -30,11 +30,13 @@ def test_parse_zeek_dns_log_maps_standard_dns_fields() -> None:
         client_ip="10.0.0.5",
         query_type="A",
         response_ip="203.0.113.7",
+        response_code="NOERROR",
     )
     assert events[1].query_name == "second.example"
     assert events[1].timestamp is None
     assert events[1].query_type == "AAAA"
     assert events[1].response_ip == "2001:db8::7"
+    assert events[1].response_code == "NOERROR"
 
 
 def test_parse_zeek_dns_log_reports_input_quality() -> None:

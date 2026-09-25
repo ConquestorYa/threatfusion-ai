@@ -737,3 +737,14 @@ cache or trusted model artifacts.
 model and CTI assets must remain outside GitHub Actions. Application-level
 artifact readiness remains visible through the dashboard system-health view.
 
+## DEC-078: Extend DNS behavior with explainable v2 telemetry-aware signals
+
+**Decision:** Keep hybrid verdict semantics unchanged while adding optional DNS
+behavior v2 evidence fields: response-code/NXDOMAIN context, lexical domain
+shape indicators, response-IP churn rate, and periodic timing signals. These
+signals are surfaced as human-readable analyst evidence and degrade to `None`
+when telemetry fields are missing or incomparable.
+
+**Reason:** Practical DNS telemetry often varies by source. The system should
+explain what was observed without requiring model retraining or treating any
+single behavior heuristic as proof of maliciousness.

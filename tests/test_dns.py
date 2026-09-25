@@ -203,3 +203,14 @@ def test_no_networking_is_performed(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
     assert parse_dns_csv(content)[0].query_name == "Example.COM."
+
+
+def test_response_code_column_is_parsed_when_present() -> None:
+    content = (
+        "timestamp,client_ip,query_name,query_type,response_ip,response_code\n"
+        "2026-09-24T10:30:00Z,192.168.1.10,example.com,A,203.0.113.5,nxdomain\n"
+    )
+
+    event = parse_dns_csv(content)[0]
+
+    assert event.response_code == "NXDOMAIN"

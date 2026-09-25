@@ -51,6 +51,16 @@ def _first_response_ip(value: str | None, set_separator: str) -> str | None:
     return None
 
 
+def _response_code(row: dict[str, str]) -> str | None:
+    rcode_name = _optional_zeek_text(row.get("rcode_name"))
+    if rcode_name is not None:
+        return rcode_name.upper()
+    rcode = _optional_zeek_text(row.get("rcode"))
+    if rcode is not None:
+        return rcode.upper()
+    return None
+
+
 def parse_zeek_dns_log_with_diagnostics(content: str) -> DNSParseResult:
     """Parse a Zeek dns.log text export without networking."""
     if content is None or not content.strip():
@@ -123,6 +133,7 @@ def parse_zeek_dns_log_with_diagnostics(content: str) -> DNSParseResult:
                     row.get("answers"),
                     set_separator,
                 ),
+                response_code=_response_code(row),
             )
         )
 

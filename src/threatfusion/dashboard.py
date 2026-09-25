@@ -109,6 +109,11 @@ _REASON_LABELS = {
     "response_ip_churn": "Multiple response IPs observed",
     "query_type_diversity": "Multiple DNS query types observed",
     "rapid_query_burst": "Rapid DNS query burst",
+    "nxdomain_heavy_responses": "High NXDOMAIN ratio in DNS responses",
+    "high_response_ip_churn_rate": "High response-IP churn rate",
+    "numeric_heavy_hostname": "Hostname contains many numeric characters",
+    "random_like_hostname": "Hostname appears algorithmically random",
+    "periodic_query_pattern": "Periodic repeated query timing pattern",
 }
 
 
@@ -350,7 +355,19 @@ def assessment_rows(
             "DNS events": behavior.event_count,
             "Clients": behavior.unique_client_count,
             "Response IPs": behavior.unique_response_ip_count,
+            "Response-IP churn rate": behavior.response_ip_churn_rate,
             "Query types": ", ".join(behavior.query_types),
+            "Response codes": ", ".join(
+                f"{code}:{count}" for code, count in behavior.response_code_counts
+            ),
+            "NXDOMAIN ratio": behavior.nxdomain_ratio,
+            "Label count": behavior.label_count,
+            "Subdomain depth": behavior.subdomain_depth,
+            "Numeric ratio": behavior.numeric_character_ratio,
+            "Hostname entropy": behavior.hostname_entropy,
+            "Random-like hostname": behavior.random_like_hostname,
+            "Periodic interval (s)": behavior.periodic_interval_seconds,
+            "Periodicity score": behavior.periodicity_score,
             "Known CTI sources": ", ".join(assessment.known_ioc_sources),
             "Evidence": _evidence_text(assessment.reasons),
         }
@@ -412,7 +429,18 @@ def assessment_detail(
         "event_count": behavior.event_count,
         "client_count": behavior.unique_client_count,
         "response_ip_count": behavior.unique_response_ip_count,
+        "response_ip_churn_rate": behavior.response_ip_churn_rate,
         "query_types": behavior.query_types,
+        "response_code_counts": behavior.response_code_counts,
+        "nxdomain_ratio": behavior.nxdomain_ratio,
+        "label_count": behavior.label_count,
+        "subdomain_depth": behavior.subdomain_depth,
+        "numeric_character_ratio": behavior.numeric_character_ratio,
+        "hostname_entropy": behavior.hostname_entropy,
+        "random_like_hostname": behavior.random_like_hostname,
+        "periodic_interval_seconds": behavior.periodic_interval_seconds,
+        "periodicity_score": behavior.periodicity_score,
+        "periodic_query_pattern": behavior.periodic_query_pattern,
         "evidence": tuple(reason_label(reason) for reason in assessment.reasons),
     }
 

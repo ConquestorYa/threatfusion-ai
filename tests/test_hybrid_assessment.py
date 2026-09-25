@@ -254,6 +254,37 @@ def test_no_evidence_is_low_risk() -> None:
     assert assessment.reasons == ()
 
 
+def test_nxdomain_context_reason_is_explainable_without_forcing_high_risk() -> None:
+    events = [
+        DNSEvent(query_name="example1234567890.com", response_code="NXDOMAIN"),
+        DNSEvent(query_name="example1234567890.com", response_code="NXDOMAIN"),
+        DNSEvent(query_name="example1234567890.com", response_code="NOERROR"),
+    ]
+
+    assessment = assess_dns_domains(events, [])[0]
+
+    assert "nxdomain_heavy_responses" in assessment.reasons
+    assert assessment.verdict is HybridVerdict.LOW
+
+
+def test_periodic_and_churn_context_reasons_are_explainable() -> None:
+    start = datetime(2026, 9, 24, 10, 0, tzinfo=timezone.utc)
+    events = [
+        DNSEvent(
+            query_name="1234567890abcdef.example.com",
+            timestamp=start + timedelta(seconds=30 * index),
+            response_ip=f"203.0.113.{index + 1}",
+        )
+        for index in range(4)
+    ]
+
+    assessment = assess_dns_domains(events, [])[0]
+
+    assert "periodic_query_pattern" in assessment.reasons
+    assert "high_response_ip_churn_rate" in assessment.reasons
+    assert "numeric_heavy_hostname" in assessment.reasons
+
+
 def test_probabilities_and_thresholds_must_be_supplied_together() -> None:
     with pytest.raises(ValueError, match="supplied together"):
         assess_dns_domains(
