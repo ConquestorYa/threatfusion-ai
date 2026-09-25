@@ -74,7 +74,7 @@ def _verdict_chart(summary) -> pd.DataFrame:
     )
 
 
-def _relationship_figure(related_report, result) -> go.Figure:
+def _relationship_figure(report, result) -> go.Figure:
     graph = build_relationship_graph(report, result)
     figure = go.Figure()
 
@@ -314,7 +314,7 @@ def _show_analysis_result(
                 "campaign."
             )
             st.plotly_chart(
-                _relationship_figure(report, result),
+                _relationship_figure(related_report, result),
                 width="stretch",
             )
             st.write("**Possible related-activity groups**")
