@@ -23,6 +23,8 @@ _ML_EXCLUDED_SUFFIXES = (
     ".ip6.arpa",
     ".local",
     ".localdomain",
+    ".localhost",
+    ".home.arpa",
 )
 
 
@@ -32,7 +34,6 @@ class RuntimeAnalysisResult:
     matches: tuple[DNSIOCMatch, ...]
     ml_probabilities: dict[str, float]
     assessments: tuple[HybridAssessment, ...]
-
 
 
 def is_ml_scoring_candidate(value: str) -> bool:
