@@ -98,37 +98,6 @@ def test_prepare_disjoint_holdout_keeps_strict_holdout_validation() -> None:
         )
 
 
-def test_prepare_disjoint_holdout_accepts_legacy_ineligible_development_rows() -> None:
-    development = [
-        DomainSample("legacy-single-label", 1, "ThreatFox"),
-        DomainSample("Seen.Example.", 0, "Tranco"),
-    ]
-    holdout = [
-        DomainSample("seen.example", 0, "Tranco"),
-        DomainSample("new-good.example", 0, "Tranco"),
-        DomainSample("new-bad.example", 1, "URLhaus"),
-    ]
-
-    prepared = prepare_disjoint_holdout(development, holdout)
-
-    assert prepared.overlap_removed == 1
-    assert [sample.domain for sample in prepared.samples] == [
-        "new-good.example",
-        "new-bad.example",
-    ]
-
-
-def test_prepare_disjoint_holdout_keeps_strict_holdout_validation() -> None:
-    with pytest.raises(ValueError, match="holdout snapshot contains an invalid domain"):
-        prepare_disjoint_holdout(
-            [DomainSample("legacy-single-label", 1, "ThreatFox")],
-            [
-                DomainSample("invalid_holdout", 0, "Tranco"),
-                DomainSample("new-bad.example", 1, "URLhaus"),
-            ],
-        )
-
-
 def test_holdout_must_retain_both_classes() -> None:
     with pytest.raises(ValueError, match="both malicious and benign"):
         prepare_disjoint_holdout(
