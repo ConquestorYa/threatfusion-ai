@@ -14,6 +14,21 @@ class DNSEvent:
     response_ip: str | None = None
 
 
+@dataclass(frozen=True)
+class DNSParseDiagnostics:
+    total_rows: int
+    accepted_rows: int
+    skipped_missing_query_name: int
+    invalid_timestamps: int
+    invalid_response_ips: int
+
+
+@dataclass(frozen=True)
+class DNSParseResult:
+    events: tuple[DNSEvent, ...]
+    diagnostics: DNSParseDiagnostics
+
+
 def _as_optional_text(value: object) -> str | None:
     if value is None:
         return None
@@ -50,22 +65,35 @@ def _parse_response_ip(value: object) -> str | None:
     return str(address)
 
 
-def parse_dns_csv(content: str) -> list[DNSEvent]:
+def parse_dns_csv_with_diagnostics(content: str) -> DNSParseResult:
     if content is None or not content.strip():
-        return []
+        return DNSParseResult(
+            events=(),
+            diagnostics=DNSParseDiagnostics(0, 0, 0, 0, 0),
+        )
 
     reader = csv.DictReader(io.StringIO(content))
     fieldnames = reader.fieldnames
     if not fieldnames:
-        return []
+        return DNSParseResult(
+            events=(),
+            diagnostics=DNSParseDiagnostics(0, 0, 0, 0, 0),
+        )
 
     normalized_names = {
-        (field or "").strip().lower(): field for field in fieldnames if field is not None
+        (field or "").strip().lower(): field
+        for field in fieldnames
+        if field is not None
     }
     if "query_name" not in normalized_names:
         raise ValueError("DNS CSV must include a 'query_name' column")
 
     events: list[DNSEvent] = []
+    total_rows = 0
+    skipped_missing_query_name = 0
+    invalid_timestamps = 0
+    invalid_response_ips = 0
+
     query_name_key = normalized_names["query_name"]
     timestamp_key = normalized_names.get("timestamp")
     client_ip_key = normalized_names.get("client_ip")
@@ -76,16 +104,40 @@ def parse_dns_csv(content: str) -> list[DNSEvent]:
         if row is None:
             continue
 
+        total_rows += 1
         query_name = _as_optional_text(row.get(query_name_key))
         if query_name is None:
+            skipped_missing_query_name += 1
             continue
+
+        timestamp_text = (
+            _as_optional_text(row.get(timestamp_key))
+            if timestamp_key
+            else None
+        )
+        timestamp = _parse_timestamp(timestamp_text)
+        if timestamp_text is not None and timestamp is None:
+            invalid_timestamps += 1
+
+        response_ip_text = (
+            _as_optional_text(row.get(response_ip_key))
+            if response_ip_key
+            else None
+        )
+        response_ip = _parse_response_ip(response_ip_text)
+        if response_ip_text is not None and response_ip is None:
+            invalid_response_ips += 1
 
         event = DNSEvent(
             query_name=query_name,
-            timestamp=_parse_timestamp(row.get(timestamp_key)) if timestamp_key else None,
-            client_ip=_as_optional_text(row.get(client_ip_key)) if client_ip_key else None,
+            timestamp=timestamp,
+            client_ip=(
+                _as_optional_text(row.get(client_ip_key))
+                if client_ip_key
+                else None
+            ),
             query_type=None,
-            response_ip=None,
+            response_ip=response_ip,
         )
 
         if query_type_key:
@@ -93,9 +145,20 @@ def parse_dns_csv(content: str) -> list[DNSEvent]:
             if query_type is not None:
                 event.query_type = query_type.upper()
 
-        if response_ip_key:
-            event.response_ip = _parse_response_ip(row.get(response_ip_key))
-
         events.append(event)
 
-    return events
+    return DNSParseResult(
+        events=tuple(events),
+        diagnostics=DNSParseDiagnostics(
+            total_rows=total_rows,
+            accepted_rows=len(events),
+            skipped_missing_query_name=skipped_missing_query_name,
+            invalid_timestamps=invalid_timestamps,
+            invalid_response_ips=invalid_response_ips,
+        ),
+    )
+
+
+def parse_dns_csv(content: str) -> list[DNSEvent]:
+    """Parse project DNS CSV text and return accepted DNS events only."""
+    return list(parse_dns_csv_with_diagnostics(content).events)

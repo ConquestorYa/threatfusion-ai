@@ -175,6 +175,44 @@ def test_connected_relationships_form_one_deterministic_group() -> None:
     assert len(report.clusters[0].relationships) == 2
 
 
+
+
+def test_closest_timestamp_uses_unsorted_event_times() -> None:
+    start = datetime(2026, 9, 24, 12, 0, tzinfo=timezone.utc)
+    result = result_with(
+        [
+            DNSEvent(
+                query_name="a.example",
+                client_ip="192.0.2.1",
+                timestamp=start.replace(second=40),
+            ),
+            DNSEvent(
+                query_name="a.example",
+                client_ip="192.0.2.1",
+                timestamp=start.replace(second=10),
+            ),
+            DNSEvent(
+                query_name="b.example",
+                client_ip="192.0.2.1",
+                timestamp=start.replace(second=11),
+            ),
+            DNSEvent(
+                query_name="b.example",
+                client_ip="192.0.2.1",
+                timestamp=start.replace(second=50),
+            ),
+        ],
+        [
+            assessment("a.example", HybridVerdict.REVIEW),
+            assessment("b.example", HybridVerdict.REVIEW),
+        ],
+    )
+
+    relationship = find_related_activity(result).relationships[0]
+
+    assert relationship.min_time_delta_seconds == 1.0
+    assert "time_proximity" in relationship.reasons
+
 def test_mixed_timestamp_awareness_is_ignored_as_time_context() -> None:
     aware = datetime(2026, 9, 24, 12, 0, tzinfo=timezone.utc)
     naive = aware.replace(tzinfo=None)

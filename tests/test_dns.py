@@ -3,7 +3,11 @@ from datetime import datetime, timezone
 
 import pytest
 
-from threatfusion.dns import DNSEvent, parse_dns_csv
+from threatfusion.dns import (
+    DNSEvent,
+    parse_dns_csv,
+    parse_dns_csv_with_diagnostics,
+)
 
 
 def test_successful_complete_row() -> None:
@@ -163,6 +167,28 @@ def test_empty_csv_or_header_only_returns_empty_list() -> None:
     assert parse_dns_csv("") == []
     assert parse_dns_csv("timestamp,client_ip,query_name,query_type,response_ip\n") == []
 
+
+
+
+def test_parse_diagnostics_report_skipped_and_invalid_fields() -> None:
+    content = (
+        "timestamp,client_ip,query_name,query_type,response_ip\n"
+        "bad-time,10.0.0.1,valid.example,A,not-an-ip\n"
+        "2026-09-24T10:31:00Z,10.0.0.2,,A,203.0.113.6\n"
+        ",10.0.0.3,second.example,AAAA,2001:db8::1\n"
+    )
+
+    parsed = parse_dns_csv_with_diagnostics(content)
+
+    assert [event.query_name for event in parsed.events] == [
+        "valid.example",
+        "second.example",
+    ]
+    assert parsed.diagnostics.total_rows == 3
+    assert parsed.diagnostics.accepted_rows == 2
+    assert parsed.diagnostics.skipped_missing_query_name == 1
+    assert parsed.diagnostics.invalid_timestamps == 1
+    assert parsed.diagnostics.invalid_response_ips == 1
 
 def test_no_networking_is_performed(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail(*args: object, **kwargs: object) -> object:

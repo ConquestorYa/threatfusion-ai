@@ -40,19 +40,52 @@ def _timestamp_is_aware(value: datetime) -> bool:
     return value.tzinfo is not None and value.utcoffset() is not None
 
 
+def _minimum_sorted_time_delta(
+    left: list[datetime],
+    right: list[datetime],
+) -> float | None:
+    if not left or not right:
+        return None
+
+    left_sorted = sorted(left)
+    right_sorted = sorted(right)
+    left_index = 0
+    right_index = 0
+    best: float | None = None
+
+    while left_index < len(left_sorted) and right_index < len(right_sorted):
+        left_value = left_sorted[left_index]
+        right_value = right_sorted[right_index]
+        delta = abs((left_value - right_value).total_seconds())
+        if best is None or delta < best:
+            best = delta
+            if best == 0.0:
+                return 0.0
+
+        if left_value < right_value:
+            left_index += 1
+        else:
+            right_index += 1
+
+    return best
+
+
 def _minimum_time_delta(
     left: tuple[datetime, ...],
     right: tuple[datetime, ...],
 ) -> float | None:
     best: float | None = None
 
-    for left_value in left:
-        for right_value in right:
-            if _timestamp_is_aware(left_value) != _timestamp_is_aware(right_value):
-                continue
-            delta = abs((left_value - right_value).total_seconds())
-            if best is None or delta < best:
-                best = delta
+    for awareness in (False, True):
+        left_group = [
+            value for value in left if _timestamp_is_aware(value) is awareness
+        ]
+        right_group = [
+            value for value in right if _timestamp_is_aware(value) is awareness
+        ]
+        candidate = _minimum_sorted_time_delta(left_group, right_group)
+        if candidate is not None and (best is None or candidate < best):
+            best = candidate
 
     return best
 
