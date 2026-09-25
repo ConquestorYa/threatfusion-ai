@@ -63,7 +63,7 @@ def _entries_from_content(content: str) -> list[dict[str, object]]:
                     f"AdGuard query log contains invalid JSON at line {line_number}"
                 ) from error
             if not isinstance(item, dict):
-                raise ValueError("AdGuard query-log entries must be JSON objects")
+                raise TypeError("AdGuard query-log entries must be JSON objects")
             entries.append(item)
         return entries
 
@@ -74,7 +74,7 @@ def _entries_from_content(content: str) -> list[dict[str, object]]:
     elif isinstance(parsed, dict):
         raw_entries = [parsed]
     else:
-        raise ValueError("AdGuard query log must contain JSON objects")
+        raise TypeError("AdGuard query log must contain JSON objects")
 
     if any(not isinstance(item, dict) for item in raw_entries):
         raise ValueError("AdGuard query-log entries must be JSON objects")
