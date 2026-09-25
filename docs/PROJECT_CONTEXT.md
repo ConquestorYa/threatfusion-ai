@@ -33,7 +33,8 @@ The repository currently implements:
 - A ThreatFox collector for recent API IOC data, including conservative type mapping and timestamp/tag parsing.
 - A URLhaus collector for the recent CSV export, including named-column discovery and malformed-row handling.
 - An SGB collector using the official T.C. Siber Guvenlik Baskanligi malicious-address API, with domain, URL, IPv4, and IPv6 mapping into `IOCRecord`. IPv6 network/CIDR records that do not fit the current IOC model are preserved as `IOCType.UNKNOWN`, and retrieval is safe and bounded through page-based requests.
-- DNS telemetry ingestion via `DNSEvent` and `parse_dns_csv()`, with evidence-preserving field parsing and local-only CSV handling.
+- DNS telemetry ingestion via `DNSEvent`, generic CSV parsing, and Zeek
+  `dns.log` parsing, with evidence-preserving local-only handling.
 - Known IOC matching through `DNSIOCMatch` and `match_dns_events()`, which compares DNS queries and responses against IOC records while preserving the original evidence objects.
 - Reproducible malicious-domain ML dataset preparation, stratified development splitting, local snapshot persistence, and pinned Tranco acquisition.
 - A baseline malicious-domain classifier using character n-gram TF-IDF with Logistic Regression, evaluated with precision, recall, F1, false-positive rate, and confusion-matrix counts.
@@ -42,10 +43,16 @@ The repository currently implements:
 - Source-wise malicious recall diagnostics that show how ThreatFox, URLhaus, SGB, or other retained malicious sources behave under the same validation-selected thresholds.
 - A frozen-model fresh holdout evaluator that removes all development-snapshot domain overlap, measures the unchanged artifact thresholds on a separately collected later snapshot, and can persist an aggregate JSON evaluation report.
 - DNS behavior aggregation for query volume, client spread, response-IP diversity, query-type diversity, and observation span.
-- An explainable hybrid domain assessment that combines known IOC evidence, ML probability tiers, and local DNS behavior into known_threat / high_risk / review / low verdicts.
+- An explainable hybrid domain assessment that reserves `known_threat` for
+  exact known-domain IOC evidence, treats URL-hostname/response-IP matches as
+  contextual CTI evidence, and combines that evidence with ML score tiers and
+  local DNS behavior.
 - Local persistence and trusted loading of the selected development ML pipeline together with validation-selected high / medium / low thresholds, plus normalized runtime probability inference.
 - A reusable runtime analysis pipeline that connects DNS CSV / DNSEvent input, known IOC matching, persisted ML inference, DNS behavior aggregation, and explainable hybrid verdicts in one local workflow.
-- Privacy-conscious SQLite analysis history that stores run summaries and per-domain findings without retaining raw uploaded DNS rows or client IP values by default, plus local analyst feedback labels/notes for saved findings.
+- Privacy-conscious SQLite analysis history that stores run summaries and
+  per-domain findings without retaining raw uploaded DNS rows or client IP
+  values by default, plus local analyst feedback, cross-run prior-review
+  context, and local suppression policy with optional expiry.
 - A local SQLite CTI cache plus explicit refresh CLI, allowing ThreatFox, URLhaus, and SGB data to be refreshed separately from user analysis and then loaded locally by the runtime pipeline.
 - A Streamlit MVP with DNS CSV upload, separate event/domain metrics, domain-level verdict distribution, human-readable evidence labels, per-domain detail inspection, known IOC evidence, possible related-activity groups, a privacy-preserving relationship graph, model-evaluation reporting, CTI cache status, and opt-in aggregate analysis history.
 - Explainable related-activity clustering that groups suspicious domains only when local DNS telemetry shows a shared client or shared response IP; time proximity is supporting context rather than proof.
@@ -62,6 +69,7 @@ DNS telemetry ingestion includes:
 
 - `DNSEvent` model
 - CSV parsing for `timestamp`, `client_ip`, `query_name`, `query_type`, and `response_ip`
+- Zeek `dns.log` parsing for standard `#fields` exports
 - `query_name` evidence preserved verbatim from the CSV input
 - optional timestamp/client IP/query type/response IP handling
 - local-only parsing with no DNS or network requests performed
