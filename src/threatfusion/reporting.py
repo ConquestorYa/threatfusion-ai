@@ -65,6 +65,16 @@ def _finding_rows(result: RuntimeAnalysisResult) -> list[dict[str, object]]:
     return rows
 
 
+_SPREADSHEET_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _spreadsheet_safe_text(value: str) -> str:
+    stripped = value.lstrip()
+    if stripped.startswith(_SPREADSHEET_FORMULA_PREFIXES):
+        return "'" + value
+    return value
+
+
 def _csv_text(rows: list[dict[str, object]]) -> str:
     output = io.StringIO(newline="")
     fieldnames = [
@@ -83,12 +93,18 @@ def _csv_text(rows: list[dict[str, object]]) -> str:
     writer.writeheader()
 
     for row in rows:
+        output_row = {
+            **row,
+            "query_types": ", ".join(row["query_types"]),
+            "known_cti_sources": ", ".join(row["known_cti_sources"]),
+            "evidence": "; ".join(row["evidence"]),
+        }
         writer.writerow(
             {
-                **row,
-                "query_types": ", ".join(row["query_types"]),
-                "known_cti_sources": ", ".join(row["known_cti_sources"]),
-                "evidence": "; ".join(row["evidence"]),
+                key: _spreadsheet_safe_text(value)
+                if isinstance(value, str)
+                else value
+                for key, value in output_row.items()
             }
         )
 
