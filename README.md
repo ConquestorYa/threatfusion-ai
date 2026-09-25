@@ -46,14 +46,16 @@ trigger review. Behavioral signals are not treated as proof of malware.
 - trusted local model artifact persistence
 - DNS behavior aggregation
 - explainable hybrid verdicts
-- reusable runtime analysis pipeline
+- reusable runtime analysis pipeline with bounded input processing
+- runtime ML eligibility gate for non-public DNS namespaces
 - SQLite CTI cache
 - privacy-conscious SQLite analysis history with local analyst feedback
 - Streamlit analysis dashboard with a dedicated model-evaluation view
 - explainable related-activity clustering
-- privacy-preserving relationship graph
+- privacy-preserving, bounded relationship graph
 - public-mode privacy controls and non-root Docker packaging
-- privacy-safe JSON/CSV analysis report export
+- privacy-safe JSON and spreadsheet-safe CSV analysis report export
+- CTI cache freshness visibility
 - pytest + Ruff CI
 
 ## Local dashboard
