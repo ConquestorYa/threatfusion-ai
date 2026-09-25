@@ -4,6 +4,7 @@ import csv
 import io
 import json
 import socket
+from dataclasses import replace
 from datetime import datetime, timezone
 
 import pytest
@@ -189,3 +190,33 @@ def test_report_generation_does_not_perform_networking(
 
     assert report.json_text
     assert report.csv_text
+
+
+def test_csv_report_escapes_spreadsheet_formula_cells() -> None:
+    original = make_result()
+    original_assessment = original.assessments[0]
+    assessment = replace(
+        original_assessment,
+        domain="=2+2",
+        behavior=replace(
+            original_assessment.behavior,
+            domain="=2+2",
+            query_types=("+SUM(A1:A2)",),
+        ),
+    )
+    result = replace(
+        original,
+        assessments=(assessment,),
+        ml_probabilities={"=2+2": 0.52},
+    )
+
+    report = build_analysis_report(
+        result,
+        model_name="development-model",
+    )
+    rows = list(csv.DictReader(io.StringIO(report.csv_text)))
+    payload = json.loads(report.json_text)
+
+    assert rows[0]["domain"] == "'=2+2"
+    assert rows[0]["query_types"] == "'+SUM(A1:A2)"
+    assert payload["findings"][0]["domain"] == "=2+2"
