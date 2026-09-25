@@ -8,6 +8,7 @@ from .ml_artifact import TrainedMLArtifact
 from .ml_dataset import DomainSample, normalize_domain_candidate
 from .ml_high_recall import ThresholdMetrics, calculate_threshold_metrics
 from .normalization import normalize_domain_name
+from .normalization import normalize_domain_name
 
 
 @dataclass(frozen=True)
