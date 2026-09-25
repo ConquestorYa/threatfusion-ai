@@ -77,7 +77,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
     except (OSError, TypeError, ValueError) as error:
         raise SystemExit(
-            f"Final holdout evaluation failed: {type(error).__name__}"
+            "Final holdout evaluation failed: "
+            f"{type(error).__name__}: {error}"
         ) from None
 
     print("ThreatFusion AI frozen final-holdout evaluation")
