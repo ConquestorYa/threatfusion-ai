@@ -172,8 +172,11 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 
 ### `src/threatfusion/hybrid_assessment.py`
 
-- Combines known IOC match evidence, caller-supplied ML probability tiers, and
-  local DNS behavior signals.
+- Combines IOC match evidence, caller-supplied ML score tiers, and local DNS
+  behavior signals.
+- Reserves `known_threat` for exact DOMAIN IOC matches against the queried
+  domain. URL-hostname and response-IP matches remain contextual CTI evidence
+  and trigger review unless stronger ML evidence independently raises risk.
 - Produces explainable `known_threat`, `high_risk`, `review`, or `low`
   verdicts.
 - Requires ML thresholds to be supplied by the caller rather than hardcoding
@@ -244,7 +247,9 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 - Enforces explicit event and unique-query bounds before expensive analysis work.
 - Excludes reverse-DNS, local/mDNS, localhost, and single-label names from the internet-domain string model while preserving them for deterministic matching and DNS behavior evidence.
 - Preserves original DNS/IOC evidence and returns matches, probabilities, and per-domain assessments together.
-- Provides convenience helpers that start directly from DNS CSV text and can return aggregate ingestion-quality diagnostics without retaining raw rows.
+- Provides convenience helpers that start directly from generic DNS CSV or
+  Zeek `dns.log` text and can return aggregate ingestion-quality diagnostics
+  without retaining raw rows.
 
 ### `src/threatfusion/cti_cache.py`
 
@@ -259,6 +264,10 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 
 - Stores completed analysis summaries and per-domain hybrid assessment results in SQLite.
 - Stores one current local analyst feedback label/note per saved run and domain without modifying the original verdict.
+- Can retrieve the latest prior analyst review for a domain across saved runs.
+- Stores local domain suppression policy with a reason and optional expiry;
+  suppression affects priority presentation only and does not rewrite detector
+  output.
 - Persists verdict counts, ML output, aggregate DNS behavior, CTI source names, and reason codes.
 - Does not persist raw uploaded DNS rows or client IP values by default.
 - Uses parameterized SQL, foreign-key constraints, and deterministic read ordering.
@@ -279,7 +288,12 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 
 - Convert runtime results into deterministic presentation rows and summary counts.
 - Provide separate DNS-event and unique-domain metrics so domain-level verdict counts are unambiguous.
-- Provide DNS CSV upload, aggregate input-quality diagnostics, an analyst-priority triage queue, a compact domain-level Plotly verdict chart, evidence-first domain investigation, complete domain findings, known-IOC evidence views, and a privacy-preserving relationship graph.
+- Provide generic DNS CSV / Zeek `dns.log` upload, aggregate input-quality
+  diagnostics, an analyst-priority triage queue, a compact domain-level Plotly
+  verdict chart, evidence-first domain investigation, complete domain findings,
+  known-IOC evidence views, and a privacy-preserving relationship graph.
+- Surface prior analyst review and local suppression state only in local mode;
+  public mode never reads those private tables.
 - Display compact system health, CTI source age/freshness details behind disclosure controls, and saved analysis history with presentation-only verdict/review/source filters.
 - Invalidate in-memory displayed results when uploaded CSV content changes or is removed, preventing stale-result/file mismatches.
 - Keep raw uploaded DNS telemetry in memory and make aggregate history saving explicit.
