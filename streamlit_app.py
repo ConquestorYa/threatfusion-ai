@@ -58,6 +58,7 @@ from threatfusion.persistence import (
 )
 from threatfusion.reporting import build_analysis_report
 from threatfusion.runtime_analysis import (
+    analyze_adguard_query_log_with_diagnostics,
     analyze_dns_csv_with_diagnostics,
     analyze_pihole_query_db_with_diagnostics,
     analyze_zeek_dns_log_with_diagnostics,
@@ -1015,7 +1016,7 @@ def main() -> None:
 
         telemetry_format = st.selectbox(
             "Telemetry format",
-            ["Generic DNS CSV", "Zeek dns.log", "Pi-hole FTL database"],
+            ["Generic DNS CSV", "Zeek dns.log", "Pi-hole FTL database", "AdGuard Home query log"],
             key="telemetry_format",
         )
 
@@ -1025,11 +1026,13 @@ def main() -> None:
             "Generic DNS CSV": "Generic DNS CSV · UTF-8 · max 10 MB",
             "Zeek dns.log": "Zeek dns.log text export · max 10 MB",
             "Pi-hole FTL database": "Pi-hole FTL SQLite database · max 10 MB",
+            "AdGuard Home query log": "AdGuard Home JSON query log · max 10 MB",
         }
         required_caption = {
             "Generic DNS CSV": "query_name; all other fields are optional",
             "Zeek dns.log": "Zeek #fields header with query",
             "Pi-hole FTL database": "queries view with standard Pi-hole fields",
+            "AdGuard Home query log": "query-log JSON with host and timestamp fields",
         }
         input_columns[0].caption(format_caption[telemetry_format])
         input_columns[1].markdown("**Required field**")
@@ -1059,11 +1062,13 @@ def main() -> None:
             "Generic DNS CSV": "Upload DNS CSV",
             "Zeek dns.log": "Upload Zeek dns.log",
             "Pi-hole FTL database": "Upload Pi-hole FTL database",
+            "AdGuard Home query log": "Upload AdGuard Home query log",
         }[telemetry_format]
         upload_types = {
             "Generic DNS CSV": ["csv"],
             "Zeek dns.log": ["log", "txt"],
             "Pi-hole FTL database": ["db", "sqlite", "sqlite3"],
+            "AdGuard Home query log": ["json", "log", "txt"],
         }[telemetry_format]
         upload_help = {
             "Generic DNS CSV": (
@@ -1080,6 +1085,11 @@ def main() -> None:
                 "the standard queries view. The database is deserialized "
                 "into memory; the upstream forward field is not treated "
                 "as a DNS response IP."
+            ),
+            "AdGuard Home query log": (
+                "Expected AdGuard Home query-log JSON. Both the on-disk "
+                "querylog.json record shape and exported query-log API "
+                "objects are accepted."
             ),
         }[telemetry_format]
         uploaded = st.file_uploader(
@@ -1132,11 +1142,14 @@ def main() -> None:
                 else:
                     if st.button("Analyze", type="primary"):
                         try:
-                            analyzer = (
-                                analyze_dns_csv_with_diagnostics
-                                if telemetry_format == "Generic DNS CSV"
-                                else analyze_zeek_dns_log_with_diagnostics
-                            )
+                            analyzers = {
+                                "Generic DNS CSV": analyze_dns_csv_with_diagnostics,
+                                "Zeek dns.log": analyze_zeek_dns_log_with_diagnostics,
+                                "AdGuard Home query log": (
+                                    analyze_adguard_query_log_with_diagnostics
+                                ),
+                            }
+                            analyzer = analyzers[telemetry_format]
                             result, diagnostics = analyzer(
                                 content,
                                 indicators,
