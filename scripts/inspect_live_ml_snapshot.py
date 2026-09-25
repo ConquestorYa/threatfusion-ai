@@ -44,7 +44,13 @@ def _threatfox_days(value: str) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Inspect a live ML dataset snapshot")
     parser.add_argument("--threatfox-days", type=_threatfox_days, default=7)
-    parser.add_argument("--sgb-pages", type=_positive_integer, default=10)
+    parser.add_argument(
+        "--sgb-max-pages",
+        "--sgb-pages",
+        dest="sgb_max_pages",
+        type=_positive_integer,
+        default=10,
+    )
     parser.add_argument("--tranco-id", default="L5PV4")
     parser.add_argument("--tranco-date", default="2026-09-23")
     parser.add_argument("--tranco-limit", type=_positive_integer, default=50000)
@@ -59,12 +65,9 @@ def _required_environment_value(name: str) -> str:
     return value
 
 
-def _collect_sgb_records(page_count: int) -> list[IOCRecord]:
-    collector = SGBCollector()
-    records: list[IOCRecord] = []
-    for page in range(1, page_count + 1):
-        records.extend(collector.fetch_addresses(page=page))
-    return records
+def _collect_sgb_records(max_pages: int) -> tuple[list[IOCRecord], int]:
+    result = SGBCollector().fetch_bounded_addresses(max_pages=max_pages)
+    return list(result.records), result.pages_fetched
 
 
 def _print_report(
@@ -78,7 +81,7 @@ def _print_report(
     print("ThreatFusion AI live ML snapshot")
     print("Collection configuration:")
     print(f"  ThreatFox days: {args.threatfox_days}")
-    print(f"  SGB pages: {args.sgb_pages}")
+    print(f"  SGB max pages: {args.sgb_max_pages}")
     print(f"  Tranco ID: {args.tranco_id}")
     print(f"  Tranco date: {args.tranco_date}")
     print(f"  Tranco row limit: {args.tranco_limit}")
@@ -119,7 +122,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         raise SystemExit(f"URLhaus collection failed: {type(error).__name__}") from None
 
     try:
-        sgb_records = _collect_sgb_records(args.sgb_pages)
+        sgb_records, sgb_pages_fetched = _collect_sgb_records(
+            args.sgb_max_pages
+        )
     except (requests.RequestException, TypeError, ValueError) as error:
         raise SystemExit(f"SGB collection failed: {type(error).__name__}") from None
 
@@ -145,7 +150,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.output_dir,
             experiment_metadata={
                 "threatfox_days": args.threatfox_days,
-                "sgb_pages": args.sgb_pages,
+                "sgb_max_pages": args.sgb_max_pages,
+                "sgb_pages_fetched": sgb_pages_fetched,
                 "tranco_limit": args.tranco_limit,
                 "tranco_id": args.tranco_id,
                 "tranco_date": args.tranco_date,
