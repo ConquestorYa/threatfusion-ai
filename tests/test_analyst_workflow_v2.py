@@ -30,7 +30,7 @@ def _result(rows: list[tuple[str, HybridVerdict]]) -> RuntimeAnalysisResult:
             verdict=verdict,
             known_ioc_sources=(),
             known_match_types=(),
-            ml_probability=None,
+            ml_score=None,
             ml_tier=None,
             behavior=DomainBehavior(
                 domain=domain,
@@ -50,7 +50,7 @@ def _result(rows: list[tuple[str, HybridVerdict]]) -> RuntimeAnalysisResult:
     return RuntimeAnalysisResult(
         events=events,
         matches=(),
-        ml_probabilities={},
+        ml_scores={},
         assessments=assessments,
     )
 

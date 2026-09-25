@@ -13,7 +13,7 @@ from .hybrid_assessment import (
     assess_dns_domains,
 )
 from .matching import DNSIOCMatch, match_dns_events
-from .ml_artifact import TrainedMLArtifact, predict_domain_probabilities
+from .ml_artifact import TrainedMLArtifact, predict_domain_scores
 from .ml_dataset import normalize_domain_candidate
 from .models import IOCRecord
 
@@ -34,8 +34,13 @@ _ML_EXCLUDED_SUFFIXES = (
 class RuntimeAnalysisResult:
     events: tuple[DNSEvent, ...]
     matches: tuple[DNSIOCMatch, ...]
-    ml_probabilities: dict[str, float]
+    ml_scores: dict[str, float]
     assessments: tuple[HybridAssessment, ...]
+
+    @property
+    def ml_probabilities(self) -> dict[str, float]:
+        """Backward-compatible alias for uncalibrated ML scores."""
+        return self.ml_scores
 
 
 def is_ml_scoring_candidate(value: str) -> bool:
@@ -84,7 +89,7 @@ def analyze_dns_events(
     _validate_runtime_bounds(event_list)
 
     matches = match_dns_events(event_list, indicator_list)
-    ml_probabilities = predict_domain_probabilities(
+    ml_scores = predict_domain_scores(
         artifact,
         [
             event.query_name
@@ -95,7 +100,7 @@ def analyze_dns_events(
     assessments = assess_dns_domains(
         event_list,
         matches,
-        ml_probabilities=ml_probabilities,
+        ml_scores=ml_scores,
         ml_thresholds=artifact.thresholds,
         behavior_config=behavior_config,
     )
@@ -103,7 +108,7 @@ def analyze_dns_events(
     return RuntimeAnalysisResult(
         events=tuple(event_list),
         matches=tuple(matches),
-        ml_probabilities=ml_probabilities,
+        ml_scores=ml_scores,
         assessments=tuple(assessments),
     )
 

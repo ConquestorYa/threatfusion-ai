@@ -73,7 +73,7 @@ def make_result() -> RuntimeAnalysisResult:
         verdict=HybridVerdict.KNOWN_THREAT,
         known_ioc_sources=("ThreatFox",),
         known_match_types=("query_domain",),
-        ml_probability=0.2,
+        ml_score=0.2,
         ml_tier=None,
         behavior=DomainBehavior(
             domain="known.bad",
@@ -93,7 +93,7 @@ def make_result() -> RuntimeAnalysisResult:
         verdict=HybridVerdict.REVIEW,
         known_ioc_sources=(),
         known_match_types=(),
-        ml_probability=0.55,
+        ml_score=0.55,
         ml_tier="low",
         behavior=DomainBehavior(
             domain="review.example",
@@ -112,7 +112,7 @@ def make_result() -> RuntimeAnalysisResult:
     return RuntimeAnalysisResult(
         events=(event,),
         matches=(match,),
-        ml_probabilities={"known.bad": 0.2, "review.example": 0.55},
+        ml_scores={"known.bad": 0.2, "review.example": 0.55},
         assessments=(review, known),
     )
 
@@ -180,7 +180,7 @@ def test_unscored_assessment_is_not_presented_as_below_threshold() -> None:
         verdict=HybridVerdict.LOW,
         known_ioc_sources=(),
         known_match_types=(),
-        ml_probability=None,
+        ml_score=None,
         ml_tier=None,
         behavior=behavior,
         behavior_signals=(),
@@ -189,7 +189,7 @@ def test_unscored_assessment_is_not_presented_as_below_threshold() -> None:
     result = RuntimeAnalysisResult(
         events=(DNSEvent(query_name="printer.local"),),
         matches=(),
-        ml_probabilities={},
+        ml_scores={},
         assessments=(assessment,),
     )
 
@@ -360,7 +360,7 @@ def test_persisted_assessment_rows_are_friendly_and_sorted() -> None:
             PersistedDomainAssessment(
                 domain="z.example",
                 verdict="low",
-                ml_probability=0.1,
+                ml_score=0.1,
                 ml_tier=None,
                 event_count=1,
                 unique_client_count=1,
@@ -377,7 +377,7 @@ def test_persisted_assessment_rows_are_friendly_and_sorted() -> None:
             PersistedDomainAssessment(
                 domain="a.example",
                 verdict="high_risk",
-                ml_probability=0.9,
+                ml_score=0.9,
                 ml_tier="high",
                 event_count=1,
                 unique_client_count=1,

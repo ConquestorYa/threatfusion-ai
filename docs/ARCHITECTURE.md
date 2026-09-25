@@ -1,6 +1,6 @@
 # Architecture
 
-This document distinguishes the current implementation from the planned system. The current architecture includes IOC collection, correlation, DNS telemetry ingestion, in-memory known-IOC matching, reproducible ML dataset snapshots, persisted development-model inference, DNS behavior aggregation, explainable hybrid runtime assessment, SQLite persistence/cache layers, related-activity clustering, a Streamlit dashboard, and container/public-mode deployment packaging. The actual fresh final holdout measurement and hosted domain deployment remain planned; the evaluator can now persist an aggregate report that the dashboard can render.
+This document distinguishes the current implementation from the planned system. The current architecture includes IOC collection, correlation, DNS telemetry ingestion, in-memory known-IOC matching, reproducible ML dataset snapshots, persisted development-model inference, DNS behavior aggregation, explainable hybrid runtime assessment, SQLite persistence/cache layers, related-activity clustering, a Streamlit dashboard, and container/public-mode deployment packaging. The first fresh-collection disjoint final holdout has been completed with the frozen artifact; strict IOC first-seen temporal evaluation and hosted deployment remain planned. The evaluator persists an aggregate report that the dashboard can render.
 
 ## Current Data Flow
 
@@ -56,7 +56,7 @@ flowchart TD
     IOC[Already-loaded IOCRecord values] --> Runtime
     Artifact[Trusted local ML artifact] --> Runtime
     Runtime --> Match[Known IOC matching]
-    Runtime --> ML[Domain probability inference]
+    Runtime --> ML[Domain ML score inference]
     Runtime --> Behavior[DNS behavior aggregation]
     Match --> Hybrid[Hybrid assessment]
     ML --> Hybrid
@@ -124,7 +124,7 @@ flowchart TD
 
 Fresh source-aware or time-aware final evaluation and hosted deployment remain
 planned. Local model artifact persistence,
-domain-probability inference, privacy-conscious SQLite analysis history, a
+domain-score inference, privacy-conscious SQLite analysis history, a
 local SQLite CTI cache, and a Streamlit MVP are implemented.
 
 ## Current Modules
@@ -255,17 +255,17 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
   never be accepted from untrusted sources.
 - Computes a stable SHA-256 identity over the persisted model and metadata
   files for saved-run audit context.
-- Normalizes runtime domain strings and returns malicious-domain probabilities
+- Normalizes runtime domain strings and returns positive-class ML scores; these are not treated as calibrated malware probabilities
   without networking.
 
 ### `src/threatfusion/runtime_analysis.py`
 
 - Provides the reusable local orchestration layer for the implemented analysis path.
 - Accepts already-loaded DNS events, IOC records, and a trusted local ML artifact.
-- Runs known IOC matching, normalized ML probability inference, DNS behavior aggregation, and hybrid assessment without networking.
+- Runs known IOC matching, normalized ML score inference, DNS behavior aggregation, and hybrid assessment without networking.
 - Enforces explicit event and unique-query bounds before expensive analysis work.
 - Excludes reverse-DNS, local/mDNS, localhost, and single-label names from the internet-domain string model while preserving them for deterministic matching and DNS behavior evidence.
-- Preserves original DNS/IOC evidence and returns matches, probabilities, and per-domain assessments together.
+- Preserves original DNS/IOC evidence and returns matches, ML scores, and per-domain assessments together.
 - Provides convenience helpers that start directly from generic DNS CSV, Zeek
   `dns.log` text, or an uploaded Pi-hole FTL SQLite query database and return
   aggregate ingestion-quality diagnostics without retaining raw rows.
@@ -283,6 +283,7 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 ### `src/threatfusion/persistence.py`
 
 - Stores completed analysis summaries and per-domain hybrid assessment results in SQLite.
+- Exposes new Python fields as `ml_score`; the legacy SQLite `ml_probability` column is retained for backward-compatible history reads/writes.
 - Stores one current local analyst feedback label/note per saved run and domain without modifying the original verdict.
 - Can retrieve the latest prior analyst review for a domain across saved runs.
 - Supports explicit multi-select analyst feedback updates without changing

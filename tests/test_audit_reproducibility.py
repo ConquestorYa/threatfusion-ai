@@ -48,7 +48,7 @@ def _result() -> RuntimeAnalysisResult:
         verdict=HybridVerdict.LOW,
         known_ioc_sources=(),
         known_match_types=(),
-        ml_probability=0.1,
+        ml_score=0.1,
         ml_tier=None,
         behavior=behavior,
         behavior_signals=(),
@@ -57,7 +57,7 @@ def _result() -> RuntimeAnalysisResult:
     return RuntimeAnalysisResult(
         events=(event,),
         matches=(),
-        ml_probabilities={"example.com": 0.1},
+        ml_scores={"example.com": 0.1},
         assessments=(assessment,),
     )
 

@@ -75,11 +75,16 @@ class HybridAssessment:
     verdict: HybridVerdict
     known_ioc_sources: tuple[str, ...]
     known_match_types: tuple[str, ...]
-    ml_probability: float | None
+    ml_score: float | None
     ml_tier: str | None
     behavior: DomainBehavior
     behavior_signals: tuple[str, ...]
     reasons: tuple[str, ...]
+
+    @property
+    def ml_probability(self) -> float | None:
+        """Backward-compatible alias for the uncalibrated ML score."""
+        return self.ml_score
 
 
 def _behavior_signals(
@@ -128,36 +133,36 @@ def _behavior_context_reasons(behavior: DomainBehavior) -> tuple[str, ...]:
     return tuple(reasons)
 
 
-def _normalize_probability_mapping(
-    probabilities: Mapping[str, float],
+def _normalize_score_mapping(
+    scores: Mapping[str, float],
 ) -> dict[str, float]:
     normalized: dict[str, float] = {}
 
-    for raw_domain, raw_probability in probabilities.items():
+    for raw_domain, raw_score in scores.items():
         if not isinstance(raw_domain, str):
-            raise TypeError("ML probability keys must be domain strings")
+            raise TypeError("ML score keys must be domain strings")
 
         domain = normalize_ioc_value(raw_domain, IOCType.DOMAIN)
         if not domain:
-            raise ValueError("ML probability keys must not be empty")
+            raise ValueError("ML score keys must not be empty")
 
-        probability = float(raw_probability)
-        if not math.isfinite(probability) or not 0.0 <= probability <= 1.0:
-            raise ValueError("ML probabilities must be finite values between 0 and 1")
+        score = float(raw_score)
+        if not math.isfinite(score) or not 0.0 <= score <= 1.0:
+            raise ValueError("ML scores must be finite values between 0 and 1")
 
-        normalized[domain] = probability
+        normalized[domain] = score
 
     return normalized
 
 
-def _ml_tier(probability: float | None, thresholds: MLThresholds | None) -> str | None:
-    if probability is None or thresholds is None:
+def _ml_tier(score: float | None, thresholds: MLThresholds | None) -> str | None:
+    if score is None or thresholds is None:
         return None
-    if probability >= thresholds.high_confidence:
+    if score >= thresholds.high_confidence:
         return "high"
-    if probability >= thresholds.medium_confidence:
+    if score >= thresholds.medium_confidence:
         return "medium"
-    if probability >= thresholds.low_confidence:
+    if score >= thresholds.low_confidence:
         return "low"
     return None
 
@@ -166,28 +171,31 @@ def assess_dns_domains(
     events: Iterable[DNSEvent],
     matches: Iterable[DNSIOCMatch],
     *,
-    ml_probabilities: Mapping[str, float] | None = None,
+    ml_scores: Mapping[str, float] | None = None,
     ml_thresholds: MLThresholds | None = None,
     behavior_config: BehaviorHeuristicConfig | None = None,
+    ml_probabilities: Mapping[str, float] | None = None,
 ) -> list[HybridAssessment]:
     """Combine known IOC evidence, ML tiers, and local DNS behavior.
 
     This returns an explainable educational risk verdict. It is not a
     calibrated malware probability and it performs no network activity.
     """
-    if (ml_probabilities is None) != (ml_thresholds is None):
-        raise ValueError(
-            "ml_probabilities and ml_thresholds must be supplied together"
-        )
+    if ml_scores is not None and ml_probabilities is not None:
+        raise ValueError("ml_scores and legacy ml_probabilities are mutually exclusive")
+
+    score_mapping = ml_scores if ml_scores is not None else ml_probabilities
+    if (score_mapping is None) != (ml_thresholds is None):
+        raise ValueError("ml_scores and ml_thresholds must be supplied together")
 
     event_list = list(events)
     match_list = list(matches)
     behaviors = aggregate_dns_behavior(event_list)
     config = behavior_config or BehaviorHeuristicConfig()
 
-    probabilities = (
-        _normalize_probability_mapping(ml_probabilities)
-        if ml_probabilities is not None
+    scores = (
+        _normalize_score_mapping(score_mapping)
+        if score_mapping is not None
         else {}
     )
 
@@ -211,8 +219,8 @@ def assess_dns_domains(
         match_types = tuple(
             sorted(match_types_by_domain.get(behavior.domain, set()))
         )
-        probability = probabilities.get(behavior.domain)
-        tier = _ml_tier(probability, ml_thresholds)
+        score = scores.get(behavior.domain)
+        tier = _ml_tier(score, ml_thresholds)
         behavior_signals = _behavior_signals(behavior, config)
 
         exact_domain_ioc = "query_domain" in match_types
@@ -260,7 +268,7 @@ def assess_dns_domains(
                 verdict=verdict,
                 known_ioc_sources=sources,
                 known_match_types=match_types,
-                ml_probability=probability,
+                ml_score=score,
                 ml_tier=tier,
                 behavior=behavior,
                 behavior_signals=behavior_signals,
