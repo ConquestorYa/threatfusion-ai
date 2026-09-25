@@ -68,6 +68,7 @@ def match_dns_events(
     url_hostname_index: dict[str, list[IOCRecord]] = defaultdict(list)
     ipv4_index: dict[str, list[IOCRecord]] = defaultdict(list)
     ipv6_index: dict[str, list[IOCRecord]] = defaultdict(list)
+    ipv6_networks: list[tuple[ipaddress.IPv6Network, IOCRecord]] = []
 
     for indicator in indicators:
         if indicator.ioc_type is IOCType.DOMAIN:
@@ -88,6 +89,15 @@ def match_dns_events(
             normalized = _safe_normalize_ioc_value(indicator.value, IOCType.IPV6)
             if normalized:
                 ipv6_index[normalized].append(indicator)
+        elif indicator.ioc_type is IOCType.IPV6_NETWORK:
+            normalized = _safe_normalize_ioc_value(
+                indicator.value,
+                IOCType.IPV6_NETWORK,
+            )
+            if normalized:
+                ipv6_networks.append(
+                    (ipaddress.IPv6Network(normalized), indicator)
+                )
 
     matches: list[DNSIOCMatch] = []
 
@@ -127,5 +137,17 @@ def match_dns_events(
                     match_type="response_ip",
                 )
             )
+
+        if ip_version == "ipv6":
+            address = ipaddress.IPv6Address(normalized_ip)
+            for network, indicator in ipv6_networks:
+                if address in network:
+                    matches.append(
+                        DNSIOCMatch(
+                            event=event,
+                            indicator=indicator,
+                            match_type="response_ip_network",
+                        )
+                    )
 
     return matches
