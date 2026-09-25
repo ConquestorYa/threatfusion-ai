@@ -69,6 +69,22 @@ class AnalystSuppression:
     updated_at: str
 
 
+@dataclass(frozen=True)
+class RunVerdictChange:
+    domain: str
+    previous_verdict: str
+    current_verdict: str
+
+
+@dataclass(frozen=True)
+class RunComparison:
+    current_run_id: int
+    previous_run_id: int | None
+    new_domains: tuple[str, ...]
+    removed_domains: tuple[str, ...]
+    verdict_changes: tuple[RunVerdictChange, ...]
+
+
 _FEEDBACK_LABELS = {
     "confirmed_threat",
     "benign",
@@ -634,6 +650,229 @@ def save_analyst_feedback(
         label=label,
         note=normalized_note,
         updated_at=timestamp,
+    )
+
+
+def save_bulk_analyst_feedback(
+    db_path: Path,
+    run_id: int,
+    domains: Sequence[str],
+    label: str,
+    *,
+    note: str | None = None,
+    updated_at: datetime | None = None,
+) -> list[AnalystFeedback]:
+    """Apply one analyst label to an explicit set of findings in one run."""
+    if not isinstance(label, str):
+        raise TypeError("analyst feedback label must be a string")
+    if label not in _FEEDBACK_LABELS:
+        raise ValueError("unsupported analyst feedback label")
+    if note is not None and not isinstance(note, str):
+        raise TypeError("analyst feedback note must be a string")
+
+    normalized_domains = tuple(
+        sorted(
+            {
+                domain.strip()
+                for domain in domains
+                if isinstance(domain, str) and domain.strip()
+            }
+        )
+    )
+    if not normalized_domains:
+        raise ValueError("at least one feedback domain must be selected")
+
+    normalized_note = note.strip() if note is not None else None
+    if normalized_note == "":
+        normalized_note = None
+    if (
+        normalized_note is not None
+        and len(normalized_note) > _MAX_FEEDBACK_NOTE_LENGTH
+    ):
+        raise ValueError("analyst feedback note is too long")
+
+    initialize_database(db_path)
+    timestamp = _feedback_time_text(updated_at)
+    placeholders = ",".join("?" for _ in normalized_domains)
+
+    with _connect(Path(db_path)) as connection:
+        existing = {
+            str(row[0])
+            for row in connection.execute(
+                f"""
+                SELECT domain
+                FROM analysis_assessments
+                WHERE analysis_run_id = ?
+                  AND domain IN ({placeholders})
+                """,
+                (run_id, *normalized_domains),
+            )
+        }
+        missing = sorted(set(normalized_domains) - existing)
+        if missing:
+            raise ValueError(
+                "feedback domains are not part of the analysis run: "
+                + ", ".join(missing)
+            )
+
+        connection.executemany(
+            """
+            INSERT INTO analyst_feedback (
+                analysis_run_id,
+                domain,
+                label,
+                note,
+                updated_at
+            )
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(analysis_run_id, domain) DO UPDATE SET
+                label = excluded.label,
+                note = excluded.note,
+                updated_at = excluded.updated_at
+            """,
+            [
+                (run_id, domain, label, normalized_note, timestamp)
+                for domain in normalized_domains
+            ],
+        )
+
+    return [
+        AnalystFeedback(
+            analysis_run_id=run_id,
+            domain=domain,
+            label=label,
+            note=normalized_note,
+            updated_at=timestamp,
+        )
+        for domain in normalized_domains
+    ]
+
+
+def delete_analysis_run(db_path: Path, run_id: int) -> bool:
+    """Delete exactly one saved analysis run and its cascading local context."""
+    if not isinstance(run_id, int) or isinstance(run_id, bool):
+        raise TypeError("run_id must be an integer")
+    initialize_database(db_path)
+    with _connect(Path(db_path)) as connection:
+        cursor = connection.execute(
+            "DELETE FROM analysis_runs WHERE id = ?",
+            (run_id,),
+        )
+    return cursor.rowcount > 0
+
+
+def apply_history_retention(
+    db_path: Path,
+    *,
+    keep_latest: int,
+) -> tuple[int, ...]:
+    """Delete older saved runs while always retaining at least one run."""
+    if not isinstance(keep_latest, int) or isinstance(keep_latest, bool):
+        raise TypeError("keep_latest must be an integer")
+    if keep_latest < 1:
+        raise ValueError("keep_latest must be at least 1")
+
+    initialize_database(db_path)
+    with _connect(Path(db_path)) as connection:
+        run_ids = [
+            int(row[0])
+            for row in connection.execute(
+                "SELECT id FROM analysis_runs ORDER BY id DESC"
+            )
+        ]
+        delete_ids = run_ids[keep_latest:]
+        if delete_ids:
+            placeholders = ",".join("?" for _ in delete_ids)
+            connection.execute(
+                f"DELETE FROM analysis_runs WHERE id IN ({placeholders})",
+                tuple(delete_ids),
+            )
+
+    return tuple(delete_ids)
+
+
+def compare_analysis_runs(
+    db_path: Path,
+    current_run_id: int,
+    *,
+    previous_run_id: int | None = None,
+) -> RunComparison:
+    """Compare one saved run with an explicit or immediately previous run."""
+    initialize_database(db_path)
+
+    with _connect(Path(db_path)) as connection:
+        current_exists = connection.execute(
+            "SELECT 1 FROM analysis_runs WHERE id = ?",
+            (current_run_id,),
+        ).fetchone()
+        if current_exists is None:
+            raise ValueError("current analysis run does not exist")
+
+        resolved_previous = previous_run_id
+        if resolved_previous is None:
+            row = connection.execute(
+                """
+                SELECT id
+                FROM analysis_runs
+                WHERE id < ?
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                (current_run_id,),
+            ).fetchone()
+            resolved_previous = int(row[0]) if row is not None else None
+        elif resolved_previous == current_run_id:
+            raise ValueError("previous run must differ from current run")
+        else:
+            previous_exists = connection.execute(
+                "SELECT 1 FROM analysis_runs WHERE id = ?",
+                (resolved_previous,),
+            ).fetchone()
+            if previous_exists is None:
+                raise ValueError("previous analysis run does not exist")
+
+        current_rows = {
+            str(row[0]): str(row[1])
+            for row in connection.execute(
+                """
+                SELECT domain, verdict
+                FROM analysis_assessments
+                WHERE analysis_run_id = ?
+                """,
+                (current_run_id,),
+            )
+        }
+        previous_rows: dict[str, str] = {}
+        if resolved_previous is not None:
+            previous_rows = {
+                str(row[0]): str(row[1])
+                for row in connection.execute(
+                    """
+                    SELECT domain, verdict
+                    FROM analysis_assessments
+                    WHERE analysis_run_id = ?
+                    """,
+                    (resolved_previous,),
+                )
+            }
+
+    new_domains = tuple(sorted(set(current_rows) - set(previous_rows)))
+    removed_domains = tuple(sorted(set(previous_rows) - set(current_rows)))
+    verdict_changes = tuple(
+        RunVerdictChange(
+            domain=domain,
+            previous_verdict=previous_rows[domain],
+            current_verdict=current_rows[domain],
+        )
+        for domain in sorted(set(current_rows) & set(previous_rows))
+        if current_rows[domain] != previous_rows[domain]
+    )
+    return RunComparison(
+        current_run_id=current_run_id,
+        previous_run_id=resolved_previous,
+        new_domains=new_domains,
+        removed_domains=removed_domains,
+        verdict_changes=verdict_changes,
     )
 
 
