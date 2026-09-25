@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import timedelta
 from pathlib import Path
 
 
@@ -12,10 +13,18 @@ class AppConfig:
     model_dir: Path
     evaluation_report_path: Path
     public_mode: bool
+    cti_stale_hours_by_source: tuple[tuple[str, float], ...]
 
     @property
     def history_enabled(self) -> bool:
         return not self.public_mode
+
+    @property
+    def cti_stale_after_by_source(self) -> dict[str, timedelta]:
+        return {
+            source: timedelta(hours=hours)
+            for source, hours in self.cti_stale_hours_by_source
+        }
 
 
 _TRUE_VALUES = {"1", "true", "yes", "on"}
@@ -45,6 +54,23 @@ def _path_value(
     return Path(raw)
 
 
+def _positive_float(
+    environment: Mapping[str, str],
+    name: str,
+    default: float,
+) -> float:
+    raw = environment.get(name)
+    if raw is None:
+        return default
+    try:
+        value = float(raw.strip())
+    except ValueError as error:
+        raise ValueError(f"{name} must be a positive number") from error
+    if value <= 0:
+        raise ValueError(f"{name} must be a positive number")
+    return value
+
+
 def load_app_config(
     environment: Mapping[str, str] | None = None,
 ) -> AppConfig:
@@ -69,5 +95,31 @@ def load_app_config(
         public_mode=_parse_bool(
             values.get("THREATFUSION_PUBLIC_MODE"),
             default=False,
+        ),
+        cti_stale_hours_by_source=(
+            (
+                "ThreatFox",
+                _positive_float(
+                    values,
+                    "THREATFUSION_CTI_STALE_HOURS_THREATFOX",
+                    24.0,
+                ),
+            ),
+            (
+                "URLhaus",
+                _positive_float(
+                    values,
+                    "THREATFUSION_CTI_STALE_HOURS_URLHAUS",
+                    24.0,
+                ),
+            ),
+            (
+                "SGB",
+                _positive_float(
+                    values,
+                    "THREATFUSION_CTI_STALE_HOURS_SGB",
+                    24.0,
+                ),
+            ),
         ),
     )
