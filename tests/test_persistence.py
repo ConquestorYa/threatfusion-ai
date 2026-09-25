@@ -76,7 +76,7 @@ def make_result() -> RuntimeAnalysisResult:
             verdict=HybridVerdict.KNOWN_THREAT,
             known_ioc_sources=("ThreatFox",),
             known_match_types=("query_domain",),
-            ml_probability=0.20,
+            ml_score=0.20,
             ml_tier=None,
             behavior=known_behavior,
             behavior_signals=(),
@@ -87,7 +87,7 @@ def make_result() -> RuntimeAnalysisResult:
             verdict=HybridVerdict.REVIEW,
             known_ioc_sources=(),
             known_match_types=(),
-            ml_probability=0.55,
+            ml_score=0.55,
             ml_tier="low",
             behavior=review_behavior,
             behavior_signals=(),
@@ -98,7 +98,7 @@ def make_result() -> RuntimeAnalysisResult:
     return RuntimeAnalysisResult(
         events=(first_event, second_event),
         matches=(match,),
-        ml_probabilities={
+        ml_scores={
             "known.bad": 0.20,
             "review.example": 0.55,
         },
@@ -159,7 +159,7 @@ def test_assessment_roundtrip_preserves_aggregate_evidence(tmp_path) -> None:
 
     known = rows[0]
     assert known.verdict == "known_threat"
-    assert known.ml_probability == pytest.approx(0.20)
+    assert known.ml_score == pytest.approx(0.20)
     assert known.query_types == ("A",)
     assert known.known_ioc_sources == ("ThreatFox",)
     assert known.known_match_types == ("query_domain",)
