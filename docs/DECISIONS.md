@@ -748,3 +748,17 @@ when telemetry fields are missing or incomparable.
 **Reason:** Practical DNS telemetry often varies by source. The system should
 explain what was observed without requiring model retraining or treating any
 single behavior heuristic as proof of maliciousness.
+
+## DEC-079: Persist aggregate reproducibility context with saved analysis runs
+
+**Decision:** New local history runs persist the trusted model name, a SHA-256
+identity over the model/metadata files, artifact and audit schema versions,
+the exact high/medium/low thresholds used, and per-source CTI refresh
+timestamp/count/freshness captured when the analysis completes. Existing
+history databases are upgraded in place with nullable columns so legacy runs
+remain readable.
+
+**Reason:** A saved verdict should be explainable in terms of the detector and
+CTI state that produced it. Keeping this context aggregate-only improves audit
+and reproduction without storing raw DNS rows, client IP values, secrets, or
+local filesystem paths.
