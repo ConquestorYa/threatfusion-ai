@@ -40,12 +40,12 @@ def feedback_app(tmp_path, monkeypatch):
     result = RuntimeAnalysisResult(
         events=events,
         matches=(),
-        ml_probabilities=scores,
+        ml_scores=scores,
         assessments=tuple(
             assess_dns_domains(
                 events,
                 (),
-                ml_probabilities=scores,
+                ml_scores=scores,
                 ml_thresholds=MLThresholds(0.8, 0.6, 0.5),
             )
         ),
