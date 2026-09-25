@@ -157,7 +157,8 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 - Builds lightweight lookup indexes instead of performing a naive full nested scan.
 - Matches DOMAIN IOC values against normalized DNS query names.
 - Matches URL IOC hostnames against DNS query names using local parsing only.
-- Matches IPv4 and IPv6 IOC values against `DNSEvent.response_ip` values.
+- Matches IPv4 and IPv6 host IOC values against `DNSEvent.response_ip` and
+  checks IPv6 response addresses against typed IPv6-network IOCs.
 - Preserves original `DNSEvent` and `IOCRecord` objects as evidence.
 - Ignores malformed IOC values without breaking the whole batch.
 - Ignores unsupported hash and `UNKNOWN` IOC types for DNS matching.
@@ -185,6 +186,9 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 
 ### `src/threatfusion/ml_dataset.py`
 
+- Canonicalizes Unicode domains to deterministic IDNA ASCII form before ML use.
+- Rejects malformed labels, single-label hostnames, IP literals, and invalid
+  public-domain candidates before they enter ML datasets or runtime scoring.
 - Extracts normalized malicious domain samples from DOMAIN and URL IOC records.
 - Builds benign samples from caller-supplied domain strings.
 - Deduplicates at normalized-domain level and gives malicious labels precedence on overlap.
@@ -247,9 +251,9 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 - Enforces explicit event and unique-query bounds before expensive analysis work.
 - Excludes reverse-DNS, local/mDNS, localhost, and single-label names from the internet-domain string model while preserving them for deterministic matching and DNS behavior evidence.
 - Preserves original DNS/IOC evidence and returns matches, probabilities, and per-domain assessments together.
-- Provides convenience helpers that start directly from generic DNS CSV or
-  Zeek `dns.log` text and can return aggregate ingestion-quality diagnostics
-  without retaining raw rows.
+- Provides convenience helpers that start directly from generic DNS CSV, Zeek
+  `dns.log` text, or an uploaded Pi-hole FTL SQLite query database and return
+  aggregate ingestion-quality diagnostics without retaining raw rows.
 
 ### `src/threatfusion/cti_cache.py`
 
