@@ -242,6 +242,27 @@ def test_related_activity_rejects_excessive_suspicious_domains(
     with pytest.raises(ValueError, match="suspicious-domain limit"):
         find_related_activity(result)
 
+
+def test_related_activity_rejects_excessive_relationships(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(campaign, "MAX_RELATED_ACTIVITY_RELATIONSHIPS", 1)
+    result = result_with(
+        [
+            DNSEvent(query_name="a.example", client_ip="192.0.2.1"),
+            DNSEvent(query_name="b.example", client_ip="192.0.2.1"),
+            DNSEvent(query_name="c.example", client_ip="192.0.2.1"),
+        ],
+        [
+            assessment("a.example", HybridVerdict.REVIEW),
+            assessment("b.example", HybridVerdict.REVIEW),
+            assessment("c.example", HybridVerdict.REVIEW),
+        ],
+    )
+
+    with pytest.raises(ValueError, match="relationship limit"):
+        find_related_activity(result)
+
 def test_negative_time_window_is_rejected() -> None:
     with pytest.raises(ValueError, match="non-negative"):
         find_related_activity(
