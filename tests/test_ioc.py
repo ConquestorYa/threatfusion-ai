@@ -6,6 +6,14 @@ def test_domain_normalization() -> None:
     assert normalize_ioc_value("  Example.COM.  ", IOCType.DOMAIN) == "example.com"
 
 
+
+
+def test_unicode_domain_normalizes_to_idna_ascii() -> None:
+    assert normalize_ioc_value(
+        "MÜNICH.Example.",
+        IOCType.DOMAIN,
+    ) == "xn--mnich-kva.example"
+
 def test_uppercase_hash_normalization() -> None:
     value = "  AABBCCDDEEFF00112233445566778899  "
 
