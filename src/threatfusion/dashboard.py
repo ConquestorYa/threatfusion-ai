@@ -435,6 +435,42 @@ def match_rows(
         for match in result.matches
     ]
 
+def ioc_corroboration_rows(
+    result: RuntimeAnalysisResult,
+) -> list[dict[str, object]]:
+    """Summarize domain-level CTI corroboration across cached sources."""
+    rows: list[dict[str, object]] = []
+
+    for assessment in result.assessments:
+        sources = assessment.known_ioc_sources
+        if not sources:
+            continue
+
+        scopes = sorted(
+            {
+                match_evidence_scope(match_type)
+                for match_type in assessment.known_match_types
+            }
+        )
+        rows.append(
+            {
+                "Domain": assessment.domain,
+                "Source count": len(sources),
+                "Sources": ", ".join(sources),
+                "Evidence scopes": ", ".join(scopes),
+                "Corroborated": "Yes" if len(sources) >= 2 else "No",
+            }
+        )
+
+    return sorted(
+        rows,
+        key=lambda row: (
+            -int(row["Source count"]),
+            str(row["Domain"]),
+        ),
+    )
+
+
 def cti_status_rows(
     statuses: list[CTICacheStatus],
     *,

@@ -292,10 +292,11 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 
 - Convert runtime results into deterministic presentation rows and summary counts.
 - Provide separate DNS-event and unique-domain metrics so domain-level verdict counts are unambiguous.
-- Provide generic DNS CSV / Zeek `dns.log` upload, aggregate input-quality
-  diagnostics, an analyst-priority triage queue, a compact domain-level Plotly
-  verdict chart, evidence-first domain investigation, complete domain findings,
-  known-IOC evidence views, and a privacy-preserving relationship graph.
+- Provide generic DNS CSV / Zeek `dns.log` / Pi-hole upload, aggregate
+  input-quality diagnostics, an analyst-priority triage queue, a compact
+  domain-level Plotly verdict chart, evidence-first domain investigation,
+  complete domain findings, multi-source CTI corroboration views, known-IOC
+  evidence views, and a privacy-preserving relationship graph.
 - Surface prior analyst review and local suppression state only in local mode;
   public mode never reads those private tables.
 - Display compact system health, CTI source age/freshness details behind disclosure controls, and saved analysis history with presentation-only verdict/review/source filters.
@@ -378,6 +379,14 @@ The stack describes project direction; it does not mean that every planned compo
 - Refuses to overwrite a non-empty output directory unless explicitly
   requested and performs no network activity.
 
+
+### `src/threatfusion/cli.py` and `scripts/analyze_dns.py`
+
+- Provide a local automation entry point for generic DNS CSV, Zeek `dns.log`,
+  and Pi-hole FTL database analysis.
+- Reuse the same local CTI cache, trusted ML artifact, runtime analysis
+  functions, and privacy-safe JSON/CSV report builder as Streamlit.
+- Perform no CTI refresh or external networking.
 
 ### `src/threatfusion/reporting.py`
 
