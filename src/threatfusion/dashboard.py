@@ -163,7 +163,7 @@ def build_relationship_graph(
                 verdict = verdict_label(assessment.verdict.value)
                 tier = ml_tier_label(
                     assessment.ml_tier,
-                    scored=assessment.ml_probability is not None,
+                    scored=assessment.ml_score is not None,
                 )
                 sources = assessment.known_ioc_sources
 
@@ -406,10 +406,10 @@ def assessment_rows(
         row = {
             "Domain": assessment.domain,
             "Verdict": verdict_label(assessment.verdict.value),
-            "ML score": assessment.ml_probability,
+            "ML score": assessment.ml_score,
             "ML tier": ml_tier_label(
                 assessment.ml_tier,
-                scored=assessment.ml_probability is not None,
+                scored=assessment.ml_score is not None,
             ),
             "DNS events": behavior.event_count,
             "Clients": behavior.unique_client_count,
@@ -478,10 +478,10 @@ def assessment_detail(
     return {
         "domain": assessment.domain,
         "verdict": verdict_label(assessment.verdict.value),
-        "ml_score": assessment.ml_probability,
+        "ml_score": assessment.ml_score,
         "ml_tier": ml_tier_label(
             assessment.ml_tier,
-            scored=assessment.ml_probability is not None,
+            scored=assessment.ml_score is not None,
         ),
         "known_sources": assessment.known_ioc_sources,
         "known_match_types": assessment.known_match_types,
@@ -648,10 +648,10 @@ def persisted_assessment_rows(
         row = {
             "Domain": assessment.domain,
             "Verdict": verdict_label(assessment.verdict),
-            "ML score": assessment.ml_probability,
+            "ML score": assessment.ml_score,
             "ML tier": ml_tier_label(
                 assessment.ml_tier,
-                scored=assessment.ml_probability is not None,
+                scored=assessment.ml_score is not None,
             ),
             "DNS events": assessment.event_count,
             "Clients": assessment.unique_client_count,
