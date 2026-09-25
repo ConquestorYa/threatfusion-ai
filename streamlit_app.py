@@ -1005,19 +1005,15 @@ def main() -> None:
         input_columns = st.columns(3)
         input_columns[0].markdown("**Input format**")
         input_columns[0].caption(
-            (
-                "Generic DNS CSV · UTF-8 · max 10 MB"
-                if telemetry_format == "Generic DNS CSV"
-                else "Zeek dns.log text export · max 10 MB"
-            )
+            "Generic DNS CSV · UTF-8 · max 10 MB"
+            if telemetry_format == "Generic DNS CSV"
+            else "Zeek dns.log text export · max 10 MB"
         )
         input_columns[1].markdown("**Required field**")
         input_columns[1].caption(
-            (
-                "query_name; all other fields are optional"
-                if telemetry_format == "Generic DNS CSV"
-                else "Zeek #fields header with query"
-            )
+            "query_name; all other fields are optional"
+            if telemetry_format == "Generic DNS CSV"
+            else "Zeek #fields header with query"
         )
         input_columns[2].markdown("**Privacy**")
         input_columns[2].caption("Raw rows stay in memory unless you export them")
