@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 
 import pytest
 
+from threatfusion import campaign
 from threatfusion.campaign import find_related_activity
 from threatfusion.dns import DNSEvent
 from threatfusion.dns_behavior import DomainBehavior
@@ -201,6 +202,66 @@ def test_mixed_timestamp_awareness_is_ignored_as_time_context() -> None:
     assert relationship.min_time_delta_seconds is None
     assert relationship.reasons == ("shared_client",)
 
+
+def test_many_unrelated_candidates_do_not_create_relationships() -> None:
+    events = [
+        DNSEvent(
+            query_name=f"domain-{index}.example",
+            client_ip=f"192.0.2.{index + 1}",
+        )
+        for index in range(100)
+    ]
+    assessments = [
+        assessment(f"domain-{index}.example", HybridVerdict.REVIEW)
+        for index in range(100)
+    ]
+
+    report = find_related_activity(result_with(events, assessments))
+
+    assert report.relationships == ()
+    assert report.clusters == ()
+
+
+def test_related_activity_rejects_excessive_suspicious_domains(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(campaign, "MAX_RELATED_ACTIVITY_DOMAINS", 2)
+    result = result_with(
+        [
+            DNSEvent(query_name="a.example"),
+            DNSEvent(query_name="b.example"),
+            DNSEvent(query_name="c.example"),
+        ],
+        [
+            assessment("a.example", HybridVerdict.REVIEW),
+            assessment("b.example", HybridVerdict.REVIEW),
+            assessment("c.example", HybridVerdict.REVIEW),
+        ],
+    )
+
+    with pytest.raises(ValueError, match="suspicious-domain limit"):
+        find_related_activity(result)
+
+
+def test_related_activity_rejects_excessive_relationships(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(campaign, "MAX_RELATED_ACTIVITY_RELATIONSHIPS", 1)
+    result = result_with(
+        [
+            DNSEvent(query_name="a.example", client_ip="192.0.2.1"),
+            DNSEvent(query_name="b.example", client_ip="192.0.2.1"),
+            DNSEvent(query_name="c.example", client_ip="192.0.2.1"),
+        ],
+        [
+            assessment("a.example", HybridVerdict.REVIEW),
+            assessment("b.example", HybridVerdict.REVIEW),
+            assessment("c.example", HybridVerdict.REVIEW),
+        ],
+    )
+
+    with pytest.raises(ValueError, match="relationship limit"):
+        find_related_activity(result)
 
 def test_negative_time_window_is_rejected() -> None:
     with pytest.raises(ValueError, match="non-negative"):

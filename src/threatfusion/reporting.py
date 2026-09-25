@@ -65,6 +65,15 @@ def _finding_rows(result: RuntimeAnalysisResult) -> list[dict[str, object]]:
     return rows
 
 
+def _spreadsheet_safe_text(value: object) -> object:
+    """Prevent exported text cells from being interpreted as formulas."""
+    if not isinstance(value, str) or not value:
+        return value
+    if value[0] in ("=", "+", "-", "@", "\t", "\r"):
+        return "'" + value
+    return value
+
+
 def _csv_text(rows: list[dict[str, object]]) -> str:
     output = io.StringIO(newline="")
     fieldnames = [
@@ -83,12 +92,16 @@ def _csv_text(rows: list[dict[str, object]]) -> str:
     writer.writeheader()
 
     for row in rows:
+        csv_row = {
+            **row,
+            "query_types": ", ".join(row["query_types"]),
+            "known_cti_sources": ", ".join(row["known_cti_sources"]),
+            "evidence": "; ".join(row["evidence"]),
+        }
         writer.writerow(
             {
-                **row,
-                "query_types": ", ".join(row["query_types"]),
-                "known_cti_sources": ", ".join(row["known_cti_sources"]),
-                "evidence": "; ".join(row["evidence"]),
+                key: _spreadsheet_safe_text(value)
+                for key, value in csv_row.items()
             }
         )
 

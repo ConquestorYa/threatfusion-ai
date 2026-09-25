@@ -159,12 +159,38 @@ def test_cti_status_rows() -> None:
                 refreshed_at="2026-09-24T18:00:00+00:00",
                 record_count=123,
             )
-        ]
+        ],
+        now=datetime(2026, 9, 24, 23, 0, tzinfo=timezone.utc),
     )
 
     assert rows[0]["Source"] == "ThreatFox"
     assert rows[0]["Records"] == 123
     assert rows[0]["Refreshed at"] == "2026-09-24 18:00 UTC"
+    assert rows[0]["Age"] == "5.0 h"
+    assert rows[0]["Status"] == "Fresh"
+
+
+def test_cti_status_rows_marks_old_or_invalid_refresh_times() -> None:
+    rows = cti_status_rows(
+        [
+            CTICacheStatus(
+                source="ThreatFox",
+                refreshed_at="2026-09-23T18:00:00+00:00",
+                record_count=123,
+            ),
+            CTICacheStatus(
+                source="SGB",
+                refreshed_at="invalid",
+                record_count=10,
+            ),
+        ],
+        now=datetime(2026, 9, 25, 19, 0, tzinfo=timezone.utc),
+    )
+
+    assert rows[0]["Status"] == "Stale"
+    assert rows[0]["Age"] == "49.0 h"
+    assert rows[1]["Status"] == "Unknown"
+    assert rows[1]["Age"] == "Unknown"
 
 def test_history_rows() -> None:
     rows = history_rows(

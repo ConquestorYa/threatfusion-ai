@@ -484,3 +484,44 @@ deployment bundles do not copy the developer analysis-history database.
 **Reason:** Analyst notes and reviewed domain findings may contain
 organization-specific context that should not be exposed to anonymous hosted
 demo users.
+
+## DEC-055: Treat exported CSV as untrusted spreadsheet input
+
+**Decision:** CSV report cells that begin with spreadsheet formula prefixes are
+escaped before export. JSON report values remain unchanged.
+
+**Reason:** DNS query values are user-controlled telemetry. Opening a CSV in a
+spreadsheet must not allow a crafted value to be interpreted as a formula.
+
+
+## DEC-056: Bound interactive DNS analysis
+
+**Decision:** Runtime analysis rejects inputs above explicit event and unique
+query-name limits.
+
+**Reason:** The public/local analysis path should have predictable resource
+usage even when input is malformed or intentionally oversized. The existing
+Streamlit upload-size limit is helpful but is not a complete processing bound.
+
+
+## DEC-057: Score only suitable internet-domain candidates with ML
+
+**Decision:** Reverse-DNS names, mDNS/local names, localhost, and single-label
+hostnames remain available to deterministic IOC matching and DNS behavior
+analysis but are excluded from malicious-domain string-model inference.
+
+**Reason:** The development model was trained on internet domain samples.
+Scoring clearly out-of-distribution DNS names creates misleading model output
+without adding useful evidence.
+
+
+## DEC-058: Surface CTI freshness and avoid quadratic unrelated-domain scans
+
+**Decision:** The dashboard marks CTI source cache entries as fresh/stale using
+their stored refresh timestamps, and related-activity discovery generates
+candidate domain pairs only from shared-client/shared-response-IP evidence.
+
+**Reason:** Analysts should know when deterministic threat intelligence may be
+out of date. Related-activity analysis should also avoid comparing every
+suspicious domain pair when most pairs have no shared evidence.
+

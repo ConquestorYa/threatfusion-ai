@@ -142,9 +142,15 @@ def _show_system_status(
 
     statuses = list_cti_cache_status(db_path)
     if statuses:
-        st.sidebar.success("CTI cache available")
+        status_rows = cti_status_rows(statuses)
+        if any(row["Status"] == "Stale" for row in status_rows):
+            st.sidebar.warning(
+                "CTI cache is available, but at least one source is stale."
+            )
+        else:
+            st.sidebar.success("CTI cache available")
         st.sidebar.dataframe(
-            pd.DataFrame(cti_status_rows(statuses)),
+            pd.DataFrame(status_rows),
             hide_index=True,
             width="stretch",
         )
@@ -292,26 +298,34 @@ def _show_analysis_result(
             st.info("No cached IOC matches were found.")
 
     with campaign_tab:
-        report = find_related_activity(result)
-        if report.clusters:
+        try:
+            related_report = find_related_activity(result)
+        except ValueError as error:
+            st.warning(
+                "Related-activity visualization was skipped because the "
+                f"candidate set was too large: {error}"
+            )
+            related_report = None
+
+        if related_report is not None and related_report.clusters:
             st.info(
                 "These groups show possible related suspicious activity based "
                 "on shared local DNS evidence. They do not prove one malware "
                 "campaign."
             )
             st.plotly_chart(
-                _relationship_figure(report, result),
+                _relationship_figure(related_report, result),
                 width="stretch",
             )
             st.write("**Possible related-activity groups**")
             st.dataframe(
-                pd.DataFrame(cluster_rows(report)),
+                pd.DataFrame(cluster_rows(related_report)),
                 hide_index=True,
                 width="stretch",
             )
             st.write("**Relationship evidence**")
             st.dataframe(
-                pd.DataFrame(relationship_rows(report)),
+                pd.DataFrame(relationship_rows(related_report)),
                 hide_index=True,
                 width="stretch",
             )
@@ -319,7 +333,7 @@ def _show_analysis_result(
                 "Raw client IP values are not shown. Relationship rows expose "
                 "aggregate shared counts only."
             )
-        else:
+        elif related_report is not None:
             st.info(
                 "No possible related-activity groups were found among Known "
                 "Threat, High Risk, or Review domains."

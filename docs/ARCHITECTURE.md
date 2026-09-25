@@ -241,6 +241,8 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 - Provides the reusable local orchestration layer for the implemented analysis path.
 - Accepts already-loaded DNS events, IOC records, and a trusted local ML artifact.
 - Runs known IOC matching, normalized ML probability inference, DNS behavior aggregation, and hybrid assessment without networking.
+- Enforces explicit event and unique-query bounds before expensive analysis work.
+- Excludes reverse-DNS, local/mDNS, localhost, and single-label names from the internet-domain string model while preserving them for deterministic matching and DNS behavior evidence.
 - Preserves original DNS/IOC evidence and returns matches, probabilities, and per-domain assessments together.
 - Provides a convenience helper that starts directly from DNS CSV text.
 
@@ -266,6 +268,8 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 - Builds local-only relationships among Known Threat / High Risk / Review domains.
 - Requires at least one shared client observation or shared response IP to create a relationship.
 - Uses time proximity only as supporting context, never as the sole edge condition.
+- Generates relationship candidates from shared-client/shared-response-IP indexes rather than comparing every suspicious-domain pair.
+- Applies explicit suspicious-domain and relationship-count bounds so graph generation remains predictable on adversarial or unusually dense input.
 - Builds deterministic connected components and omits singleton groups.
 - Returns aggregate relationship counts/reason codes without exposing raw client IP values.
 
@@ -274,7 +278,7 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 - Convert runtime results into deterministic presentation rows and summary counts.
 - Provide separate DNS-event and unique-domain metrics so domain-level verdict counts are unambiguous.
 - Provide DNS CSV upload, a domain-level Plotly verdict chart, human-readable evidence labels, per-domain detail inspection, domain findings, known-IOC evidence views, and a privacy-preserving relationship graph.
-- Display local CTI cache status and saved analysis history with compact human-readable timestamps.
+- Display local CTI cache status, source age/freshness warnings, and saved analysis history with compact human-readable timestamps.
 - Invalidate in-memory displayed results when uploaded CSV content changes or is removed, preventing stale-result/file mismatches.
 - Keep raw uploaded DNS telemetry in memory and make aggregate history saving explicit.
 - Do not refresh external CTI sources during interactive user analysis.
@@ -363,5 +367,7 @@ The stack describes project direction; it does not mean that every planned compo
   behavior counts, query types, CTI source names, and human-readable evidence.
 - Does not include raw DNS rows, raw client IP values, or raw response IP
   values.
+- Escapes spreadsheet formula prefixes in CSV output while preserving original
+  values in JSON.
 - Performs no networking and does not persist the generated report unless the
   user downloads it.
