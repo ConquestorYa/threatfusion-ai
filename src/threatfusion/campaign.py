@@ -3,11 +3,16 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
+from itertools import combinations
 
 from .hybrid_assessment import HybridVerdict
 from .models import IOCType
 from .normalization import normalize_ioc_value
 from .runtime_analysis import RuntimeAnalysisResult
+
+
+DEFAULT_MAX_CANDIDATE_DOMAINS = 500
+DEFAULT_MAX_RELATIONSHIP_PAIRS = 20_000
 
 
 @dataclass(frozen=True)
@@ -45,7 +50,9 @@ def _minimum_time_delta(
 
     for left_value in left:
         for right_value in right:
-            if _timestamp_is_aware(left_value) != _timestamp_is_aware(right_value):
+            if _timestamp_is_aware(left_value) != _timestamp_is_aware(
+                right_value
+            ):
                 continue
             delta = abs((left_value - right_value).total_seconds())
             if best is None or delta < best:
@@ -54,28 +61,66 @@ def _minimum_time_delta(
     return best
 
 
+def _validate_positive_limit(name: str, value: int) -> None:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise ValueError(f"{name} must be a positive integer")
+
+
+def _add_candidate_pairs(
+    target: set[tuple[str, str]],
+    domains: set[str],
+    *,
+    max_relationship_pairs: int,
+) -> None:
+    for domain_a, domain_b in combinations(sorted(domains), 2):
+        target.add((domain_a, domain_b))
+        if len(target) > max_relationship_pairs:
+            raise ValueError(
+                "related-activity analysis exceeds the "
+                f"{max_relationship_pairs} candidate-pair limit"
+            )
+
+
 def find_related_activity(
     result: RuntimeAnalysisResult,
     *,
     time_proximity_seconds: float = 300.0,
+    max_candidate_domains: int = DEFAULT_MAX_CANDIDATE_DOMAINS,
+    max_relationship_pairs: int = DEFAULT_MAX_RELATIONSHIP_PAIRS,
 ) -> RelatedActivityReport:
     """Find possible related suspicious-domain activity from local DNS evidence.
 
     A relationship requires a shared client observation or shared response IP.
     Time proximity is supporting context only and never creates an edge alone.
+
+    Candidate pairs are generated only from shared local evidence instead of
+    comparing every suspicious domain with every other suspicious domain.
+    Explicit limits keep graph work bounded for public or adversarial inputs.
     """
     if time_proximity_seconds < 0:
         raise ValueError("time_proximity_seconds must be non-negative")
+    _validate_positive_limit("max_candidate_domains", max_candidate_domains)
+    _validate_positive_limit(
+        "max_relationship_pairs",
+        max_relationship_pairs,
+    )
 
     candidate_domains = {
         assessment.domain
         for assessment in result.assessments
         if assessment.verdict is not HybridVerdict.LOW
     }
+    if len(candidate_domains) > max_candidate_domains:
+        raise ValueError(
+            "related-activity analysis exceeds the "
+            f"{max_candidate_domains} suspicious-domain limit"
+        )
 
     clients: dict[str, set[str]] = defaultdict(set)
     response_ips: dict[str, set[str]] = defaultdict(set)
     timestamps: dict[str, list[datetime]] = defaultdict(list)
+    domains_by_client: dict[str, set[str]] = defaultdict(set)
+    domains_by_response_ip: dict[str, set[str]] = defaultdict(set)
 
     for event in result.events:
         domain = normalize_ioc_value(event.query_name, IOCType.DOMAIN)
@@ -83,54 +128,65 @@ def find_related_activity(
             continue
         if event.client_ip is not None:
             clients[domain].add(event.client_ip)
+            domains_by_client[event.client_ip].add(domain)
         if event.response_ip is not None:
             response_ips[domain].add(event.response_ip)
+            domains_by_response_ip[event.response_ip].add(domain)
         if event.timestamp is not None:
             timestamps[domain].append(event.timestamp)
 
-    domains = sorted(candidate_domains)
+    candidate_pairs: set[tuple[str, str]] = set()
+    for domains in domains_by_client.values():
+        _add_candidate_pairs(
+            candidate_pairs,
+            domains,
+            max_relationship_pairs=max_relationship_pairs,
+        )
+    for domains in domains_by_response_ip.values():
+        _add_candidate_pairs(
+            candidate_pairs,
+            domains,
+            max_relationship_pairs=max_relationship_pairs,
+        )
+
     relationships: list[DomainRelationship] = []
+    for domain_a, domain_b in sorted(candidate_pairs):
+        shared_clients = clients[domain_a] & clients[domain_b]
+        shared_response_ips = response_ips[domain_a] & response_ips[domain_b]
 
-    for index, domain_a in enumerate(domains):
-        for domain_b in domains[index + 1 :]:
-            shared_clients = clients[domain_a] & clients[domain_b]
-            shared_response_ips = response_ips[domain_a] & response_ips[domain_b]
+        time_delta = _minimum_time_delta(
+            tuple(timestamps[domain_a]),
+            tuple(timestamps[domain_b]),
+        )
 
-            if not shared_clients and not shared_response_ips:
-                continue
+        reasons: list[str] = []
+        if shared_clients:
+            reasons.append("shared_client")
+        if shared_response_ips:
+            reasons.append("shared_response_ip")
+        if (
+            time_delta is not None
+            and time_delta <= time_proximity_seconds
+        ):
+            reasons.append("time_proximity")
 
-            time_delta = _minimum_time_delta(
-                tuple(timestamps[domain_a]),
-                tuple(timestamps[domain_b]),
+        relationships.append(
+            DomainRelationship(
+                domain_a=domain_a,
+                domain_b=domain_b,
+                shared_client_count=len(shared_clients),
+                shared_response_ip_count=len(shared_response_ips),
+                min_time_delta_seconds=time_delta,
+                reasons=tuple(reasons),
             )
-
-            reasons: list[str] = []
-            if shared_clients:
-                reasons.append("shared_client")
-            if shared_response_ips:
-                reasons.append("shared_response_ip")
-            if (
-                time_delta is not None
-                and time_delta <= time_proximity_seconds
-            ):
-                reasons.append("time_proximity")
-
-            relationships.append(
-                DomainRelationship(
-                    domain_a=domain_a,
-                    domain_b=domain_b,
-                    shared_client_count=len(shared_clients),
-                    shared_response_ip_count=len(shared_response_ips),
-                    min_time_delta_seconds=time_delta,
-                    reasons=tuple(reasons),
-                )
-            )
+        )
 
     adjacency: dict[str, set[str]] = defaultdict(set)
     for relationship in relationships:
         adjacency[relationship.domain_a].add(relationship.domain_b)
         adjacency[relationship.domain_b].add(relationship.domain_a)
 
+    domains = sorted(candidate_domains)
     components: list[tuple[str, ...]] = []
     visited: set[str] = set()
 
