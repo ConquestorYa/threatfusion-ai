@@ -3,7 +3,6 @@ import re
 
 from .models import IOCType
 
-
 _ASCII_DOMAIN_LABEL = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
 
 
