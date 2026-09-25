@@ -23,14 +23,14 @@ class AnalysisRunSummary:
     review_count: int
     low_count: int
     model_name: str | None
-    audit_captured_at: str | None
-    artifact_checksum: str | None
-    artifact_schema_version: int | None
-    high_threshold: float | None
-    medium_threshold: float | None
-    low_threshold: float | None
-    cti_sources: tuple[CTISourceAudit, ...]
-    audit_schema_version: int | None
+    audit_captured_at: str | None = None
+    artifact_checksum: str | None = None
+    artifact_schema_version: int | None = None
+    high_threshold: float | None = None
+    medium_threshold: float | None = None
+    low_threshold: float | None = None
+    cti_sources: tuple[CTISourceAudit, ...] = ()
+    audit_schema_version: int | None = None
 
 
 @dataclass(frozen=True)
