@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ipaddress
+import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 from urllib.parse import urlsplit
@@ -15,6 +16,20 @@ class DomainSample:
     label: int
     source: str
 
+
+
+_DOMAIN_LABEL = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
+
+
+def _is_valid_internet_domain(domain: str) -> bool:
+    if not domain or len(domain) > 253:
+        return False
+
+    labels = domain.split(".")
+    if any(not label or len(label) > 63 for label in labels):
+        return False
+
+    return all(_DOMAIN_LABEL.fullmatch(label) is not None for label in labels)
 
 def normalize_domain_candidate(value: str) -> str | None:
     if not isinstance(value, str):
@@ -32,6 +47,9 @@ def normalize_domain_candidate(value: str) -> str | None:
         return None
 
     if any(token in candidate for token in ("/", "@", ":")):
+        return None
+
+    if not _is_valid_internet_domain(normalized):
         return None
 
     try:
