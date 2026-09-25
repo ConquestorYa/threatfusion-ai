@@ -90,16 +90,24 @@ flowchart TD
 ```mermaid
 flowchart TD
     Runtime[Runtime analysis] --> Suspicious[Known Threat / High Risk / Review domains]
-    Suspicious --> Evidence[Shared client / shared response IP evidence]
-    Evidence --> Cluster[Possible related-activity groups]
-    Cluster --> Graph[Privacy-preserving relationship graph]
+    Suspicious --> Candidate[Bounded shared client / response-IP candidates]
+    Candidate --> Weight[Noise-aware evidence weighting]
+    CTI[CTI source / tag / threat-type context] --> Weight
+    Time[Closest comparable timestamp] --> Weight
+    Weight --> Filter[Minimum relationship strength]
+    Filter --> Cluster[Possible related-activity groups]
+    Cluster --> Graph[Privacy-preserving weighted graph]
     Graph --> Dashboard[Streamlit related-activity view]
 ```
 
-The related-activity layer is an explainable baseline. A relationship requires
-shared local DNS evidence; time proximity is supporting context only. Groups
-are presented as possible related activity and do not prove one malware
-campaign.
+The related-activity layer remains explicitly non-attributive. Candidate pairs
+still require shared local DNS evidence, but a binary shared value no longer
+automatically becomes an edge. Rare shared client/response infrastructure is
+weighted more strongly, medium-fan-out infrastructure is penalized, and very
+high-fan-out values are excluded from pair generation. Time proximity and
+overlap in CTI source, tags, or threat type add supporting evidence. Only
+relationships above the minimum local evidence-strength threshold are grouped.
+The score is an explainable ranking aid, not a campaign-attribution probability.
 
 ## Planned Analysis Extensions
 
@@ -298,13 +306,14 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 ### `src/threatfusion/campaign.py`
 
 - Builds local-only relationships among Known Threat / High Risk / Review domains.
-- Requires at least one shared client observation or shared response IP to create a relationship.
-- Uses time proximity only as supporting context, never as the sole edge condition.
+- Generates bounded candidates from shared-client/shared-response-IP indexes rather than comparing every suspicious-domain pair.
+- Excludes very high-fan-out shared values from pair generation and penalizes medium-fan-out client/IP evidence to reduce resolver/CDN/NAT-style false links.
+- Computes an explainable 0-1 relationship-strength score from rarity-aware local evidence plus optional time proximity and CTI source/tag/threat-type overlap.
+- Keeps time and CTI metadata as supporting evidence; they do not create a pair without shared local DNS evidence.
 - Computes closest comparable timestamps with an ordered two-pointer scan instead of nested timestamp-pair comparisons.
-- Generates relationship candidates from shared-client/shared-response-IP indexes rather than comparing every suspicious-domain pair.
 - Applies explicit suspicious-domain and relationship-count bounds so graph generation remains predictable on adversarial or unusually dense input.
-- Builds deterministic connected components and omits singleton groups.
-- Returns aggregate relationship counts/reason codes without exposing raw client IP values.
+- Filters weak relationships before deterministic connected-component clustering and omits singleton groups.
+- Returns aggregate strength/reason/penalty metadata without exposing raw client IP values and never claims campaign attribution.
 
 ### `src/threatfusion/dashboard.py` and `streamlit_app.py`
 
