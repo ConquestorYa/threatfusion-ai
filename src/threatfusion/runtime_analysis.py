@@ -14,7 +14,6 @@ from .ml_artifact import TrainedMLArtifact, predict_domain_probabilities
 from .ml_dataset import normalize_domain_candidate
 from .models import IOCRecord
 
-
 MAX_DNS_EVENTS = 100_000
 MAX_UNIQUE_QUERY_NAMES = 25_000
 
@@ -62,6 +61,7 @@ def _validate_runtime_bounds(events: list[DNSEvent]) -> None:
             "DNS input exceeds the "
             f"{MAX_UNIQUE_QUERY_NAMES} unique-query analysis limit"
         )
+
 
 def analyze_dns_events(
     events: Iterable[DNSEvent],
