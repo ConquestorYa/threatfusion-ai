@@ -7,9 +7,35 @@ from threatfusion.ml_dataset import (
     build_benign_samples,
     build_domain_dataset,
     extract_malicious_domains,
+    normalize_domain_candidate,
 )
 from threatfusion.models import IOCRecord, IOCType
 
+
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "singlelabel",
+        "-leading.example",
+        "trailing-.example",
+        "bad_label.example",
+        "double..example",
+        ("a" * 64) + ".example",
+    ],
+)
+def test_invalid_internet_domains_are_rejected(value: str) -> None:
+    assert normalize_domain_candidate(value) is None
+
+
+def test_unicode_and_punycode_candidates_canonicalize_identically() -> None:
+    assert normalize_domain_candidate("BÜCHER.Example") == (
+        "xn--bcher-kva.example"
+    )
+    assert normalize_domain_candidate("xn--bcher-kva.example") == (
+        "xn--bcher-kva.example"
+    )
 
 def test_domain_ioc_becomes_malicious_sample() -> None:
     indicator = IOCRecord("Example.COM.", IOCType.DOMAIN, "ThreatFox")
