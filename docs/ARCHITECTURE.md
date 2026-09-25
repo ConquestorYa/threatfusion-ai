@@ -241,6 +241,8 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 - Provides the reusable local orchestration layer for the implemented analysis path.
 - Accepts already-loaded DNS events, IOC records, and a trusted local ML artifact.
 - Runs known IOC matching, normalized ML probability inference, DNS behavior aggregation, and hybrid assessment without networking.
+- Enforces explicit event and unique-query bounds before expensive analysis work.
+- Excludes reverse-DNS, local/mDNS, localhost, and single-label names from the internet-domain string model while preserving them for deterministic matching and DNS behavior evidence.
 - Preserves original DNS/IOC evidence and returns matches, probabilities, and per-domain assessments together.
 - Provides a convenience helper that starts directly from DNS CSV text.
 
@@ -267,6 +269,7 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 - Requires at least one shared client observation or shared response IP to create a relationship.
 - Uses time proximity only as supporting context, never as the sole edge condition.
 - Generates relationship candidates from shared-client/shared-response-IP indexes rather than comparing every suspicious-domain pair.
+- Applies explicit suspicious-domain and relationship-count bounds so graph generation remains predictable on adversarial or unusually dense input.
 - Builds deterministic connected components and omits singleton groups.
 - Returns aggregate relationship counts/reason codes without exposing raw client IP values.
 
