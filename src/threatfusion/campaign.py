@@ -10,6 +10,10 @@ from .normalization import normalize_ioc_value
 from .runtime_analysis import RuntimeAnalysisResult
 
 
+MAX_RELATED_ACTIVITY_DOMAINS = 500
+MAX_RELATED_ACTIVITY_RELATIONSHIPS = 10_000
+
+
 @dataclass(frozen=True)
 class DomainRelationship:
     domain_a: str
@@ -54,7 +58,6 @@ def _minimum_time_delta(
     return best
 
 
-
 def _pairs_from_shared_values(
     values_by_domain: dict[str, set[str]],
 ) -> set[tuple[str, str]]:
@@ -69,6 +72,10 @@ def _pairs_from_shared_values(
         for index, left in enumerate(ordered):
             for right in ordered[index + 1 :]:
                 pairs.add((left, right))
+                if len(pairs) > MAX_RELATED_ACTIVITY_RELATIONSHIPS:
+                    raise ValueError(
+                        "related-activity relationship limit exceeded"
+                    )
     return pairs
 
 def find_related_activity(
@@ -106,10 +113,18 @@ def find_related_activity(
             timestamps[domain].append(event.timestamp)
 
     domains = sorted(candidate_domains)
+    if len(domains) > MAX_RELATED_ACTIVITY_DOMAINS:
+        raise ValueError(
+            "related-activity suspicious-domain limit exceeded"
+        )
+
     candidate_pairs = (
         _pairs_from_shared_values(clients)
         | _pairs_from_shared_values(response_ips)
     )
+    if len(candidate_pairs) > MAX_RELATED_ACTIVITY_RELATIONSHIPS:
+        raise ValueError("related-activity relationship limit exceeded")
+
     relationships: list[DomainRelationship] = []
 
     for domain_a, domain_b in sorted(candidate_pairs):
