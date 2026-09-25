@@ -11,6 +11,7 @@ Treat all threat indicators as inert data only.
 | URLhaus (abuse.ch) | Malicious URL feed collection | `src/threatfusion/collectors/urlhaus.py` (`URLHAUS_EXPORT_URL`) |
 | SGB (T.C. Siber Güvenlik Başkanlığı) | Malicious address feed collection | `src/threatfusion/collectors/sgb.py` (`SGB_API_URL`) |
 | Tranco | Benign-domain baseline input | `src/threatfusion/collectors/tranco.py` (`TrancoCollector`) |
+| CESNET / DomainRadar 2024 | Real-traffic benign-domain evaluation corpus | DOI `10.5281/zenodo.14332167`; `scripts/sample_cesnet_benign_domains.py` |
 | Local DNS telemetry (user-provided) | Runtime analysis input | CSV/Zeek/Pi-hole/AdGuard ingestion modules |
 
 ## Attribution requirements
@@ -25,6 +26,7 @@ Verified in this repository:
 
 - The code contains feed endpoints and ingestion logic.
 - The code does **not** include a bundled copy of full third-party feed datasets.
+- The CESNET/DomainRadar 2024 dataset is published under CC BY 4.0. ThreatFusion stores only source attribution and locally sampled evaluation input; no CESNET corpus is committed to the repository.
 
 Not yet verified in this repository (requires owner/legal review):
 
@@ -57,3 +59,18 @@ SGB collection is bounded by a caller-controlled maximum page count and stops
 earlier when the API reports that all rows were collected or returns an empty
 page. This avoids treating a fixed page count as the source's actual size.
 
+
+
+## CESNET benign-corpus attribution
+
+The long-tail benign evaluation helper references the 2024 DomainRadar dataset:
+
+- Hranický et al., *A Dataset of Information (DNS, IP, WHOIS/RDAP, TLS, GeoIP) for a Large Corpus of Benign, Phishing, and Malware Domain Names 2024*
+- DOI: `10.5281/zenodo.14332167`
+- subset: `benign_cesnet.json`
+- published license: CC BY 4.0
+
+The CESNET subset was derived from real academic-network traffic and filtered
+by the dataset authors. ThreatFusion uses it only as a benign-labeled
+domain-string evaluation corpus. It is not represented as raw DNS telemetry or
+as a production query-frequency distribution.
