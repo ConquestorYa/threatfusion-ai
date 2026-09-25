@@ -12,6 +12,7 @@ from threatfusion.models import IOCRecord, IOCType
 from threatfusion.runtime_analysis import (
     MAX_DNS_EVENTS,
     analyze_dns_csv,
+    analyze_dns_csv_with_diagnostics,
     analyze_dns_events,
     is_ml_scoring_candidate,
 )
@@ -162,6 +163,35 @@ def test_dns_csv_convenience_helper_parses_and_analyzes(
     assert result.events[0].client_ip == "10.0.0.1"
     assert result.assessments[0].verdict is HybridVerdict.REVIEW
 
+
+
+
+def test_dns_csv_runtime_helper_returns_input_quality_diagnostics(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    content = (
+        "timestamp,client_ip,query_name,query_type,response_ip\n"
+        "bad-time,10.0.0.1,example.com,A,not-an-ip\n"
+        "2026-09-24T10:00:00Z,10.0.0.2,,A,203.0.113.5\n"
+    )
+    monkeypatch.setattr(
+        runtime_analysis,
+        "predict_domain_probabilities",
+        lambda artifact, domains: {"example.com": 0.55},
+    )
+
+    result, diagnostics = analyze_dns_csv_with_diagnostics(
+        content,
+        [],
+        fake_artifact(),
+    )
+
+    assert len(result.events) == 1
+    assert diagnostics.total_rows == 2
+    assert diagnostics.accepted_rows == 1
+    assert diagnostics.skipped_missing_query_name == 1
+    assert diagnostics.invalid_timestamps == 1
+    assert diagnostics.invalid_response_ips == 1
 
 def test_response_ip_ioc_match_keeps_known_threat_precedence(
     monkeypatch: pytest.MonkeyPatch,
