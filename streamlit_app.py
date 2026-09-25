@@ -395,13 +395,43 @@ def _show_analysis_result(
         "telemetry rows."
     )
 
+    domains = [assessment.domain for assessment in result.assessments]
+    if history_enabled:
+        prior_feedback_by_domain = get_latest_analyst_feedback_for_domains(
+            db_path,
+            domains,
+        )
+        suppressions_by_domain = get_active_analyst_suppressions(
+            db_path,
+            domains,
+        )
+    else:
+        prior_feedback_by_domain = {}
+        suppressions_by_domain = {}
+
     priority_rows = priority_assessment_rows(result)
+    suppressed_priority_count = sum(
+        row["Domain"] in suppressions_by_domain for row in priority_rows
+    )
+    include_suppressed = False
+    if suppressed_priority_count:
+        include_suppressed = st.checkbox(
+            f"Include {suppressed_priority_count} locally suppressed finding(s)",
+            value=False,
+            key="include_suppressed_live_findings",
+        )
+    visible_priority_rows = [
+        row
+        for row in priority_rows
+        if include_suppressed or row["Domain"] not in suppressions_by_domain
+    ]
+
     overview_left, overview_right = st.columns([2, 1])
 
     with overview_left:
         st.markdown("#### Priority findings")
-        if priority_rows:
-            priority_frame = pd.DataFrame(priority_rows)[
+        if visible_priority_rows:
+            priority_frame = pd.DataFrame(visible_priority_rows)[
                 [
                     "Domain",
                     "Verdict",
@@ -428,7 +458,13 @@ def _show_analysis_result(
                 },
             )
         else:
-            st.success("No Known Threat, High Risk, or Review findings.")
+            if priority_rows and suppressed_priority_count:
+                st.info(
+                    "All current priority findings are locally suppressed. "
+                    "Enable the checkbox above to include them."
+                )
+            else:
+                st.success("No Known Threat, High Risk, or Review findings.")
 
     with overview_right:
         st.markdown("#### Verdict distribution")
@@ -461,7 +497,14 @@ def _show_analysis_result(
             [row["Domain"] for row in all_rows],
             key="live_domain_detail",
         )
-        _show_domain_detail(result, selected_domain)
+        _show_domain_detail(
+            result,
+            selected_domain,
+            prior_feedback=prior_feedback_by_domain.get(selected_domain),
+            suppression=suppressions_by_domain.get(selected_domain),
+            db_path=db_path,
+            analyst_policy_enabled=history_enabled,
+        )
 
     findings_tab, matches_tab, campaign_tab = st.tabs(
         ["Domain findings", "Known IOC evidence", "Related activity"]
