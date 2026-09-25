@@ -8,7 +8,6 @@ from threatfusion.dns_zeek import (
     parse_zeek_dns_log_with_diagnostics,
 )
 
-
 ZEEK_LOG = """#separator \\x09
 #set_separator\t,
 #empty_field\t(empty)
