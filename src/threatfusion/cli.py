@@ -8,6 +8,7 @@ from .cti_cache import load_ioc_records
 from .ml_artifact import load_trusted_ml_artifact
 from .reporting import build_analysis_report
 from .runtime_analysis import (
+    analyze_adguard_query_log_with_diagnostics,
     analyze_dns_csv_with_diagnostics,
     analyze_pihole_query_db_with_diagnostics,
     analyze_zeek_dns_log_with_diagnostics,
@@ -21,7 +22,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("input", type=Path, help="Telemetry file to analyze")
     parser.add_argument(
         "--format",
-        choices=("dns-csv", "zeek", "pihole"),
+        choices=("dns-csv", "zeek", "pihole", "adguard"),
         default="dns-csv",
         help="Input telemetry format",
     )
@@ -76,6 +77,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     elif args.format == "zeek":
         result, diagnostics = analyze_zeek_dns_log_with_diagnostics(
+            str(content),
+            indicators,
+            artifact,
+        )
+    elif args.format == "adguard":
+        result, diagnostics = analyze_adguard_query_log_with_diagnostics(
             str(content),
             indicators,
             artifact,
