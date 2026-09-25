@@ -5,4 +5,48 @@ maxUploadSize = 10
 gatherUsageStats = false
 
 [theme]
-primaryColor = "#2DD4BF"
+base = "dark"
+primaryColor = "#22D3EE"
+chartCategoricalColors = [
+    "#FF5C6C",
+    "#F59E0B",
+    "#F6C85F",
+    "#35D07F",
+    "#22D3EE",
+    "#60A5FA",
+]
+showSidebarBorder = true
+
+[theme.dark]
+primaryColor = "#22D3EE"
+backgroundColor = "#07111F"
+secondaryBackgroundColor = "#0D1B2A"
+textColor = "#E8F1F8"
+redColor = "#FF5C6C"
+orangeColor = "#F59E0B"
+yellowColor = "#F6C85F"
+greenColor = "#35D07F"
+blueColor = "#60A5FA"
+
+[theme.dark.sidebar]
+primaryColor = "#22D3EE"
+backgroundColor = "#091728"
+secondaryBackgroundColor = "#112338"
+textColor = "#E8F1F8"
+
+[theme.light]
+primaryColor = "#0891B2"
+backgroundColor = "#F4F7FB"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#102033"
+redColor = "#C6283D"
+orangeColor = "#C2410C"
+yellowColor = "#A16207"
+greenColor = "#15803D"
+blueColor = "#2563EB"
+
+[theme.light.sidebar]
+primaryColor = "#0891B2"
+backgroundColor = "#EDF2F7"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#102033"

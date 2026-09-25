@@ -63,6 +63,21 @@ from threatfusion.runtime_analysis import (
     analyze_pihole_query_db_with_diagnostics,
     analyze_zeek_dns_log_with_diagnostics,
 )
+from threatfusion.ui_theme import (
+    VERDICT_COLORS,
+    active_theme,
+    apply_plotly_theme,
+    inject_theme_css,
+    metric_card,
+    palette,
+    render_app_header,
+    render_priority_finding,
+    render_sidebar_brand,
+    safe_text,
+    section_label,
+    status_card,
+    verdict_badge,
+)
 
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 
@@ -90,8 +105,53 @@ def _verdict_chart(summary) -> pd.DataFrame:
     )
 
 
+def _verdict_distribution_figure(summary) -> go.Figure:
+    frame = _verdict_chart(summary)
+    colors = palette()
+    figure = go.Figure(
+        data=[
+            go.Pie(
+                labels=frame["verdict"],
+                values=frame["count"],
+                hole=0.70,
+                sort=False,
+                marker={
+                    "colors": [
+                        VERDICT_COLORS[label]
+                        for label in frame["verdict"]
+                    ],
+                    "line": {
+                        "color": colors["panel"],
+                        "width": 2,
+                    },
+                },
+                textinfo="label+value",
+                textposition="outside",
+                hovertemplate=(
+                    "<b>%{label}</b><br>"
+                    "Domains: %{value}<extra></extra>"
+                ),
+            )
+        ]
+    )
+    figure.add_annotation(
+        text=(
+            f"<b>{summary.domain_count}</b>"
+            "<br><span>domains</span>"
+        ),
+        x=0.5,
+        y=0.5,
+        showarrow=False,
+        font={"size": 17, "color": colors["text"]},
+        align="center",
+    )
+    figure.update_layout(showlegend=False)
+    return apply_plotly_theme(figure, height=310)
+
+
 def _relationship_figure(report, result) -> go.Figure:
     graph = build_relationship_graph(report, result)
+    colors = palette()
     figure = go.Figure()
 
     for edge in graph.edges:
@@ -100,7 +160,11 @@ def _relationship_figure(report, result) -> go.Figure:
                 x=[edge.x0, edge.x1],
                 y=[edge.y0, edge.y1],
                 mode="lines",
-                line={"width": 2},
+                line={
+                    "width": 1.5,
+                    "color": colors["muted"],
+                },
+                opacity=0.42,
                 hoverinfo="text",
                 text=[edge.hover_text, edge.hover_text],
                 showlegend=False,
@@ -108,14 +172,26 @@ def _relationship_figure(report, result) -> go.Figure:
         )
 
     if graph.nodes:
+        node_colors = [
+            VERDICT_COLORS.get(node.verdict, colors["cyan"])
+            for node in graph.nodes
+        ]
         figure.add_trace(
             go.Scatter(
                 x=[node.x for node in graph.nodes],
                 y=[node.y for node in graph.nodes],
                 mode="markers+text",
-                marker={"size": 18},
+                marker={
+                    "size": 21,
+                    "color": node_colors,
+                    "line": {
+                        "width": 2,
+                        "color": colors["panel"],
+                    },
+                },
                 text=[node.domain for node in graph.nodes],
                 textposition="top center",
+                textfont={"size": 11, "color": colors["text"]},
                 hoverinfo="text",
                 hovertext=[
                     (
@@ -133,13 +209,15 @@ def _relationship_figure(report, result) -> go.Figure:
         )
 
     figure.update_layout(
-        title="Possible related-activity graph",
+        title={
+            "text": "Possible related-activity graph",
+            "font": {"size": 15},
+        },
         xaxis={"visible": False},
         yaxis={"visible": False},
         hovermode="closest",
-        margin={"l": 20, "r": 20, "t": 50, "b": 20},
     )
-    return figure
+    return apply_plotly_theme(figure, height=440)
 
 
 def _show_system_status(
@@ -147,13 +225,15 @@ def _show_system_status(
     model_dir: Path,
     evaluation_report_path: Path,
 ) -> None:
-    st.sidebar.subheader("System health")
+    st.sidebar.markdown("### System health")
 
     model_path = model_dir / "model.joblib"
     metadata_path = model_dir / "metadata.json"
     model_ready = model_path.exists() and metadata_path.exists()
-    st.sidebar.markdown(
-        f"**Model** · {':green[Ready]' if model_ready else ':red[Missing]'}"
+    status_card(
+        "ML artifact",
+        "Ready" if model_ready else "Missing",
+        "good" if model_ready else "bad",
     )
 
     statuses = list_cti_cache_status(db_path)
@@ -161,22 +241,24 @@ def _show_system_status(
     stale_sources = [
         row["Source"] for row in status_rows if row["Status"] == "Stale"
     ]
+
     if not statuses:
-        cti_state = ":orange[Empty]"
+        cti_value = "Empty"
+        cti_tone = "warn"
     elif stale_sources:
-        cti_state = f":orange[Stale: {len(stale_sources)} source(s)]"
+        cti_value = f"{len(stale_sources)} stale"
+        cti_tone = "warn"
     else:
-        cti_state = f":green[Ready · {len(statuses)} sources]"
-    st.sidebar.markdown(f"**CTI cache** · {cti_state}")
+        cti_value = f"{len(statuses)} sources ready"
+        cti_tone = "good"
+
+    status_card("CTI cache", cti_value, cti_tone)
 
     holdout_ready = evaluation_report_path.is_file()
-    st.sidebar.markdown(
-        "**Final evaluation** · "
-        + (
-            ":green[Available]"
-            if holdout_ready
-            else ":blue[Pending fresh holdout]"
-        )
+    status_card(
+        "Final evaluation",
+        "Available" if holdout_ready else "Pending holdout",
+        "good" if holdout_ready else "info",
     )
 
     if status_rows:
@@ -186,15 +268,19 @@ def _show_system_status(
                 hide_index=True,
                 width="stretch",
                 column_config={
-                    "Refreshed at": st.column_config.TextColumn(width="medium"),
+                    "Refreshed at": st.column_config.TextColumn(
+                        width="medium"
+                    ),
                     "Age": st.column_config.TextColumn(width="small"),
                     "Status": st.column_config.TextColumn(width="small"),
                 },
             )
-    elif not statuses:
+    else:
         st.sidebar.caption(
-            "Known-IOC matching is unavailable until the CTI cache is populated."
+            "Known-IOC matching is unavailable until the CTI cache is "
+            "populated."
         )
+
 
 def _show_domain_detail(
     result,
@@ -212,10 +298,18 @@ def _show_domain_detail(
     evidence_rows = domain_match_rows(result, domain)
 
     with st.container(border=True):
-        header_left, header_right = st.columns([3, 1])
-        header_left.markdown(f"### {detail['domain']}")
-        header_left.caption("Domain investigation")
-        header_right.metric("Verdict", detail["verdict"])
+        st.markdown(
+            f"""
+            <div class="tf-investigation-head">
+                <div>
+                    <div class="tf-eyebrow">Domain investigation</div>
+                    <div class="tf-domain-name">{safe_text(detail["domain"])}</div>
+                </div>
+                <div>{verdict_badge(str(detail["verdict"]))}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
         if prior_feedback is not None:
             st.info(
@@ -241,7 +335,7 @@ def _show_domain_detail(
             )
 
         if evidence_rows:
-            st.markdown("**Primary CTI evidence**")
+            section_label("Primary CTI evidence")
             primary = evidence_rows[0]
             st.write(
                 f"{primary['Evidence scope']} · {primary['Source']}"
@@ -252,25 +346,33 @@ def _show_domain_detail(
                 )
             )
             metadata_columns = st.columns(4)
-            metadata_columns[0].metric(
+            metric_card(
+                metadata_columns[0],
                 "First seen",
                 primary["First seen"] or "Unknown",
+                accent="cyan",
             )
-            metadata_columns[1].metric(
+            metric_card(
+                metadata_columns[1],
                 "Last seen",
                 primary["Last seen"] or "Unknown",
+                accent="blue",
             )
-            metadata_columns[2].metric(
+            metric_card(
+                metadata_columns[2],
                 "Confidence",
                 (
                     f"{primary['Confidence']:.2f}"
                     if primary["Confidence"] is not None
                     else "Unknown"
                 ),
+                accent="green",
             )
-            metadata_columns[3].metric(
+            metric_card(
+                metadata_columns[3],
                 "Tags",
                 primary["Tags"] or "None",
+                accent="yellow",
             )
 
             if len(evidence_rows) > 1:
@@ -286,19 +388,38 @@ def _show_domain_detail(
         else:
             st.caption("No cached IOC evidence is associated with this domain.")
 
-        st.markdown("**Detection context**")
+        section_label("Detection context")
         context_columns = st.columns(5)
         ml_score = detail["ml_score"]
-        context_columns[0].metric(
+        metric_card(
+            context_columns[0],
             "ML score",
             f"{ml_score:.4f}" if ml_score is not None else "Not scored",
+            accent="cyan",
         )
-        context_columns[1].metric("ML tier", detail["ml_tier"])
-        context_columns[2].metric("DNS events", detail["event_count"])
-        context_columns[3].metric("Unique clients", detail["client_count"])
-        context_columns[4].metric(
+        metric_card(
+            context_columns[1],
+            "ML tier",
+            detail["ml_tier"],
+            accent="blue",
+        )
+        metric_card(
+            context_columns[2],
+            "DNS events",
+            detail["event_count"],
+            accent="green",
+        )
+        metric_card(
+            context_columns[3],
+            "Unique clients",
+            detail["client_count"],
+            accent="yellow",
+        )
+        metric_card(
+            context_columns[4],
             "Response IPs",
             detail["response_ip_count"],
+            accent="orange",
         )
         st.caption(
             "Query types: "
@@ -306,7 +427,7 @@ def _show_domain_detail(
         )
 
         evidence = detail["evidence"]
-        st.markdown("**Why this verdict?**")
+        section_label("Why this verdict?")
         if evidence:
             for item in evidence:
                 st.markdown(f"- {item}")
@@ -386,12 +507,32 @@ def _show_analysis_result(
 
     st.subheader("Analysis overview")
     columns = st.columns(6)
-    columns[0].metric("DNS events", summary.event_count)
-    columns[1].metric("Unique domains", summary.domain_count)
-    columns[2].metric("Known threat", summary.known_threat_count)
-    columns[3].metric("High risk", summary.high_risk_count)
-    columns[4].metric("Review", summary.review_count)
-    columns[5].metric("Low", summary.low_count)
+    metric_card(columns[0], "DNS events", summary.event_count, accent="cyan")
+    metric_card(
+        columns[1],
+        "Unique domains",
+        summary.domain_count,
+        accent="blue",
+    )
+    metric_card(
+        columns[2],
+        "Known threat",
+        summary.known_threat_count,
+        accent="red",
+    )
+    metric_card(
+        columns[3],
+        "High risk",
+        summary.high_risk_count,
+        accent="orange",
+    )
+    metric_card(
+        columns[4],
+        "Review",
+        summary.review_count,
+        accent="yellow",
+    )
+    metric_card(columns[5], "Low", summary.low_count, accent="green")
 
     st.caption(
         "Verdicts are assigned per unique domain; DNS events count individual "
@@ -432,34 +573,15 @@ def _show_analysis_result(
     overview_left, overview_right = st.columns([2, 1])
 
     with overview_left:
-        st.markdown("#### Priority findings")
+        section_label("Priority findings")
         if visible_priority_rows:
-            priority_frame = pd.DataFrame(visible_priority_rows)[
-                [
-                    "Domain",
-                    "Verdict",
-                    "ML tier",
-                    "DNS events",
-                    "Known CTI sources",
-                    "Evidence",
-                ]
-            ]
-            st.dataframe(
-                priority_frame,
-                hide_index=True,
-                width="stretch",
-                height=min(300, 72 + (len(priority_frame) * 35)),
-                column_config={
-                    "Domain": st.column_config.TextColumn(width="medium"),
-                    "Verdict": st.column_config.TextColumn(width="small"),
-                    "ML tier": st.column_config.TextColumn(width="small"),
-                    "DNS events": st.column_config.NumberColumn(width="small"),
-                    "Known CTI sources": st.column_config.TextColumn(
-                        width="medium"
-                    ),
-                    "Evidence": st.column_config.TextColumn(width="large"),
-                },
-            )
+            for row in visible_priority_rows[:8]:
+                render_priority_finding(row)
+            if len(visible_priority_rows) > 8:
+                st.caption(
+                    f"{len(visible_priority_rows) - 8} additional priority "
+                    "finding(s) are available in Domain findings."
+                )
         else:
             if priority_rows and suppressed_priority_count:
                 st.info(
@@ -470,28 +592,12 @@ def _show_analysis_result(
                 st.success("No Known Threat, High Risk, or Review findings.")
 
     with overview_right:
-        st.markdown("#### Verdict distribution")
-        chart_data = _verdict_chart(summary)
-        figure = px.bar(
-            chart_data,
-            x="verdict",
-            y="count",
-            color="verdict",
-            text_auto=True,
-            labels={"verdict": "Verdict", "count": "Domains"},
-            color_discrete_map={
-                "Known Threat": "#d62728",
-                "High Risk": "#ff7f0e",
-                "Review": "#f2c94c",
-                "Low": "#2ca02c",
-            },
+        section_label("Verdict distribution")
+        st.plotly_chart(
+            _verdict_distribution_figure(summary),
+            width="stretch",
+            config={"displayModeBar": False},
         )
-        figure.update_layout(
-            height=300,
-            showlegend=False,
-            margin={"l": 20, "r": 20, "t": 10, "b": 20},
-        )
-        st.plotly_chart(figure, width="stretch")
 
     all_rows = assessment_rows(result)
     if all_rows:
@@ -893,11 +999,36 @@ def _show_model_evaluation(report_path: Path) -> None:
     )
 
     columns = st.columns(5)
-    columns[0].metric("Input samples", summary.input_count)
-    columns[1].metric("Overlap removed", summary.overlap_removed)
-    columns[2].metric("Retained", summary.retained_count)
-    columns[3].metric("Malicious", summary.malicious_count)
-    columns[4].metric("Benign", summary.benign_count)
+    metric_card(
+        columns[0],
+        "Input samples",
+        summary.input_count,
+        accent="cyan",
+    )
+    metric_card(
+        columns[1],
+        "Overlap removed",
+        summary.overlap_removed,
+        accent="yellow",
+    )
+    metric_card(
+        columns[2],
+        "Retained",
+        summary.retained_count,
+        accent="blue",
+    )
+    metric_card(
+        columns[3],
+        "Malicious",
+        summary.malicious_count,
+        accent="red",
+    )
+    metric_card(
+        columns[4],
+        "Benign",
+        summary.benign_count,
+        accent="green",
+    )
 
     rows = operating_point_rows(report)
     frame = pd.DataFrame(rows)
@@ -939,7 +1070,12 @@ def _show_model_evaluation(report_path: Path) -> None:
         labels={"Rate": "Rate"},
     )
     figure.update_yaxes(tickformat=".0%")
-    st.plotly_chart(figure, width="stretch")
+    apply_plotly_theme(figure, height=390)
+    st.plotly_chart(
+        figure,
+        width="stretch",
+        config={"displayModeBar": False},
+    )
 
     source_rows = source_recall_rows(report)
     if source_rows:
@@ -970,11 +1106,12 @@ def main() -> None:
         layout="wide",
     )
 
-    st.title("ThreatFusion AI")
-    st.write(
-        "Multi-source cyber threat intelligence, malicious-domain ML, "
-        "and DNS behavior analysis in one explainable workflow."
+    inject_theme_css(active_theme())
+    render_sidebar_brand()
+    st.sidebar.caption(
+        f"Theme: {active_theme()} · Change it from ⋮ → Settings → Theme."
     )
+    render_app_header()
 
     try:
         config = load_app_config()
@@ -996,19 +1133,20 @@ def main() -> None:
             "one visitor cannot browse another visitor's saved findings."
         )
         analysis_tab, evaluation_tab = st.tabs(
-            ["Analyze DNS telemetry", "Model evaluation"]
+            ["Analyze telemetry", "Model evaluation"]
         )
         history_tab = None
     else:
         analysis_tab, evaluation_tab, history_tab = st.tabs(
             [
-                "Analyze DNS telemetry",
+                "Analyze telemetry",
                 "Model evaluation",
                 "Analysis history",
             ]
         )
 
     with analysis_tab:
+        st.markdown("## Telemetry intake")
         st.info(
             "Uploaded DNS data is processed in memory. Raw DNS rows and "
             "client IP values are not persisted by this application."
