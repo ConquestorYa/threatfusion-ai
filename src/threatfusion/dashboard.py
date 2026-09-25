@@ -47,6 +47,7 @@ class RelationshipGraphEdge:
     y0: float
     x1: float
     y1: float
+    strength: float
     hover_text: str
 
 
@@ -93,6 +94,18 @@ _RELATION_REASON_LABELS = {
     "shared_client": "Shared client observation",
     "shared_response_ip": "Shared response IP observation",
     "time_proximity": "Observed close together in time",
+    "shared_cti_source": "Shared CTI source context",
+    "shared_cti_tag": "Shared CTI tag context",
+    "shared_threat_type": "Shared CTI threat-type context",
+}
+
+_RELATION_PENALTY_LABELS = {
+    "shared_client_high_fanout": (
+        "Shared client appears across several suspicious domains"
+    ),
+    "shared_response_ip_high_fanout": (
+        "Shared response IP appears across several suspicious domains"
+    ),
 }
 
 _REASON_LABELS = {
@@ -182,12 +195,22 @@ def build_relationship_graph(
             relationship_reason_label(reason)
             for reason in relationship.reasons
         )
+        penalties = "; ".join(
+            relationship_penalty_label(penalty)
+            for penalty in relationship.penalties
+        )
+        strength_label = relationship_strength_label(relationship.strength)
         hover_text = (
             f"{relationship.domain_a} ↔ {relationship.domain_b}<br>"
+            f"Strength: {relationship.strength:.2f} ({strength_label})<br>"
             f"Shared clients: {relationship.shared_client_count}<br>"
             f"Shared response IPs: {relationship.shared_response_ip_count}<br>"
+            f"Shared CTI sources: {relationship.shared_cti_source_count}<br>"
+            f"Shared CTI tags: {relationship.shared_cti_tag_count}<br>"
+            f"Shared threat types: {relationship.shared_threat_type_count}<br>"
             f"Closest time delta: {time_text}<br>"
             f"Evidence: {evidence}"
+            + (f"<br>Noise adjustment: {penalties}" if penalties else "")
         )
         edges.append(
             RelationshipGraphEdge(
@@ -197,6 +220,7 @@ def build_relationship_graph(
                 y0=left[1],
                 x1=right[0],
                 y1=right[1],
+                strength=relationship.strength,
                 hover_text=hover_text,
             )
         )
@@ -213,6 +237,22 @@ def relationship_reason_label(value: str) -> str:
         value.replace("_", " ").title(),
     )
 
+
+def relationship_penalty_label(value: str) -> str:
+    return _RELATION_PENALTY_LABELS.get(
+        value,
+        value.replace("_", " ").title(),
+    )
+
+
+def relationship_strength_label(value: float) -> str:
+    if value >= 0.75:
+        return "Strong"
+    if value >= 0.60:
+        return "Moderate"
+    return "Limited"
+
+
 def cluster_rows(
     report: RelatedActivityReport,
 ) -> list[dict[str, object]]:
@@ -222,6 +262,10 @@ def cluster_rows(
             "Domains": ", ".join(cluster.domains),
             "Domain count": len(cluster.domains),
             "Relationships": len(cluster.relationships),
+            "Max strength": max(
+                relationship.strength
+                for relationship in cluster.relationships
+            ),
         }
         for cluster in report.clusters
     ]
@@ -233,12 +277,23 @@ def relationship_rows(
         {
             "Domain A": relationship.domain_a,
             "Domain B": relationship.domain_b,
+            "Strength": relationship.strength,
+            "Strength label": relationship_strength_label(
+                relationship.strength
+            ),
             "Shared clients": relationship.shared_client_count,
             "Shared response IPs": relationship.shared_response_ip_count,
+            "Shared CTI sources": relationship.shared_cti_source_count,
+            "Shared CTI tags": relationship.shared_cti_tag_count,
+            "Shared threat types": relationship.shared_threat_type_count,
             "Closest time delta (s)": relationship.min_time_delta_seconds,
             "Evidence": "; ".join(
                 relationship_reason_label(reason)
                 for reason in relationship.reasons
+            ),
+            "Noise adjustment": "; ".join(
+                relationship_penalty_label(penalty)
+                for penalty in relationship.penalties
             ),
         }
         for relationship in report.relationships
