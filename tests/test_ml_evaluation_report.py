@@ -12,6 +12,7 @@ from threatfusion.ml_evaluation_report import (
 from threatfusion.ml_high_recall import ThresholdMetrics
 from threatfusion.ml_holdout import (
     FrozenHoldoutEvaluation,
+    HoldoutSourceMetrics,
     HoldoutSourceRecall,
 )
 
@@ -70,6 +71,41 @@ def evaluation() -> FrozenHoldoutEvaluation:
                 low_recall=5 / 8,
             ),
         ),
+        source_metrics=(
+            HoldoutSourceMetrics(
+                source="ThreatFox",
+                malicious_total=12,
+                benign_total=0,
+                high_detected=5,
+                high_false_positive=0,
+                medium_detected=8,
+                medium_false_positive=0,
+                low_detected=10,
+                low_false_positive=0,
+            ),
+            HoldoutSourceMetrics(
+                source="URLhaus",
+                malicious_total=8,
+                benign_total=0,
+                high_detected=3,
+                high_false_positive=0,
+                medium_detected=4,
+                medium_false_positive=0,
+                low_detected=5,
+                low_false_positive=0,
+            ),
+            HoldoutSourceMetrics(
+                source="Tranco",
+                malicious_total=0,
+                benign_total=80,
+                high_detected=0,
+                high_false_positive=1,
+                medium_detected=0,
+                medium_false_positive=4,
+                low_detected=0,
+                low_false_positive=8,
+            ),
+        ),
     )
 
 
@@ -92,10 +128,22 @@ def test_report_roundtrip_is_deterministic_and_aggregate_only(tmp_path) -> None:
     text = path.read_text(encoding="utf-8")
 
     assert loaded == report
+    assert loaded.schema_version == 2
     assert loaded.protocol == "fresh_collection_disjoint"
     assert loaded.retained_count == 100
     assert loaded.high.threshold == pytest.approx(0.80)
+    assert loaded.high.recall_ci is not None
+    assert loaded.high.recall_ci.lower < loaded.high.recall
+    assert loaded.high.recall_ci.upper > loaded.high.recall
+    assert loaded.high.false_positive_rate_ci is not None
     assert loaded.source_recalls[0].source == "ThreatFox"
+    assert loaded.source_metrics[0].source == "ThreatFox"
+    assert loaded.source_metrics[0].high.recall_ci is not None
+    assert loaded.source_metrics[2].source == "Tranco"
+    assert loaded.source_metrics[2].high.false_positive_rate == pytest.approx(
+        1 / 80
+    )
+    assert loaded.source_metrics[2].high.false_positive_rate_ci is not None
     assert "evil.example" not in text
     assert '"generated_at": "2026-09-25T12:00:00+00:00"' in text
 
@@ -136,3 +184,64 @@ def test_invalid_protocol_is_rejected(tmp_path) -> None:
 
     with pytest.raises(ValueError, match="protocol"):
         read_frozen_holdout_report(path)
+
+
+def test_schema_v1_report_remains_readable(tmp_path) -> None:
+    path = tmp_path / "legacy.json"
+    path.write_text(
+        """{
+  "schema_version": 1,
+  "protocol": "fresh_collection_disjoint",
+  "generated_at": "2026-09-25T12:00:00+00:00",
+  "model_name": "legacy-model",
+  "development_snapshot_date": "2026-09-23",
+  "holdout_snapshot_date": "2026-09-25",
+  "input_count": 4,
+  "retained_count": 4,
+  "overlap_removed": 0,
+  "malicious_count": 2,
+  "benign_count": 2,
+  "high": {
+    "threshold": 0.8,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1": 0.6666666667,
+    "false_positive_rate": 0.0,
+    "true_negative": 2,
+    "false_positive": 0,
+    "false_negative": 1,
+    "true_positive": 1
+  },
+  "medium": {
+    "threshold": 0.6,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "false_positive_rate": 0.0,
+    "true_negative": 2,
+    "false_positive": 0,
+    "false_negative": 0,
+    "true_positive": 2
+  },
+  "low": {
+    "threshold": 0.5,
+    "precision": 0.6666666667,
+    "recall": 1.0,
+    "f1": 0.8,
+    "false_positive_rate": 0.5,
+    "true_negative": 1,
+    "false_positive": 1,
+    "false_negative": 0,
+    "true_positive": 2
+  },
+  "source_recalls": []
+}
+""",
+        encoding="utf-8",
+    )
+
+    report = read_frozen_holdout_report(path)
+
+    assert report.schema_version == 1
+    assert report.source_metrics == ()
+    assert report.high.recall_ci is None

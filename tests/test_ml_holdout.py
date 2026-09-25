@@ -132,3 +132,19 @@ def test_frozen_holdout_uses_exact_artifact_thresholds() -> None:
     assert result.source_recalls[0].high_recall == pytest.approx(0.5)
     assert result.source_recalls[0].medium_recall == pytest.approx(1.0)
     assert result.source_recalls[0].low_recall == pytest.approx(1.0)
+
+    assert [item.source for item in result.source_metrics] == [
+        "ThreatFox",
+        "Tranco",
+    ]
+    threatfox = result.source_metrics[0]
+    assert threatfox.malicious_total == 2
+    assert threatfox.benign_total == 0
+    assert threatfox.high_detected == 1
+    assert threatfox.low_detected == 2
+
+    tranco = result.source_metrics[1]
+    assert tranco.malicious_total == 0
+    assert tranco.benign_total == 2
+    assert tranco.high_false_positive == 0
+    assert tranco.low_false_positive == 1
