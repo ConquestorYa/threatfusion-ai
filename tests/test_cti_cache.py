@@ -10,6 +10,7 @@ from threatfusion.cti_cache import (
     list_cti_cache_status,
     load_ioc_records,
     replace_source_records,
+    validate_nonempty_refresh_batch,
 )
 from threatfusion.models import IOCRecord, IOCType
 
@@ -115,6 +116,34 @@ def test_refresh_status_records_count_and_time(tmp_path) -> None:
     assert status[0].refreshed_at == refresh_time.isoformat()
     assert status[0].record_count == 2
 
+
+
+
+def test_refresh_batch_rejects_empty_source_before_cache_write() -> None:
+    with pytest.raises(ValueError, match="URLhaus"):
+        validate_nonempty_refresh_batch(
+            {
+                "ThreatFox": make_records(),
+                "URLhaus": [],
+                "SGB": [IOCRecord("sgb.example", IOCType.DOMAIN, "SGB")],
+            }
+        )
+
+
+def test_refresh_batch_accepts_nonempty_sources() -> None:
+    validate_nonempty_refresh_batch(
+        {
+            "ThreatFox": make_records(),
+            "URLhaus": [
+                IOCRecord(
+                    "https://example.invalid/path",
+                    IOCType.URL,
+                    "URLhaus",
+                )
+            ],
+            "SGB": [IOCRecord("sgb.example", IOCType.DOMAIN, "SGB")],
+        }
+    )
 
 def test_mismatched_source_is_rejected_without_replacing_cache(tmp_path) -> None:
     db_path = tmp_path / "threatfusion.sqlite"
