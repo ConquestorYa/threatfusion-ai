@@ -47,6 +47,9 @@ from threatfusion.ml_evaluation_report import read_frozen_holdout_report
 from threatfusion.persistence import (
     AnalystFeedback,
     AnalystSuppression,
+    apply_history_retention,
+    compare_analysis_runs,
+    delete_analysis_run,
     get_active_analyst_suppressions,
     get_analysis_assessments,
     get_analyst_feedback,
@@ -55,6 +58,7 @@ from threatfusion.persistence import (
     remove_analyst_suppression,
     save_analyst_feedback,
     save_analyst_suppression,
+    save_bulk_analyst_feedback,
     save_runtime_analysis,
 )
 from threatfusion.reporting import build_analysis_report
@@ -894,6 +898,59 @@ def _show_history(db_path: Path) -> None:
             else:
                 st.caption("No CTI source refresh metadata was captured.")
 
+    comparison = compare_analysis_runs(db_path, run_id)
+    with st.expander("Compare with previous analysis", expanded=False):
+        if comparison.previous_run_id is None:
+            st.caption(
+                "No earlier saved analysis exists. Every domain in this run "
+                "is new relative to saved history."
+            )
+        else:
+            st.caption(
+                f"Comparing run #{run_id} with previous run "
+                f"#{comparison.previous_run_id}."
+            )
+        compare_columns = st.columns(3)
+        compare_columns[0].metric("New domains", len(comparison.new_domains))
+        compare_columns[1].metric(
+            "No longer present",
+            len(comparison.removed_domains),
+        )
+        compare_columns[2].metric(
+            "Verdict changes",
+            len(comparison.verdict_changes),
+        )
+        if comparison.new_domains:
+            st.write("**New since previous analysis**")
+            st.dataframe(
+                pd.DataFrame({"Domain": comparison.new_domains}),
+                hide_index=True,
+                width="stretch",
+            )
+        if comparison.removed_domains:
+            st.write("**No longer present**")
+            st.dataframe(
+                pd.DataFrame({"Domain": comparison.removed_domains}),
+                hide_index=True,
+                width="stretch",
+            )
+        if comparison.verdict_changes:
+            st.write("**Verdict changes**")
+            st.dataframe(
+                pd.DataFrame(
+                    [
+                        {
+                            "Domain": item.domain,
+                            "Previous verdict": item.previous_verdict,
+                            "Current verdict": item.current_verdict,
+                        }
+                        for item in comparison.verdict_changes
+                    ]
+                ),
+                hide_index=True,
+                width="stretch",
+            )
+
     assessments = get_analysis_assessments(db_path, run_id)
     feedback = get_analyst_feedback(db_path, run_id)
     feedback_by_domain = {item.domain: item for item in feedback}
@@ -1014,6 +1071,56 @@ def _show_history(db_path: Path) -> None:
             "original verdict, retrain the model, or alter frozen evaluation."
         )
 
+        feedback_options = {
+            "Confirmed Threat": "confirmed_threat",
+            "Benign": "benign",
+            "Uncertain": "uncertain",
+        }
+        option_labels = list(feedback_options)
+
+        with st.expander("Bulk review selected findings", expanded=False):
+            bulk_candidates = (
+                filtered_frame["Domain"].tolist()
+                if not filtered_frame.empty
+                else [assessment.domain for assessment in assessments]
+            )
+            bulk_domains = st.multiselect(
+                "Findings to review",
+                bulk_candidates,
+                key=f"bulk_feedback_domains_{run_id}",
+            )
+            bulk_label = st.selectbox(
+                "Bulk analyst label",
+                option_labels,
+                key=f"bulk_feedback_label_{run_id}",
+            )
+            bulk_note = st.text_area(
+                "Optional bulk analyst note",
+                max_chars=500,
+                key=f"bulk_feedback_note_{run_id}",
+            )
+            bulk_confirm = st.checkbox(
+                "Apply this label only to the selected findings.",
+                key=f"bulk_feedback_confirm_{run_id}",
+            )
+            if st.button(
+                "Apply bulk review",
+                key=f"bulk_feedback_submit_{run_id}",
+                disabled=not bulk_domains or not bulk_confirm,
+            ):
+                save_bulk_analyst_feedback(
+                    db_path,
+                    run_id,
+                    bulk_domains,
+                    feedback_options[bulk_label],
+                    note=bulk_note,
+                )
+                st.success(
+                    f"Saved analyst feedback for {len(bulk_domains)} "
+                    "selected findings. Detector verdicts were not changed."
+                )
+                st.rerun()
+
         review_domains = (
             filtered_frame["Domain"].tolist()
             if not filtered_frame.empty
@@ -1025,12 +1132,6 @@ def _show_history(db_path: Path) -> None:
             key=f"feedback_domain_{run_id}",
         )
         current = feedback_by_domain.get(feedback_domain)
-        feedback_options = {
-            "Confirmed Threat": "confirmed_threat",
-            "Benign": "benign",
-            "Uncertain": "uncertain",
-        }
-        option_labels = list(feedback_options)
         current_label = (
             feedback_label(current.label)
             if current is not None
@@ -1072,6 +1173,60 @@ def _show_history(db_path: Path) -> None:
                 "was not changed."
             )
             st.rerun()
+
+    with st.expander("History retention and deletion", expanded=False):
+        st.warning(
+            "These controls permanently delete local saved history. "
+            "Detector logic and the current in-memory analysis are unchanged."
+        )
+        delete_confirm = st.checkbox(
+            f"I understand run #{run_id} will be permanently deleted.",
+            key=f"delete_run_confirm_{run_id}",
+        )
+        if st.button(
+            f"Delete saved run #{run_id}",
+            key=f"delete_run_{run_id}",
+            disabled=not delete_confirm,
+        ):
+            deleted = delete_analysis_run(db_path, run_id)
+            if deleted:
+                st.success(f"Saved run #{run_id} was deleted.")
+                st.rerun()
+            else:
+                st.info("The selected saved run no longer exists.")
+
+        keep_latest = int(
+            st.number_input(
+                "Retention: keep latest N saved runs",
+                min_value=1,
+                max_value=1000,
+                value=min(max(len(summaries), 1), 25),
+                step=1,
+                key="history_keep_latest",
+            )
+        )
+        retention_confirm = st.checkbox(
+            "I understand older saved runs beyond this limit will be "
+            "permanently deleted.",
+            key="history_retention_confirm",
+        )
+        if st.button(
+            "Apply retention cleanup",
+            key="history_retention_apply",
+            disabled=not retention_confirm,
+        ):
+            deleted_ids = apply_history_retention(
+                db_path,
+                keep_latest=keep_latest,
+            )
+            if deleted_ids:
+                st.success(
+                    "Deleted older saved runs: "
+                    + ", ".join(f"#{item}" for item in deleted_ids)
+                )
+                st.rerun()
+            else:
+                st.info("No saved runs were old enough to delete.")
 
 def _show_model_evaluation(report_path: Path) -> None:
     st.subheader("Model evaluation")
