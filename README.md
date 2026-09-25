@@ -49,7 +49,7 @@ trigger review. Behavioral signals are not treated as proof of malware.
 - reusable runtime analysis pipeline
 - SQLite CTI cache
 - privacy-conscious SQLite analysis history with local analyst feedback
-- Streamlit analysis dashboard with a dedicated model-evaluation view
+- analyst-focused Streamlit dashboard with priority triage, evidence-first domain investigation, filtered history, and a dedicated model-evaluation view
 - explainable related-activity clustering
 - privacy-preserving relationship graph
 - public-mode privacy controls and non-root Docker packaging
