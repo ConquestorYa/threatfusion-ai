@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 
-from .dns import DNSParseDiagnostics, DNSEvent, parse_dns_csv_with_diagnostics
+from .dns import DNSEvent, DNSParseDiagnostics, parse_dns_csv_with_diagnostics
 from .hybrid_assessment import (
     BehaviorHeuristicConfig,
     HybridAssessment,
