@@ -193,7 +193,15 @@ def _show_system_status(
             "Known-IOC matching is unavailable until the CTI cache is populated."
         )
 
-def _show_domain_detail(result, domain: str) -> None:
+def _show_domain_detail(
+    result,
+    domain: str,
+    *,
+    prior_feedback: AnalystFeedback | None = None,
+    suppression: AnalystSuppression | None = None,
+    db_path: Path | None = None,
+    analyst_policy_enabled: bool = False,
+) -> None:
     assessment = next(
         item for item in result.assessments if item.domain == domain
     )
@@ -205,6 +213,29 @@ def _show_domain_detail(result, domain: str) -> None:
         header_left.markdown(f"### {detail['domain']}")
         header_left.caption("Domain investigation")
         header_right.metric("Verdict", detail["verdict"])
+
+        if prior_feedback is not None:
+            st.info(
+                "Previous analyst review: "
+                f"{feedback_label(prior_feedback.label)} · "
+                f"{format_timestamp(prior_feedback.updated_at)}"
+                + (
+                    f" · {prior_feedback.note}"
+                    if prior_feedback.note
+                    else ""
+                )
+            )
+
+        if suppression is not None:
+            expiry_text = (
+                format_timestamp(suppression.expires_at)
+                if suppression.expires_at is not None
+                else "No expiry"
+            )
+            st.warning(
+                "Locally suppressed from the priority queue · "
+                f"{suppression.reason} · {expiry_text}"
+            )
 
         if evidence_rows:
             st.markdown("**Primary CTI evidence**")
@@ -281,11 +312,64 @@ def _show_domain_detail(result, domain: str) -> None:
                 "No strong CTI, ML-tier, or DNS-behavior signal was recorded."
             )
 
-        if detail["verdict"] == "Known Threat" and evidence_rows:
+        if detail["verdict"] == "Known Threat":
             st.caption(
-                "Known IOC evidence takes precedence in the current hybrid "
-                "policy. ML and DNS behavior are supporting context, not proof."
+                "Known Threat is reserved for an exact known-domain IOC match. "
+                "URL-hostname and response-IP matches are contextual CTI "
+                "evidence and do not prove the queried domain is malicious."
             )
+
+        if analyst_policy_enabled and db_path is not None:
+            st.markdown("**Local analyst policy**")
+            if suppression is not None:
+                if st.button(
+                    "Remove local suppression",
+                    key=f"remove_suppression_{detail['domain']}",
+                ):
+                    remove_analyst_suppression(db_path, detail["domain"])
+                    st.rerun()
+            else:
+                with st.expander(
+                    "Suppress from priority triage",
+                    expanded=False,
+                ):
+                    with st.form(f"suppress_{detail['domain']}"):
+                        reason = st.text_input(
+                            "Suppression reason",
+                            max_chars=300,
+                        )
+                        expiry_days = st.number_input(
+                            "Expiry in days (0 = no expiry)",
+                            min_value=0,
+                            max_value=3650,
+                            value=0,
+                            step=1,
+                        )
+                        submitted = st.form_submit_button(
+                            "Save local suppression"
+                        )
+                    if submitted:
+                        expires_at = (
+                            datetime.now(timezone.utc)
+                            + timedelta(days=int(expiry_days))
+                            if expiry_days
+                            else None
+                        )
+                        try:
+                            save_analyst_suppression(
+                                db_path,
+                                detail["domain"],
+                                reason,
+                                expires_at=expires_at,
+                            )
+                        except (TypeError, ValueError) as error:
+                            st.error(f"Suppression could not be saved: {error}")
+                        else:
+                            st.success(
+                                "Local suppression saved. Detector output was "
+                                "not changed."
+                            )
+                            st.rerun()
 
 
 def _show_analysis_result(
