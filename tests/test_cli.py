@@ -4,7 +4,7 @@ import json
 from types import SimpleNamespace
 
 from threatfusion import cli
-from threatfusion.dns import DNSParseDiagnostics, DNSEvent
+from threatfusion.dns import DNSEvent, DNSParseDiagnostics
 from threatfusion.hybrid_assessment import MLThresholds, assess_dns_domains
 from threatfusion.runtime_analysis import RuntimeAnalysisResult
 
