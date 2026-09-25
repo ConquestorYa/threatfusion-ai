@@ -13,7 +13,10 @@ sys.path.insert(0, str(_PROJECT_ROOT / "src"))
 from threatfusion.collectors.sgb import SGBCollector
 from threatfusion.collectors.threatfox import ThreatFoxCollector
 from threatfusion.collectors.urlhaus import URLhausCollector
-from threatfusion.cti_cache import replace_source_records
+from threatfusion.cti_cache import (
+    replace_source_records,
+    validate_nonempty_refresh_batch,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -76,25 +79,24 @@ def main(argv: Sequence[str] | None = None) -> int:
             flush=True,
         )
 
+    refresh_batch = {
+        "ThreatFox": threatfox_records,
+        "URLhaus": urlhaus_records,
+        "SGB": sgb_records,
+    }
+    try:
+        validate_nonempty_refresh_batch(refresh_batch)
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
+
     refreshed_at = datetime.now(timezone.utc)
-    replace_source_records(
-        args.db,
-        "ThreatFox",
-        threatfox_records,
-        refreshed_at=refreshed_at,
-    )
-    replace_source_records(
-        args.db,
-        "URLhaus",
-        urlhaus_records,
-        refreshed_at=refreshed_at,
-    )
-    replace_source_records(
-        args.db,
-        "SGB",
-        sgb_records,
-        refreshed_at=refreshed_at,
-    )
+    for source, records in refresh_batch.items():
+        replace_source_records(
+            args.db,
+            source,
+            records,
+            refreshed_at=refreshed_at,
+        )
 
     print("ThreatFusion CTI cache refreshed")
     print(f"  Database: {args.db}")
