@@ -201,3 +201,83 @@ def test_runtime_analysis_does_not_perform_networking(
     )
 
     assert result.assessments[0].verdict is HybridVerdict.KNOWN_THREAT
+
+
+def test_runtime_skips_non_public_names_but_keeps_ioc_matching(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events = [
+        DNSEvent(query_name="public.example"),
+        DNSEvent(query_name="printer.local"),
+        DNSEvent(query_name="7.113.0.203.in-addr.arpa"),
+    ]
+    indicator = IOCRecord("printer.local", IOCType.DOMAIN, "SGB")
+    captured: list[list[str]] = []
+
+    def predict(artifact, domains):
+        values = list(domains)
+        captured.append(values)
+        return {"public.example": 0.10}
+
+    monkeypatch.setattr(runtime_analysis, "predict_domain_probabilities", predict)
+
+    result = analyze_dns_events(events, [indicator], fake_artifact())
+
+    assert captured == [["public.example"]]
+    assert result.ml_probabilities == {"public.example": 0.10}
+    local_assessment = next(
+        item for item in result.assessments
+        if item.domain == "printer.local"
+    )
+    assert local_assessment.verdict is HybridVerdict.KNOWN_THREAT
+    assert local_assessment.ml_probability is None
+
+
+def test_runtime_rejects_event_limit_before_processing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        runtime_analysis,
+        "predict_domain_probabilities",
+        lambda artifact, domains: pytest.fail("ML must not run"),
+    )
+
+    with pytest.raises(ValueError, match="event limit"):
+        analyze_dns_events(
+            [
+                DNSEvent(query_name="one.example"),
+                DNSEvent(query_name="two.example"),
+            ],
+            [],
+            fake_artifact(),
+            max_events=1,
+        )
+
+
+def test_runtime_rejects_unique_domain_limit_before_processing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        runtime_analysis,
+        "predict_domain_probabilities",
+        lambda artifact, domains: pytest.fail("ML must not run"),
+    )
+
+    with pytest.raises(ValueError, match="unique-domain limit"):
+        analyze_dns_events(
+            [
+                DNSEvent(query_name="one.example"),
+                DNSEvent(query_name="two.example"),
+            ],
+            [],
+            fake_artifact(),
+            max_unique_domains=1,
+        )
+
+
+@pytest.mark.parametrize("name", ["max_events", "max_unique_domains"])
+def test_runtime_rejects_invalid_limits(name: str) -> None:
+    kwargs = {name: 0}
+
+    with pytest.raises(ValueError, match="positive integer"):
+        analyze_dns_events([], [], fake_artifact(), **kwargs)
