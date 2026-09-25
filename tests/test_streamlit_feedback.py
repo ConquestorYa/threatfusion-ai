@@ -80,7 +80,7 @@ def test_public_mode_never_reads_or_writes_history_or_feedback(
     app.run(timeout=15)
 
     assert not app.exception
-    assert "Analysis summary" in [item.value for item in app.subheader]
+    assert "Analysis overview" in [item.value for item in app.subheader]
     assert "Analysis history" not in [tab.label for tab in app.tabs]
     assert "Save aggregate analysis history" not in [b.label for b in app.button]
     assert "Save analyst feedback" not in [b.label for b in app.button]
