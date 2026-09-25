@@ -244,12 +244,13 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 - Enforces explicit event and unique-query bounds before expensive analysis work.
 - Excludes reverse-DNS, local/mDNS, localhost, and single-label names from the internet-domain string model while preserving them for deterministic matching and DNS behavior evidence.
 - Preserves original DNS/IOC evidence and returns matches, probabilities, and per-domain assessments together.
-- Provides a convenience helper that starts directly from DNS CSV text.
+- Provides convenience helpers that start directly from DNS CSV text and can return aggregate ingestion-quality diagnostics without retaining raw rows.
 
 ### `src/threatfusion/cti_cache.py`
 
 - Stores IOCRecord values from ThreatFox, URLhaus, and SGB in a local SQLite cache.
 - Replaces one source atomically only after that source's caller-supplied fetch has succeeded.
+- The explicit refresh workflow rejects a multi-source refresh batch when any expected source unexpectedly returns zero records, before any cache replacement occurs.
 - Stores source refresh time and aggregate record count.
 - Loads cached IOC records deterministically for runtime matching.
 - Performs no network activity itself; explicit collector orchestration lives in the refresh CLI.
@@ -268,6 +269,7 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 - Builds local-only relationships among Known Threat / High Risk / Review domains.
 - Requires at least one shared client observation or shared response IP to create a relationship.
 - Uses time proximity only as supporting context, never as the sole edge condition.
+- Computes closest comparable timestamps with an ordered two-pointer scan instead of nested timestamp-pair comparisons.
 - Generates relationship candidates from shared-client/shared-response-IP indexes rather than comparing every suspicious-domain pair.
 - Applies explicit suspicious-domain and relationship-count bounds so graph generation remains predictable on adversarial or unusually dense input.
 - Builds deterministic connected components and omits singleton groups.
