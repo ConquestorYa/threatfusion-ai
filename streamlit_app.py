@@ -29,6 +29,7 @@ from threatfusion.dashboard import (
     feedback_label,
     format_timestamp,
     history_rows,
+    ioc_corroboration_rows,
     match_rows,
     persisted_assessment_rows,
     priority_assessment_rows,
@@ -542,8 +543,22 @@ def _show_analysis_result(
         )
 
     with matches_tab:
+        corroboration = ioc_corroboration_rows(result)
         rows = match_rows(result)
+        if corroboration:
+            st.markdown("#### Source corroboration")
+            st.caption(
+                "Multiple independent cached CTI sources strengthen context, "
+                "but corroboration does not override the evidence-scope rules."
+            )
+            st.dataframe(
+                pd.DataFrame(corroboration),
+                hide_index=True,
+                width="stretch",
+            )
+
         if rows:
+            st.markdown("#### IOC evidence")
             st.dataframe(
                 pd.DataFrame(rows),
                 hide_index=True,
