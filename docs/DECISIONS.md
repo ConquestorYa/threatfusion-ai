@@ -692,3 +692,26 @@ privacy goal of not writing uploaded raw telemetry to the ThreatFusion history
 database. Pi-hole's forward value identifies an upstream resolver, not the
 answer IP returned for the queried domain.
 
+## DEC-074: Show CTI corroboration without changing evidence semantics
+
+**Decision:** The analyst dashboard may summarize how many distinct cached CTI
+sources support a domain and which evidence scopes are present. Multi-source
+corroboration is presentation context only and does not automatically promote a
+contextual URL-hostname or infrastructure match to `known_threat`.
+
+**Reason:** Independent-source agreement is useful analyst context, but source
+count alone does not change what an IOC match actually proves about the queried
+domain.
+
+
+## DEC-075: Keep automation entry points local and detector-neutral
+
+**Decision:** Provide a local CLI that reuses the same trusted model artifact,
+local CTI cache, runtime analyzers, and privacy-safe report builder as the
+Streamlit application. The CLI performs no CTI refresh and introduces no
+separate detection policy.
+
+**Reason:** Automation should not fork security logic. Reusing the existing
+runtime path makes scripted analysis reproducible and keeps credentials and
+network activity outside the analysis request path.
+
