@@ -364,6 +364,31 @@ def assessment_rows(
         )
     ]
 
+def priority_assessment_rows(
+    result: RuntimeAnalysisResult,
+) -> list[dict[str, object]]:
+    """Return non-low findings in analyst triage order."""
+    return [
+        row
+        for row in assessment_rows(result)
+        if row["Verdict"] != "Low"
+    ]
+
+
+def domain_match_rows(
+    result: RuntimeAnalysisResult,
+    domain: str,
+) -> list[dict[str, object]]:
+    """Return IOC evidence rows associated with one normalized query domain."""
+    normalized = domain.strip().casefold().removesuffix(".")
+    return [
+        row
+        for match, row in zip(result.matches, match_rows(result), strict=True)
+        if match.event.query_name.strip().casefold().removesuffix(".")
+        == normalized
+    ]
+
+
 def assessment_detail(
     assessment: HybridAssessment,
 ) -> dict[str, object]:
