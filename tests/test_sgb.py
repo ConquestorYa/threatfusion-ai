@@ -35,6 +35,25 @@ class FakeSession:
         return self.response
 
 
+class SequenceSession:
+    def __init__(self, payloads: list[object]) -> None:
+        self.responses = [FakeResponse(payload) for payload in payloads]
+        self.get_calls: list[tuple[str, dict[str, int], int, bool]] = []
+
+    def get(
+        self,
+        url: str,
+        *,
+        params: dict[str, int],
+        timeout: int,
+        allow_redirects: bool,
+    ) -> FakeResponse:
+        self.get_calls.append((url, params, timeout, allow_redirects))
+        if not self.responses:
+            raise AssertionError("unexpected extra SGB page request")
+        return self.responses.pop(0)
+
+
 def make_session(models: list[dict[str, object]]) -> FakeSession:
     return FakeSession(FakeResponse({"totalCount": len(models), "models": models}))
 
@@ -193,3 +212,83 @@ def test_multiple_records_and_ioc_urls_are_not_requested() -> None:
     assert [record.value for record in records] == [malicious_url, "bad.example"]
     assert len(session.get_calls) == 1
     assert session.get_calls[0][0] == SGB_API_URL
+
+def test_bounded_pagination_stops_at_reported_total_count() -> None:
+    session = SequenceSession(
+        [
+            {
+                "totalCount": 3,
+                "models": [
+                    {"url": "one.example", "type": "domain"},
+                    {"url": "two.example", "type": "domain"},
+                ],
+            },
+            {
+                "totalCount": 3,
+                "models": [
+                    {"url": "three.example", "type": "domain"},
+                ],
+            },
+        ]
+    )
+
+    result = SGBCollector(session).fetch_bounded_addresses(max_pages=10)
+
+    assert [record.value for record in result.records] == [
+        "one.example",
+        "two.example",
+        "three.example",
+    ]
+    assert result.pages_fetched == 2
+    assert result.reached_source_end is True
+    assert [call[1]["page"] for call in session.get_calls] == [1, 2]
+
+
+def test_bounded_pagination_stops_on_empty_page_without_total_count() -> None:
+    session = SequenceSession(
+        [
+            {"models": [{"url": "one.example", "type": "domain"}]},
+            {"models": []},
+        ]
+    )
+
+    result = SGBCollector(session).fetch_bounded_addresses(max_pages=10)
+
+    assert [record.value for record in result.records] == ["one.example"]
+    assert result.pages_fetched == 2
+    assert result.reached_source_end is True
+
+
+def test_bounded_pagination_respects_maximum_page_cap() -> None:
+    session = SequenceSession(
+        [
+            {
+                "totalCount": 100,
+                "models": [{"url": "one.example", "type": "domain"}],
+            },
+            {
+                "totalCount": 100,
+                "models": [{"url": "two.example", "type": "domain"}],
+            },
+        ]
+    )
+
+    result = SGBCollector(session).fetch_bounded_addresses(max_pages=2)
+
+    assert [record.value for record in result.records] == [
+        "one.example",
+        "two.example",
+    ]
+    assert result.pages_fetched == 2
+    assert result.reached_source_end is False
+
+
+@pytest.mark.parametrize("max_pages", [0, -1, True])
+def test_invalid_bounded_page_limit_is_rejected(max_pages: int) -> None:
+    session = SequenceSession([])
+
+    with pytest.raises(ValueError, match="max_pages"):
+        SGBCollector(session).fetch_bounded_addresses(max_pages=max_pages)
+
+    assert session.get_calls == []
+
