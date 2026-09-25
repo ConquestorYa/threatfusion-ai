@@ -75,6 +75,10 @@ def test_public_mode_never_reads_or_writes_history_or_feedback(
         "get_active_analyst_suppressions",
         "save_runtime_analysis",
         "save_analyst_feedback",
+        "save_bulk_analyst_feedback",
+        "delete_analysis_run",
+        "apply_history_retention",
+        "compare_analysis_runs",
         "save_analyst_suppression",
         "remove_analyst_suppression",
     ):
@@ -140,7 +144,9 @@ def test_local_feedback_form_upserts_and_isolates_run_and_domain(feedback_app):
     assert app.selectbox(key=domain_key).value == "a.example"
     label = next(item for item in app.selectbox if item.label == "Analyst label")
     label.select("Benign")
-    app.text_area[0].input("Expected service")
+    next(
+        item for item in app.text_area if item.label == "Optional analyst note"
+    ).input("Expected service")
     next(b for b in app.button if b.label == "Save analyst feedback").click()
     app.run(timeout=15)
     assert not app.exception
@@ -157,7 +163,9 @@ def test_local_feedback_form_upserts_and_isolates_run_and_domain(feedback_app):
 
     label = next(item for item in app.selectbox if item.label == "Analyst label")
     label.select("Confirmed Threat")
-    app.text_area[0].input("Rechecked")
+    next(
+        item for item in app.text_area if item.label == "Optional analyst note"
+    ).input("Rechecked")
     next(b for b in app.button if b.label == "Save analyst feedback").click()
     app.run(timeout=15)
     assert not app.exception
@@ -169,7 +177,9 @@ def test_local_feedback_form_upserts_and_isolates_run_and_domain(feedback_app):
 
     app.selectbox(key=domain_key).select("b.example").run(timeout=15)
     assert not app.exception
-    assert app.text_area[0].value == ""
+    assert next(
+        item for item in app.text_area if item.label == "Optional analyst note"
+    ).value == ""
     label = next(item for item in app.selectbox if item.label == "Analyst label")
     assert label.value == "Uncertain"
 
@@ -178,5 +188,7 @@ def test_local_feedback_form_upserts_and_isolates_run_and_domain(feedback_app):
     )
     run_selector.select(first_run_id).run(timeout=15)
     assert not app.exception
-    assert app.text_area[0].value == ""
+    assert next(
+        item for item in app.text_area if item.label == "Optional analyst note"
+    ).value == ""
     assert get_analyst_feedback(db_path, first_run_id) == []
