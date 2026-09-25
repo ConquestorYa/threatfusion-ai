@@ -292,7 +292,7 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 
 - Convert runtime results into deterministic presentation rows and summary counts.
 - Provide separate DNS-event and unique-domain metrics so domain-level verdict counts are unambiguous.
-- Provide generic DNS CSV / Zeek `dns.log` / Pi-hole upload, aggregate
+- Provide generic DNS CSV / Zeek `dns.log` / Pi-hole / AdGuard Home upload, aggregate
   input-quality diagnostics, an analyst-priority triage queue, a compact
   domain-level Plotly verdict chart, evidence-first domain investigation,
   complete domain findings, multi-source CTI corroboration views, known-IOC
@@ -339,6 +339,15 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 - Maps domains, URLs, IPv4, and IPv6 indicators into `IOCRecord` objects.
 - Handles IPv6 networks conservatively as `IOCType.UNKNOWN` because the current model represents host IPs, not networks.
 - Treats returned IOC values only as data and never requests them.
+
+### `src/threatfusion/dns_adguard.py`
+
+- Parses AdGuard Home on-disk query-log JSON records and structured query-log
+  API export objects without networking.
+- Maps query host, timestamp, client, query type, and an available answer IP
+  into `DNSEvent` while preserving aggregate input-quality diagnostics.
+- Does not decode raw DNS wire-format answer blobs or add a DNS parsing
+  dependency.
 
 ## Tests and Tooling
 
