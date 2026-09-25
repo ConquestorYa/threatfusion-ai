@@ -484,3 +484,49 @@ deployment bundles do not copy the developer analysis-history database.
 **Reason:** Analyst notes and reviewed domain findings may contain
 organization-specific context that should not be exposed to anonymous hosted
 demo users.
+
+
+## DEC-055: Score only public-domain ML candidates at runtime
+
+**Decision:** Keep known-IOC matching and DNS behavior analysis for every DNS
+observation, but send only public Internet-domain candidates to the
+domain-string ML model. Reverse-DNS namespaces, local/internal suffixes,
+single-label host names, service-discovery names, and invalid public-domain
+syntax are not ML-scored.
+
+**Reason:** The development model was trained on public domain samples.
+Applying it to clearly out-of-distribution local or infrastructure names would
+create misleading scores without adding evidence.
+
+
+## DEC-056: Bound interactive analysis and related-activity work
+
+**Decision:** Runtime analysis enforces explicit event and unique-domain
+limits. Related-activity analysis also limits suspicious-domain and generated
+candidate-pair counts, and generates pairs only from shared client or response
+IP evidence rather than comparing every suspicious domain pair.
+
+**Reason:** Public or malformed uploads must not be able to cause unbounded
+memory/CPU work. The limits preserve predictable behavior while keeping normal
+local analysis sizes well above the portfolio-demo workload.
+
+
+## DEC-057: Make CSV exports spreadsheet-safe
+
+**Decision:** Prefix exported text cells that begin with spreadsheet formula
+trigger characters before writing the downloadable CSV. JSON output preserves
+the original aggregate finding text.
+
+**Reason:** DNS query names are user-controlled input. A CSV opened in a
+spreadsheet must not interpret a crafted query value as a formula or command.
+
+
+## DEC-058: Surface CTI freshness without refreshing in the request path
+
+**Decision:** The dashboard derives and displays CTI cache age/freshness from
+the existing refresh metadata and warns when a source is older than 24 hours
+or has an invalid refresh timestamp. It does not refresh feeds automatically.
+
+**Reason:** Analysts need to know when deterministic known-IOC evidence may be
+stale, while DEC-029 and DEC-044 still require network refresh and credentials
+to stay outside interactive analysis.
