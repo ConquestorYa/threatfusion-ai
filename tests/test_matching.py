@@ -16,6 +16,26 @@ def test_case_insensitive_domain_match() -> None:
     assert matches == [DNSIOCMatch(event=event, indicator=indicator, match_type="query_domain")]
 
 
+
+
+def test_unicode_dns_query_matches_punycode_domain_ioc() -> None:
+    event = DNSEvent(query_name="BÜCHER.Example.")
+    indicator = IOCRecord(
+        "xn--bcher-kva.example",
+        IOCType.DOMAIN,
+        "ThreatFox",
+    )
+
+    matches = match_dns_events([event], [indicator])
+
+    assert matches == [
+        DNSIOCMatch(
+            event=event,
+            indicator=indicator,
+            match_type="query_domain",
+        )
+    ]
+
 def test_trailing_dot_domain_match() -> None:
     event = DNSEvent(query_name="evil.example.")
     indicator = IOCRecord("Evil.Example", IOCType.DOMAIN, "SGB")
@@ -99,6 +119,43 @@ def test_ipv6_response_ip_match() -> None:
     assert matches[0].match_type == "response_ip"
     assert matches[0].indicator is indicator
 
+
+
+
+def test_ipv6_response_matches_network_ioc() -> None:
+    event = DNSEvent(
+        query_name="example.com.",
+        response_ip="2001:db8:1234::5",
+    )
+    indicator = IOCRecord(
+        "2001:db8::/32",
+        IOCType.IPV6_NETWORK,
+        "SGB",
+    )
+
+    matches = match_dns_events([event], [indicator])
+
+    assert matches == [
+        DNSIOCMatch(
+            event=event,
+            indicator=indicator,
+            match_type="response_ip_network",
+        )
+    ]
+
+
+def test_ipv6_response_outside_network_does_not_match() -> None:
+    event = DNSEvent(
+        query_name="example.com.",
+        response_ip="2001:db9::5",
+    )
+    indicator = IOCRecord(
+        "2001:db8::/32",
+        IOCType.IPV6_NETWORK,
+        "SGB",
+    )
+
+    assert match_dns_events([event], [indicator]) == []
 
 def test_ipv4_and_ipv6_types_do_not_cross_match() -> None:
     event = DNSEvent(query_name="example.com.", response_ip="203.0.113.7")
