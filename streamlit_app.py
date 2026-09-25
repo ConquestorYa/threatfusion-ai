@@ -46,7 +46,7 @@ from threatfusion.persistence import (
     save_runtime_analysis,
 )
 from threatfusion.reporting import build_analysis_report
-from threatfusion.runtime_analysis import analyze_dns_csv
+from threatfusion.runtime_analysis import analyze_dns_csv_with_diagnostics
 
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 
@@ -689,12 +689,14 @@ def main() -> None:
         if uploaded is None:
             if st.session_state.pop("upload_fingerprint", None) is not None:
                 st.session_state.pop("analysis_result", None)
+                st.session_state.pop("dns_parse_diagnostics", None)
         else:
             content_bytes = uploaded.getvalue()
             fingerprint = content_fingerprint(content_bytes)
             if st.session_state.get("upload_fingerprint") != fingerprint:
                 st.session_state["upload_fingerprint"] = fingerprint
                 st.session_state.pop("analysis_result", None)
+                st.session_state.pop("dns_parse_diagnostics", None)
 
             if len(content_bytes) > MAX_UPLOAD_BYTES:
                 st.error("Uploaded CSV exceeds the 10 MB application limit.")
@@ -706,17 +708,30 @@ def main() -> None:
                 else:
                     if st.button("Analyze", type="primary"):
                         try:
-                            result = analyze_dns_csv(
-                                content,
-                                indicators,
-                                artifact,
+                            result, diagnostics = (
+                                analyze_dns_csv_with_diagnostics(
+                                    content,
+                                    indicators,
+                                    artifact,
+                                )
                             )
                         except ValueError as error:
                             st.error(f"DNS CSV could not be analyzed: {error}")
                         else:
                             st.session_state["analysis_result"] = result
+                            st.session_state["dns_parse_diagnostics"] = diagnostics
 
         result = st.session_state.get("analysis_result")
+        diagnostics = st.session_state.get("dns_parse_diagnostics")
+        if result is not None and diagnostics is not None:
+            st.caption(
+                "Input quality: "
+                f"{diagnostics.accepted_rows}/{diagnostics.total_rows} rows "
+                "accepted; "
+                f"{diagnostics.skipped_missing_query_name} missing query names; "
+                f"{diagnostics.invalid_timestamps} invalid timestamps; "
+                f"{diagnostics.invalid_response_ips} invalid response IPs."
+            )
         if result is not None:
             _show_analysis_result(
                 result,
