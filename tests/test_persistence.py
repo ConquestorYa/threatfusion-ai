@@ -160,6 +160,7 @@ def test_assessment_roundtrip_preserves_aggregate_evidence(tmp_path) -> None:
     known = rows[0]
     assert known.verdict == "known_threat"
     assert known.ml_score == pytest.approx(0.20)
+    assert known.ml_probability == known.ml_score
     assert known.query_types == ("A",)
     assert known.known_ioc_sources == ("ThreatFox",)
     assert known.known_match_types == ("query_domain",)
@@ -169,6 +170,26 @@ def test_assessment_roundtrip_preserves_aggregate_evidence(tmp_path) -> None:
     assert review.verdict == "review"
     assert review.ml_tier == "low"
     assert review.reasons == ("ml_low_confidence",)
+
+
+def test_legacy_ml_probability_storage_column_is_preserved(tmp_path) -> None:
+    db_path = tmp_path / "history.sqlite"
+    save_runtime_analysis(db_path, make_result())
+
+    with sqlite3.connect(db_path) as connection:
+        columns = {
+            str(row[1])
+            for row in connection.execute("PRAGMA table_info(analysis_assessments)")
+        }
+        stored_score = connection.execute(
+            "SELECT ml_probability FROM analysis_assessments "
+            "WHERE domain = ?",
+            ("known.bad",),
+        ).fetchone()[0]
+
+    assert "ml_probability" in columns
+    assert "ml_score" not in columns
+    assert stored_score == pytest.approx(0.20)
 
 
 def test_raw_dns_rows_and_client_ips_are_not_persisted(tmp_path) -> None:
