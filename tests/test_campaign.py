@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 
 import pytest
 
+from threatfusion import campaign
 from threatfusion.campaign import find_related_activity
 from threatfusion.dns import DNSEvent
 from threatfusion.dns_behavior import DomainBehavior
@@ -202,8 +203,6 @@ def test_mixed_timestamp_awareness_is_ignored_as_time_context() -> None:
     assert relationship.reasons == ("shared_client",)
 
 
-
-
 def test_many_unrelated_candidates_do_not_create_relationships() -> None:
     events = [
         DNSEvent(
@@ -221,6 +220,27 @@ def test_many_unrelated_candidates_do_not_create_relationships() -> None:
 
     assert report.relationships == ()
     assert report.clusters == ()
+
+
+def test_related_activity_rejects_excessive_suspicious_domains(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(campaign, "MAX_RELATED_ACTIVITY_DOMAINS", 2)
+    result = result_with(
+        [
+            DNSEvent(query_name="a.example"),
+            DNSEvent(query_name="b.example"),
+            DNSEvent(query_name="c.example"),
+        ],
+        [
+            assessment("a.example", HybridVerdict.REVIEW),
+            assessment("b.example", HybridVerdict.REVIEW),
+            assessment("c.example", HybridVerdict.REVIEW),
+        ],
+    )
+
+    with pytest.raises(ValueError, match="suspicious-domain limit"):
+        find_related_activity(result)
 
 def test_negative_time_window_is_rejected() -> None:
     with pytest.raises(ValueError, match="non-negative"):
