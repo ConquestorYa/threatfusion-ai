@@ -319,6 +319,14 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 
 The repository uses `pytest.ini` to expose the `src` layout to pytest. The test suite covers the implemented model, normalization, correlation, collectors, DNS ingestion, matching, ML dataset preparation, splitting, snapshot persistence, and baseline model evaluation. Ruff is used for lint checks. Collector tests inject fake sessions and do not make real feed requests. GitHub Actions runs Ruff and pytest automatically on pull requests and pushes to `main`.
 
+Analyst-feedback tests also exercise the actual Streamlit form with synthetic
+findings and a temporary SQLite database. They verify local save/update behavior
+and that public mode can display an analysis without reading or writing saved
+history or feedback. Persistence regressions cover run/domain isolation, legacy
+history upgrades, note boundaries, and preservation of original summaries, ML
+scores, verdicts, and evidence. No local datasets, trusted model files, or feed
+credentials are needed for these tests.
+
 ## Planned Stack
 
 The planned technology stack is:
