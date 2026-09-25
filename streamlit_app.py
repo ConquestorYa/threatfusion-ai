@@ -538,32 +538,108 @@ def _show_history(db_path: Path) -> None:
                 else ""
             )
         )
-        st.dataframe(
-            frame,
-            hide_index=True,
-            width="stretch",
-            column_config={
-                "Domain": st.column_config.TextColumn(width="medium"),
-                "Known CTI sources": st.column_config.TextColumn(
-                    width="medium"
-                ),
-                "Evidence": st.column_config.TextColumn(width="large"),
-                "Analyst feedback": st.column_config.TextColumn(
-                    width="medium"
-                ),
-                "Analyst note": st.column_config.TextColumn(width="large"),
-            },
+        filter_columns = st.columns(3)
+        verdict_filter = filter_columns[0].selectbox(
+            "Verdict",
+            ["All", *sorted(frame["Verdict"].unique())],
+            key=f"history_verdict_filter_{run_id}",
+        )
+        review_filter = filter_columns[1].selectbox(
+            "Review state",
+            [
+                "All",
+                "Unreviewed",
+                "Reviewed",
+                "Confirmed Threat",
+                "Benign",
+                "Uncertain",
+            ],
+            key=f"history_review_filter_{run_id}",
+        )
+        source_values = sorted(
+            {
+                source.strip()
+                for value in frame["Known CTI sources"]
+                for source in value.split(",")
+                if source.strip()
+            }
+        )
+        source_filter = filter_columns[2].selectbox(
+            "CTI source",
+            ["All", *source_values],
+            key=f"history_source_filter_{run_id}",
         )
 
-        st.write("**Analyst feedback**")
+        filtered_frame = frame.copy()
+        if verdict_filter != "All":
+            filtered_frame = filtered_frame[
+                filtered_frame["Verdict"] == verdict_filter
+            ]
+        if review_filter == "Unreviewed":
+            filtered_frame = filtered_frame[
+                filtered_frame["Analyst feedback"] == "Not reviewed"
+            ]
+        elif review_filter == "Reviewed":
+            filtered_frame = filtered_frame[
+                filtered_frame["Analyst feedback"] != "Not reviewed"
+            ]
+        elif review_filter != "All":
+            filtered_frame = filtered_frame[
+                filtered_frame["Analyst feedback"] == review_filter
+            ]
+        if source_filter != "All":
+            filtered_frame = filtered_frame[
+                filtered_frame["Known CTI sources"].map(
+                    lambda value: source_filter
+                    in {item.strip() for item in value.split(",")}
+                )
+            ]
+
+        compact_columns = [
+            "Domain",
+            "Verdict",
+            "ML score",
+            "ML tier",
+            "DNS events",
+            "Known CTI sources",
+            "Analyst feedback",
+        ]
+        if filtered_frame.empty:
+            st.info("No saved findings match the current triage filters.")
+        else:
+            st.dataframe(
+                filtered_frame[compact_columns],
+                hide_index=True,
+                width="stretch",
+                column_config={
+                    "Domain": st.column_config.TextColumn(width="medium"),
+                    "Verdict": st.column_config.TextColumn(width="small"),
+                    "ML score": st.column_config.TextColumn(width="small"),
+                    "ML tier": st.column_config.TextColumn(width="small"),
+                    "DNS events": st.column_config.NumberColumn(width="small"),
+                    "Known CTI sources": st.column_config.TextColumn(
+                        width="medium"
+                    ),
+                    "Analyst feedback": st.column_config.TextColumn(
+                        width="medium"
+                    ),
+                },
+            )
+
+        st.write("**Analyst review**")
         st.caption(
             "Feedback is local analyst context only. It does not change the "
             "original verdict, retrain the model, or alter frozen evaluation."
         )
 
+        review_domains = (
+            filtered_frame["Domain"].tolist()
+            if not filtered_frame.empty
+            else [assessment.domain for assessment in assessments]
+        )
         feedback_domain = st.selectbox(
             "Finding to review",
-            [assessment.domain for assessment in assessments],
+            review_domains,
             key=f"feedback_domain_{run_id}",
         )
         current = feedback_by_domain.get(feedback_domain)
