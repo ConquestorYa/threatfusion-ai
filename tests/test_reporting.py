@@ -4,6 +4,7 @@ import csv
 import io
 import json
 import socket
+from dataclasses import replace
 from datetime import datetime, timezone
 
 import pytest
@@ -148,6 +149,28 @@ def test_csv_report_is_portable_and_human_readable() -> None:
         "Known threat intelligence match; Low ML score tier"
     )
 
+
+
+
+def test_csv_report_escapes_spreadsheet_formula_prefixes() -> None:
+    result = make_result()
+    assessment = replace(
+        result.assessments[0],
+        domain="=2+2.example",
+        behavior=replace(
+            result.assessments[0].behavior,
+            domain="=2+2.example",
+        ),
+    )
+    report = build_analysis_report(
+        replace(result, assessments=(assessment,)),
+        model_name="development-model",
+    )
+    rows = list(csv.DictReader(io.StringIO(report.csv_text)))
+
+    assert rows[0]["domain"] == "'=2+2.example"
+    payload = json.loads(report.json_text)
+    assert payload["findings"][0]["domain"] == "=2+2.example"
 
 def test_naive_generated_timestamp_is_rejected() -> None:
     with pytest.raises(ValueError, match="timezone-aware"):
