@@ -263,8 +263,11 @@ def cluster_rows(
             "Domain count": len(cluster.domains),
             "Relationships": len(cluster.relationships),
             "Max strength": max(
-                relationship.strength
-                for relationship in cluster.relationships
+                (
+                    relationship.strength
+                    for relationship in cluster.relationships
+                ),
+                default=0.0,
             ),
         }
         for cluster in report.clusters
