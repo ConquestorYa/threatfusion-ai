@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import socket
+import sqlite3
 from types import SimpleNamespace
 
 import pytest
@@ -203,8 +204,6 @@ def test_pihole_runtime_helper_parses_and_analyzes(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import sqlite3
-
     path = tmp_path / "pihole-FTL.db"
     with sqlite3.connect(path) as connection:
         connection.execute(
