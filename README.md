@@ -17,7 +17,7 @@ ThreatFox / URLhaus / SGB
           v
    Local CTI cache
           |
-DNS CSV / Zeek dns.log
+DNS CSV / Zeek dns.log / Pi-hole FTL DB
           -> IOC matching
           + ML domain scoring
           + DNS behavior analysis
@@ -40,8 +40,8 @@ not treated as proof of malware.
 
 - ThreatFox, URLhaus, and SGB collectors
 - common IOC model, normalization, and correlation
-- DNS CSV and Zeek `dns.log` ingestion with aggregate input-quality diagnostics
-- known domain / URL-hostname / response-IP matching with evidence-scope metadata
+- DNS CSV, Zeek `dns.log`, and in-memory Pi-hole FTL database ingestion with aggregate input-quality diagnostics
+- known domain / URL-hostname / response-IP / IPv6-network matching with evidence-scope metadata
 - reproducible ML dataset snapshots
 - character n-gram TF-IDF + Logistic Regression development model
 - validation-only threshold selection under explicit false-positive budgets
@@ -58,7 +58,7 @@ not treated as proof of malware.
 - privacy-preserving relationship graph
 - public-mode privacy controls and non-root Docker packaging
 - privacy-safe JSON/CSV analysis report export with spreadsheet-safe CSV cells
-- bounded runtime analysis and ML eligibility filtering for non-internet DNS names, with explicit Not-scored presentation
+- bounded runtime analysis, IDNA/punycode canonicalization, and strict ML eligibility filtering for valid public-domain candidates, with explicit Not-scored presentation
 - CTI freshness/staleness visibility
 - sparse evidence-driven related-activity pair generation with bounded and optimized timestamp comparison
 - pytest + Ruff CI
@@ -95,7 +95,8 @@ Run the dashboard:
 streamlit run streamlit_app.py
 ```
 
-Supported telemetry formats are generic DNS CSV and Zeek `dns.log`.
+Supported telemetry formats are generic DNS CSV, Zeek `dns.log`, and an
+uploaded Pi-hole FTL SQLite query database.
 
 The generic DNS CSV schema is:
 
@@ -105,8 +106,10 @@ timestamp,client_ip,query_name,query_type,response_ip
 
 Only `query_name` is required for generic CSV. Zeek imports use the standard
 `#fields` header and map `query`, `ts`, `id.orig_h`, `qtype_name`, and
-`answers` when available. The Streamlit uploader is configured with a 10 MB
-maximum file size.
+`answers` when available. Pi-hole imports read the standard `queries` view
+from an uploaded FTL SQLite database entirely in memory; the upstream
+`forward` value is not treated as a DNS response IP. The Streamlit uploader is
+configured with a 10 MB maximum file size.
 
 ## Privacy defaults
 
