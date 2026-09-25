@@ -271,7 +271,7 @@ def test_periodic_and_churn_context_reasons_are_explainable() -> None:
     start = datetime(2026, 9, 24, 10, 0, tzinfo=timezone.utc)
     events = [
         DNSEvent(
-            query_name="a1b2c3d4e5f6.example.com",
+            query_name="1234567890abcdef.example.com",
             timestamp=start + timedelta(seconds=30 * index),
             response_ip=f"203.0.113.{index + 1}",
         )
