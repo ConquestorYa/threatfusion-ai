@@ -120,6 +120,21 @@ def prepare_sources(tmp_path):
                 "private-analyst-note-marker",
             ),
         )
+        connection.execute(
+            """
+            CREATE TABLE analyst_suppressions (
+                domain TEXT PRIMARY KEY,
+                reason TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO analyst_suppressions (domain, reason)
+            VALUES (?, ?)
+            """,
+            ("expected.example", "private-suppression-marker"),
+        )
 
     model_dir = tmp_path / "model"
     artifact = train_selected_model_artifact(make_model_samples())
@@ -162,8 +177,10 @@ def test_bundle_contains_cti_and_model_but_not_analysis_history(tmp_path) -> Non
     assert "analysis_runs" not in tables
     assert "analysis_assessments" not in tables
     assert "analyst_feedback" not in tables
+    assert "analyst_suppressions" not in tables
     assert "local-history-marker" not in dump
     assert "private-analyst-note-marker" not in dump
+    assert "private-suppression-marker" not in dump
 
 
 def test_bundle_refuses_nonempty_output_without_overwrite(tmp_path) -> None:
