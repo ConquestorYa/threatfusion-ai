@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -72,6 +72,23 @@ def _refresh_time_text(value: datetime | None) -> str:
 
 def _tags_json(tags: Sequence[str]) -> str:
     return json.dumps(list(tags), ensure_ascii=True, separators=(",", ":"))
+
+
+def validate_nonempty_refresh_batch(
+    source_records: Mapping[str, Sequence[IOCRecord]],
+) -> None:
+    """Reject a refresh batch if any expected source returned no records."""
+    empty_sources = sorted(
+        source
+        for source, records in source_records.items()
+        if not records
+    )
+    if empty_sources:
+        joined = ", ".join(empty_sources)
+        raise ValueError(
+            "refusing to replace CTI cache with empty refresh data for: "
+            f"{joined}"
+        )
 
 
 def replace_source_records(
