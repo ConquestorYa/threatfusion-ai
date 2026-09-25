@@ -94,7 +94,9 @@ _RELATION_REASON_LABELS = {
 }
 
 _REASON_LABELS = {
-    "known_ioc_match": "Known threat intelligence match",
+    "known_ioc_match": "Exact known-domain IOC match",
+    "url_hostname_ioc_context": "Hostname appears in a malicious URL IOC",
+    "response_ip_ioc_context": "Response IP matches known threat infrastructure",
     "ml_high_confidence": "High ML score tier",
     "ml_medium_confidence": "Medium ML score tier",
     "ml_low_confidence": "Low ML score tier",
