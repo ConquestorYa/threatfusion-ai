@@ -505,7 +505,7 @@ def _show_analysis_result(
 ) -> None:
     summary = summarize_runtime_result(result)
 
-    st.markdown("## Analysis overview")
+    st.subheader("Analysis overview")
     columns = st.columns(6)
     metric_card(columns[0], "DNS events", summary.event_count, accent="cyan")
     metric_card(
