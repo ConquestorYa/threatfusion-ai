@@ -193,7 +193,7 @@ def test_dns_csv_runtime_helper_returns_input_quality_diagnostics(
     assert diagnostics.invalid_timestamps == 1
     assert diagnostics.invalid_response_ips == 1
 
-def test_response_ip_ioc_match_keeps_known_threat_precedence(
+def test_response_ip_ioc_match_is_contextual_review(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     event = DNSEvent(
@@ -211,8 +211,9 @@ def test_response_ip_ioc_match_keeps_known_threat_precedence(
     result = analyze_dns_events([event], [indicator], fake_artifact())
 
     assessment = result.assessments[0]
-    assert assessment.verdict is HybridVerdict.KNOWN_THREAT
+    assert assessment.verdict is HybridVerdict.REVIEW
     assert assessment.known_match_types == ("response_ip",)
+    assert assessment.reasons == ("response_ip_ioc_context",)
 
 
 def test_ml_scoring_skips_reverse_local_and_single_label_queries(
