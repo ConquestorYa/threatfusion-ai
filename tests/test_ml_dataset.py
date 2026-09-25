@@ -7,9 +7,22 @@ from threatfusion.ml_dataset import (
     build_benign_samples,
     build_domain_dataset,
     extract_malicious_domains,
+    normalize_domain_candidate,
 )
 from threatfusion.models import IOCRecord, IOCType
 
+
+
+
+def test_domain_candidate_accepts_idna_and_rejects_malformed_hostnames() -> None:
+    assert normalize_domain_candidate("MÜNICH.Example.") == (
+        "xn--mnich-kva.example"
+    )
+    assert normalize_domain_candidate("-bad.example") is None
+    assert normalize_domain_candidate("bad-.example") is None
+    assert normalize_domain_candidate("bad_label.example") is None
+    assert normalize_domain_candidate("double..example") is None
+    assert normalize_domain_candidate(f"{'a' * 64}.example") is None
 
 def test_domain_ioc_becomes_malicious_sample() -> None:
     indicator = IOCRecord("Example.COM.", IOCType.DOMAIN, "ThreatFox")
