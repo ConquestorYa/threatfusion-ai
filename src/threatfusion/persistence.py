@@ -398,11 +398,11 @@ def _decode_cti_context(value: str | None) -> tuple[CTISourceAudit, ...]:
         return ()
     decoded = json.loads(value)
     if not isinstance(decoded, list):
-        raise ValueError("persisted CTI audit context is invalid")
+        raise TypeError("persisted CTI audit context must be a list")
     rows: list[CTISourceAudit] = []
     for item in decoded:
         if not isinstance(item, dict):
-            raise ValueError("persisted CTI audit context is invalid")
+            raise TypeError("persisted CTI audit context items must be objects")
         try:
             rows.append(
                 CTISourceAudit(
