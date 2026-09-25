@@ -1565,6 +1565,9 @@ def main() -> None:
                                     model_dir,
                                     artifact,
                                     list_cti_cache_status(db_path),
+                                    stale_after_by_source=(
+                                        config.cti_stale_after_by_source
+                                    ),
                                 )
                             )
                         except OSError:
