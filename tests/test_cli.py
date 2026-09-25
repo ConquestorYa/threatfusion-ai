@@ -16,14 +16,14 @@ def _result() -> RuntimeAnalysisResult:
         assess_dns_domains(
             events,
             (),
-            ml_probabilities=scores,
+            ml_scores=scores,
             ml_thresholds=MLThresholds(0.8, 0.6, 0.5),
         )
     )
     return RuntimeAnalysisResult(
         events=events,
         matches=(),
-        ml_probabilities=scores,
+        ml_scores=scores,
         assessments=assessments,
     )
 
