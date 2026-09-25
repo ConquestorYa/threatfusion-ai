@@ -53,6 +53,9 @@ The repository currently implements:
 - Privacy-safe JSON and CSV report export for the current in-memory analysis, containing aggregate/per-domain findings without raw DNS rows or client/response IP values.
 - Automated pytest tests for the model, normalization, correlation, collectors, DNS ingestion, matching, ML dataset, snapshot, split, and baseline evaluation behavior.
 - Ruff checks for code quality.
+- Analyst-feedback regression tests covering saved-run/domain isolation,
+  legacy SQLite history migration, bounded notes, unchanged detector output,
+  and the local/public Streamlit workflow.
 - Real live-data validation for the ThreatFox, URLhaus, and SGB collectors in addition to network-free automated tests.
 
 DNS telemetry ingestion includes:

@@ -275,6 +275,53 @@ def test_analyst_feedback_roundtrip_and_update(tmp_path) -> None:
     assert rows[0].updated_at == second_time.isoformat()
 
 
+def test_analyst_feedback_is_isolated_by_run_and_domain(tmp_path) -> None:
+    db_path = tmp_path / "history.sqlite"
+    first_run = save_runtime_analysis(db_path, make_result())
+    second_run = save_runtime_analysis(db_path, make_result())
+    known_feedback = save_analyst_feedback(
+        db_path, first_run, "known.bad", "confirmed_threat"
+    )
+    save_analyst_feedback(
+        db_path, first_run, "review.example", "uncertain"
+    )
+    second_feedback = save_analyst_feedback(
+        db_path,
+        second_run,
+        "review.example",
+        "uncertain",
+        note="Separate investigation",
+    )
+
+    updated = save_analyst_feedback(
+        db_path, first_run, "review.example", "benign"
+    )
+
+    assert get_analyst_feedback(db_path, first_run) == [known_feedback, updated]
+    assert get_analyst_feedback(db_path, second_run) == [second_feedback]
+
+
+def test_analyst_feedback_upgrades_existing_history_without_data_loss(
+    tmp_path,
+) -> None:
+    db_path = tmp_path / "history.sqlite"
+    run_id = save_runtime_analysis(db_path, make_result())
+    original_summary = get_analysis_run(db_path, run_id)
+    original_assessments = get_analysis_assessments(db_path, run_id)
+    # Earlier history databases contain the run tables but no feedback table.
+    with sqlite3.connect(db_path) as connection:
+        connection.execute("DROP TABLE analyst_feedback")
+
+    saved = save_analyst_feedback(
+        db_path, run_id, "review.example", "uncertain"
+    )
+    initialize_database(db_path)
+
+    assert list_analysis_runs(db_path) == [original_summary]
+    assert get_analysis_assessments(db_path, run_id) == original_assessments
+    assert get_analyst_feedback(db_path, run_id) == [saved]
+
+
 def test_analyst_feedback_rejects_unknown_domain_and_label(tmp_path) -> None:
     db_path = tmp_path / "history.sqlite"
     run_id = save_runtime_analysis(db_path, make_result())
@@ -299,20 +346,73 @@ def test_analyst_feedback_rejects_unknown_domain_and_label(tmp_path) -> None:
 def test_analyst_feedback_note_is_bounded(tmp_path) -> None:
     db_path = tmp_path / "history.sqlite"
     run_id = save_runtime_analysis(db_path, make_result())
+    saved = save_analyst_feedback(
+        db_path,
+        run_id,
+        "review.example",
+        "uncertain",
+        note="x" * 500,
+    )
+
+    assert get_analyst_feedback(db_path, run_id) == [saved]
+    assert saved.note == "x" * 500
 
     with pytest.raises(ValueError, match="too long"):
         save_analyst_feedback(
             db_path,
             run_id,
             "review.example",
-            "uncertain",
+            "benign",
             note="x" * 501,
         )
 
+    assert get_analyst_feedback(db_path, run_id) == [saved]
 
-def test_feedback_does_not_change_original_assessment(tmp_path) -> None:
+
+def test_whitespace_note_clears_previous_analyst_note(tmp_path) -> None:
     db_path = tmp_path / "history.sqlite"
     run_id = save_runtime_analysis(db_path, make_result())
+    save_analyst_feedback(
+        db_path,
+        run_id,
+        "review.example",
+        "uncertain",
+        note="Needs investigation",
+    )
+
+    cleared = save_analyst_feedback(
+        db_path,
+        run_id,
+        "review.example",
+        "benign",
+        note=" \n\t ",
+    )
+
+    assert cleared.note is None
+    assert get_analyst_feedback(db_path, run_id) == [cleared]
+
+
+def test_analyst_note_is_stored_as_literal_data(tmp_path) -> None:
+    db_path = tmp_path / "history.sqlite"
+    run_id = save_runtime_analysis(db_path, make_result())
+    original_summary = get_analysis_run(db_path, run_id)
+    original_assessments = get_analysis_assessments(db_path, run_id)
+    note = "Analyst's note'); DROP TABLE analysis_runs; --"
+
+    save_analyst_feedback(
+        db_path, run_id, "review.example", "uncertain", note=note
+    )
+
+    assert get_analyst_feedback(db_path, run_id)[0].note == note
+    assert get_analysis_run(db_path, run_id) == original_summary
+    assert get_analysis_assessments(db_path, run_id) == original_assessments
+
+
+def test_feedback_does_not_change_original_analysis(tmp_path) -> None:
+    db_path = tmp_path / "history.sqlite"
+    run_id = save_runtime_analysis(db_path, make_result())
+    original_summary = get_analysis_run(db_path, run_id)
+    original_assessments = get_analysis_assessments(db_path, run_id)
 
     save_analyst_feedback(
         db_path,
@@ -321,7 +421,16 @@ def test_feedback_does_not_change_original_assessment(tmp_path) -> None:
         "benign",
     )
 
-    assessments = get_analysis_assessments(db_path, run_id)
+    assert get_analysis_run(db_path, run_id) == original_summary
+    assert get_analysis_assessments(db_path, run_id) == original_assessments
 
-    known = next(row for row in assessments if row.domain == "known.bad")
-    assert known.verdict == "known_threat"
+    save_analyst_feedback(
+        db_path,
+        run_id,
+        "known.bad",
+        "confirmed_threat",
+        note="Reviewed again",
+    )
+
+    assert get_analysis_run(db_path, run_id) == original_summary
+    assert get_analysis_assessments(db_path, run_id) == original_assessments
