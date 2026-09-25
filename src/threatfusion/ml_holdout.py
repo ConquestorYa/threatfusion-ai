@@ -7,6 +7,7 @@ from datetime import date
 from .ml_artifact import TrainedMLArtifact
 from .ml_dataset import DomainSample, normalize_domain_candidate
 from .ml_high_recall import ThresholdMetrics, calculate_threshold_metrics
+from .normalization import normalize_domain_name
 
 
 @dataclass(frozen=True)
@@ -77,17 +78,32 @@ def validate_fresh_snapshot_dates(
         )
 
 
+def _development_overlap_key(value: str) -> str | None:
+    """Canonicalize legacy development rows without reapplying ML eligibility."""
+    if not isinstance(value, str):
+        return None
+
+    normalized = normalize_domain_name(value, strict=False)
+    return normalized or None
+
+
 def prepare_disjoint_holdout(
     development_samples: Sequence[DomainSample],
     holdout_samples: Sequence[DomainSample],
 ) -> HoldoutPreparation:
-    """Remove every normalized domain seen in development from the holdout."""
+    """Remove every canonical domain seen in development from the holdout.
+
+    Historical development snapshots may contain rows that predate the current
+    strict ML-eligibility rules. Those rows still belong to the development
+    evidence set, so overlap bookkeeping uses stable non-strict canonicalization
+    for development only. Holdout rows remain subject to current strict
+    validation before they can be evaluated.
+    """
     development_domains: set[str] = set()
     for sample in development_samples:
-        normalized = normalize_domain_candidate(sample.domain)
-        if normalized is None:
-            raise ValueError("development snapshot contains an invalid domain")
-        development_domains.add(normalized)
+        normalized = _development_overlap_key(sample.domain)
+        if normalized is not None:
+            development_domains.add(normalized)
 
     retained: dict[str, DomainSample] = {}
     overlap_removed = 0
