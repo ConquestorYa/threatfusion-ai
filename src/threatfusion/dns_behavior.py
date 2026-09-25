@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from collections import defaultdict
-from collections import Counter
+import math
+from collections import Counter, defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
+from itertools import pairwise
 from statistics import pstdev
-import math
 
 from .dns import DNSEvent
 from .models import IOCType
@@ -124,7 +124,7 @@ def _periodicity_metrics(
     ordered = sorted(timestamps)
     intervals = [
         (right - left).total_seconds()
-        for left, right in zip(ordered, ordered[1:])
+        for left, right in pairwise(ordered)
         if (right - left).total_seconds() > 0
     ]
     if len(intervals) < 2:
