@@ -518,3 +518,57 @@ produce more benign alerts than malicious detections at scale. Final reporting
 must therefore show the measured FPR, its uncertainty, dataset composition,
 and this base-rate limitation alongside precision.
 
+## Confirmed-benign long-tail DNS telemetry evaluation
+
+Tranco Top 50k is useful for a reproducible benign proxy, but it is not a
+representative sample of ordinary long-tail DNS activity. The repository now
+includes a second benign-only evaluation path for DNS telemetry that an
+operator has independently chosen to treat as benign-labeled data.
+
+This workflow reuses the existing DNS importers for:
+
+- Generic ThreatFusion DNS CSV
+- Zeek `dns.log`
+- Pi-hole FTL SQLite
+- AdGuard Home query-log JSON
+
+The evaluator:
+
+1. requires the explicit `--confirm-benign-label` acknowledgement
+2. keeps only valid public-domain ML scoring candidates
+3. normalizes and deduplicates domains so repeated queries do not inflate FPR
+4. removes every normalized domain that appeared in the development snapshot
+5. evaluates the frozen high / medium / low thresholds without retraining or
+   threshold tuning
+6. reports false-positive counts, empirical FPR, and 95% Wilson intervals
+7. can persist an aggregate-only JSON report that contains no domain names,
+   DNS rows, or client IP values
+
+Example with a Generic DNS CSV:
+
+```powershell
+python scripts\evaluate_ml_benign_telemetry.py `
+  --artifact-dir data\models\development-001 `
+  --development-snapshot-dir data\snapshots\baseline-001 `
+  --dns-csv data\evaluation-input\confirmed-benign.csv `
+  --confirm-benign-label `
+  --json-output data\evaluation\benign_dns.json
+```
+
+Equivalent input switches are `--zeek-dns-log`, `--pihole-db`, and
+`--adguard-query-log`. Exactly one telemetry input must be supplied.
+
+The acknowledgement is a scientific guardrail, not a security guarantee.
+**Absence from CTI is not proof that a domain is benign.** The measured FPR is
+valid only to the extent that the supplied corpus really is benign. A corpus
+built by taking arbitrary DNS traffic and merely removing known IOC matches
+must not be described as confirmed benign.
+
+The tool intentionally measures unique-domain false-positive behavior rather
+than per-query alert volume. Query-frequency-weighted operational alert burden
+can be studied separately when realistic production telemetry is available.
+
+Implementing this path does not by itself complete the long-tail benign
+evaluation backlog item. A real operator-confirmed benign corpus still needs to
+be evaluated and its aggregate result documented before that work is complete.
+
