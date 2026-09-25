@@ -98,6 +98,13 @@ public mode does not save shared analysis history.
 
 The container runs as a non-root user and exposes Streamlit on port 8501.
 
+## CI container smoke test
+
+GitHub Actions builds the Docker image, starts it in public mode without private
+model/CTI assets, and waits for Streamlit's local health endpoint. This catches
+container build/start regressions while keeping ignored runtime data and secrets
+out of CI.
+
 ## Health check
 
 The image health check uses Streamlit's local health endpoint:
