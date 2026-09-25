@@ -10,6 +10,8 @@ from threatfusion.campaign import find_related_activity
 from threatfusion.dns import DNSEvent
 from threatfusion.dns_behavior import DomainBehavior
 from threatfusion.hybrid_assessment import HybridAssessment, HybridVerdict
+from threatfusion.matching import DNSIOCMatch
+from threatfusion.models import IOCRecord, IOCType
 from threatfusion.runtime_analysis import RuntimeAnalysisResult
 
 
@@ -39,10 +41,11 @@ def assessment(domain: str, verdict: HybridVerdict) -> HybridAssessment:
 def result_with(
     events: list[DNSEvent],
     assessments: list[HybridAssessment],
+    matches: list[DNSIOCMatch] | None = None,
 ) -> RuntimeAnalysisResult:
     return RuntimeAnalysisResult(
         events=tuple(events),
-        matches=(),
+        matches=tuple(matches or ()),
         ml_probabilities={},
         assessments=tuple(assessments),
     )
@@ -102,7 +105,108 @@ def test_shared_response_ip_creates_relationship() -> None:
 
     assert relationship.shared_client_count == 0
     assert relationship.shared_response_ip_count == 1
+    assert relationship.strength == pytest.approx(0.45)
     assert relationship.reasons == ("shared_response_ip",)
+
+
+def test_common_shared_client_is_filtered_as_nat_style_noise() -> None:
+    domains = ("a.example", "b.example", "c.example")
+    result = result_with(
+        [
+            DNSEvent(
+                query_name=domain,
+                client_ip="192.0.2.50",
+            )
+            for domain in domains
+        ],
+        [
+            assessment(domain, HybridVerdict.REVIEW)
+            for domain in domains
+        ],
+    )
+
+    report = find_related_activity(result)
+
+    assert report.relationships == ()
+    assert report.clusters == ()
+
+
+def test_common_shared_response_ip_is_filtered_as_shared_infrastructure() -> None:
+    domains = ("a.example", "b.example", "c.example")
+    result = result_with(
+        [
+            DNSEvent(
+                query_name=domain,
+                response_ip="198.51.100.50",
+            )
+            for domain in domains
+        ],
+        [
+            assessment(domain, HybridVerdict.REVIEW)
+            for domain in domains
+        ],
+    )
+
+    report = find_related_activity(result)
+
+    assert report.relationships == ()
+    assert report.clusters == ()
+
+
+def test_cti_overlap_strengthens_explainable_relationship() -> None:
+    left_event = DNSEvent(
+        query_name="a.example",
+        client_ip="192.0.2.10",
+    )
+    right_event = DNSEvent(
+        query_name="b.example",
+        client_ip="192.0.2.10",
+    )
+    matches = [
+        DNSIOCMatch(
+            left_event,
+            IOCRecord(
+                "a.example",
+                IOCType.DOMAIN,
+                "ThreatFox",
+                threat_type="botnet_cc",
+                tags=["c2"],
+            ),
+            "query_domain",
+        ),
+        DNSIOCMatch(
+            right_event,
+            IOCRecord(
+                "b.example",
+                IOCType.DOMAIN,
+                "ThreatFox",
+                threat_type="botnet_cc",
+                tags=["c2"],
+            ),
+            "query_domain",
+        ),
+    ]
+    result = result_with(
+        [left_event, right_event],
+        [
+            assessment("a.example", HybridVerdict.KNOWN_THREAT),
+            assessment("b.example", HybridVerdict.KNOWN_THREAT),
+        ],
+        matches,
+    )
+
+    relationship = find_related_activity(result).relationships[0]
+
+    assert relationship.shared_cti_source_count == 1
+    assert relationship.shared_cti_tag_count == 1
+    assert relationship.shared_threat_type_count == 1
+    assert relationship.strength == pytest.approx(0.85)
+    assert relationship.reasons == (
+        "shared_client",
+        "shared_cti_source",
+        "shared_cti_tag",
+        "shared_threat_type",
+    )
 
 
 def test_time_proximity_alone_does_not_create_relationship() -> None:
