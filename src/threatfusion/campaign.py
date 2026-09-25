@@ -9,7 +9,6 @@ from .models import IOCType
 from .normalization import normalize_ioc_value
 from .runtime_analysis import RuntimeAnalysisResult
 
-
 MAX_RELATED_ACTIVITY_DOMAINS = 500
 MAX_RELATED_ACTIVITY_RELATIONSHIPS = 10_000
 
@@ -77,6 +76,7 @@ def _pairs_from_shared_values(
                         "related-activity relationship limit exceeded"
                     )
     return pairs
+
 
 def find_related_activity(
     result: RuntimeAnalysisResult,
