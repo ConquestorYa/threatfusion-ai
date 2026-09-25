@@ -286,7 +286,7 @@ def _show_analysis_result(
 ) -> None:
     summary = summarize_runtime_result(result)
 
-    st.subheader("Analysis summary")
+    st.subheader("Analysis overview")
     columns = st.columns(6)
     columns[0].metric("DNS events", summary.event_count)
     columns[1].metric("Unique domains", summary.domain_count)
@@ -300,16 +300,73 @@ def _show_analysis_result(
         "telemetry rows."
     )
 
-    chart_data = _verdict_chart(summary)
-    figure = px.bar(
-        chart_data,
-        x="verdict",
-        y="count",
-        title="Domain verdict distribution",
-        text_auto=True,
-        labels={"verdict": "Verdict", "count": "Domains"},
-    )
-    st.plotly_chart(figure, width="stretch")
+    priority_rows = priority_assessment_rows(result)
+    overview_left, overview_right = st.columns([2, 1])
+
+    with overview_left:
+        st.markdown("#### Priority findings")
+        if priority_rows:
+            priority_frame = pd.DataFrame(priority_rows)[
+                [
+                    "Domain",
+                    "Verdict",
+                    "ML tier",
+                    "DNS events",
+                    "Known CTI sources",
+                    "Evidence",
+                ]
+            ]
+            st.dataframe(
+                priority_frame,
+                hide_index=True,
+                width="stretch",
+                height=min(300, 72 + (len(priority_frame) * 35)),
+                column_config={
+                    "Domain": st.column_config.TextColumn(width="medium"),
+                    "Verdict": st.column_config.TextColumn(width="small"),
+                    "ML tier": st.column_config.TextColumn(width="small"),
+                    "DNS events": st.column_config.NumberColumn(width="small"),
+                    "Known CTI sources": st.column_config.TextColumn(
+                        width="medium"
+                    ),
+                    "Evidence": st.column_config.TextColumn(width="large"),
+                },
+            )
+        else:
+            st.success("No Known Threat, High Risk, or Review findings.")
+
+    with overview_right:
+        st.markdown("#### Verdict distribution")
+        chart_data = _verdict_chart(summary)
+        figure = px.bar(
+            chart_data,
+            x="verdict",
+            y="count",
+            color="verdict",
+            text_auto=True,
+            labels={"verdict": "Verdict", "count": "Domains"},
+            color_discrete_map={
+                "Known Threat": "#d62728",
+                "High Risk": "#ff7f0e",
+                "Review": "#f2c94c",
+                "Low": "#2ca02c",
+            },
+        )
+        figure.update_layout(
+            height=300,
+            showlegend=False,
+            margin={"l": 20, "r": 20, "t": 10, "b": 20},
+        )
+        st.plotly_chart(figure, width="stretch")
+
+    all_rows = assessment_rows(result)
+    if all_rows:
+        selected_domain = st.selectbox(
+            "Inspect a domain",
+            [row["Domain"] for row in all_rows],
+            key="live_domain_detail",
+        )
+        _show_domain_detail(result, selected_domain)
 
     findings_tab, matches_tab, campaign_tab = st.tabs(
         ["Domain findings", "Known IOC evidence", "Related activity"]
@@ -337,12 +394,6 @@ def _show_analysis_result(
                 },
             )
 
-            selected_domain = st.selectbox(
-                "Inspect a domain",
-                [row["Domain"] for row in rows],
-                key="live_domain_detail",
-            )
-            _show_domain_detail(result, selected_domain)
         else:
             st.info("No domain assessments were produced.")
 
