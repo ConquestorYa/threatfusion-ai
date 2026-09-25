@@ -150,8 +150,6 @@ def test_csv_report_is_portable_and_human_readable() -> None:
     )
 
 
-
-
 def test_csv_report_escapes_spreadsheet_formula_prefixes() -> None:
     result = make_result()
     assessment = replace(
