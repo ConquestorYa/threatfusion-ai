@@ -276,6 +276,10 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
 - Stores completed analysis summaries and per-domain hybrid assessment results in SQLite.
 - Stores one current local analyst feedback label/note per saved run and domain without modifying the original verdict.
 - Can retrieve the latest prior analyst review for a domain across saved runs.
+- Supports explicit multi-select analyst feedback updates without changing
+  detector verdicts.
+- Supports deletion of one saved run, bounded keep-latest retention cleanup,
+  and deterministic run-to-run domain/verdict comparison.
 - Stores local domain suppression policy with a reason and optional expiry;
   suppression affects priority presentation only and does not rewrite detector
   output.
