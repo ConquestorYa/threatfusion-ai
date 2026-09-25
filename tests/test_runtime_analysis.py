@@ -9,7 +9,12 @@ from threatfusion import runtime_analysis
 from threatfusion.dns import DNSEvent
 from threatfusion.hybrid_assessment import HybridVerdict, MLThresholds
 from threatfusion.models import IOCRecord, IOCType
-from threatfusion.runtime_analysis import analyze_dns_csv, analyze_dns_events
+from threatfusion.runtime_analysis import (
+    MAX_DNS_EVENTS,
+    analyze_dns_csv,
+    analyze_dns_events,
+    is_ml_scoring_candidate,
+)
 
 
 def fake_artifact():
@@ -179,6 +184,62 @@ def test_response_ip_ioc_match_keeps_known_threat_precedence(
     assert assessment.verdict is HybridVerdict.KNOWN_THREAT
     assert assessment.known_match_types == ("response_ip",)
 
+
+
+
+def test_ml_scoring_skips_reverse_local_and_single_label_queries(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events = [
+        DNSEvent(query_name="example.com"),
+        DNSEvent(query_name="1.0.0.127.in-addr.arpa"),
+        DNSEvent(query_name="printer.local"),
+        DNSEvent(query_name="internalhost"),
+    ]
+    captured: list[list[str]] = []
+
+    def predict(artifact, domains):
+        values = list(domains)
+        captured.append(values)
+        return {"example.com": 0.55}
+
+    monkeypatch.setattr(runtime_analysis, "predict_domain_probabilities", predict)
+
+    result = analyze_dns_events(events, [], fake_artifact())
+
+    assert captured == [["example.com"]]
+    assert result.ml_probabilities == {"example.com": 0.55}
+    by_domain = {item.domain: item for item in result.assessments}
+    assert by_domain["1.0.0.127.in-addr.arpa"].ml_probability is None
+    assert by_domain["printer.local"].ml_probability is None
+    assert by_domain["internalhost"].ml_probability is None
+
+
+def test_ml_scoring_candidate_rules_are_explicit() -> None:
+    assert is_ml_scoring_candidate("example.com")
+    assert not is_ml_scoring_candidate("localhost")
+    assert not is_ml_scoring_candidate("host.local")
+    assert not is_ml_scoring_candidate("1.0.0.127.in-addr.arpa")
+    assert not is_ml_scoring_candidate("singlelabel")
+
+
+def test_runtime_rejects_excessive_event_count(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(runtime_analysis, "MAX_DNS_EVENTS", 2)
+
+    with pytest.raises(ValueError, match="event analysis limit"):
+        analyze_dns_events(
+            [
+                DNSEvent(query_name="one.example"),
+                DNSEvent(query_name="two.example"),
+                DNSEvent(query_name="three.example"),
+            ],
+            [],
+            fake_artifact(),
+        )
+
+    assert MAX_DNS_EVENTS >= 2
 
 def test_runtime_analysis_does_not_perform_networking(
     monkeypatch: pytest.MonkeyPatch,
