@@ -48,10 +48,10 @@ def _finding_rows(result: RuntimeAnalysisResult) -> list[dict[str, object]]:
             {
                 "domain": assessment.domain,
                 "verdict": verdict_label(assessment.verdict.value),
-                "ml_score": assessment.ml_probability,
+                "ml_score": assessment.ml_score,
                 "ml_tier": ml_tier_label(
                     assessment.ml_tier,
-                    scored=assessment.ml_probability is not None,
+                    scored=assessment.ml_score is not None,
                 ),
                 "dns_events": behavior.event_count,
                 "unique_clients": behavior.unique_client_count,
