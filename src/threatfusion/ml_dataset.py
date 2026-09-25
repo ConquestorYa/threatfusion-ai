@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from urllib.parse import urlsplit
 
 from .models import IOCRecord, IOCType
-from .normalization import normalize_ioc_value
+from .normalization import normalize_domain_name
 
 
 @dataclass(frozen=True)
@@ -24,14 +24,9 @@ def normalize_domain_candidate(value: str) -> str | None:
     if not candidate:
         return None
 
-    normalized = normalize_ioc_value(candidate, IOCType.DOMAIN)
-    if not normalized:
-        return None
-
-    if any(ch.isspace() for ch in candidate):
-        return None
-
-    if any(token in candidate for token in ("/", "@", ":")):
+    try:
+        normalized = normalize_domain_name(candidate, strict=True)
+    except (TypeError, ValueError):
         return None
 
     try:
