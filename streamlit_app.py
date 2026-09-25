@@ -142,9 +142,16 @@ def _show_system_status(
 
     statuses = list_cti_cache_status(db_path)
     if statuses:
-        st.sidebar.success("CTI cache available")
+        status_rows = cti_status_rows(statuses)
+        if any(row["Status"] != "Fresh" for row in status_rows):
+            st.sidebar.warning(
+                "CTI cache is available, but one or more sources are stale "
+                "or have an unknown refresh time."
+            )
+        else:
+            st.sidebar.success("CTI cache available and fresh")
         st.sidebar.dataframe(
-            pd.DataFrame(cti_status_rows(statuses)),
+            pd.DataFrame(status_rows),
             hide_index=True,
             width="stretch",
         )
@@ -173,6 +180,9 @@ def _show_domain_detail(result, domain: str) -> None:
     )
     columns[2].metric("ML tier", detail["ml_tier"])
     columns[3].metric("DNS events", detail["event_count"])
+
+    if detail["ml_note"]:
+        st.caption(detail["ml_note"])
 
     behavior_columns = st.columns(3)
     behavior_columns[0].metric("Unique clients", detail["client_count"])
@@ -277,7 +287,9 @@ def _show_analysis_result(
         st.caption(
             "ML score is a model decision score, not a literal probability "
             "that a domain is malware. Known IOC matches take precedence "
-            "over ML score tiers."
+            "over ML score tiers. Reverse-DNS, local/internal, single-label, "
+            "and service-discovery names are not sent to the public-domain "
+            "string model."
         )
 
     with matches_tab:
@@ -292,38 +304,45 @@ def _show_analysis_result(
             st.info("No cached IOC matches were found.")
 
     with campaign_tab:
-        report = find_related_activity(result)
-        if report.clusters:
-            st.info(
-                "These groups show possible related suspicious activity based "
-                "on shared local DNS evidence. They do not prove one malware "
-                "campaign."
-            )
-            st.plotly_chart(
-                _relationship_figure(report, result),
-                width="stretch",
-            )
-            st.write("**Possible related-activity groups**")
-            st.dataframe(
-                pd.DataFrame(cluster_rows(report)),
-                hide_index=True,
-                width="stretch",
-            )
-            st.write("**Relationship evidence**")
-            st.dataframe(
-                pd.DataFrame(relationship_rows(report)),
-                hide_index=True,
-                width="stretch",
-            )
-            st.caption(
-                "Raw client IP values are not shown. Relationship rows expose "
-                "aggregate shared counts only."
+        try:
+            report = find_related_activity(result)
+        except ValueError as error:
+            st.warning(
+                "Related-activity analysis was skipped to keep processing "
+                f"bounded: {error}"
             )
         else:
-            st.info(
-                "No possible related-activity groups were found among Known "
-                "Threat, High Risk, or Review domains."
-            )
+            if report.clusters:
+                st.info(
+                    "These groups show possible related suspicious activity "
+                    "based on shared local DNS evidence. They do not prove "
+                    "one malware campaign."
+                )
+                st.plotly_chart(
+                    _relationship_figure(report, result),
+                    width="stretch",
+                )
+                st.write("**Possible related-activity groups**")
+                st.dataframe(
+                    pd.DataFrame(cluster_rows(report)),
+                    hide_index=True,
+                    width="stretch",
+                )
+                st.write("**Relationship evidence**")
+                st.dataframe(
+                    pd.DataFrame(relationship_rows(report)),
+                    hide_index=True,
+                    width="stretch",
+                )
+                st.caption(
+                    "Raw client IP values are not shown. Relationship rows "
+                    "expose aggregate shared counts only."
+                )
+            else:
+                st.info(
+                    "No possible related-activity groups were found among "
+                    "Known Threat, High Risk, or Review domains."
+                )
 
     report = build_analysis_report(
         result,
