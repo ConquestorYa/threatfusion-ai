@@ -241,11 +241,11 @@ def load_trusted_ml_artifact(input_dir: Path) -> TrainedMLArtifact:
     )
 
 
-def predict_domain_probabilities(
+def predict_domain_scores(
     artifact: TrainedMLArtifact,
     domains: Iterable[str],
 ) -> dict[str, float]:
-    """Predict malicious-domain probabilities for valid normalized domains."""
+    """Return the model's positive-class score for valid normalized domains."""
     normalized_domains: list[str] = []
     seen: set[str] = set()
 
@@ -259,11 +259,19 @@ def predict_domain_probabilities(
     if not normalized_domains:
         return {}
 
-    probabilities = artifact.model.predict_proba(normalized_domains)
+    model_output = artifact.model.predict_proba(normalized_domains)
     classes = list(artifact.model.classes_)
     positive_index = classes.index(1)
 
     return {
         domain: float(row[positive_index])
-        for domain, row in zip(normalized_domains, probabilities, strict=True)
+        for domain, row in zip(normalized_domains, model_output, strict=True)
     }
+
+
+def predict_domain_probabilities(
+    artifact: TrainedMLArtifact,
+    domains: Iterable[str],
+) -> dict[str, float]:
+    """Backward-compatible alias for :func:`predict_domain_scores`."""
+    return predict_domain_scores(artifact, domains)
