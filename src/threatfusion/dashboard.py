@@ -85,6 +85,7 @@ _MATCH_EVIDENCE_SCOPE_LABELS = {
     "query_domain": "Exact domain IOC",
     "url_hostname": "URL hostname IOC",
     "response_ip": "Response infrastructure IOC",
+    "response_ip_network": "Response IPv6 network IOC",
 }
 
 _RELATION_REASON_LABELS = {
@@ -97,6 +98,9 @@ _REASON_LABELS = {
     "known_ioc_match": "Exact known-domain IOC match",
     "url_hostname_ioc_context": "Hostname appears in a malicious URL IOC",
     "response_ip_ioc_context": "Response IP matches known threat infrastructure",
+    "response_ip_network_ioc_context": (
+        "Response IPv6 address falls within a known threat network"
+    ),
     "ml_high_confidence": "High ML score tier",
     "ml_medium_confidence": "Medium ML score tier",
     "ml_low_confidence": "Low ML score tier",
