@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -69,10 +70,18 @@ def capture_analysis_audit_metadata(
     *,
     captured_at: datetime | None = None,
     stale_after: timedelta = _DEFAULT_CTI_STALE_AFTER,
+    stale_after_by_source: Mapping[str, timedelta] | None = None,
 ) -> AnalysisAuditMetadata:
     """Capture reproducibility metadata without persisting raw telemetry."""
     if stale_after.total_seconds() <= 0:
         raise ValueError("stale_after must be positive")
+
+    source_thresholds = dict(stale_after_by_source or {})
+    if any(
+        threshold.total_seconds() <= 0
+        for threshold in source_thresholds.values()
+    ):
+        raise ValueError("source-specific stale_after values must be positive")
 
     captured, captured_text = _captured_time_text(captured_at)
     thresholds: MLThresholds = artifact.thresholds
@@ -84,7 +93,10 @@ def capture_analysis_audit_metadata(
             freshness=_freshness(
                 status.refreshed_at,
                 captured_at=captured,
-                stale_after=stale_after,
+                stale_after=source_thresholds.get(
+                    status.source,
+                    stale_after,
+                ),
             ),
         )
         for status in sorted(cti_statuses, key=lambda item: item.source)
