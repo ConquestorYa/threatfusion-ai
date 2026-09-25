@@ -775,3 +775,24 @@ feedback never rewrites detector verdicts.
 turning review actions into hidden detection logic or creating an accidental
 database-wipe control. Run deltas should describe saved findings only and stay
 separate from model inference.
+
+## DEC-082: Preserve CTI lifecycle state across refreshes
+
+**Decision:** A successful source refresh marks previously cached indicators
+inactive before reactivating or inserting indicators present in the new
+snapshot. The cache retains local `first_seen_in_cache`,
+`last_seen_in_refresh`, and active/inactive state. Runtime matching reads
+active indicators only unless lifecycle history is explicitly requested.
+
+SGB collection uses a caller-controlled maximum page bound but stops earlier
+when the API reports that the total row count has been consumed or returns an
+empty page. Dashboard freshness thresholds can be configured independently for
+ThreatFox, URLhaus, and SGB.
+
+**Reason:** Deleting a source snapshot destroys useful IOC lifecycle evidence,
+while treating inactive indicators as current evidence would create stale
+matches. Separating retained history from active matching preserves auditability
+without changing verdict semantics. Adaptive pagination avoids assuming a fixed
+source size, and per-source freshness thresholds reflect different maintenance
+cadences without hardcoding them into detector logic.
+
