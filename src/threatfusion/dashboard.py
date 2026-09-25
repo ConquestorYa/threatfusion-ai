@@ -81,6 +81,12 @@ _FEEDBACK_LABELS = {
     "uncertain": "Uncertain",
 }
 
+_MATCH_EVIDENCE_SCOPE_LABELS = {
+    "query_domain": "Exact domain IOC",
+    "url_hostname": "URL hostname IOC",
+    "response_ip": "Response infrastructure IOC",
+}
+
 _RELATION_REASON_LABELS = {
     "shared_client": "Shared client observation",
     "shared_response_ip": "Shared response IP observation",
@@ -130,7 +136,10 @@ def build_relationship_graph(
                 sources: tuple[str, ...] = ()
             else:
                 verdict = verdict_label(assessment.verdict.value)
-                tier = ml_tier_label(assessment.ml_tier)
+                tier = ml_tier_label(
+                    assessment.ml_tier,
+                    scored=assessment.ml_probability is not None,
+                )
                 sources = assessment.known_ioc_sources
 
             nodes.append(
@@ -229,10 +238,29 @@ def verdict_label(value: str) -> str:
 def reason_label(value: str) -> str:
     return _REASON_LABELS.get(value, value.replace("_", " ").title())
 
-def ml_tier_label(value: str | None) -> str:
+def ml_tier_label(
+    value: str | None,
+    *,
+    scored: bool = True,
+) -> str:
+    if not scored:
+        return "Not scored"
     if value is None:
         return "Below threshold"
     return _ML_TIER_LABELS.get(value, value.title())
+
+
+def match_evidence_scope(match_type: str) -> str:
+    return _MATCH_EVIDENCE_SCOPE_LABELS.get(
+        match_type,
+        match_type.replace("_", " ").title(),
+    )
+
+
+def _ioc_datetime_label(value: datetime | None) -> str:
+    if value is None:
+        return ""
+    return format_timestamp(value.isoformat())
 
 
 def feedback_label(value: str | None) -> str:
@@ -309,7 +337,10 @@ def assessment_rows(
             "Domain": assessment.domain,
             "Verdict": verdict_label(assessment.verdict.value),
             "ML score": assessment.ml_probability,
-            "ML tier": ml_tier_label(assessment.ml_tier),
+            "ML tier": ml_tier_label(
+                assessment.ml_tier,
+                scored=assessment.ml_probability is not None,
+            ),
             "DNS events": behavior.event_count,
             "Clients": behavior.unique_client_count,
             "Response IPs": behavior.unique_response_ip_count,
@@ -341,7 +372,10 @@ def assessment_detail(
         "domain": assessment.domain,
         "verdict": verdict_label(assessment.verdict.value),
         "ml_score": assessment.ml_probability,
-        "ml_tier": ml_tier_label(assessment.ml_tier),
+        "ml_tier": ml_tier_label(
+            assessment.ml_tier,
+            scored=assessment.ml_probability is not None,
+        ),
         "known_sources": assessment.known_ioc_sources,
         "known_match_types": assessment.known_match_types,
         "event_count": behavior.event_count,
@@ -353,13 +387,19 @@ def assessment_detail(
 
 def match_rows(
     result: RuntimeAnalysisResult,
-) -> list[dict[str, str]]:
+) -> list[dict[str, object]]:
     return [
         {
             "Query name": match.event.query_name,
             "Source": match.indicator.source,
             "Match type": match.match_type.replace("_", " ").title(),
+            "Evidence scope": match_evidence_scope(match.match_type),
             "IOC type": match.indicator.ioc_type.value.upper(),
+            "Threat type": match.indicator.threat_type or "",
+            "Confidence": match.indicator.confidence,
+            "First seen": _ioc_datetime_label(match.indicator.first_seen),
+            "Last seen": _ioc_datetime_label(match.indicator.last_seen),
+            "Tags": ", ".join(match.indicator.tags),
         }
         for match in result.matches
     ]
@@ -442,7 +482,10 @@ def persisted_assessment_rows(
             "Domain": assessment.domain,
             "Verdict": verdict_label(assessment.verdict),
             "ML score": assessment.ml_probability,
-            "ML tier": ml_tier_label(assessment.ml_tier),
+            "ML tier": ml_tier_label(
+                assessment.ml_tier,
+                scored=assessment.ml_probability is not None,
+            ),
             "DNS events": assessment.event_count,
             "Clients": assessment.unique_client_count,
             "Response IPs": assessment.unique_response_ip_count,
