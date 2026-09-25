@@ -185,8 +185,6 @@ def test_response_ip_ioc_match_keeps_known_threat_precedence(
     assert assessment.known_match_types == ("response_ip",)
 
 
-
-
 def test_ml_scoring_skips_reverse_local_and_single_label_queries(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -240,6 +238,25 @@ def test_runtime_rejects_excessive_event_count(
         )
 
     assert MAX_DNS_EVENTS >= 2
+
+
+
+
+def test_runtime_rejects_excessive_unique_query_count(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(runtime_analysis, "MAX_UNIQUE_QUERY_NAMES", 2)
+
+    with pytest.raises(ValueError, match="unique-query analysis limit"):
+        analyze_dns_events(
+            [
+                DNSEvent(query_name="one.example"),
+                DNSEvent(query_name="two.example"),
+                DNSEvent(query_name="three.example"),
+            ],
+            [],
+            fake_artifact(),
+        )
 
 def test_runtime_analysis_does_not_perform_networking(
     monkeypatch: pytest.MonkeyPatch,
