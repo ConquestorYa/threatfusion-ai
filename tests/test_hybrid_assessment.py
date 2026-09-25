@@ -40,6 +40,69 @@ def test_known_ioc_match_takes_precedence() -> None:
     assert "known_ioc_match" in assessment.reasons
 
 
+
+
+def test_url_hostname_ioc_is_contextual_review_not_known_threat() -> None:
+    event = DNSEvent(query_name="shared-host.example")
+    indicator = IOCRecord(
+        "https://shared-host.example/malware.exe",
+        IOCType.URL,
+        "URLhaus",
+    )
+    match = DNSIOCMatch(
+        event=event,
+        indicator=indicator,
+        match_type="url_hostname",
+    )
+
+    assessment = assess_dns_domains([event], [match])[0]
+
+    assert assessment.verdict is HybridVerdict.REVIEW
+    assert assessment.known_ioc_sources == ("URLhaus",)
+    assert assessment.known_match_types == ("url_hostname",)
+    assert assessment.reasons == ("url_hostname_ioc_context",)
+
+
+def test_response_ip_ioc_is_contextual_review_not_known_threat() -> None:
+    event = DNSEvent(
+        query_name="shared-service.example",
+        response_ip="203.0.113.10",
+    )
+    indicator = IOCRecord("203.0.113.10", IOCType.IPV4, "ThreatFox")
+    match = DNSIOCMatch(
+        event=event,
+        indicator=indicator,
+        match_type="response_ip",
+    )
+
+    assessment = assess_dns_domains([event], [match])[0]
+
+    assert assessment.verdict is HybridVerdict.REVIEW
+    assert assessment.reasons == ("response_ip_ioc_context",)
+
+
+def test_contextual_ioc_plus_high_ml_can_be_high_risk() -> None:
+    event = DNSEvent(query_name="suspicious.example")
+    indicator = IOCRecord(
+        "https://suspicious.example/payload",
+        IOCType.URL,
+        "URLhaus",
+    )
+    match = DNSIOCMatch(event=event, indicator=indicator, match_type="url_hostname")
+
+    assessment = assess_dns_domains(
+        [event],
+        [match],
+        ml_probabilities={"suspicious.example": 0.90},
+        ml_thresholds=thresholds(),
+    )[0]
+
+    assert assessment.verdict is HybridVerdict.HIGH_RISK
+    assert assessment.reasons == (
+        "url_hostname_ioc_context",
+        "ml_high_confidence",
+    )
+
 def test_high_confidence_ml_signal_is_high_risk() -> None:
     event = DNSEvent(query_name="unknown.example")
 
