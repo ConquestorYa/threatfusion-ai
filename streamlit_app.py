@@ -13,6 +13,7 @@ _PROJECT_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(_PROJECT_ROOT / "src"))
 
 from threatfusion.app_config import load_app_config
+from threatfusion.audit import capture_analysis_audit_metadata
 from threatfusion.campaign import find_related_activity
 from threatfusion.cti_cache import (
     list_cti_cache_status,
@@ -795,14 +796,23 @@ def _show_analysis_result(
     )
 
     if history_enabled and st.button("Save aggregate analysis history"):
-        run_id = save_runtime_analysis(
-            db_path,
-            result,
-            model_name=artifact.metadata.model_name,
-        )
-        st.success(
-            f"Analysis #{run_id} saved. Raw DNS rows and client IPs were not stored."
-        )
+        audit_metadata = st.session_state.get("analysis_audit_metadata")
+        if audit_metadata is None:
+            st.error(
+                "Re-run the analysis before saving so model, threshold, "
+                "and CTI audit metadata can be captured."
+            )
+        else:
+            run_id = save_runtime_analysis(
+                db_path,
+                result,
+                model_name=artifact.metadata.model_name,
+                audit_metadata=audit_metadata,
+            )
+            st.success(
+                f"Analysis #{run_id} saved with reproducibility metadata. "
+                "Raw DNS rows and client IPs were not stored."
+            )
 
 def _show_history(db_path: Path) -> None:
     st.subheader("Saved analysis history")
@@ -826,6 +836,64 @@ def _show_history(db_path: Path) -> None:
         [summary.id for summary in summaries],
     )
     run_id = int(selected_id)
+    selected_summary = next(
+        summary for summary in summaries if summary.id == run_id
+    )
+    with st.expander("Reproducibility metadata", expanded=False):
+        if selected_summary.audit_captured_at is None:
+            st.caption(
+                "This is a legacy saved run created before audit metadata "
+                "was added."
+            )
+        else:
+            st.write(
+                "**Audit captured:** "
+                + format_timestamp(selected_summary.audit_captured_at)
+            )
+            st.write(
+                "**Artifact:** " + (selected_summary.model_name or "Unknown")
+            )
+            checksum = selected_summary.artifact_checksum or "Unknown"
+            st.code(checksum, language="text")
+            st.caption(
+                "Artifact SHA-256 checksum · artifact schema "
+                f"{selected_summary.artifact_schema_version or 'Unknown'} · "
+                "audit schema "
+                f"{selected_summary.audit_schema_version or 'Unknown'}"
+            )
+            if (
+                selected_summary.high_threshold is not None
+                and selected_summary.medium_threshold is not None
+                and selected_summary.low_threshold is not None
+            ):
+                st.write(
+                    "**Frozen thresholds:** "
+                    f"high {selected_summary.high_threshold:.6f} · "
+                    f"medium {selected_summary.medium_threshold:.6f} · "
+                    f"low {selected_summary.low_threshold:.6f}"
+                )
+            if selected_summary.cti_sources:
+                st.write("**CTI snapshot context**")
+                st.dataframe(
+                    pd.DataFrame(
+                        [
+                            {
+                                "Source": item.source,
+                                "Refreshed at": format_timestamp(
+                                    item.refreshed_at
+                                ),
+                                "Records": item.record_count,
+                                "Status": item.freshness.title(),
+                            }
+                            for item in selected_summary.cti_sources
+                        ]
+                    ),
+                    hide_index=True,
+                    width="stretch",
+                )
+            else:
+                st.caption("No CTI source refresh metadata was captured.")
+
     assessments = get_analysis_assessments(db_path, run_id)
     feedback = get_analyst_feedback(db_path, run_id)
     feedback_by_domain = {item.domain: item for item in feedback}
@@ -1293,6 +1361,7 @@ def main() -> None:
             if st.session_state.pop("upload_fingerprint", None) is not None:
                 st.session_state.pop("analysis_result", None)
                 st.session_state.pop("dns_parse_diagnostics", None)
+                st.session_state.pop("analysis_audit_metadata", None)
         else:
             content_bytes = uploaded.getvalue()
             fingerprint = (
@@ -1303,6 +1372,7 @@ def main() -> None:
                 st.session_state["upload_fingerprint"] = fingerprint
                 st.session_state.pop("analysis_result", None)
                 st.session_state.pop("dns_parse_diagnostics", None)
+                st.session_state.pop("analysis_audit_metadata", None)
 
             if len(content_bytes) > MAX_UPLOAD_BYTES:
                 st.error("Uploaded telemetry exceeds the 10 MB application limit.")
@@ -1324,6 +1394,21 @@ def main() -> None:
                     else:
                         st.session_state["analysis_result"] = result
                         st.session_state["dns_parse_diagnostics"] = diagnostics
+                        try:
+                            st.session_state["analysis_audit_metadata"] = (
+                                capture_analysis_audit_metadata(
+                                    model_dir,
+                                    artifact,
+                                    list_cti_cache_status(db_path),
+                                )
+                            )
+                        except OSError:
+                            st.session_state.pop("analysis_audit_metadata", None)
+                            st.warning(
+                                "Analysis completed, but reproducibility "
+                                "metadata could not be captured. Re-run the "
+                                "analysis before saving history."
+                            )
             else:
                 try:
                     content = content_bytes.decode("utf-8-sig")
@@ -1353,6 +1438,24 @@ def main() -> None:
                         else:
                             st.session_state["analysis_result"] = result
                             st.session_state["dns_parse_diagnostics"] = diagnostics
+                            try:
+                                st.session_state["analysis_audit_metadata"] = (
+                                    capture_analysis_audit_metadata(
+                                        model_dir,
+                                        artifact,
+                                        list_cti_cache_status(db_path),
+                                    )
+                                )
+                            except OSError:
+                                st.session_state.pop(
+                                    "analysis_audit_metadata",
+                                    None,
+                                )
+                                st.warning(
+                                    "Analysis completed, but reproducibility "
+                                    "metadata could not be captured. Re-run "
+                                    "the analysis before saving history."
+                                )
 
         result = st.session_state.get("analysis_result")
         diagnostics = st.session_state.get("dns_parse_diagnostics")

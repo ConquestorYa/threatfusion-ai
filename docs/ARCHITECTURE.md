@@ -245,6 +245,8 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
   configuration to JSON metadata.
 - Loads only explicitly trusted local artifacts; joblib/pickle files must
   never be accepted from untrusted sources.
+- Computes a stable SHA-256 identity over the persisted model and metadata
+  files for saved-run audit context.
 - Normalizes runtime domain strings and returns malicious-domain probabilities
   without networking.
 
@@ -278,6 +280,12 @@ local SQLite CTI cache, and a Streamlit MVP are implemented.
   suppression affects priority presentation only and does not rewrite detector
   output.
 - Persists verdict counts, ML output, aggregate DNS behavior, CTI source names, and reason codes.
+- Saves aggregate reproducibility metadata for new history runs: model name,
+  artifact SHA-256 identity, artifact/audit schema versions, frozen thresholds,
+  and per-source CTI refresh timestamp/count/freshness captured with the
+  analysis.
+- Migrates older history databases by adding nullable audit columns in place;
+  legacy saved runs remain readable and are labeled as lacking audit metadata.
 - Does not persist raw uploaded DNS rows or client IP values by default.
 - Uses parameterized SQL, foreign-key constraints, and deterministic read ordering.
 - Provides run-history and per-run assessment read helpers for the future dashboard.

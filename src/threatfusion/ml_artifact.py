@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass
@@ -160,6 +161,22 @@ def write_ml_artifact(
         encoding="utf-8",
     )
     return model_path, metadata_path
+
+
+def compute_ml_artifact_checksum(input_dir: Path) -> str:
+    """Return a stable SHA-256 identity for the persisted model artifact files."""
+    input_path = Path(input_dir)
+    digest = hashlib.sha256()
+
+    for filename in (_MODEL_FILENAME, _METADATA_FILENAME):
+        path = input_path / filename
+        with path.open("rb") as handle:
+            digest.update(filename.encode("utf-8"))
+            digest.update(b"\0")
+            while chunk := handle.read(1024 * 1024):
+                digest.update(chunk)
+
+    return digest.hexdigest()
 
 
 def _read_metadata(metadata_path: Path) -> MLArtifactMetadata:
