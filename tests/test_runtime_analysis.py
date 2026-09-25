@@ -71,9 +71,10 @@ def test_runtime_pipeline_uses_artifact_thresholds_for_ml_verdict(
     assert assessment.verdict is HybridVerdict.HIGH_RISK
     assert assessment.ml_tier == "high"
     assert assessment.ml_score == pytest.approx(0.85)
+    assert assessment.ml_probability == assessment.ml_score
 
 
-def test_runtime_pipeline_passes_unique_normalized_probabilities_through(
+def test_runtime_pipeline_passes_unique_normalized_scores_through(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     events = [
@@ -93,6 +94,7 @@ def test_runtime_pipeline_passes_unique_normalized_probabilities_through(
 
     assert captured == [["Example.COM.", "example.com"]]
     assert result.ml_scores == {"example.com": 0.55}
+    assert result.ml_probabilities == result.ml_scores
     assert len(result.assessments) == 1
     assert result.assessments[0].domain == "example.com"
 
