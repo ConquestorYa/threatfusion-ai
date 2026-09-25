@@ -858,6 +858,14 @@ def main() -> None:
             "client IP values are not persisted by this application."
         )
 
+        input_columns = st.columns(3)
+        input_columns[0].markdown("**Input format**")
+        input_columns[0].caption("Generic DNS CSV · UTF-8 · max 10 MB")
+        input_columns[1].markdown("**Required field**")
+        input_columns[1].caption("query_name; all other fields are optional")
+        input_columns[2].markdown("**Privacy**")
+        input_columns[2].caption("Raw rows stay in memory unless you export them")
+
         try:
             artifact = _load_artifact(str(model_dir))
         except (OSError, TypeError, ValueError) as error:
