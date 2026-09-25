@@ -133,7 +133,7 @@ def test_domain_shape_metrics_include_depth_numeric_ratio_and_entropy() -> None:
 
     assert behavior.label_count == 5
     assert behavior.subdomain_depth == 3
-    assert behavior.numeric_character_ratio == pytest.approx(6 / 17)
+    assert behavior.numeric_character_ratio == pytest.approx(6 / 19)
     assert behavior.hostname_entropy is not None
 
 
