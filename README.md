@@ -53,7 +53,7 @@ not treated as proof of malware.
 - reusable runtime analysis pipeline
 - SQLite CTI cache
 - privacy-conscious SQLite analysis history with local analyst feedback, prior-review context, and expiring local triage suppression
-- analyst-focused Streamlit dashboard with priority triage, evidence-first domain investigation, filtered history, and a dedicated model-evaluation view
+- analyst-focused Streamlit dashboard with priority triage, evidence-first domain investigation, multi-source CTI corroboration, filtered history, and a dedicated model-evaluation view
 - explainable related-activity clustering
 - privacy-preserving relationship graph
 - public-mode privacy controls and non-root Docker packaging
@@ -94,6 +94,16 @@ Run the dashboard:
 ```powershell
 streamlit run streamlit_app.py
 ```
+
+Run the same local detector from the CLI:
+
+```powershell
+python scripts\analyze_dns.py data\demo\demo_dns.csv --format dns-csv --json-output data\demo\analysis.json
+```
+
+The CLI also accepts `--format zeek` and `--format pihole`. It reads the
+existing local CTI cache and trusted model artifact; it does not refresh feeds
+or require API credentials.
 
 Supported telemetry formats are generic DNS CSV, Zeek `dns.log`, and an
 uploaded Pi-hole FTL SQLite query database.
