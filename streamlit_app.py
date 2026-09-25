@@ -879,7 +879,9 @@ def _show_history(db_path: Path) -> None:
                         [
                             {
                                 "Source": item.source,
-                                "Refreshed at": format_timestamp(item.refreshed_at),
+                                "Refreshed at": format_timestamp(
+                                    item.refreshed_at
+                                ),
                                 "Records": item.record_count,
                                 "Status": item.freshness.title(),
                             }
@@ -1436,6 +1438,24 @@ def main() -> None:
                         else:
                             st.session_state["analysis_result"] = result
                             st.session_state["dns_parse_diagnostics"] = diagnostics
+                            try:
+                                st.session_state["analysis_audit_metadata"] = (
+                                    capture_analysis_audit_metadata(
+                                        model_dir,
+                                        artifact,
+                                        list_cti_cache_status(db_path),
+                                    )
+                                )
+                            except OSError:
+                                st.session_state.pop(
+                                    "analysis_audit_metadata",
+                                    None,
+                                )
+                                st.warning(
+                                    "Analysis completed, but reproducibility "
+                                    "metadata could not be captured. Re-run "
+                                    "the analysis before saving history."
+                                )
 
         result = st.session_state.get("analysis_result")
         diagnostics = st.session_state.get("dns_parse_diagnostics")
