@@ -996,11 +996,29 @@ def main() -> None:
             "client IP values are not persisted by this application."
         )
 
+        telemetry_format = st.selectbox(
+            "Telemetry format",
+            ["Generic DNS CSV", "Zeek dns.log"],
+            key="telemetry_format",
+        )
+
         input_columns = st.columns(3)
         input_columns[0].markdown("**Input format**")
-        input_columns[0].caption("Generic DNS CSV · UTF-8 · max 10 MB")
+        input_columns[0].caption(
+            (
+                "Generic DNS CSV · UTF-8 · max 10 MB"
+                if telemetry_format == "Generic DNS CSV"
+                else "Zeek dns.log text export · max 10 MB"
+            )
+        )
         input_columns[1].markdown("**Required field**")
-        input_columns[1].caption("query_name; all other fields are optional")
+        input_columns[1].caption(
+            (
+                "query_name; all other fields are optional"
+                if telemetry_format == "Generic DNS CSV"
+                else "Zeek #fields header with query"
+            )
+        )
         input_columns[2].markdown("**Privacy**")
         input_columns[2].caption("Raw rows stay in memory unless you export them")
 
@@ -1022,13 +1040,29 @@ def main() -> None:
                 "Run scripts/refresh_cti_cache.py to populate the cache."
             )
 
+        upload_label = (
+            "Upload DNS CSV"
+            if telemetry_format == "Generic DNS CSV"
+            else "Upload Zeek dns.log"
+        )
         uploaded = st.file_uploader(
-            "Upload DNS CSV",
-            type=["csv"],
+            upload_label,
+            type=(
+                ["csv"]
+                if telemetry_format == "Generic DNS CSV"
+                else ["log", "txt"]
+            ),
             help=(
                 "Expected columns: timestamp, client_ip, query_name, "
                 "query_type, response_ip. Only query_name is required."
+                if telemetry_format == "Generic DNS CSV"
+                else (
+                    "Expected Zeek dns.log text with a #fields header. "
+                    "query, ts, id.orig_h, qtype_name, and answers are "
+                    "used when available."
+                )
             ),
+            key=f"telemetry_upload_{telemetry_format}",
         )
 
         if uploaded is None:
@@ -1037,31 +1071,40 @@ def main() -> None:
                 st.session_state.pop("dns_parse_diagnostics", None)
         else:
             content_bytes = uploaded.getvalue()
-            fingerprint = content_fingerprint(content_bytes)
+            fingerprint = (
+                f"{telemetry_format}:"
+                + content_fingerprint(content_bytes)
+            )
             if st.session_state.get("upload_fingerprint") != fingerprint:
                 st.session_state["upload_fingerprint"] = fingerprint
                 st.session_state.pop("analysis_result", None)
                 st.session_state.pop("dns_parse_diagnostics", None)
 
             if len(content_bytes) > MAX_UPLOAD_BYTES:
-                st.error("Uploaded CSV exceeds the 10 MB application limit.")
+                st.error("Uploaded telemetry exceeds the 10 MB application limit.")
             else:
                 try:
                     content = content_bytes.decode("utf-8-sig")
                 except UnicodeDecodeError:
-                    st.error("CSV must use UTF-8 encoding.")
+                    st.error("Telemetry input must use UTF-8 encoding.")
                 else:
                     if st.button("Analyze", type="primary"):
                         try:
-                            result, diagnostics = (
-                                analyze_dns_csv_with_diagnostics(
-                                    content,
-                                    indicators,
-                                    artifact,
-                                )
+                            analyzer = (
+                                analyze_dns_csv_with_diagnostics
+                                if telemetry_format == "Generic DNS CSV"
+                                else analyze_zeek_dns_log_with_diagnostics
+                            )
+                            result, diagnostics = analyzer(
+                                content,
+                                indicators,
+                                artifact,
                             )
                         except ValueError as error:
-                            st.error(f"DNS CSV could not be analyzed: {error}")
+                            st.error(
+                                "DNS telemetry could not be analyzed: "
+                                f"{error}"
+                            )
                         else:
                             st.session_state["analysis_result"] = result
                             st.session_state["dns_parse_diagnostics"] = diagnostics
