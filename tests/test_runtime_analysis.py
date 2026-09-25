@@ -12,6 +12,7 @@ from threatfusion.hybrid_assessment import HybridVerdict, MLThresholds
 from threatfusion.models import IOCRecord, IOCType
 from threatfusion.runtime_analysis import (
     MAX_DNS_EVENTS,
+    analyze_adguard_query_log_with_diagnostics,
     analyze_dns_csv,
     analyze_dns_csv_with_diagnostics,
     analyze_dns_events,
@@ -199,6 +200,33 @@ def test_dns_csv_runtime_helper_returns_input_quality_diagnostics(
 
 
 
+
+
+
+def test_adguard_runtime_helper_parses_and_analyzes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    content = (
+        '{"IP":"10.0.0.5","T":"2026-09-25T18:00:00Z",'
+        '"QH":"example.com","QT":"A"}'
+    )
+    monkeypatch.setattr(
+        runtime_analysis,
+        "predict_domain_probabilities",
+        lambda artifact, domains: {"example.com": 0.55},
+    )
+
+    result, diagnostics = analyze_adguard_query_log_with_diagnostics(
+        content,
+        [],
+        fake_artifact(),
+    )
+
+    assert len(result.events) == 1
+    assert result.events[0].client_ip == "10.0.0.5"
+    assert result.events[0].query_type == "A"
+    assert result.assessments[0].verdict is HybridVerdict.REVIEW
+    assert diagnostics.accepted_rows == 1
 
 def test_pihole_runtime_helper_parses_and_analyzes(
     tmp_path,

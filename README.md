@@ -17,7 +17,7 @@ ThreatFox / URLhaus / SGB
           v
    Local CTI cache
           |
-DNS CSV / Zeek dns.log / Pi-hole FTL DB
+DNS CSV / Zeek dns.log / Pi-hole FTL DB / AdGuard Home
           -> IOC matching
           + ML domain scoring
           + DNS behavior analysis
@@ -40,7 +40,7 @@ not treated as proof of malware.
 
 - ThreatFox, URLhaus, and SGB collectors
 - common IOC model, normalization, and correlation
-- DNS CSV, Zeek `dns.log`, and in-memory Pi-hole FTL database ingestion with aggregate input-quality diagnostics
+- DNS CSV, Zeek `dns.log`, in-memory Pi-hole FTL database, and AdGuard Home query-log ingestion with aggregate input-quality diagnostics
 - known domain / URL-hostname / response-IP / IPv6-network matching with evidence-scope metadata
 - reproducible ML dataset snapshots
 - character n-gram TF-IDF + Logistic Regression development model
@@ -61,7 +61,7 @@ not treated as proof of malware.
 - bounded runtime analysis, IDNA/punycode canonicalization, and strict ML eligibility filtering for valid public-domain candidates, with explicit Not-scored presentation
 - CTI freshness/staleness visibility
 - sparse evidence-driven related-activity pair generation with bounded and optimized timestamp comparison
-- pytest + Ruff CI
+- pytest + Ruff CI plus Docker build/health smoke testing
 
 ## Local dashboard
 
@@ -101,12 +101,12 @@ Run the same local detector from the CLI:
 python scripts\analyze_dns.py data\demo\demo_dns.csv --format dns-csv --json-output data\demo\analysis.json
 ```
 
-The CLI also accepts `--format zeek` and `--format pihole`. It reads the
-existing local CTI cache and trusted model artifact; it does not refresh feeds
-or require API credentials.
+The CLI also accepts `--format zeek`, `--format pihole`, and
+`--format adguard`. It reads the existing local CTI cache and trusted model
+artifact; it does not refresh feeds or require API credentials.
 
-Supported telemetry formats are generic DNS CSV, Zeek `dns.log`, and an
-uploaded Pi-hole FTL SQLite query database.
+Supported telemetry formats are generic DNS CSV, Zeek `dns.log`, an uploaded
+Pi-hole FTL SQLite query database, and AdGuard Home query-log JSON.
 
 The generic DNS CSV schema is:
 
@@ -119,7 +119,8 @@ Only `query_name` is required for generic CSV. Zeek imports use the standard
 `answers` when available. Pi-hole imports read the standard `queries` view
 from an uploaded FTL SQLite database entirely in memory; the upstream
 `forward` value is not treated as a DNS response IP. The Streamlit uploader is
-configured with a 10 MB maximum file size.
+configured with a 10 MB maximum file size. AdGuard Home imports accept both
+on-disk query-log JSON records and the structured query-log API response shape.
 
 ## Privacy defaults
 

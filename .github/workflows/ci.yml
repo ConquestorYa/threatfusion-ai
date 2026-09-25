@@ -39,3 +39,35 @@ jobs:
 
       - name: Run pytest
         run: python -m pytest
+
+  container-smoke:
+    name: Docker build + health
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t threatfusion-ci .
+
+      - name: Start public-mode container
+        run: |
+          docker run -d --name threatfusion-ci             -p 8501:8501             -e THREATFUSION_PUBLIC_MODE=1             threatfusion-ci
+
+      - name: Wait for Streamlit health endpoint
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8501/_stcore/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs threatfusion-ci
+          exit 1
+
+      - name: Clean up container
+        if: always()
+        run: docker rm -f threatfusion-ci || true
+

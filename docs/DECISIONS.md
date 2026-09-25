@@ -715,3 +715,25 @@ separate detection policy.
 runtime path makes scripted analysis reproducible and keeps credentials and
 network activity outside the analysis request path.
 
+## DEC-076: Support AdGuard Home query logs through a local adapter
+
+**Decision:** ThreatFusion accepts AdGuard Home query-log JSON as local
+telemetry. The adapter supports the on-disk query-log record fields and the
+structured query-log API response shape, mapping only available DNS evidence
+into the existing `DNSEvent` model.
+
+**Reason:** AdGuard Home is a common local DNS telemetry source. Reusing
+`DNSEvent` adds practical input compatibility without introducing networking
+or a second detection pipeline.
+
+
+## DEC-077: Smoke-test the container separately from model/data readiness
+
+**Decision:** CI builds the Docker image, starts it in public mode, and verifies
+Streamlit's local health endpoint. The smoke test does not require private CTI
+cache or trusted model artifacts.
+
+**Reason:** Image/build regressions should be caught in CI, while local ignored
+model and CTI assets must remain outside GitHub Actions. Application-level
+artifact readiness remains visible through the dashboard system-health view.
+

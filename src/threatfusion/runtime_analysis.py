@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from .dns import DNSEvent, DNSParseDiagnostics, parse_dns_csv_with_diagnostics
+from .dns_adguard import parse_adguard_query_log_with_diagnostics
 from .dns_pihole import parse_pihole_query_db_with_diagnostics
 from .dns_zeek import parse_zeek_dns_log_with_diagnostics
 from .hybrid_assessment import (
@@ -105,6 +106,24 @@ def analyze_dns_events(
         ml_probabilities=ml_probabilities,
         assessments=tuple(assessments),
     )
+
+
+def analyze_adguard_query_log_with_diagnostics(
+    content: str,
+    indicators: Iterable[IOCRecord],
+    artifact: TrainedMLArtifact,
+    *,
+    behavior_config: BehaviorHeuristicConfig | None = None,
+) -> tuple[RuntimeAnalysisResult, DNSParseDiagnostics]:
+    """Parse an AdGuard Home query log and analyze it locally."""
+    parsed = parse_adguard_query_log_with_diagnostics(content)
+    result = analyze_dns_events(
+        parsed.events,
+        indicators,
+        artifact,
+        behavior_config=behavior_config,
+    )
+    return result, parsed.diagnostics
 
 
 def analyze_dns_csv_with_diagnostics(
