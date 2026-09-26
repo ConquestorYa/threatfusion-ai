@@ -303,6 +303,22 @@ Run the comparison locally with:
 python scripts/evaluate_ml_fpr_comparison.py --snapshot-dir data/snapshots/baseline-001
 ```
 
+The CLI also accepts explicit FPR budgets without changing the persisted
+artifact policy. After the CESNET long-tail benign evaluation exposed a 3.60%
+high-threshold FPR, the next diagnostic step is to quantify recall at much
+lower operational budgets:
+
+```powershell
+python scripts\evaluate_ml_fpr_comparison.py `
+  --snapshot-dir data\snapshots\baseline-001 `
+  --fpr-budgets 0.001 0.005 0.01
+```
+
+Those rates correspond to 0.1%, 0.5%, and 1% validation FPR budgets. This is
+development analysis only: it does not rewrite the frozen artifact or change
+runtime thresholds. If later model/threshold changes are chosen using these
+results or the CESNET diagnostic, a new untouched final holdout is required.
+
 The script prints aggregate metrics only and never prints domain values.
 
 
