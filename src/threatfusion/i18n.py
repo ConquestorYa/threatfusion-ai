@@ -124,7 +124,6 @@ _TR: dict[str, str] = {
     "Inspect the frozen model's measured performance and its limits.": "Dondurulmuş modelin ölçülen performansını ve sınırlarını incele.",
     "Choose source": "Kaynak seç",
     "Select the telemetry format you want to analyze.": "Analiz etmek istediğin telemetri formatını seç.",
-    "Upload telemetry": "Telemetri yükle",
     "Provide DNS, packet-capture, Zeek, Suricata, Pi-hole or AdGuard data.": "DNS, paket yakalama, Zeek, Suricata, Pi-hole veya AdGuard verisi sağla.",
     "Analyze & triage": "Analiz et ve triyaj yap",
     "Correlate CTI, ML and DNS behavior, then prioritize findings.": "CTI, ML ve DNS davranışını ilişkilendir, ardından bulguları önceliklendir.",
