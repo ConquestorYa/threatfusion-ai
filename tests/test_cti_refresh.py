@@ -48,7 +48,7 @@ class FakePhishTankCollector:
 
 class FakeSGBCollector:
     def fetch_bounded_addresses(self, *, max_pages: int):
-        assert max_pages == 100
+        assert max_pages == 1000
         return SimpleNamespace(
             records=(
                 IOCRecord(
@@ -236,6 +236,7 @@ def test_incomplete_sgb_snapshot_is_rejected_and_old_cache_is_preserved(
         def fetch_bounded_addresses(self, *, max_pages: int):
             return SimpleNamespace(
                 records=(IOCRecord("partial.example", IOCType.DOMAIN, "SGB"),),
+                pages_fetched=max_pages,
                 reached_source_end=False,
             )
 
@@ -252,6 +253,7 @@ def test_incomplete_sgb_snapshot_is_rejected_and_old_cache_is_preserved(
 
     sgb = next(item for item in outcomes if item.source == "SGB")
     assert sgb.status == "failed"
+    assert "increase --sgb-max-pages" in (sgb.detail or "")
     assert [item.value for item in load_ioc_records(db_path, sources=["SGB"])] == [
         "old-sgb.example"
     ]
