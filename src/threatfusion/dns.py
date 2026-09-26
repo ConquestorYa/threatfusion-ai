@@ -186,6 +186,16 @@ def _parse_timestamp(value: object) -> datetime | None:
             return datetime.strptime(candidate, date_format)
         except ValueError:
             continue
+
+    for date_format in ("%b %d %H:%M:%S", "%b %d %H:%M:%S.%f"):
+        try:
+            partial = datetime.strptime(candidate, date_format)
+        except ValueError:
+            continue
+        # Syslog-style timestamps omit the year. Use a neutral leap year so
+        # relative ordering/interval analysis works without guessing a real year.
+        return partial.replace(year=2000)
+
     return None
 
 
