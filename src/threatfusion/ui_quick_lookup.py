@@ -5,11 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 
 from .dashboard import format_timestamp, reason_label
 from .quick_lookup import QuickLookupResult
-from .ui_theme import metric_card, safe_text, section_label
+from .ui_theme import apply_plotly_theme, metric_card, palette, safe_text, section_label
 
 
 @dataclass(frozen=True)
@@ -167,6 +168,137 @@ def _render_signal_summary(result: QuickLookupResult) -> None:
     )
 
 
+def _ml_score_figure(result: QuickLookupResult) -> go.Figure:
+    """Render the model's 0-1 score without presenting it as a probability."""
+    colors = palette()
+    visual = _presentation_for(result.verdict.value)
+    semantic_color = {
+        "safe": colors["green"],
+        "review": colors["yellow"],
+        "danger": colors["red"],
+    }.get(visual.signal_tone, colors["cyan"])
+
+    score = float(result.ml_score or 0.0)
+    figure = go.Figure(
+        go.Indicator(
+            mode="gauge+number",
+            value=score,
+            number={
+                "valueformat": ".3f",
+                "font": {"size": 30, "color": colors["text"]},
+            },
+            gauge={
+                "axis": {
+                    "range": [0, 1],
+                    "tickvals": [0, 0.25, 0.5, 0.75, 1],
+                    "ticktext": ["0", ".25", ".50", ".75", "1"],
+                    "tickfont": {"size": 10, "color": colors["muted"]},
+                },
+                "bar": {"color": semantic_color, "thickness": 0.34},
+                "bgcolor": colors["panel_alt"],
+                "borderwidth": 0,
+            },
+            title={
+                "text": (
+                    "<b>ML model score</b><br>"
+                    "<span style='font-size:11px'>Uncalibrated score · not probability</span>"
+                ),
+                "font": {"size": 14, "color": colors["muted"]},
+            },
+        )
+    )
+    return apply_plotly_theme(figure, height=250)
+
+
+def _render_signal_console(result: QuickLookupResult) -> None:
+    visual = _presentation_for(result.verdict.value)
+    cti_count = len(result.evidence)
+    cti_tone = "danger" if cti_count else "safe"
+    cti_value = (
+        f"{cti_count} CTI match" + ("" if cti_count == 1 else "es")
+        if cti_count
+        else "No CTI match"
+    )
+
+    if result.ml_score is None:
+        ml_tone = "info"
+        ml_value = "Not scored"
+        ml_sub = "No model score was available"
+    elif result.ml_tier == "high":
+        ml_tone = "danger"
+        ml_value = "High ML tier"
+        ml_sub = f"Model score {result.ml_score:.4f}"
+    elif result.ml_tier in {"medium", "low"}:
+        ml_tone = "review"
+        ml_value = f"{result.ml_tier.title()} ML tier"
+        ml_sub = f"Model score {result.ml_score:.4f}"
+    else:
+        ml_tone = "safe"
+        ml_value = "Below threshold"
+        ml_sub = f"Model score {result.ml_score:.4f}"
+
+    lexical = result.lexical_context
+    shape_bits = [
+        f"depth {lexical.subdomain_depth}",
+        (
+            f"numeric {lexical.numeric_character_ratio:.2f}"
+            if lexical.numeric_character_ratio is not None
+            else "numeric n/a"
+        ),
+        (
+            f"entropy {lexical.hostname_entropy:.2f}"
+            if lexical.hostname_entropy is not None
+            else "entropy n/a"
+        ),
+    ]
+
+    st.markdown(
+        '<div class="tf-signal-console">'
+        f'<div class="tf-signal-node tf-signal-node--{cti_tone}">'
+        '<span class="tf-signal-node-arrow" aria-hidden="true">→</span>'
+        '<div class="tf-signal-node-label">Local threat intelligence</div>'
+        f'<div class="tf-signal-node-value">{safe_text(cti_value)}</div>'
+        '<div class="tf-signal-node-sub">ThreatFox · URLhaus · SGB cache</div>'
+        '</div>'
+        f'<div class="tf-signal-node tf-signal-node--{ml_tone}">'
+        '<span class="tf-signal-node-arrow" aria-hidden="true">→</span>'
+        '<div class="tf-signal-node-label">Domain model</div>'
+        f'<div class="tf-signal-node-value">{safe_text(ml_value)}</div>'
+        f'<div class="tf-signal-node-sub">{safe_text(ml_sub)}</div>'
+        '</div>'
+        '<div class="tf-signal-node tf-signal-node--info">'
+        '<span class="tf-signal-node-arrow" aria-hidden="true">→</span>'
+        '<div class="tf-signal-node-label">Domain shape context</div>'
+        f'<div class="tf-signal-node-value">{safe_text(result.normalized_domain)}</div>'
+        f'<div class="tf-signal-node-sub">{safe_text(" · ".join(shape_bits))}</div>'
+        '</div>'
+        f'<div class="tf-signal-node tf-signal-node--{visual.signal_tone}">'
+        '<div class="tf-signal-node-label">Decision</div>'
+        f'<div class="tf-signal-node-value">{safe_text(visual.kicker)}</div>'
+        f'<div class="tf-signal-node-sub">{safe_text(visual.title)}</div>'
+        '</div>'
+        '</div>'
+        '<div class="tf-console-caption">'
+        'The diagram shows which local evidence paths contributed context. '
+        'It does not represent a probability or live website scan.'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def _render_graphic_overview(result: QuickLookupResult) -> None:
+    section_label("Signal overview")
+    chart_col, flow_col = st.columns([1, 1.65], vertical_alignment="center")
+    with chart_col:
+        st.plotly_chart(
+            _ml_score_figure(result),
+            width="stretch",
+            config={"displayModeBar": False},
+        )
+    with flow_col:
+        _render_signal_console(result)
+
+
 def _render_reasons(result: QuickLookupResult) -> None:
     section_label("Why this result?")
     reasons = [_reason_text(reason) for reason in result.reasons]
@@ -225,7 +357,7 @@ def _render_evidence_state(result: QuickLookupResult) -> None:
 
 def render_quick_lookup_result(result: QuickLookupResult) -> None:
     _render_outcome_banner(result)
-    _render_signal_summary(result)
+    _render_graphic_overview(result)
     _render_reasons(result)
 
     section_label("Threat intelligence evidence")
