@@ -1,443 +1,329 @@
 # Architecture
 
-This document distinguishes the current implementation from the planned system. The current architecture includes IOC collection, correlation, DNS telemetry ingestion, in-memory known-IOC matching, reproducible ML dataset snapshots, persisted development-model inference, DNS behavior aggregation, explainable hybrid runtime assessment, SQLite persistence/cache layers, related-activity clustering, a Streamlit dashboard, and container/public-mode deployment packaging. Fresh-collection disjoint holdout evaluation has been completed, malicious IOC timing is preserved in new snapshots, and the evaluator supports an explicit first-seen-filtered temporal mode. A new timing-preserving holdout measurement and hosted deployment remain release work. The evaluator persists aggregate reports that the dashboard can render.
+ThreatFusion AI is a local-first educational cyber threat-analysis platform that combines public CTI, user-provided telemetry, deterministic matching, an auxiliary domain ML model, behavior signals, and analyst context.
 
-## Current Data Flow
+The runtime is intentionally passive: suspicious URLs and domains are treated as data and are not visited or resolved during analysis.
 
-```mermaid
+## System overview
+
+~~~mermaid
 flowchart LR
-    ThreatFox[ThreatFox collector] --> Record[IOCRecord]
-    URLhaus[URLhaus collector] --> Record
-    SGB[SGB collector] --> Record
-    Record --> Correlate[correlate_iocs]
-    Correlate -. uses internally .-> Normalize[normalize_ioc_value]
-    DNSCSV[DNS CSV telemetry] --> DNS[DNSEvent]
-    DNS --> Match[match_dns_events]
-    Record --> Match
-    Match --> MatchResult[DNSIOCMatch evidence]
-```
+    subgraph SOURCES["CTI Sources"]
+        TF[ThreatFox]
+        UH[URLhaus]
+        PT[PhishTank]
+        SGB[SGB]
+    end
 
-ThreatFox, URLhaus, and SGB are implemented external sources that produce `IOCRecord` objects. `correlate_iocs()` performs grouping and internally uses `normalize_ioc_value()` to compute canonical comparison values. It groups equivalent records while retaining all original evidence records; it does not rewrite all `IOCRecord` objects through a separate normalization pipeline.
+    subgraph TELEMETRY["Telemetry Inputs"]
+        T1[CSV / TSV / TXT]
+        T2[XLSX / XLS]
+        T3[Zeek dns.log]
+        T4[Zeek conn.log]
+        T5[PCAP / PCAPNG]
+        T6[Suricata EVE]
+        T7[Pi-hole FTL]
+        T8[AdGuard Home]
+        T9[dnstop]
+    end
 
-The DNS ingestion layer parses CSV telemetry into `DNSEvent` objects without performing any network lookup or resolution. The matching layer then compares normalized DNS queries and response IPs against known IOC records while preserving the original `DNSEvent` and `IOCRecord` evidence objects.
+    TF --> NORM[IOC normalization]
+    UH --> NORM
+    PT --> NORM
+    SGB --> NORM
+    NORM --> CACHE[(SQLite CTI cache)]
 
-The matcher currently supports:
+    T1 --> INGEST[Auto-detect ingestion]
+    T2 --> INGEST
+    T3 --> INGEST
+    T4 --> INGEST
+    T5 --> INGEST
+    T6 --> INGEST
+    T7 --> INGEST
+    T8 --> INGEST
+    T9 --> INGEST
 
-- DOMAIN -> DNS query_name
-- URL hostname -> DNS query_name
-- IPv4 / IPv6 -> DNS response_ip
+    CACHE --> RUNTIME[Runtime analysis]
+    INGEST --> RUNTIME
+    MODEL[Frozen trusted ML artifact] --> RUNTIME
 
-Normalization is used for comparison only. URL IOC values are parsed locally with `urllib.parse` and are never visited or resolved. Matching is in-memory and performs no network activity.
+    RUNTIME --> MATCH[IOC evidence]
+    RUNTIME --> ML[Domain ML score]
+    RUNTIME --> BEHAVIOR[Behavior context]
 
-## Current ML Development Flow
+    MATCH --> HYBRID[Explainable hybrid assessment]
+    ML --> HYBRID
+    BEHAVIOR --> HYBRID
 
-```mermaid
+    HYBRID --> UI[Streamlit analyst workspace]
+    HYBRID --> EXPORT[Privacy-safe JSON / CSV]
+    HYBRID -. explicit local save .-> HISTORY[(Aggregate analysis history)]
+~~~
+
+## Trust and evidence model
+
+ThreatFusion separates evidence by strength.
+
+### 1. Deterministic known-indicator evidence
+
+The strongest runtime evidence is an exact known IOC relationship.
+
+Examples:
+
+- exact domain IOC against the normalized query domain;
+- exact URL IOC in Quick Lookup;
+- exact IP IOC in Quick Lookup;
+- response-IP or IPv6-network evidence when telemetry contains response infrastructure.
+
+Known-domain evidence can produce a <code>known_threat</code> verdict. Contextual infrastructure evidence does not automatically prove the queried domain is malicious.
+
+### 2. Contextual CTI evidence
+
+Examples:
+
+- a queried hostname appears inside a malicious URL IOC;
+- a DNS response IP matches a known malicious IP;
+- an address falls inside a typed IPv6 network IOC.
+
+These relationships are preserved and shown to the analyst, but they are intentionally weaker than an exact malicious-domain match.
+
+### 3. ML signal
+
+Eligible public domain names can be scored by a trusted local character n-gram TF-IDF + Logistic Regression artifact.
+
+The score is:
+
+- local;
+- lexical;
+- auxiliary;
+- uncalibrated;
+- subordinate to stronger deterministic evidence.
+
+Invalid domains, IP literals, reverse-DNS names, local names and other ineligible targets are not forced through the domain-string model.
+
+### 4. Behavior context
+
+DNS telemetry can contribute explainable context such as:
+
+- query volume;
+- client spread;
+- NXDOMAIN ratio;
+- response-IP diversity/churn;
+- query-type diversity;
+- hostname shape;
+- periodic timing.
+
+Behavior rules can raise review priority, but they are not represented as malware proof.
+
+## CTI subsystem
+
+### Collectors
+
+Implemented collectors:
+
+- <code>collectors/threatfox.py</code>
+- <code>collectors/urlhaus.py</code>
+- <code>collectors/phishtank.py</code>
+- <code>collectors/sgb.py</code>
+
+All map supported values into the shared <code>IOCRecord</code> model.
+
+### Cache
+
+The SQLite cache stores:
+
+- active IOC records;
+- normalized lookup keys;
+- indexed URL hostnames;
+- source refresh metadata;
+- inactive lifecycle history.
+
+Quick Lookup uses indexed candidate retrieval instead of loading the entire CTI cache into Python.
+
+### Refresh lifecycle
+
+Feed refresh is separate from user analysis.
+
+- ThreatFox / URLhaus / SGB can refresh when stale.
+- PhishTank's public feed is limited to a 24-hour minimum refresh interval.
+- failed or empty refreshes preserve the previous healthy snapshot;
+- inactive lifecycle records are pruned after 90 days.
+
+A separate maintenance scheduler is preferred in hosted deployments. A process-local background refresher exists as a low-cost fallback.
+
+## Telemetry ingestion
+
+The default dashboard path is automatic format detection.
+
+Supported inputs:
+
+- delimited CSV / TSV / TXT tables;
+- XLSX / XLS workbooks;
+- Zeek <code>dns.log</code>;
+- Zeek <code>conn.log</code>;
+- PCAP / PCAPNG / CAP;
+- Suricata EVE JSON / JSONL;
+- Pi-hole FTL SQLite;
+- AdGuard Home query logs;
+- dnstop-style domain summaries.
+
+<code>.capinfos</code> is recognized as capture metadata and is not treated as packet telemetry.
+
+### PCAP boundary
+
+Packet-capture support extracts classic UDP/53 DNS observations. ThreatFusion does not claim to recover encrypted DoH/DoT domain names from captures.
+
+### Zeek conn.log boundary
+
+Connection logs do not contain DNS query names. ThreatFusion maps destination IP observations into passive CTI analysis targets. Any dataset-provided benign/malicious labels are ignored by the detector.
+
+### Resource bounds
+
+The Streamlit upload limit is 100 MB.
+
+After parsing, runtime analysis enforces bounded workloads:
+
+- maximum 100,000 events;
+- maximum 25,000 unique analysis targets.
+
+These bounds are independent of the browser upload limit.
+
+## Runtime analysis
+
+The runtime orchestration layer combines:
+
+1. parsed telemetry;
+2. active CTI records;
+3. a trusted local ML artifact;
+4. DNS behavior aggregation;
+5. hybrid assessment.
+
+The pipeline performs no destination visits or DNS resolution.
+
+Outputs include:
+
+- normalized findings;
+- IOC evidence;
+- ML score/tier where eligible;
+- behavior aggregates;
+- explainable verdict reasons;
+- related-activity context.
+
+## Related activity
+
+ThreatFusion does not claim campaign attribution.
+
+Potential related-activity groups require shared local evidence such as:
+
+- shared client observations;
+- shared response infrastructure.
+
+High-fan-out infrastructure is suppressed or penalized, and time/CTI metadata are supporting signals rather than pair-creation evidence.
+
+The result is an analyst prioritization aid, not an attribution probability.
+
+## Persistence and privacy
+
+### Stored by default
+
+- CTI cache and refresh metadata;
+- trusted local model artifacts;
+- optionally saved aggregate analysis history;
+- optional analyst labels/notes;
+- optional local suppression policy.
+
+### Not stored by default
+
+- raw uploaded telemetry rows;
+- raw client-IP telemetry in analysis history;
+- uploaded packet-capture bytes;
+- raw telemetry exports.
+
+Portable JSON/CSV reports omit raw client and response IP values.
+
+Public mode disables shared history saving and browsing.
+
+## Quick Lookup
+
+Quick Lookup accepts a single:
+
+- URL;
+- domain;
+- IPv4/IPv6 address.
+
+It is passive and does not:
+
+- open a URL;
+- resolve a hostname;
+- download page content.
+
+The indexed CTI cache is checked first. The ML model is used only when the target host is an eligible domain name.
+
+## ML development flow
+
+~~~mermaid
 flowchart LR
-    CTI[Collected IOC records] --> Samples[DomainSample dataset]
-    Tranco[Pinned Tranco domains] --> Samples
-    Samples --> Snapshot[Persisted snapshot]
-    Snapshot --> Split[Train / validation / development-test split]
-    Split --> TFIDF[Character n-gram TF-IDF]
-    TFIDF --> LR[Logistic Regression]
-    LR --> Metrics[Precision / Recall / F1 / FPR]
-```
-
-The vectorizer and classifier are fitted only on the training partition.
-Thresholds are selected on validation data and the development-test partition
-is reported separately. Random stratified splitting remains development
-evidence; final evaluation uses a separately collected disjoint snapshot. New
-snapshots can also preserve malicious IOC first-seen/last-seen timestamps for
-the optional temporal filter.
-
-## Current Hybrid Analysis Flow
-
-```mermaid
-flowchart TD
-    CSV[DNS CSV] --> DNS[DNSEvent]
-    DNS --> Runtime[Runtime analysis]
-    IOC[Already-loaded IOCRecord values] --> Runtime
-    Artifact[Trusted local ML artifact] --> Runtime
-    Runtime --> Match[Known IOC matching]
-    Runtime --> ML[Domain ML score inference]
-    Runtime --> Behavior[DNS behavior aggregation]
-    Match --> Hybrid[Hybrid assessment]
-    ML --> Hybrid
-    Behavior --> Hybrid
-    Hybrid --> Verdict[known_threat / high_risk / review / low]
-```
-
-The hybrid assessment is an explainable educational risk layer, not a
-calibrated malware probability. Known IOC evidence takes precedence. DNS
-behavior can strengthen an assessment or trigger review, but it is not treated
-as proof of malware.
-
-## Current Presentation Flow
-
-```mermaid
-flowchart TD
-    Upload[DNS CSV upload] --> Runtime[Runtime analysis]
-    Cache[SQLite CTI cache] --> Runtime
-    Model[Trusted local ML artifact] --> Runtime
-    Runtime --> Findings[Domain findings]
-    Runtime --> Evidence[Known IOC evidence]
-    Runtime --> Chart[Verdict chart]
-    Runtime --> Export[Privacy-safe JSON / CSV report]
-    Runtime -. explicit save .-> History[SQLite analysis history]
-    History --> Feedback[Local analyst feedback]
-    Feedback --> Dashboard[Streamlit history view]
-```
-
-## Current Related-Activity Flow
-
-```mermaid
-flowchart TD
-    Runtime[Runtime analysis] --> Suspicious[Known Threat / High Risk / Review domains]
-    Suspicious --> Candidate[Bounded shared client / response-IP candidates]
-    Candidate --> Weight[Noise-aware evidence weighting]
-    CTI[CTI source / tag / threat-type context] --> Weight
-    Time[Closest comparable timestamp] --> Weight
-    Weight --> Filter[Minimum relationship strength]
-    Filter --> Cluster[Possible related-activity groups]
-    Cluster --> Graph[Privacy-preserving weighted graph]
-    Graph --> Dashboard[Streamlit related-activity view]
-```
-
-The related-activity layer remains explicitly non-attributive. Candidate pairs
-still require shared local DNS evidence, but a binary shared value no longer
-automatically becomes an edge. Rare shared client/response infrastructure is
-weighted more strongly, medium-fan-out infrastructure is penalized, and very
-high-fan-out values are excluded from pair generation. Time proximity and
-overlap in CTI source, tags, or threat type add supporting evidence. Only
-relationships above the minimum local evidence-strength threshold are grouped.
-The score is an explainable ranking aid, not a campaign-attribution probability.
-
-## Planned Analysis Extensions
-
-```mermaid
-flowchart TD
-    Dashboard[Streamlit dashboard] --> Bundle[Sanitized CTI + model runtime bundle]
-    Bundle --> Container[Non-root container + public mode]
-    Container --> Hosted[Hosted deployment planned]
-    Holdout[Later disjoint snapshot] --> Eval[Frozen artifact holdout evaluator]
-    Eval --> EvalReport[Aggregate JSON evaluation report]
-    EvalReport --> Dashboard[Model evaluation tab]
-    Dashboard --> Hosted
-```
-
-Source-aware final evaluation is implemented, and a first-seen-filtered
-malicious temporal mode is available. A new timing-preserving holdout still
-needs to be collected before presenting a strict temporal measurement. Hosted
-deployment remains planned. Local model artifact persistence, domain-score
-inference, privacy-conscious SQLite analysis history, a local SQLite CTI cache,
-and the Streamlit application are implemented.
-
-## Current Modules
-
-### `src/threatfusion/models.py`
-
-- Defines `IOCType` for supported indicator categories.
-- Defines the `IOCRecord` dataclass and its optional timestamps, threat type, confidence, and tags.
-
-### `src/threatfusion/normalization.py`
-
-- Provides canonical IOC value normalization.
-- Lowercases and removes one trailing dot from domains.
-- Lowercases hashes.
-- Uses Python's `ipaddress` module for IPv4 and IPv6 values.
-- Strips surrounding whitespace from URLs and unknown values without making network requests.
-
-### `src/threatfusion/correlation.py`
-
-- Defines `IOCGroup` for a correlated canonical value and its original records.
-- Provides `correlate_iocs()`.
-- Groups records only when both normalized value and `IOCType` match.
-- Preserves every original `IOCRecord`, including duplicate evidence from one source.
-
-### `src/threatfusion/dns.py`
-
-- Defines `DNSEvent` for a DNS observation with optional timestamp, client IP, query type, response IP, and response code.
-- Provides `parse_dns_csv()` for safe CSV ingestion using the Python standard library.
-- Accepts the project CSV schema:
-  `timestamp,client_ip,query_name,query_type,response_ip[,response_code]`.
-- Preserves `query_name` evidence exactly as observed, while trimming surrounding whitespace.
-- Validates canonical response IP values with Python's `ipaddress` module and keeps malformed values as `None`.
-- Performs no network operations, DNS lookups, or external requests while parsing telemetry.
-
-### `src/threatfusion/matching.py`
-
-- Defines `DNSIOCMatch` for a matched DNS event and IOC record with a simple match type.
-- Provides `match_dns_events()` for local in-memory matching.
-- Builds lightweight lookup indexes instead of performing a naive full nested scan.
-- Matches DOMAIN IOC values against normalized DNS query names.
-- Matches URL IOC hostnames against DNS query names using local parsing only.
-- Matches IPv4 and IPv6 host IOC values against `DNSEvent.response_ip` and
-  checks IPv6 response addresses against typed IPv6-network IOCs.
-- Preserves original `DNSEvent` and `IOCRecord` objects as evidence.
-- Ignores malformed IOC values without breaking the whole batch.
-- Ignores unsupported hash and `UNKNOWN` IOC types for DNS matching.
-
-### `src/threatfusion/dns_behavior.py`
-
-- Aggregates local DNS events by normalized query domain.
-- Reports query volume, unique clients, unique response IPs, query types, and
-  comparable observation span.
-- Adds explainable lexical and timing context such as label depth,
-  numeric-character ratio, hostname entropy/random-like flag, response-IP churn
-  rate, response-code counts/NXDOMAIN ratio, and periodic query timing score
-  when the required telemetry fields exist.
-- Preserves the original `DNSEvent` ingestion model and performs no network
-  requests or DNS resolution.
-
-### `src/threatfusion/hybrid_assessment.py`
-
-- Combines IOC match evidence, caller-supplied ML score tiers, and local DNS
-  behavior signals.
-- Reserves `known_threat` for exact DOMAIN IOC matches against the queried
-  domain. URL-hostname and response-IP matches remain contextual CTI evidence
-  and trigger review unless stronger ML evidence independently raises risk.
-- Produces explainable `known_threat`, `high_risk`, `review`, or `low`
-  verdicts.
-- Requires ML thresholds to be supplied by the caller rather than hardcoding
-  snapshot-specific operating points.
-- Treats behavior rules as heuristic context, not malware proof.
-
-### `src/threatfusion/ml_dataset.py`
-
-- Canonicalizes Unicode domains to deterministic IDNA ASCII form before ML use.
-- Rejects malformed labels, single-label hostnames, IP literals, and invalid
-  public-domain candidates before they enter ML datasets or runtime scoring.
-- Extracts normalized malicious domain samples from DOMAIN and URL IOC records.
-- Builds benign samples from caller-supplied domain strings.
-- Deduplicates at normalized-domain level and gives malicious labels precedence on overlap.
-
-### `src/threatfusion/ml_split.py`
-
-- Provides the deterministic 80/20-style stratified development split.
-- Rejects duplicate/conflicting normalized domains and preserves original sample objects.
-- Uses a fixed default `random_state=42`.
-
-### `src/threatfusion/ml_snapshot.py` and `ml_snapshot_io.py`
-
-- Assemble reproducible in-memory dataset snapshots with aggregate statistics.
-- Persist exact local `dataset.csv` and `metadata.json` experiment snapshots.
-- Keep local snapshot data outside Git through `data/snapshots/`.
-
-### `src/threatfusion/ml_baseline.py`
-
-- Builds character 3-5 gram TF-IDF features and a Logistic Regression classifier.
-- Fits only on the training side of the existing stratified split.
-- Reports precision, recall, F1, false-positive rate, and TN/FP/FN/TP counts.
-- Performs no networking and does not depend on live CTI collection during training.
-
-### `src/threatfusion/ml_high_recall.py`
-
-- Uses the same character TF-IDF representation with `class_weight="balanced"`.
-- Creates deterministic train, validation, and development-test partitions.
-- Fits the representation and classifier on train only.
-- Selects operating thresholds on validation only for requested recall targets.
-- Measures the selected thresholds on the development-test partition.
-- Reports the precision/recall/F1/false-positive tradeoff instead of claiming guaranteed perfect detection.
-
-### `src/threatfusion/ml_fpr_comparison.py`
-
-- Compares three predefined classical text-classification candidates.
-- Reuses one shared deterministic train/validation/development-test split.
-- Selects candidate thresholds on validation only under explicit false-positive-rate budgets.
-- Maximizes recall subject to each validation false-positive-rate limit.
-- Applies each selected threshold to the shared development-test split.
-- Uses no networking and adds no third-party dependency beyond the existing scikit-learn stack.
-
-### `src/threatfusion/ml_artifact.py`
-
-- Trains the selected development candidate from an existing `DomainSample`
-  snapshot using the deterministic train/validation/development-test split.
-- Selects high / medium / low operating thresholds on validation only at 1%,
-  5%, and 10% FPR budgets.
-- Persists the fitted sklearn pipeline to a local joblib file and aggregate
-  configuration to JSON metadata.
-- Loads only explicitly trusted local artifacts; joblib/pickle files must
-  never be accepted from untrusted sources.
-- Computes a stable SHA-256 identity over the persisted model and metadata
-  files for saved-run audit context.
-- Normalizes runtime domain strings and returns positive-class ML scores; these are not treated as calibrated malware probabilities
-  without networking.
-
-### `src/threatfusion/runtime_analysis.py`
-
-- Provides the reusable local orchestration layer for the implemented analysis path.
-- Accepts already-loaded DNS events, IOC records, and a trusted local ML artifact.
-- Runs known IOC matching, normalized ML score inference, DNS behavior aggregation, and hybrid assessment without networking.
-- Enforces explicit event and unique-query bounds before expensive analysis work.
-- Excludes reverse-DNS, local/mDNS, localhost, and single-label names from the internet-domain string model while preserving them for deterministic matching and DNS behavior evidence.
-- Preserves original DNS/IOC evidence and returns matches, ML scores, and per-domain assessments together.
-- Provides convenience helpers that start directly from generic DNS CSV, Zeek
-  `dns.log` text, or an uploaded Pi-hole FTL SQLite query database and return
-  aggregate ingestion-quality diagnostics without retaining raw rows.
-
-### `src/threatfusion/cti_cache.py`
-
-- Stores IOCRecord values from ThreatFox, URLhaus, and SGB in a local SQLite cache.
-- Synchronizes one source atomically only after that source's caller-supplied fetch has succeeded.
-- Preserves indicators that disappear from a later refresh as inactive lifecycle history with local first-seen/last-seen-in-refresh timestamps.
-- The explicit refresh workflow rejects a multi-source refresh batch when any expected source unexpectedly returns zero records, before any cache synchronization occurs.
-- Stores source refresh time plus active and inactive aggregate counts.
-- Loads active cached IOC records deterministically for runtime matching by default.
-- Performs no network activity itself; explicit collector orchestration lives in the refresh CLI.
-
-### `src/threatfusion/persistence.py`
-
-- Stores completed analysis summaries and per-domain hybrid assessment results in SQLite.
-- Exposes new Python fields as `ml_score`; the legacy SQLite `ml_probability` column is retained for backward-compatible history reads/writes.
-- Stores one current local analyst feedback label/note per saved run and domain without modifying the original verdict.
-- Can retrieve the latest prior analyst review for a domain across saved runs.
-- Supports explicit multi-select analyst feedback updates without changing
-  detector verdicts.
-- Supports deletion of one saved run, bounded keep-latest retention cleanup,
-  and deterministic run-to-run domain/verdict comparison.
-- Stores local domain suppression policy with a reason and optional expiry;
-  suppression affects priority presentation only and does not rewrite detector
-  output.
-- Persists verdict counts, ML output, aggregate DNS behavior, CTI source names, and reason codes.
-- Saves aggregate reproducibility metadata for new history runs: model name,
-  artifact SHA-256 identity, artifact/audit schema versions, frozen thresholds,
-  and per-source CTI refresh timestamp/count/freshness captured with the
-  analysis.
-- Migrates older history databases by adding nullable audit columns in place;
-  legacy saved runs remain readable and are labeled as lacking audit metadata.
-- Does not persist raw uploaded DNS rows or client IP values by default.
-- Uses parameterized SQL, foreign-key constraints, and deterministic read ordering.
-- Provides run-history and per-run assessment read helpers for the future dashboard.
-
-### `src/threatfusion/campaign.py`
-
-- Builds local-only relationships among Known Threat / High Risk / Review domains.
-- Generates bounded candidates from shared-client/shared-response-IP indexes rather than comparing every suspicious-domain pair.
-- Excludes very high-fan-out shared values from pair generation and penalizes medium-fan-out client/IP evidence to reduce resolver/CDN/NAT-style false links.
-- Computes an explainable 0-1 relationship-strength score from rarity-aware local evidence plus optional time proximity and CTI source/tag/threat-type overlap.
-- Keeps time and CTI metadata as supporting evidence; they do not create a pair without shared local DNS evidence.
-- Computes closest comparable timestamps with an ordered two-pointer scan instead of nested timestamp-pair comparisons.
-- Applies explicit suspicious-domain and relationship-count bounds so graph generation remains predictable on adversarial or unusually dense input.
-- Filters weak relationships before deterministic connected-component clustering and omits singleton groups.
-- Returns aggregate strength/reason/penalty metadata without exposing raw client IP values and never claims campaign attribution.
-
-### `src/threatfusion/dashboard.py` and `streamlit_app.py`
-
-- Convert runtime results into deterministic presentation rows and summary counts.
-- Provide separate DNS-event and unique-domain metrics so domain-level verdict counts are unambiguous.
-- Provide generic DNS CSV / Zeek `dns.log` / Pi-hole / AdGuard Home upload, aggregate
-  input-quality diagnostics, an analyst-priority triage queue, a compact
-  domain-level Plotly verdict chart, evidence-first domain investigation,
-  complete domain findings, multi-source CTI corroboration views, known-IOC
-  evidence views, and a privacy-preserving relationship graph.
-- Surface prior analyst review and local suppression state only in local mode;
-  public mode never reads those private tables.
-- Display compact system health, CTI source age/freshness details behind disclosure controls, and saved analysis history with presentation-only verdict/review/source filters.
-- Invalidate in-memory displayed results when uploaded CSV content changes or is removed, preventing stale-result/file mismatches.
-- Keep raw uploaded DNS telemetry in memory and make aggregate history saving explicit.
-- Do not refresh external CTI sources during interactive user analysis.
-
-### `src/threatfusion/ml_evaluation_report.py` and `evaluation_dashboard.py`
-
-- Serialize frozen final-holdout metrics into an aggregate-only JSON report.
-- Preserve model name, snapshot dates, overlap-removal counts, frozen operating-point metrics, and source-wise malicious recall without storing domain rows.
-- Provide deterministic dashboard rows for the model-evaluation tab.
-- Keep evaluation reporting separate from model training and threshold selection.
-
-### `src/threatfusion/ml_source_diagnostics.py`
-
-- Breaks development-test malicious recall down by retained CTI source.
-- Reuses validation-selected thresholds from the FPR-budget comparison.
-- Reports total, detected, missed, and recall per source.
-- Does not use source-wise development-test results to retune thresholds.
-
-### `src/threatfusion/collectors/threatfox.py`
-
-- Integrates with the ThreatFox Community API for recent IOCs.
-- Uses an injected or real `requests.Session` and an Auth-Key header.
-- Maps supported domains, URLs, hashes, and valid IPv4/IPv6 `ip:port` values into `IOCRecord` objects.
-- Parses optional timestamps and tags conservatively.
-
-### `src/threatfusion/collectors/urlhaus.py`
-
-- Downloads the URLhaus recent CSV export from the official export endpoint.
-- Detects named CSV headers, including comment-prefixed headers, and ignores metadata comments.
-- Maps valid URL rows into `IOCRecord` objects with timestamps, threat fields, and tags.
-- Treats dataset URLs as text only; it does not follow them and sanitizes authenticated request errors.
-
-### `src/threatfusion/collectors/sgb.py`
-
-- Integrates with the official T.C. Siber Guvenlik Baskanligi malicious-address API.
-- Supports one-based page fetching plus bounded multi-page collection that stops when the source reports completion or returns an empty page.
-- Maps domains, URLs, IPv4, and IPv6 indicators into `IOCRecord` objects.
-- Preserves valid IPv6 network indicators as `IOCType.IPV6_NETWORK`; runtime matching treats network matches as contextual infrastructure evidence rather than exact-domain proof.
-- Treats returned IOC values only as data and never requests them.
-
-### `src/threatfusion/dns_adguard.py`
-
-- Parses AdGuard Home on-disk query-log JSON records and structured query-log
-  API export objects without networking.
-- Maps query host, timestamp, client, query type, and an available answer IP
-  into `DNSEvent` while preserving aggregate input-quality diagnostics.
-- Does not decode raw DNS wire-format answer blobs or add a DNS parsing
-  dependency.
-
-## Tests and Tooling
-
-The repository uses `pytest.ini` to expose the `src` layout to pytest. The test suite covers the implemented model, normalization, correlation, collectors, DNS ingestion, matching, ML dataset preparation, splitting, snapshot persistence, and baseline model evaluation. Ruff is used for lint checks. Collector tests inject fake sessions and do not make real feed requests. GitHub Actions runs Ruff and pytest automatically on pull requests and pushes to `main`.
-
-Analyst-feedback tests also exercise the actual Streamlit form with synthetic
-findings and a temporary SQLite database. They verify local save/update behavior
-and that public mode can display an analysis without reading or writing saved
-history or feedback. Persistence regressions cover run/domain isolation, legacy
-history upgrades, note boundaries, and preservation of original summaries, ML
-scores, verdicts, and evidence. No local datasets, trusted model files, or feed
-credentials are needed for these tests.
-
-## Planned Stack
-
-The planned technology stack is:
-
-- Python 3.12.
-- pandas.
-- scikit-learn.
-- Streamlit.
-- Plotly.
-- SQLite.
-- pytest.
-- Ruff.
-
-The stack describes project direction; it does not mean that every planned component is currently implemented or wired into the application.
-
-### `src/threatfusion/deployment_bundle.py`
-
-- Creates a minimal hosted-runtime directory from local development assets.
-- Rebuilds a fresh SQLite database containing CTI records and refresh metadata
-  only.
-- Does not copy local analysis-history tables, DNS uploads, or dataset
-  snapshots.
-- Validates the trusted local ML artifact before copying `model.joblib` and
-  `metadata.json`.
-- Refuses to overwrite a non-empty output directory unless explicitly
-  requested and performs no network activity.
-
-
-### `src/threatfusion/cli.py` and `scripts/analyze_dns.py`
-
-- Provide a local automation entry point for generic DNS CSV, Zeek `dns.log`,
-  and Pi-hole FTL database analysis.
-- Reuse the same local CTI cache, trusted ML artifact, runtime analysis
-  functions, and privacy-safe JSON/CSV report builder as Streamlit.
-- Perform no CTI refresh or external networking.
-
-### `src/threatfusion/reporting.py`
-
-- Builds portable JSON and CSV exports from the current in-memory runtime
-  result.
-- Includes aggregate summary metrics and per-domain verdict, ML tier/score,
-  behavior counts, query types, CTI source names, and human-readable evidence.
-- Does not include raw DNS rows, raw client IP values, or raw response IP
-  values.
-- Escapes spreadsheet formula prefixes in CSV output while preserving original
-  values in JSON.
-- Performs no networking and does not persist the generated report unless the
-  user downloads it.
+    CTI[Malicious-domain evidence] --> SNAP[Reproducible snapshot]
+    BENIGN[Tranco / evaluated benign corpora] --> SNAP
+    SNAP --> SPLIT[Train / validation / development test]
+    SPLIT --> TFIDF[Character 2-6 TF-IDF]
+    TFIDF --> LR[Balanced Logistic Regression]
+    LR --> THR[Validation-selected FPR thresholds]
+    THR --> ARTIFACT[Frozen artifact]
+    ARTIFACT --> HOLDOUT[Fresh / temporal holdout evaluation]
+~~~
+
+Model experimentation and runtime inference are separated.
+
+The current release position is documented in <code>ML_DATASET.md</code>. A final post-freeze temporal measurement for the frozen C=4 candidate remains release work.
+
+## Presentation layer
+
+<code>streamlit_app.py</code> provides:
+
+- system/CTI status;
+- Quick Lookup;
+- telemetry upload and auto-detection;
+- priority triage;
+- evidence-first investigation;
+- source corroboration;
+- related activity;
+- analyst feedback and local suppression;
+- analysis history in local mode;
+- model-evaluation views;
+- privacy-safe export.
+
+## Deployment boundary
+
+The project includes:
+
+- non-root Docker packaging;
+- public mode;
+- environment-configurable runtime paths;
+- sanitized demo/runtime builders;
+- Streamlit health checks;
+- scheduled CTI-refresh guidance.
+
+The public interactive process should not require feed credentials when a prepared cache is supplied. A separate maintenance job is preferred.
+
+See <code>DEPLOYMENT.md</code> for the complete hosting model.
+
+## Main implementation modules
+
+| Area | Key modules |
+| --- | --- |
+| IOC model / normalization | <code>models.py</code>, <code>normalization.py</code>, <code>correlation.py</code> |
+| CTI collection / cache | <code>collectors/</code>, <code>cti_cache.py</code>, <code>cti_refresh.py</code> |
+| Telemetry ingestion | <code>dns.py</code>, <code>dns_ingest.py</code>, <code>network_telemetry.py</code>, format-specific adapters |
+| Matching | <code>matching.py</code>, <code>quick_lookup.py</code> |
+| ML | <code>ml_*.py</code>, <code>ml_artifact.py</code> |
+| Behavior / verdict | <code>dns_behavior.py</code>, <code>hybrid_assessment.py</code> |
+| Runtime | <code>runtime_analysis.py</code> |
+| Related activity | <code>campaign.py</code> |
+| Persistence / reporting | history modules, <code>reporting.py</code>, <code>audit.py</code> |
+| UI | <code>streamlit_app.py</code>, <code>ui_*.py</code> |
+| Deployment | <code>deployment_bundle.py</code>, demo/runtime generation scripts |
+
+## Design principle
+
+> **Known IOC evidence is deterministic context. ML is an auxiliary unknown-domain signal. Behavior is explainable context. Analyst review remains part of the workflow.**
