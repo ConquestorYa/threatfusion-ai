@@ -25,7 +25,7 @@ def build_public_demo_model_samples(
     )
     malicious = tuple(
         DomainSample(
-            domain=f"xj{index:03d}qz-update-check.biz",
+            domain=f"xj{index:03d}qz-update-check.example.net",
             label=1,
             source="ThreatFusion Demo",
         )
