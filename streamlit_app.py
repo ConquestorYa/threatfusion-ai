@@ -1606,9 +1606,9 @@ def main() -> None:
                 st.session_state.pop("analysis_audit_metadata", None)
 
             if len(content_bytes) > MAX_UPLOAD_BYTES:
-                st.error("Uploaded telemetry exceeds the 10 MB application limit.")
+                st.error(\n                    "Uploaded telemetry exceeds the 10 MB application limit."\n                )
             elif telemetry_format == "Pi-hole FTL database":
-                if st.button("Analyze", type="primary"):
+                if st.button("Analyze", type="primary", width="stretch"):
                     try:
                         result, diagnostics = (
                             analyze_pihole_query_db_with_diagnostics(
@@ -1652,7 +1652,7 @@ def main() -> None:
                 except UnicodeDecodeError:
                     st.error("Telemetry input must use UTF-8 encoding.")
                 else:
-                    if st.button("Analyze", type="primary"):
+                    if st.button("Analyze", type="primary", width="stretch"):
                         try:
                             analyzers = {
                                 "Generic DNS CSV": analyze_dns_csv_with_diagnostics,
