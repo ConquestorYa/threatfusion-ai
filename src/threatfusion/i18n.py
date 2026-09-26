@@ -376,6 +376,30 @@ _TR: dict[str, str] = {
     "Passive analysis only · the destination is never opened or resolved.": "Yalnızca pasif analiz · hedef hiçbir zaman açılmaz veya çözümlenmez.",
     "Quick lookup is passive: ThreatFusion does not open the URL, resolve the domain, or download content. A low-risk result means no current signal was raised by the available local CTI cache and model; it is not a guarantee that a destination is safe.": "Hızlı sorgu pasiftir: ThreatFusion URL'yi açmaz, domaini çözümlemez veya içerik indirmez. Düşük risk sonucu, mevcut yerel CTI önbelleği ve model tarafından şu anda bir sinyal üretilmediği anlamına gelir; hedefin güvenli olduğunu garanti etmez.",
     "Application configuration is invalid: {error}": "Uygulama yapılandırması geçersiz: {error}",
+    "example.com, 143.20.185.213, or https://example.com/path": "example.com, 143.20.185.213 veya https://example.com/yol",
+    "Artifact SHA-256 checksum · artifact schema {artifact_schema} · audit schema {audit_schema}": "Model çıktısı SHA-256 özeti · model şeması {artifact_schema} · denetim şeması {audit_schema}",
+    "Comparing run #{run_id} with previous run #{previous_run_id}.": "#{run_id} numaralı çalışma, önceki #{previous_run_id} numaralı çalışmayla karşılaştırılıyor.",
+    "Saved analyst feedback for {count} selected findings. Detector verdicts were not changed.": "Seçilen {count} bulgu için analist geri bildirimi kaydedildi. Tespit sonuçları değiştirilmedi.",
+    "I understand run #{run_id} will be permanently deleted.": "#{run_id} numaralı çalışmanın kalıcı olarak silineceğini anlıyorum.",
+    "Delete saved run #{run_id}": "Kaydedilen #{run_id} çalışmasını sil",
+    "Saved run #{run_id} was deleted.": "Kaydedilen #{run_id} çalışması silindi.",
+    "The selected saved run no longer exists.": "Seçilen kayıtlı çalışma artık mevcut değil.",
+    "I understand older saved runs beyond this limit will be permanently deleted.": "Bu sınırın dışındaki eski kayıtlı çalışmaların kalıcı olarak silineceğini anlıyorum.",
+    "Deleted older saved runs: {runs}": "Silinen eski kayıtlı çalışmalar: {runs}",
+    "NXDOMAIN ratio": "NXDOMAIN oranı",
+    "Label count / subdomain depth": "Etiket sayısı / alt domain derinliği",
+    "Numeric ratio / entropy": "Sayısal oran / entropi",
+    "Response-IP churn rate": "Yanıt IP değişim oranı",
+    "Periodicity score / interval": "Periyodiklik skoru / aralık",
+    "development": "geliştirme",
+    "holdout": "holdout",
+    "Rate": "Oran",
+    "Metric": "Metrik",
+    "Recall is shown for malicious samples and false-positive rate for benign samples. A source with no samples for one class shows n/a for that class-specific rate.": "Recall zararlı örnekler için, yanlış pozitif oranı ise zararsız örnekler için gösterilir. Bir kaynakta sınıflardan biri için örnek yoksa ilgili oran n/a olarak görünür.",
+    "Dataset precision is not the same as operational positive predictive value (PPV). Real DNS traffic may contain a much lower malicious base rate, so even a small false-positive rate can produce many benign alerts.": "Veri kümesi precision değeri operasyonel pozitif öngörü değeriyle (PPV) aynı değildir. Gerçek DNS trafiğinde zararlı temel oranı çok daha düşük olabilir; bu nedenle küçük bir yanlış pozitif oranı bile çok sayıda zararsız uyarı üretebilir.",
+    "Protocol: fresh-collection disjoint holdout. Every domain seen in the development snapshot is removed before evaluation. This is not a strict IOC first-seen temporal split because DomainSample does not store malicious IOC first_seen timestamps.": "Protokol: yeni toplanmış ayrık holdout. Geliştirme snapshotında görülen tüm domainler değerlendirmeden önce çıkarılır. DomainSample zararlı IOC first_seen zaman damgalarını saklamadığı için bu katı bir IOC ilk-görülme zamansal ayrımı değildir.",
+    "Previous verdict": "Önceki sonuç",
+    "Current verdict": "Mevcut sonuç",
 }
 
 _COLUMN_TR = {
@@ -418,6 +442,8 @@ _COLUMN_TR = {
     "Recall": "Recall",
     "F1": "F1",
     "False-positive rate": "Yanlış pozitif oranı",
+    "Previous verdict": "Önceki sonuç",
+    "Current verdict": "Mevcut sonuç",
 }
 
 _VALUE_TR = {
