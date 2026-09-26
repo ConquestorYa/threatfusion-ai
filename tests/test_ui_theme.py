@@ -8,8 +8,9 @@ from threatfusion.ui_theme import (
 )
 
 
-def test_theme_palettes_define_dark_and_light_modes() -> None:
-    assert set(THEME_PALETTES) == {"Dark", "Light"}
+def test_theme_palettes_define_product_modes() -> None:
+    assert {"Dark", "White", "Blue Dark", "Red", "Light"} <= set(THEME_PALETTES)
+    assert THEME_PALETTES["Light"] == THEME_PALETTES["White"]
     assert palette("Dark")["bg"] != palette("Light")["bg"]
     assert palette("Dark")["text"] != palette("Light")["text"]
 
