@@ -727,3 +727,23 @@ After the v2 artifact is frozen, collect a new untouched holdout. Do not reuse
 the inspected CESNET 20k sample or the earlier final holdout as final evidence
 for the v2 artifact.
 
+## One bounded recall iteration
+
+Before adding a more complex model family, ThreatFusion uses one intentionally
+small development experiment around the current selected representation:
+character 2-6 TF-IDF with sublinear term frequency and balanced Logistic
+Regression. Only the Logistic Regression regularization strength changes.
+
+Run it on the local v2 development snapshot:
+
+```powershell
+python scripts\evaluate_ml_recall_iteration.py `
+  --snapshot-dir data\snapshots\development-v2 `
+  --fpr-budgets 0.001 0.005 0.01
+```
+
+The comparison checks `C=0.5, 1, 2, 4` on one shared development split and
+prints overall recall/FPR plus benign-source FPR and malicious-source recall.
+This is development evidence only. If one candidate is selected from this
+output, it must be frozen before another untouched final holdout.
+
