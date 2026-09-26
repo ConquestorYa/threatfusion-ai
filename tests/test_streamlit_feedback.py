@@ -244,7 +244,7 @@ def test_quick_lookup_is_default_primary_workspace_without_network_activity(
 
     assert not app.exception
     assert app.button(key="open_quick_lookup_workspace").label == "Open quick lookup"
-    assert any(item.label == "URL or domain" for item in app.text_input)
+    assert any(item.label == "URL, domain or IP" for item in app.text_input)
     assert app.button(key="quick_lookup_analyze").label == "Check"
     assert not app.button(key="quick_lookup_analyze").disabled
     assert any(
