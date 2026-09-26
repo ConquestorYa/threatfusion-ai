@@ -37,12 +37,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--stale-hours",
         type=float,
         default=6.0,
-        help="skip a source refreshed more recently than this value",
+        help=(
+            "skip keyed/SGB sources refreshed more recently than this value; "
+            "the public PhishTank feed always uses a fixed 24-hour minimum"
+        ),
     )
     parser.add_argument(
         "--force",
         action="store_true",
-        help="refresh configured sources even when their cache is fresh",
+        help=(
+            "refresh configured sources even when their cache is fresh; "
+            "does not bypass the public PhishTank 24-hour minimum"
+        ),
     )
     parser.add_argument(
         "--allow-missing-keys",
