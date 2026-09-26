@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil
+from dataclasses import replace
 from pathlib import Path
 
 from .demo_cti import write_public_demo_cti_cache
@@ -56,6 +57,13 @@ def create_public_demo_runtime(
     write_public_demo_cti_cache(db_path)
     artifact = train_selected_model_artifact(
         build_public_demo_model_samples(),
+    )
+    artifact = replace(
+        artifact,
+        metadata=replace(
+            artifact.metadata,
+            evaluation_status="demo_only_synthetic",
+        ),
     )
     write_ml_artifact(artifact, model_dir)
 
