@@ -62,11 +62,14 @@ def main() -> int:
     print(f"  Exact URL hits: {report.exact_url_hits:,}")
     print(f"  Exact URL misses: {report.exact_url_misses:,}")
     print(f"  Exact lookup coverage: {report.exact_url_coverage:.2%}")
+    print(f"  Hostname index hits: {report.hostname_hits:,}")
+    print(f"  Hostname index misses: {report.hostname_misses:,}")
+    print(f"  Hostname lookup coverage: {report.hostname_coverage:.2%}")
     print(f"  IP-hosted URLs audited: {report.ip_hosted_records:,}")
     print(f"  IP-hosted exact hits: {report.ip_hosted_exact_hits:,}")
     print("  Passive local audit only; no IOC URLs were opened or resolved.")
 
-    return 1 if report.exact_url_misses else 0
+    return 1 if report.exact_url_misses or report.hostname_misses else 0
 
 
 if __name__ == "__main__":

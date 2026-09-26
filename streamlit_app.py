@@ -38,6 +38,7 @@ from threatfusion.reporting import build_analysis_report
 from threatfusion.runtime_analysis import (
     analyze_adguard_query_log_with_diagnostics,
     analyze_dns_csv_with_diagnostics,
+    analyze_dns_upload_with_diagnostics,
     analyze_pihole_query_db_with_diagnostics,
     analyze_zeek_dns_log_with_diagnostics,
 )
@@ -444,6 +445,7 @@ def _clear_analysis_state() -> None:
         "upload_fingerprint",
         "analysis_result",
         "dns_parse_diagnostics",
+        "dns_input_detection",
         "analysis_audit_metadata",
     ):
         st.session_state.pop(key, None)
@@ -746,6 +748,7 @@ def main() -> None:
         telemetry_format = st.selectbox(
             tr("Telemetry format"),
             [
+                "Auto-detect",
                 "Generic DNS CSV",
                 "Zeek dns.log",
                 "Pi-hole FTL database",
@@ -757,12 +760,19 @@ def main() -> None:
         )
 
         format_caption = {
+            "Auto-detect": (
+                "Auto-detect · CSV/TSV/TXT/XLSX/XLS/Zeek/Pi-hole/AdGuard · max 10 MB"
+            ),
             "Generic DNS CSV": "Generic DNS CSV · UTF-8 · max 10 MB",
             "Zeek dns.log": "Zeek dns.log text export · max 10 MB",
             "Pi-hole FTL database": "Pi-hole FTL SQLite database · max 10 MB",
             "AdGuard Home query log": "AdGuard Home JSON query log · max 10 MB",
         }
         required_caption = {
+            "Auto-detect": (
+                "No manual mapping required. ThreatFusion detects the file type, "
+                "delimiter, text encoding and DNS columns."
+            ),
             "Generic DNS CSV": "query_name; all other fields are optional",
             "Zeek dns.log": "Zeek #fields header with query",
             "Pi-hole FTL database": "queries view with standard Pi-hole fields",
@@ -809,18 +819,37 @@ def main() -> None:
             )
 
         upload_label = {
+            "Auto-detect": "Upload DNS telemetry",
             "Generic DNS CSV": "Upload DNS CSV",
             "Zeek dns.log": "Upload Zeek dns.log",
             "Pi-hole FTL database": "Upload Pi-hole FTL database",
             "AdGuard Home query log": "Upload AdGuard Home query log",
         }[telemetry_format]
         upload_types = {
+            "Auto-detect": [
+                "csv",
+                "tsv",
+                "txt",
+                "log",
+                "json",
+                "xlsx",
+                "xls",
+                "db",
+                "sqlite",
+                "sqlite3",
+            ],
             "Generic DNS CSV": ["csv"],
             "Zeek dns.log": ["log", "txt"],
             "Pi-hole FTL database": ["db", "sqlite", "sqlite3"],
             "AdGuard Home query log": ["json", "log", "txt"],
         }[telemetry_format]
         upload_help = {
+            "Auto-detect": (
+                "Upload a DNS telemetry file. ThreatFusion detects CSV/TSV "
+                "delimiters, common text encodings, Excel worksheets, common "
+                "DNS column names, Zeek dns.log, Pi-hole FTL SQLite, and "
+                "AdGuard Home query logs automatically."
+            ),
             "Generic DNS CSV": (
                 "Expected columns: timestamp, client_ip, query_name, "
                 "query_type, response_ip. Only query_name is required."
@@ -864,10 +893,54 @@ def main() -> None:
                 st.session_state["upload_fingerprint"] = fingerprint
                 st.session_state.pop("analysis_result", None)
                 st.session_state.pop("dns_parse_diagnostics", None)
+                st.session_state.pop("dns_input_detection", None)
                 st.session_state.pop("analysis_audit_metadata", None)
 
             if len(content_bytes) > MAX_UPLOAD_BYTES:
                 st.error(tr("Uploaded telemetry exceeds the 10 MB application limit."))
+            elif telemetry_format == "Auto-detect":
+                if st.button(tr("Analyze"), type="primary"):
+                    try:
+                        with st.spinner(tr("Analyzing telemetry…")):
+                            result, diagnostics, detection = (
+                                analyze_dns_upload_with_diagnostics(
+                                    content_bytes,
+                                    getattr(uploaded, "name", None),
+                                    indicators,
+                                    artifact,
+                                )
+                            )
+                    except ValueError as error:
+                        st.error(
+                            tr(
+                                "DNS telemetry could not be analyzed: {error}",
+                                error=error,
+                            )
+                        )
+                    else:
+                        st.session_state["analysis_result"] = result
+                        st.session_state["dns_parse_diagnostics"] = diagnostics
+                        st.session_state["dns_input_detection"] = detection
+                        try:
+                            st.session_state["analysis_audit_metadata"] = (
+                                capture_analysis_audit_metadata(
+                                    model_dir,
+                                    artifact,
+                                    list_cti_cache_status(db_path),
+                                    stale_after_by_source=(
+                                        config.cti_stale_after_by_source
+                                    ),
+                                )
+                            )
+                        except OSError:
+                            st.session_state.pop("analysis_audit_metadata", None)
+                            st.warning(
+                                tr(
+                                    "Analysis completed, but reproducibility metadata could not be captured. Re-run the analysis before saving history."
+                                )
+                            )
+                        else:
+                            st.rerun()
             elif telemetry_format == "Pi-hole FTL database":
                 if st.button(tr("Analyze"), type="primary"):
                     try:
@@ -954,8 +1027,31 @@ def main() -> None:
 
     result = st.session_state.get("analysis_result")
     diagnostics = st.session_state.get("dns_parse_diagnostics")
+    detection = st.session_state.get("dns_input_detection")
     if result is not None and diagnostics is not None:
         with st.expander(tr("Input quality"), expanded=False):
+            if detection is not None:
+                encoding = (
+                    f" · {detection.encoding}"
+                    if detection.encoding
+                    else ""
+                )
+                detail = detection.detail
+                if detail.startswith("worksheet: "):
+                    detail = tr(
+                        "worksheet: {sheet}",
+                        sheet=detail.split(": ", 1)[1],
+                    )
+                else:
+                    detail = tr(detail)
+                st.caption(
+                    tr(
+                        "Detected input: {format} · {detail}{encoding}",
+                        format=tr(detection.format_name),
+                        detail=detail,
+                        encoding=encoding,
+                    )
+                )
             st.caption(
                 tr(
                     "Input quality: {accepted}/{total} rows accepted; {missing} missing query names; {timestamps} invalid timestamps; {ips} invalid response IPs.",

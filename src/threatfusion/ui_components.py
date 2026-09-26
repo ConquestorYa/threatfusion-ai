@@ -64,15 +64,25 @@ def source_status_html(row: dict[str, object]) -> str:
         )
     except ValueError:
         updated = tr("Update time unavailable")
-    count = row.get("Records")
-    count_text = (
-        tr("{count} active indicators", count=f"{int(count):,}")
-        if count is not None
-        else tr("No cached indicators")
+    source = str(row["Source"])
+    source_label = (
+        tr("PhishTank · Verified & Online")
+        if source == "PhishTank"
+        else source
     )
+    count = row.get("Records")
+    if count is None:
+        count_text = tr("No cached indicators")
+    elif source == "PhishTank":
+        count_text = tr(
+            "{count} verified & online phishing URLs",
+            count=f"{int(count):,}",
+        )
+    else:
+        count_text = tr("{count} active indicators", count=f"{int(count):,}")
     return (
         '<div class="tf-source"><div class="tf-source-heading">'
-        f'<span class="tf-source-name">{safe_text(row["Source"])}</span>'
+        f'<span class="tf-source-name">{safe_text(source_label)}</span>'
         f'<span class="tf-tone-{tone}">{safe_text(tr(status))}</span></div>'
         f'<div class="tf-source-count">{safe_text(count_text)}</div>'
         f'<div class="tf-source-age">{safe_text(updated)}</div></div>'
@@ -99,6 +109,13 @@ def render_source_status(row: dict[str, object]) -> None:
                 count=f"{row.get('Inactive history', 0):,}",
             )
         )
+        if str(row["Source"]) == "PhishTank":
+            st.caption(
+                tr(
+                    "ThreatFusion uses PhishTank's verified-online public feed. "
+                    "Unverified, invalid, or offline archive submissions are not included."
+                )
+            )
         if row["Status"] == "Not cached":
             st.caption(tr("Refresh this source to enable its known-IOC matching."))
 

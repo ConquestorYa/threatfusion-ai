@@ -409,6 +409,66 @@ def test_result_filters_do_not_change_underlying_report(feedback_app):
     )
 
 
+def test_auto_detect_is_default_and_uses_raw_upload_bytes(
+    feedback_app,
+    monkeypatch,
+) -> None:
+    import io
+    from threatfusion.dns import DNSParseDiagnostics
+    from threatfusion.dns_ingest import DNSInputDetection
+
+    app_module, _, result, _ = feedback_app
+    raw = b"Query Domain,Record Class\\nexample.com,A\\n"
+    upload = io.BytesIO(raw)
+    upload.name = "dns_logs.csv"
+    calls = []
+    diagnostics = DNSParseDiagnostics(
+        total_rows=1,
+        accepted_rows=1,
+        skipped_missing_query_name=0,
+        invalid_timestamps=0,
+        invalid_response_ips=0,
+    )
+    detection = DNSInputDetection(
+        format_name="Delimited DNS table",
+        detail="delimiter and DNS columns detected automatically",
+        encoding="utf-8-sig",
+    )
+
+    def analyze(value, filename, indicators, artifact):
+        calls.append((value, filename))
+        return result, diagnostics, detection
+
+    monkeypatch.setattr(
+        app_module.st,
+        "file_uploader",
+        lambda *a, **kw: upload,
+    )
+    monkeypatch.setattr(
+        app_module,
+        "analyze_dns_upload_with_diagnostics",
+        analyze,
+    )
+    monkeypatch.setattr(
+        app_module,
+        "capture_analysis_audit_metadata",
+        lambda *a, **kw: "audit",
+    )
+
+    app = AppTest.from_string("import streamlit_app\nstreamlit_app.main()")
+    app.session_state["workspace_nav"] = "Analyze telemetry"
+    app.run(timeout=15)
+
+    assert app.selectbox(key="telemetry_format").value == "Auto-detect"
+    next(button for button in app.button if button.label == "Analyze").click()
+    app.run(timeout=15)
+
+    assert not app.exception
+    assert calls == [(raw, "dns_logs.csv")]
+    assert app.session_state["analysis_result"] == result
+    assert app.session_state["dns_input_detection"] == detection
+
+
 @pytest.mark.parametrize(
     ("telemetry_format", "analyzer_name", "content"),
     [

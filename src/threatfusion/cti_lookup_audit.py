@@ -16,6 +16,8 @@ class CTILookupCoverage:
     audited_url_records: int
     exact_url_hits: int
     exact_url_misses: int
+    hostname_hits: int
+    hostname_misses: int
     ip_hosted_records: int
     ip_hosted_exact_hits: int
 
@@ -24,6 +26,12 @@ class CTILookupCoverage:
         if self.audited_url_records == 0:
             return 0.0
         return self.exact_url_hits / self.audited_url_records
+
+    @property
+    def hostname_coverage(self) -> float:
+        if self.audited_url_records == 0:
+            return 0.0
+        return self.hostname_hits / self.audited_url_records
 
 
 def _is_ip_hosted(url: str) -> bool:
@@ -46,7 +54,7 @@ def audit_exact_url_lookup_coverage(
     source: str = "URLhaus",
     limit: int | None = None,
 ) -> CTILookupCoverage:
-    """Audit exact-URL lookup coverage with one local SQLite scan.
+    """Audit exact-URL and hostname-index lookup coverage with one SQLite scan.
 
     The old audit executed one indexed lookup per URL record. With a large live
     URLhaus cache that meant thousands of repeated SQLite opens/migrations and
@@ -91,6 +99,8 @@ def audit_exact_url_lookup_coverage(
 
     exact_hits = 0
     exact_misses = 0
+    hostname_hits = 0
+    hostname_misses = 0
     ip_hosted = 0
     ip_hosted_hits = 0
 
@@ -103,12 +113,19 @@ def audit_exact_url_lookup_coverage(
 
         if expected is None:
             exact_misses += 1
+            hostname_misses += 1
             continue
 
         expected_url, expected_host = expected
+        hostname_exact = str(url_hostname) == expected_host
+        if hostname_exact:
+            hostname_hits += 1
+        else:
+            hostname_misses += 1
+
         exact = (
             str(normalized_value) == expected_url
-            and str(url_hostname) == expected_host
+            and hostname_exact
         )
         if exact:
             exact_hits += 1
@@ -123,6 +140,8 @@ def audit_exact_url_lookup_coverage(
         audited_url_records=len(rows),
         exact_url_hits=exact_hits,
         exact_url_misses=exact_misses,
+        hostname_hits=hostname_hits,
+        hostname_misses=hostname_misses,
         ip_hosted_records=ip_hosted,
         ip_hosted_exact_hits=ip_hosted_hits,
     )
