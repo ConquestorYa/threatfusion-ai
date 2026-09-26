@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from .brand_assets import THREATFUSION_LOGO_DATA_URI
+from .i18n import LANGUAGE_OPTIONS, current_language, language_option_for, tr
 
 THEME_OPTIONS = ("Midnight", "Crimson", "Violet Noir")
 
@@ -250,23 +251,28 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     line-height:1;
     white-space:nowrap;
 }
-.st-key-visual_theme {
+.st-key-visual_theme,
+.st-key-language_selector {
     display:flex;
     justify-content:flex-end;
     align-items:center;
     margin:0;
 }
-.st-key-visual_theme [role="radiogroup"] {
+.st-key-visual_theme [role="radiogroup"],
+.st-key-language_selector [role="radiogroup"] {
     justify-content:flex-end;
 }
-.st-key-visual_theme button {
+.st-key-visual_theme button,
+.st-key-language_selector button {
     background:var(--tf-panel)!important;
     color:var(--tf-text)!important;
     border-color:var(--tf-border)!important;
     min-height:38px!important;
 }
 .st-key-visual_theme button[aria-pressed="true"],
-.st-key-visual_theme button[data-selected="true"] {
+.st-key-visual_theme button[data-selected="true"],
+.st-key-language_selector button[aria-pressed="true"],
+.st-key-language_selector button[data-selected="true"] {
     background:var(--tf-cyan-soft)!important;
     color:var(--tf-cyan)!important;
     border-color:color-mix(in srgb, var(--tf-cyan) 56%, var(--tf-border))!important;
@@ -916,7 +922,9 @@ button:focus-visible,a:focus-visible,input:focus-visible {
     .tf-product-brand-title { font-size:1.35rem; }
     .tf-theme-picker-label { text-align:left; }
     .st-key-visual_theme,
-    .st-key-visual_theme [role="radiogroup"] { justify-content:flex-start; }
+    .st-key-visual_theme [role="radiogroup"],
+    .st-key-language_selector,
+    .st-key-language_selector [role="radiogroup"] { justify-content:flex-start; }
     .st-key-quick_lookup_input [data-baseweb="input"],
     .st-key-quick_lookup_analyze button { min-height:60px!important; }
     .st-key-quick_lookup_input input { min-height:58px; font-size:1rem!important; }
@@ -930,8 +938,8 @@ def render_app_header(
     description: str = "Turn DNS activity into a prioritized investigation queue.",
 ) -> None:
     st.markdown(
-        '<header class="tf-page-head"><div class="tf-eyebrow">Analyst workspace</div>'
-        f"<h1>{safe_text(title)}</h1><p>{safe_text(description)}</p></header>",
+        f'<header class="tf-page-head"><div class="tf-eyebrow">{safe_text(tr("Analyst workspace"))}</div>'
+        f"<h1>{safe_text(tr(title))}</h1><p>{safe_text(tr(description))}</p></header>",
         unsafe_allow_html=True,
     )
 
@@ -945,18 +953,43 @@ def _logo_markup(css_class: str) -> str:
 
 
 def render_main_brand() -> None:
+    if st.session_state.get("language_selector") not in LANGUAGE_OPTIONS:
+        st.session_state["language_selector"] = language_option_for(current_language())
+
     with st.container(key="product_topbar"):
-        brand_col, theme_col = st.columns([1.55, 1.15], vertical_alignment="center")
+        brand_col, language_col, theme_col = st.columns(
+            [1.45, 0.95, 1.05],
+            vertical_alignment="center",
+        )
         with brand_col:
             st.markdown(
                 '<div class="tf-product-brand">'
                 + _logo_markup("tf-product-brand-logo")
                 + '<div><div class="tf-product-brand-title">ThreatFusion AI</div>'
-                '<div class="tf-product-brand-sub">'
-                'Threat intelligence, DNS analysis and AI-assisted triage in one analyst workspace.'
+                f'<div class="tf-product-brand-sub">{safe_text(tr("Threat intelligence, DNS analysis and AI-assisted triage in one analyst workspace."))}'
                 '</div></div></div>',
                 unsafe_allow_html=True,
             )
+        with language_col:
+            with st.container(key="language_picker"):
+                label_col, options_col = st.columns(
+                    [0.22, 0.78],
+                    vertical_alignment="center",
+                    gap="small",
+                )
+                with label_col:
+                    st.markdown(
+                        f'<div class="tf-theme-picker-label">{safe_text(tr("Language"))}</div>',
+                        unsafe_allow_html=True,
+                    )
+                with options_col:
+                    st.segmented_control(
+                        "Language",
+                        list(LANGUAGE_OPTIONS),
+                        key="language_selector",
+                        label_visibility="collapsed",
+                        width="stretch",
+                    )
         with theme_col:
             with st.container(key="theme_picker"):
                 label_col, options_col = st.columns(
@@ -966,7 +999,7 @@ def render_main_brand() -> None:
                 )
                 with label_col:
                     st.markdown(
-                        '<div class="tf-theme-picker-label">Theme</div>',
+                        f'<div class="tf-theme-picker-label">{safe_text(tr("Theme"))}</div>',
                         unsafe_allow_html=True,
                     )
                 with options_col:
@@ -984,7 +1017,7 @@ def render_sidebar_brand() -> None:
         '<div class="tf-sidebar-brand">'
         + _logo_markup("tf-sidebar-brand-logo")
         + '<div><div class="tf-sidebar-brand-title">ThreatFusion AI</div>'
-        '<div class="tf-sidebar-brand-sub">DNS intelligence workspace</div></div></div>',
+        f'<div class="tf-sidebar-brand-sub">{safe_text(tr("DNS intelligence workspace"))}</div></div></div>',
         unsafe_allow_html=True,
     )
 
@@ -1034,14 +1067,15 @@ def section_label(text: str) -> None:
 
 def verdict_badge(verdict: str) -> str:
     badge_class = _VERDICT_CLASSES.get(verdict, "neutral")
-    return f'<span class="tf-badge tf-badge-{badge_class}">{safe_text(verdict)}</span>'
+    return f'<span class="tf-badge tf-badge-{badge_class}">{safe_text(tr(verdict))}</span>'
 
 
 def render_priority_finding(row: dict[str, object]) -> None:
     verdict = str(row["Verdict"])
     accent = f"var(--tf-{_VERDICT_TOKENS.get(verdict, 'muted')})"
-    sources = str(row.get("Known CTI sources") or "No cached CTI match")
-    evidence = str(row.get("Evidence") or "No strong signal summary")
+    sources = str(row.get("Known CTI sources") or tr("No cached CTI match"))
+    raw_evidence = str(row.get("Evidence") or tr("No strong signal summary"))
+    evidence = "; ".join(tr(item) for item in raw_evidence.split("; "))
     st.markdown(
         f'<div class="tf-finding-row" style="--tf-row-accent:{accent}"><div>'
         f'<div class="tf-finding-domain">{safe_text(row["Domain"])}</div>'

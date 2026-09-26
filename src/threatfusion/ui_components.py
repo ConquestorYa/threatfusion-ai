@@ -7,6 +7,7 @@ from collections.abc import Sequence
 import pandas as pd
 import streamlit as st
 
+from .i18n import tr, translate_dataframe
 from .ui_theme import safe_text
 
 VERDICT_ORDER = ("Known Threat", "High Risk", "Review", "Low")
@@ -22,21 +23,21 @@ def empty_state(title: str, description: str) -> None:
 
 def intake_steps() -> None:
     st.markdown(
-        '<div class="tf-steps" aria-label="Analysis workflow">'
+        f'<div class="tf-steps" aria-label="{safe_text(tr("Analysis workflow"))}">'
         '<div class="tf-step tf-step--active">'
         '<div class="tf-step-number">01</div>'
-        '<div><div class="tf-step-title">Choose source</div>'
-        '<div class="tf-step-sub">Select the telemetry format you want to analyze.</div></div>'
+        f'<div><div class="tf-step-title">{safe_text(tr("Choose source"))}</div>'
+        f'<div class="tf-step-sub">{safe_text(tr("Select the telemetry format you want to analyze."))}</div></div>'
         '</div>'
         '<div class="tf-step">'
         '<div class="tf-step-number">02</div>'
-        '<div><div class="tf-step-title">Upload telemetry</div>'
-        '<div class="tf-step-sub">Provide DNS CSV, Zeek, Pi-hole or AdGuard data.</div></div>'
+        f'<div><div class="tf-step-title">{safe_text(tr("Upload telemetry"))}</div>'
+        f'<div class="tf-step-sub">{safe_text(tr("Provide DNS CSV, Zeek, Pi-hole or AdGuard data."))}</div></div>'
         '</div>'
         '<div class="tf-step">'
         '<div class="tf-step-number">03</div>'
-        '<div><div class="tf-step-title">Analyze &amp; triage</div>'
-        '<div class="tf-step-sub">Correlate CTI, ML and DNS behavior, then prioritize findings.</div></div>'
+        f'<div><div class="tf-step-title">{safe_text(tr("Analyze & triage"))}</div>'
+        f'<div class="tf-step-sub">{safe_text(tr("Correlate CTI, ML and DNS behavior, then prioritize findings."))}</div></div>'
         '</div>'
         '</div>',
         unsafe_allow_html=True,
@@ -51,28 +52,28 @@ def source_status_html(row: dict[str, object]) -> str:
     try:
         hours = float(age.removesuffix(" h"))
         updated = (
-            "Updated just now"
+            tr("Updated just now")
             if hours < 0.1
             else (
-                f"Updated {round(hours * 60)}m ago"
+                tr("Updated {minutes}m ago", minutes=round(hours * 60))
                 if hours < 1
-                else f"Updated {hours:g}h ago"
+                else tr("Updated {hours}h ago", hours=f"{hours:g}")
                 if hours < 48
-                else f"Updated {hours / 24:.0f}d ago"
+                else tr("Updated {days}d ago", days=f"{hours / 24:.0f}")
             )
         )
     except ValueError:
-        updated = "Update time unavailable"
+        updated = tr("Update time unavailable")
     count = row.get("Records")
     count_text = (
-        f"{int(count):,} active indicators"
+        tr("{count} active indicators", count=f"{int(count):,}")
         if count is not None
-        else "No cached indicators"
+        else tr("No cached indicators")
     )
     return (
         '<div class="tf-source"><div class="tf-source-heading">'
         f'<span class="tf-source-name">{safe_text(row["Source"])}</span>'
-        f'<span class="tf-tone-{tone}">{safe_text(status)}</span></div>'
+        f'<span class="tf-tone-{tone}">{safe_text(tr(status))}</span></div>'
         f'<div class="tf-source-count">{safe_text(count_text)}</div>'
         f'<div class="tf-source-age">{safe_text(updated)}</div></div>'
     )
@@ -80,13 +81,26 @@ def source_status_html(row: dict[str, object]) -> str:
 
 def render_source_status(row: dict[str, object]) -> None:
     st.sidebar.markdown(source_status_html(row), unsafe_allow_html=True)
-    with st.sidebar.expander(f"{row['Source']} details", expanded=False):
-        st.caption("Last refresh (UTC)")
-        st.text(str(row.get("Refreshed at") or "Unavailable"))
-        st.caption(f"Freshness threshold: {row.get('Stale after', 'Unavailable')}")
-        st.caption(f"Inactive history: {row.get('Inactive history', 0):,}")
+    with st.sidebar.expander(
+        tr("{source} details", source=row["Source"]),
+        expanded=False,
+    ):
+        st.caption(tr("Last refresh (UTC)"))
+        st.text(str(row.get("Refreshed at") or tr("Unavailable")))
+        st.caption(
+            tr(
+                "Freshness threshold: {value}",
+                value=row.get("Stale after", tr("Unavailable")),
+            )
+        )
+        st.caption(
+            tr(
+                "Inactive history: {count}",
+                count=f"{row.get('Inactive history', 0):,}",
+            )
+        )
         if row["Status"] == "Not cached":
-            st.caption("Refresh this source to enable its known-IOC matching.")
+            st.caption(tr("Refresh this source to enable its known-IOC matching."))
 
 
 def filter_findings(
@@ -117,18 +131,21 @@ def filter_findings(
 def render_findings_table(rows: list[dict[str, object]], *, key: str) -> None:
     if not rows:
         empty_state(
-            "No domain findings",
-            "This analysis did not produce any domain assessments.",
+            tr("No domain findings"),
+            tr("This analysis did not produce any domain assessments."),
         )
         return
     search_col, verdict_col, source_col = st.columns([2, 1, 1])
     query = search_col.text_input(
-        "Search domains",
+        tr("Search domains"),
         key=f"{key}_search",
-        placeholder="Domain or part of a hostname",
+        placeholder=tr("Domain or part of a hostname"),
     )
     verdict = verdict_col.selectbox(
-        "Verdict", ["All", *VERDICT_ORDER], key=f"{key}_verdict"
+        tr("Verdict"),
+        ["All", *VERDICT_ORDER],
+        key=f"{key}_verdict",
+        format_func=tr,
     )
     sources = sorted(
         {
@@ -138,30 +155,39 @@ def render_findings_table(rows: list[dict[str, object]], *, key: str) -> None:
             if part.strip()
         }
     )
-    source = source_col.selectbox("CTI source", ["All", *sources], key=f"{key}_source")
+    source = source_col.selectbox(
+        tr("CTI source"),
+        ["All", *sources],
+        key=f"{key}_source",
+        format_func=tr,
+    )
     filtered = filter_findings(rows, query=query, verdict=verdict, source=source)
     st.caption(
-        f"{len(filtered):,} of {len(rows):,} domains · ordered by verdict priority"
+        tr(
+            "{shown} of {total} domains · ordered by verdict priority",
+            shown=f"{len(filtered):,}",
+            total=f"{len(rows):,}",
+        )
     )
     if not filtered:
-        st.info("No domains match these filters. Clear the search or choose All.")
+        st.info(tr("No domains match these filters. Clear the search or choose All."))
         return
     frame = pd.DataFrame(filtered)
     columns = ["Domain", "Verdict", "ML tier", "DNS events", "Known CTI sources"]
     st.dataframe(
-        frame[columns],
+        translate_dataframe(frame[columns]),
         hide_index=True,
         width="stretch",
         height=min(420, 38 + len(filtered) * 35),
         column_config={"Domain": st.column_config.TextColumn(width="large")},
     )
-    with st.expander("All aggregate fields", expanded=False):
+    with st.expander(tr("All aggregate fields"), expanded=False):
         st.dataframe(
-            frame,
+            translate_dataframe(frame),
             hide_index=True,
             width="stretch",
             column_config={"ML score": st.column_config.NumberColumn(format="%.4f")},
         )
         st.caption(
-            "ML scores are uncalibrated decision scores, not malware probabilities."
+            tr("ML scores are uncalibrated decision scores, not malware probabilities.")
         )

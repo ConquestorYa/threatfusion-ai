@@ -11,6 +11,7 @@ from .evaluation_dashboard import (
     source_metric_rows,
     summarize_holdout_report,
 )
+from .i18n import tr, translate_dataframe
 from .ml_evaluation_report import read_frozen_holdout_report
 from .ui_theme import apply_plotly_theme, metric_card, palette
 
@@ -19,16 +20,20 @@ def _show_model_evaluation(report_path: Path) -> None:
 
     if not report_path.is_file():
         with st.container(border=True):
-            st.markdown("### Final holdout not evaluated")
+            st.markdown(f"### {tr('Final holdout not evaluated')}")
             st.write(
-                "The frozen development model has not yet been measured on "
-                "the separately collected fresh disjoint holdout."
+                tr(
+                    "The frozen development model has not yet been measured on "
+                    "the separately collected fresh disjoint holdout."
+                )
             )
             st.caption(
-                "Until that report exists, ThreatFusion intentionally keeps "
-                "the model in development status."
+                tr(
+                    "Until that report exists, ThreatFusion intentionally keeps "
+                    "the model in development status."
+                )
             )
-            with st.expander("Show final-evaluation command", expanded=False):
+            with st.expander(tr("Show final-evaluation command"), expanded=False):
                 st.code(
                     "python scripts\\evaluate_ml_final_holdout.py "
                     "--artifact-dir data\\models\\development-001 "
@@ -42,19 +47,21 @@ def _show_model_evaluation(report_path: Path) -> None:
     try:
         report = read_frozen_holdout_report(report_path)
     except (OSError, TypeError, ValueError) as error:
-        st.error("The final holdout report could not be loaded.")
+        st.error(tr("The final holdout report could not be loaded."))
         st.caption(type(error).__name__)
         return
 
     summary = summarize_holdout_report(report)
 
     st.success(
-        "Frozen-model holdout report loaded. No retraining or threshold "
-        "tuning was performed on this holdout."
+        tr(
+            "Frozen-model holdout report loaded. No retraining or threshold "
+            "tuning was performed on this holdout."
+        )
     )
-    st.write(f"**Model:** {summary.model_name}")
+    st.write(f"**{tr('Model')}:** {summary.model_name}")
     st.write(
-        "**Snapshot dates:** "
+        f"**{tr('Snapshot dates')}:** "
         f"development {summary.development_snapshot_date} → "
         f"holdout {summary.holdout_snapshot_date}"
     )
@@ -62,31 +69,31 @@ def _show_model_evaluation(report_path: Path) -> None:
     columns = st.columns(5)
     metric_card(
         columns[0],
-        "Input samples",
+        tr("Input samples"),
         summary.input_count,
         accent="neutral",
     )
     metric_card(
         columns[1],
-        "Overlap removed",
+        tr("Overlap removed"),
         summary.overlap_removed,
         accent="neutral",
     )
     metric_card(
         columns[2],
-        "Retained",
+        tr("Retained"),
         summary.retained_count,
         accent="neutral",
     )
     metric_card(
         columns[3],
-        "Malicious",
+        tr("Malicious"),
         summary.malicious_count,
         accent="neutral",
     )
     metric_card(
         columns[4],
-        "Benign",
+        tr("Benign"),
         summary.benign_count,
         accent="neutral",
     )
@@ -105,9 +112,9 @@ def _show_model_evaluation(report_path: Path) -> None:
         lambda value: f"{value:.6f}"
     )
 
-    st.write("**Frozen operating points**")
+    st.write(f"**{tr('Frozen operating points')}**")
     st.dataframe(
-        display_frame,
+        translate_dataframe(display_frame),
         hide_index=True,
         width="stretch",
     )
@@ -123,7 +130,7 @@ def _show_model_evaluation(report_path: Path) -> None:
         y="Rate",
         color="Metric",
         barmode="group",
-        title="Final holdout recall vs false-positive rate",
+        title=tr("Final holdout recall vs false-positive rate"),
         labels={"Rate": "Rate"},
         color_discrete_map={
             "Recall": palette()["cyan"],
@@ -152,10 +159,10 @@ def _show_model_evaluation(report_path: Path) -> None:
             source_frame[column] = source_frame[column].map(
                 lambda value: "n/a" if pd.isna(value) else f"{value:.2%}"
             )
-        with st.expander("Source-aware holdout diagnostics", expanded=False):
-            st.write("**Source-aware holdout diagnostics**")
+        with st.expander(tr("Source-aware holdout diagnostics"), expanded=False):
+            st.write(f"**{tr('Source-aware holdout diagnostics')}**")
             st.dataframe(
-                source_frame,
+                translate_dataframe(source_frame),
                 hide_index=True,
                 width="stretch",
             )

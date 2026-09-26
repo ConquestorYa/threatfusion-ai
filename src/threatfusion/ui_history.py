@@ -11,6 +11,7 @@ from .dashboard import (
     history_rows,
     persisted_assessment_rows,
 )
+from .i18n import tr, translate_dataframe
 from .persistence import (
     apply_history_retention,
     compare_analysis_runs,
@@ -28,15 +29,17 @@ def _show_history(db_path: Path) -> None:
     summaries = list_analysis_runs(db_path)
     if not summaries:
         empty_state(
-            "No saved analyses yet",
-            "Analyze telemetry, then choose Save aggregate analysis history under Export & save. Only aggregate findings are saved.",
+            tr("No saved analyses yet"),
+            tr("Analyze telemetry, then choose Save aggregate analysis history under Export & save. Only aggregate findings are saved."),
         )
         return
 
     st.dataframe(
-        pd.DataFrame(history_rows(summaries))[
-            ["Run ID", "Created at", "Domains", "Known Threat", "High Risk", "Review"]
-        ],
+        translate_dataframe(
+            pd.DataFrame(history_rows(summaries))[
+                ["Run ID", "Created at", "Domains", "Known Threat", "High Risk", "Review"]
+            ]
+        ),
         hide_index=True,
         width="stretch",
         column_config={
@@ -45,29 +48,29 @@ def _show_history(db_path: Path) -> None:
         },
     )
 
-    with st.expander("All run statistics", expanded=False):
+    with st.expander(tr("All run statistics"), expanded=False):
         st.dataframe(
-            pd.DataFrame(history_rows(summaries)), hide_index=True, width="stretch"
+            translate_dataframe(pd.DataFrame(history_rows(summaries))), hide_index=True, width="stretch"
         )
 
     selected_id = st.selectbox(
-        "Inspect saved run",
+        tr("Inspect saved run"),
         [summary.id for summary in summaries],
     )
     run_id = int(selected_id)
     selected_summary = next(summary for summary in summaries if summary.id == run_id)
-    with st.expander("Reproducibility metadata", expanded=False):
+    with st.expander(tr("Reproducibility metadata"), expanded=False):
         if selected_summary.audit_captured_at is None:
             st.caption(
-                "This is a legacy saved run created before audit metadata was added."
+                tr("This is a legacy saved run created before audit metadata was added.")
             )
         else:
             st.write(
-                "**Audit captured:** "
+                f"**{tr('Audit captured')}:** "
                 + format_timestamp(selected_summary.audit_captured_at)
             )
-            st.write("**Artifact:** " + (selected_summary.model_name or "Unknown"))
-            checksum = selected_summary.artifact_checksum or "Unknown"
+            st.write(f"**{tr('Artifact')}:** " + (selected_summary.model_name or tr("Unknown")))
+            checksum = selected_summary.artifact_checksum or tr("Unknown")
             st.code(checksum, language="text")
             st.caption(
                 "Artifact SHA-256 checksum · artifact schema "
@@ -81,37 +84,41 @@ def _show_history(db_path: Path) -> None:
                 and selected_summary.low_threshold is not None
             ):
                 st.write(
-                    "**Frozen thresholds:** "
+                    f"**{tr('Frozen thresholds')}:** "
                     f"high {selected_summary.high_threshold:.6f} · "
                     f"medium {selected_summary.medium_threshold:.6f} · "
                     f"low {selected_summary.low_threshold:.6f}"
                 )
             if selected_summary.cti_sources:
-                st.write("**CTI snapshot context**")
+                st.write(f"**{tr('CTI snapshot context')}**")
                 st.dataframe(
-                    pd.DataFrame(
-                        [
-                            {
-                                "Source": item.source,
-                                "Refreshed at": format_timestamp(item.refreshed_at),
-                                "Records": item.record_count,
-                                "Status": item.freshness.title(),
-                            }
-                            for item in selected_summary.cti_sources
-                        ]
+                    translate_dataframe(
+                        pd.DataFrame(
+                            [
+                                {
+                                    "Source": item.source,
+                                    "Refreshed at": format_timestamp(item.refreshed_at),
+                                    "Records": item.record_count,
+                                    "Status": item.freshness.title(),
+                                }
+                                for item in selected_summary.cti_sources
+                            ]
+                        )
                     ),
                     hide_index=True,
                     width="stretch",
                 )
             else:
-                st.caption("No CTI source refresh metadata was captured.")
+                st.caption(tr("No CTI source refresh metadata was captured."))
 
     comparison = compare_analysis_runs(db_path, run_id)
-    with st.expander("Compare with previous analysis", expanded=False):
+    with st.expander(tr("Compare with previous analysis"), expanded=False):
         if comparison.previous_run_id is None:
             st.caption(
-                "No earlier saved analysis exists. Every domain in this run "
-                "is new relative to saved history."
+                tr(
+                    "No earlier saved analysis exists. Every domain in this run "
+                    "is new relative to saved history."
+                )
             )
         else:
             st.caption(
@@ -119,41 +126,43 @@ def _show_history(db_path: Path) -> None:
                 f"#{comparison.previous_run_id}."
             )
         compare_columns = st.columns(3)
-        compare_columns[0].metric("New domains", len(comparison.new_domains))
+        compare_columns[0].metric(tr("New domains"), len(comparison.new_domains))
         compare_columns[1].metric(
-            "No longer present",
+            tr("No longer present"),
             len(comparison.removed_domains),
         )
         compare_columns[2].metric(
-            "Verdict changes",
+            tr("Verdict changes"),
             len(comparison.verdict_changes),
         )
         if comparison.new_domains:
-            st.write("**New since previous analysis**")
+            st.write(f"**{tr('New since previous analysis')}**")
             st.dataframe(
                 pd.DataFrame({"Domain": comparison.new_domains}),
                 hide_index=True,
                 width="stretch",
             )
         if comparison.removed_domains:
-            st.write("**No longer present**")
+            st.write(f"**{tr('No longer present')}**")
             st.dataframe(
                 pd.DataFrame({"Domain": comparison.removed_domains}),
                 hide_index=True,
                 width="stretch",
             )
         if comparison.verdict_changes:
-            st.write("**Verdict changes**")
+            st.write(f"**{tr('Verdict changes')}**")
             st.dataframe(
-                pd.DataFrame(
-                    [
-                        {
-                            "Domain": item.domain,
-                            "Previous verdict": item.previous_verdict,
-                            "Current verdict": item.current_verdict,
-                        }
-                        for item in comparison.verdict_changes
-                    ]
+                translate_dataframe(
+                    pd.DataFrame(
+                        [
+                            {
+                                "Domain": item.domain,
+                                "Previous verdict": item.previous_verdict,
+                                "Current verdict": item.current_verdict,
+                            }
+                            for item in comparison.verdict_changes
+                        ]
+                    )
                 ),
                 hide_index=True,
                 width="stretch",
@@ -185,12 +194,13 @@ def _show_history(db_path: Path) -> None:
         )
         filter_columns = st.columns(3)
         verdict_filter = filter_columns[0].selectbox(
-            "Verdict",
+            tr("Verdict"),
             ["All", *sorted(frame["Verdict"].unique())],
             key=f"history_verdict_filter_{run_id}",
+            format_func=tr,
         )
         review_filter = filter_columns[1].selectbox(
-            "Review state",
+            tr("Review state"),
             [
                 "All",
                 "Unreviewed",
@@ -200,6 +210,7 @@ def _show_history(db_path: Path) -> None:
                 "Uncertain",
             ],
             key=f"history_review_filter_{run_id}",
+            format_func=tr,
         )
         source_values = sorted(
             {
@@ -210,9 +221,10 @@ def _show_history(db_path: Path) -> None:
             }
         )
         source_filter = filter_columns[2].selectbox(
-            "CTI source",
+            tr("CTI source"),
             ["All", *source_values],
             key=f"history_source_filter_{run_id}",
+            format_func=tr,
         )
 
         filtered_frame = frame.copy()
@@ -249,10 +261,10 @@ def _show_history(db_path: Path) -> None:
             "Analyst feedback",
         ]
         if filtered_frame.empty:
-            st.info("No saved findings match the current triage filters.")
+            st.info(tr("No saved findings match the current triage filters."))
         else:
             st.dataframe(
-                filtered_frame[compact_columns],
+                translate_dataframe(filtered_frame[compact_columns]),
                 hide_index=True,
                 width="stretch",
                 column_config={
@@ -266,10 +278,12 @@ def _show_history(db_path: Path) -> None:
                 },
             )
 
-        st.write("**Analyst review**")
+        st.write(f"**{tr('Analyst review')}**")
         st.caption(
-            "Feedback is local analyst context only. It does not change the "
-            "original verdict, retrain the model, or alter frozen evaluation."
+            tr(
+                "Feedback is local analyst context only. It does not change the "
+                "original verdict, retrain the model, or alter frozen evaluation."
+            )
         )
 
         feedback_options = {
@@ -279,33 +293,34 @@ def _show_history(db_path: Path) -> None:
         }
         option_labels = list(feedback_options)
 
-        with st.expander("Bulk review selected findings", expanded=False):
+        with st.expander(tr("Bulk review selected findings"), expanded=False):
             bulk_candidates = (
                 filtered_frame["Domain"].tolist()
                 if not filtered_frame.empty
                 else [assessment.domain for assessment in assessments]
             )
             bulk_domains = st.multiselect(
-                "Findings to review",
+                tr("Findings to review"),
                 bulk_candidates,
                 key=f"bulk_feedback_domains_{run_id}",
             )
             bulk_label = st.selectbox(
-                "Bulk analyst label",
+                tr("Bulk analyst label"),
                 option_labels,
                 key=f"bulk_feedback_label_{run_id}",
+                format_func=tr,
             )
             bulk_note = st.text_area(
-                "Optional bulk analyst note",
+                tr("Optional bulk analyst note"),
                 max_chars=500,
                 key=f"bulk_feedback_note_{run_id}",
             )
             bulk_confirm = st.checkbox(
-                "Apply this label only to the selected findings.",
+                tr("Apply this label only to the selected findings."),
                 key=f"bulk_feedback_confirm_{run_id}",
             )
             if st.button(
-                "Apply bulk review",
+                tr("Apply bulk review"),
                 key=f"bulk_feedback_submit_{run_id}",
                 disabled=not bulk_domains or not bulk_confirm,
             ):
@@ -328,7 +343,7 @@ def _show_history(db_path: Path) -> None:
             else [assessment.domain for assessment in assessments]
         )
         feedback_domain = st.selectbox(
-            "Finding to review",
+            tr("Finding to review"),
             review_domains,
             key=f"feedback_domain_{run_id}",
         )
@@ -344,16 +359,17 @@ def _show_history(db_path: Path) -> None:
 
         with st.form(f"analyst_feedback_{run_id}_{feedback_domain}"):
             selected_feedback = st.selectbox(
-                "Analyst label",
+                tr("Analyst label"),
                 option_labels,
                 index=current_index,
+                format_func=tr,
             )
             note = st.text_area(
-                "Optional analyst note",
+                tr("Optional analyst note"),
                 value=(current.note if current is not None and current.note else ""),
                 max_chars=500,
             )
-            submitted = st.form_submit_button("Save analyst feedback")
+            submitted = st.form_submit_button(tr("Save analyst feedback"))
 
         if submitted:
             save_analyst_feedback(
@@ -364,15 +380,19 @@ def _show_history(db_path: Path) -> None:
                 note=note,
             )
             st.success(
-                "Analyst feedback saved. The original ThreatFusion verdict "
-                "was not changed."
+                tr(
+                    "Analyst feedback saved. The original ThreatFusion verdict "
+                    "was not changed."
+                )
             )
             st.rerun()
 
-    with st.expander("History retention and deletion", expanded=False):
+    with st.expander(tr("History retention and deletion"), expanded=False):
         st.warning(
-            "These controls permanently delete local saved history. "
-            "Detector logic and the current in-memory analysis are unchanged."
+            tr(
+                "These controls permanently delete local saved history. "
+                "Detector logic and the current in-memory analysis are unchanged."
+            )
         )
         delete_confirm = st.checkbox(
             f"I understand run #{run_id} will be permanently deleted.",
@@ -392,7 +412,7 @@ def _show_history(db_path: Path) -> None:
 
         keep_latest = int(
             st.number_input(
-                "Retention: keep latest N saved runs",
+                tr("Retention: keep latest N saved runs"),
                 min_value=1,
                 max_value=1000,
                 value=min(max(len(summaries), 1), 25),
@@ -406,7 +426,7 @@ def _show_history(db_path: Path) -> None:
             key="history_retention_confirm",
         )
         if st.button(
-            "Apply retention cleanup",
+            tr("Apply retention cleanup"),
             key="history_retention_apply",
             disabled=not retention_confirm,
         ):
@@ -421,4 +441,4 @@ def _show_history(db_path: Path) -> None:
                 )
                 st.rerun()
             else:
-                st.info("No saved runs were old enough to delete.")
+                st.info(tr("No saved runs were old enough to delete."))
