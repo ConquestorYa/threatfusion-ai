@@ -188,7 +188,10 @@ def _show_analysis_result(
     include_suppressed = False
     if suppressed_priority_count:
         include_suppressed = st.checkbox(
-            f"Include {suppressed_priority_count} locally suppressed finding(s)",
+            tr(
+                "Include {count} locally suppressed finding(s)",
+                count=suppressed_priority_count,
+            ),
             value=False,
             key="include_suppressed_live_findings",
         )
@@ -206,17 +209,21 @@ def _show_analysis_result(
                 render_priority_finding(row)
             if len(visible_priority_rows) > 5:
                 st.caption(
-                    f"{len(visible_priority_rows) - 5} additional priority "
-                    "finding(s) are available in Domain findings."
+                    tr(
+                        "{count} additional priority finding(s) are available in Domain findings.",
+                        count=len(visible_priority_rows) - 5,
+                    )
                 )
         else:
             if priority_rows and suppressed_priority_count:
                 st.info(
-                    "All current priority findings are locally suppressed. "
-                    "Enable the checkbox above to include them."
+                    tr(
+                        "All current priority findings are locally suppressed. "
+                        "Enable the checkbox above to include them."
+                    )
                 )
             else:
-                st.success("No Known Threat, High Risk, or Review findings.")
+                st.success(tr("No Known Threat, High Risk, or Review findings."))
 
     with overview_right:
         section_label(tr("Verdict distribution"))
@@ -329,17 +336,21 @@ def _show_analysis_result(
             related_report = find_related_activity(result)
         except ValueError as error:
             st.warning(
-                "Related-activity visualization was skipped because the "
-                f"candidate set was too large: {error}"
+                tr(
+                    "Related-activity visualization was skipped because the candidate set was too large: {error}",
+                    error=error,
+                )
             )
             related_report = None
 
         if related_report is not None and related_report.clusters:
             st.info(
-                "These groups show possible related suspicious activity based "
-                "on weighted local DNS and CTI context. High-fan-out shared "
-                "infrastructure is down-weighted or filtered. The groups do "
-                "not prove one malware campaign."
+                tr(
+                    "These groups show possible related suspicious activity based "
+                    "on weighted local DNS and CTI context. High-fan-out shared "
+                    "infrastructure is down-weighted or filtered. The groups do "
+                    "not prove one malware campaign."
+                )
             )
             st.plotly_chart(
                 _relationship_figure(related_report, result),
@@ -361,15 +372,19 @@ def _show_analysis_result(
                     width="stretch",
                 )
                 st.caption(
-                    "Raw client IP values are not shown. Strength is a local "
-                    "evidence score, not an attribution probability. Relationship "
-                    "rows expose aggregate counts and explainable noise "
-                    "adjustments only."
+                    tr(
+                        "Raw client IP values are not shown. Strength is a local "
+                        "evidence score, not an attribution probability. Relationship "
+                        "rows expose aggregate counts and explainable noise "
+                        "adjustments only."
+                    )
                 )
         elif related_report is not None:
             st.info(
-                "No possible related-activity groups were found among Known "
-                "Threat, High Risk, or Review domains."
+                tr(
+                    "No possible related-activity groups were found among Known "
+                    "Threat, High Risk, or Review domains."
+                )
             )
 
     with export_tab:
@@ -393,16 +408,20 @@ def _show_analysis_result(
             width="stretch",
         )
         st.caption(
-            "Exports contain aggregate/per-domain findings only. Raw DNS rows, "
-            "client IP values, and response IP values are not included."
+            tr(
+                "Exports contain aggregate/per-domain findings only. Raw DNS rows, "
+                "client IP values, and response IP values are not included."
+            )
         )
 
         if history_enabled and st.button(tr("Save aggregate analysis history")):
             audit_metadata = st.session_state.get("analysis_audit_metadata")
             if audit_metadata is None:
                 st.error(
-                    "Re-run the analysis before saving so model, threshold, "
-                    "and CTI audit metadata can be captured."
+                    tr(
+                        "Re-run the analysis before saving so model, threshold, "
+                        "and CTI audit metadata can be captured."
+                    )
                 )
             else:
                 run_id = save_runtime_analysis(
@@ -412,8 +431,10 @@ def _show_analysis_result(
                     audit_metadata=audit_metadata,
                 )
                 st.success(
-                    f"Analysis #{run_id} saved with reproducibility metadata. "
-                    "Raw DNS rows and client IPs were not stored."
+                    tr(
+                        "Analysis #{run_id} saved with reproducibility metadata. Raw DNS rows and client IPs were not stored.",
+                        run_id=run_id,
+                    )
                 )
 
 
@@ -540,7 +561,7 @@ def main() -> None:
     try:
         config = load_app_config()
     except ValueError as error:
-        st.error(f"Application configuration is invalid: {error}")
+        st.error(tr("Application configuration is invalid: {error}", error=error))
         return
 
     db_path = config.db_path
@@ -747,7 +768,7 @@ def main() -> None:
             "Pi-hole FTL database": "queries view with standard Pi-hole fields",
             "AdGuard Home query log": "query-log JSON with host and timestamp fields",
         }
-        st.caption(format_caption[telemetry_format])
+        st.caption(tr(format_caption[telemetry_format]))
         with st.expander(tr("Input requirements"), expanded=False):
             st.write(tr(required_caption[telemetry_format]))
             st.caption(
@@ -760,7 +781,7 @@ def main() -> None:
             st.error(
                 tr("The local ML artifact is not ready. Set up a trusted artifact to analyze telemetry.")
             )
-            with st.expander("Setup details", expanded=False):
+            with st.expander(tr("Setup details"), expanded=False):
                 st.code("python scripts/train_ml_artifact.py", language="shell")
                 st.caption(type(error).__name__)
             return
@@ -770,17 +791,21 @@ def main() -> None:
             == "demo_only_synthetic"
         ):
             st.warning(
-                "Demo ML artifact active. It uses synthetic training data only "
-                "to exercise the interface and must not be interpreted as "
-                "measured model performance."
+                tr(
+                    "Demo ML artifact active. It uses synthetic training data only "
+                    "to exercise the interface and must not be interpreted as "
+                    "measured model performance."
+                )
             )
 
         indicators = load_ioc_records(db_path)
         if not indicators:
             st.warning(
-                "CTI cache is empty. Analysis can still use ML and DNS "
-                "behavior, but known-threat matching will be unavailable. "
-                "Run scripts/refresh_cti_cache.py to populate the cache."
+                tr(
+                    "CTI cache is empty. Analysis can still use ML and DNS "
+                    "behavior, but known-threat matching will be unavailable. "
+                    "Run scripts/refresh_cti_cache.py to populate the cache."
+                )
             )
 
         upload_label = {
@@ -827,8 +852,7 @@ def main() -> None:
         )
 
         st.markdown(
-            '<p class="tf-privacy">Processed in memory. Raw DNS rows and client IPs are not saved. '
-            "Reports and optional history contain aggregate findings only.</p>",
+            f'<p class="tf-privacy">{tr("Processed in memory. Raw DNS rows and client IPs are not saved. Reports and optional history contain aggregate findings only.")}</p>',
             unsafe_allow_html=True,
         )
         if uploaded is None:
@@ -853,7 +877,7 @@ def main() -> None:
                             artifact,
                         )
                     except ValueError as error:
-                        st.error(f"DNS telemetry could not be analyzed: {error}")
+                        st.error(tr("DNS telemetry could not be analyzed: {error}", error=error))
                     else:
                         st.session_state["analysis_result"] = result
                         st.session_state["dns_parse_diagnostics"] = diagnostics
@@ -871,9 +895,9 @@ def main() -> None:
                         except OSError:
                             st.session_state.pop("analysis_audit_metadata", None)
                             st.warning(
-                                "Analysis completed, but reproducibility "
-                                "metadata could not be captured. Re-run the "
-                                "analysis before saving history."
+                                tr(
+                                    "Analysis completed, but reproducibility metadata could not be captured. Re-run the analysis before saving history."
+                                )
                             )
                         else:
                             st.rerun()
@@ -900,7 +924,7 @@ def main() -> None:
                                     artifact,
                                 )
                         except ValueError as error:
-                            st.error(f"DNS telemetry could not be analyzed: {error}")
+                            st.error(tr("DNS telemetry could not be analyzed: {error}", error=error))
                         else:
                             st.session_state["analysis_result"] = result
                             st.session_state["dns_parse_diagnostics"] = diagnostics
@@ -921,9 +945,9 @@ def main() -> None:
                                     None,
                                 )
                                 st.warning(
-                                    "Analysis completed, but reproducibility "
-                                    "metadata could not be captured. Re-run "
-                                    "the analysis before saving history."
+                                    tr(
+                                        "Analysis completed, but reproducibility metadata could not be captured. Re-run the analysis before saving history."
+                                    )
                                 )
                             else:
                                 st.rerun()
@@ -933,12 +957,14 @@ def main() -> None:
     if result is not None and diagnostics is not None:
         with st.expander(tr("Input quality"), expanded=False):
             st.caption(
-                "Input quality: "
-                f"{diagnostics.accepted_rows}/{diagnostics.total_rows} rows "
-                "accepted; "
-                f"{diagnostics.skipped_missing_query_name} missing query names; "
-                f"{diagnostics.invalid_timestamps} invalid timestamps; "
-                f"{diagnostics.invalid_response_ips} invalid response IPs."
+                tr(
+                    "Input quality: {accepted}/{total} rows accepted; {missing} missing query names; {timestamps} invalid timestamps; {ips} invalid response IPs.",
+                    accepted=diagnostics.accepted_rows,
+                    total=diagnostics.total_rows,
+                    missing=diagnostics.skipped_missing_query_name,
+                    timestamps=diagnostics.invalid_timestamps,
+                    ips=diagnostics.invalid_response_ips,
+                )
             )
     if result is not None:
         _show_analysis_result(
