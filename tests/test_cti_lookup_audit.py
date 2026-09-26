@@ -1,3 +1,4 @@
+import sqlite3
 from threatfusion.cti_cache import replace_source_records
 from threatfusion.cti_lookup_audit import audit_exact_url_lookup_coverage
 from threatfusion.models import IOCRecord, IOCType
@@ -60,3 +61,35 @@ def test_exact_url_lookup_coverage_rejects_invalid_limit(tmp_path):
         assert "at least 1" in str(error)
     else:
         raise AssertionError("invalid limit must be rejected")
+
+
+def test_exact_url_lookup_coverage_detects_corrupt_index_fields(tmp_path):
+    db_path = tmp_path / "cti.sqlite"
+    replace_source_records(
+        db_path,
+        "URLhaus",
+        [
+            IOCRecord(
+                "http://143.20.185.213/armv7",
+                IOCType.URL,
+                "URLhaus",
+            )
+        ],
+    )
+
+    with sqlite3.connect(db_path) as connection:
+        connection.execute(
+            """
+            UPDATE cti_records
+            SET normalized_value = 'http://wrong.example/'
+            WHERE source = 'URLhaus'
+            """
+        )
+
+    report = audit_exact_url_lookup_coverage(db_path)
+
+    assert report.audited_url_records == 1
+    assert report.exact_url_hits == 0
+    assert report.exact_url_misses == 1
+    assert report.ip_hosted_records == 1
+    assert report.ip_hosted_exact_hits == 0
