@@ -75,7 +75,12 @@ MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 
 @st.cache_resource
 def _load_artifact(path_text: str):
-    expected_checksum = os.environ.get("THREATFUSION_MODEL_SHA256")
+    raw_checksum = os.environ.get("THREATFUSION_MODEL_SHA256")
+    expected_checksum = (
+        raw_checksum.strip()
+        if raw_checksum is not None and raw_checksum.strip()
+        else None
+    )
     return load_trusted_ml_artifact(
         Path(path_text),
         expected_checksum=expected_checksum,
