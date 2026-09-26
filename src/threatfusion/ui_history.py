@@ -88,9 +88,9 @@ def _show_history(db_path: Path) -> None:
             ):
                 st.write(
                     f"**{tr('Frozen thresholds')}:** "
-                    f"high {selected_summary.high_threshold:.6f} · "
-                    f"medium {selected_summary.medium_threshold:.6f} · "
-                    f"low {selected_summary.low_threshold:.6f}"
+                    f"{tr('High')} {selected_summary.high_threshold:.6f} · "
+                    f"{tr('Medium')} {selected_summary.medium_threshold:.6f} · "
+                    f"{tr('Low')} {selected_summary.low_threshold:.6f}"
                 )
             if selected_summary.cti_sources:
                 st.write(f"**{tr('CTI snapshot context')}**")
