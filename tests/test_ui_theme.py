@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from threatfusion.brand_assets import THREATFUSION_LOGO_DATA_URI
 from threatfusion.ui_theme import (
     THEME_PALETTES,
     VERDICT_COLORS,
@@ -34,3 +35,9 @@ def test_safe_text_escapes_dynamic_html() -> None:
     assert safe_text("<script>alert(1)</script>") == (
         "&lt;script&gt;alert(1)&lt;/script&gt;"
     )
+
+
+def test_brand_logo_is_vector_and_theme_tinted() -> None:
+    assert THREATFUSION_LOGO_DATA_URI.startswith("data:image/svg+xml")
+    assert "base64" not in THREATFUSION_LOGO_DATA_URI
+    assert len({palette(theme)["logo"] for theme in THEME_PALETTES}) == 3
