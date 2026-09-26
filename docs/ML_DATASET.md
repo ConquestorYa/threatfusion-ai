@@ -572,3 +572,52 @@ Implementing this path does not by itself complete the long-tail benign
 evaluation backlog item. A real operator-confirmed benign corpus still needs to
 be evaluated and its aggregate result documented before that work is complete.
 
+
+## CESNET real-traffic benign corpus sampling
+
+For the first realistic long-tail benign-domain measurement, the project uses
+the public 2024 DomainRadar dataset's `benign_cesnet.json` subset
+(DOI `10.5281/zenodo.14332167`). The published subset contains 461,338
+benign domains originating from real CESNET academic-network traffic and was
+filtered by the dataset authors to reduce malicious/risky labels.
+
+The enriched source file is about 6.4 GB, so ThreatFusion does not require the
+entire file to be saved locally. `scripts/sample_cesnet_benign_domains.py`
+streams the JSON array, keeps only normalized unique `domain_name` values,
+stops once the requested sample size is reached, and closes the HTTP stream.
+The raw enriched source is never written to disk by this script.
+
+Default bounded collection:
+
+```powershell
+python scripts\sample_cesnet_benign_domains.py
+```
+
+The default target is 20,000 unique domains and writes:
+
+- `data/evaluation/cesnet-benign-20k.csv`
+- `data/evaluation/cesnet-benign-20k.metadata.json`
+
+`data/evaluation/` is ignored by Git. The metadata records source DOI,
+source file MD5 published by Zenodo, CC BY 4.0 attribution, requested/retained
+counts, skip counts, streamed byte count, and the local CSV SHA-256. It does
+not contain domain names.
+
+Evaluate the frozen artifact on that locally sampled corpus with:
+
+```powershell
+python scripts\evaluate_ml_benign_telemetry.py `
+  --artifact-dir data\models\development-001 `
+  --development-snapshot-dir data\snapshots\baseline-001 `
+  --dns-csv data\evaluation\cesnet-benign-20k.csv `
+  --confirm-benign-label `
+  --json-output data\evaluation\cesnet-benign-evaluation.json
+```
+
+Scientific limitation: the CESNET domain names were derived from real-network
+TLS SNI observations rather than a DNS query-frequency sample. This makes them
+valuable for evaluating lexical/domain diversity beyond Tranco Top 50k, but
+the result must not be presented as a measurement of production DNS query
+volume or alert frequency. Query-frequency-weighted behavior remains separate
+future work.
+
