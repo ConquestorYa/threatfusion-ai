@@ -3,6 +3,7 @@ from __future__ import annotations
 import ipaddress
 from collections.abc import Iterable
 from dataclasses import dataclass
+from datetime import datetime
 from urllib.parse import urlsplit
 
 from .models import IOCRecord, IOCType
@@ -14,6 +15,8 @@ class DomainSample:
     domain: str
     label: int
     source: str
+    first_seen: datetime | None = None
+    last_seen: datetime | None = None
 
 
 def normalize_domain_candidate(value: str) -> str | None:
@@ -68,7 +71,13 @@ def extract_malicious_domains(indicators: Iterable[IOCRecord]) -> list[DomainSam
             normalized = normalize_domain_candidate(indicator.value)
             if normalized is not None:
                 samples.append(
-                    DomainSample(domain=normalized, label=1, source=indicator.source)
+                    DomainSample(
+                        domain=normalized,
+                        label=1,
+                        source=indicator.source,
+                        first_seen=indicator.first_seen,
+                        last_seen=indicator.last_seen,
+                    )
                 )
         elif indicator.ioc_type is IOCType.URL:
             hostname = _hostname_from_url(indicator.value)
@@ -78,7 +87,13 @@ def extract_malicious_domains(indicators: Iterable[IOCRecord]) -> list[DomainSam
             normalized = normalize_domain_candidate(hostname)
             if normalized is not None:
                 samples.append(
-                    DomainSample(domain=normalized, label=1, source=indicator.source)
+                    DomainSample(
+                        domain=normalized,
+                        label=1,
+                        source=indicator.source,
+                        first_seen=indicator.first_seen,
+                        last_seen=indicator.last_seen,
+                    )
                 )
 
     return samples
@@ -128,7 +143,13 @@ def build_domain_dataset(
             continue
         malicious_by_domain.setdefault(
             normalized,
-            DomainSample(domain=normalized, label=1, source=sample.source),
+            DomainSample(
+                domain=normalized,
+                label=1,
+                source=sample.source,
+                first_seen=sample.first_seen,
+                last_seen=sample.last_seen,
+            ),
         )
 
     for sample in benign_samples:
@@ -139,7 +160,13 @@ def build_domain_dataset(
             continue
         benign_by_domain.setdefault(
             normalized,
-            DomainSample(domain=normalized, label=0, source=sample.source),
+            DomainSample(
+                domain=normalized,
+                label=0,
+                source=sample.source,
+                first_seen=sample.first_seen,
+                last_seen=sample.last_seen,
+            ),
         )
 
     return [
