@@ -226,6 +226,12 @@ def _looks_like_dns_name(value: object) -> bool:
     candidate = text.rstrip(".")
     if not candidate:
         return False
+    try:
+        ipaddress.ip_address(candidate)
+    except ValueError:
+        pass
+    else:
+        return False
     if candidate.casefold() == "localhost":
         return True
     if "." not in candidate:
@@ -236,6 +242,16 @@ def _looks_like_dns_name(value: object) -> bool:
             r"[A-Za-z0-9_](?:[A-Za-z0-9_-]{0,61}[A-Za-z0-9_])?",
             candidate,
         )
+    )
+
+
+def _looks_like_query_column_value(value: object) -> bool:
+    text = _as_optional_text(value)
+    if text is None:
+        return False
+    candidate = text.rstrip(".")
+    return _looks_like_dns_name(candidate) and (
+        "." in candidate or candidate.casefold() == "localhost"
     )
 
 
@@ -269,7 +285,7 @@ def _header_score(field: str, canonical: str) -> float:
 
 def _content_score(canonical: str, values: list[object]) -> float:
     if canonical == "query_name":
-        return 35.0 * _sample_ratio(values, _looks_like_dns_name)
+        return 35.0 * _sample_ratio(values, _looks_like_query_column_value)
     if canonical == "timestamp":
         return 30.0 * _sample_ratio(
             values,
