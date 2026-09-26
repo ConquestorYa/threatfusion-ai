@@ -390,7 +390,6 @@ threatfusion-ai/
 Release için kalan işler bilinçli olarak dar tutulmuştur:
 
 - son untouched post-freeze temporal ML ölçümü;
-- sanitize edilmiş portföy ekran görüntüleri;
 - hosted public-mode demo;
 - final release checklist ve GitHub release/tag.
 
