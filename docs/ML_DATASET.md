@@ -769,3 +769,25 @@ The runtime default remains unchanged until a new untouched holdout is
 evaluated. Existing C=1 artifacts remain supported by the trusted artifact
 loader.
 
+## Post-freeze temporal cutoff
+
+For a final evaluation of a model candidate selected after the development
+snapshot was created, do not use the development snapshot date as the only
+malicious `first_seen` cutoff. Record a conservative timestamp after the
+artifact has been frozen, then pass it explicitly:
+
+```powershell
+python scripts\evaluate_ml_final_holdout.py `
+  --artifact-dir data\models\development-v3-c4 `
+  --development-snapshot-dir data\snapshots\development-v2 `
+  --holdout-snapshot-dir data\snapshots\holdout-v3-c4 `
+  --malicious-first-seen-after 2026-09-26T12:45:00+03:00 `
+  --json-output data\evaluation\final_holdout_v3_c4.json
+```
+
+Use the actual recorded freeze cutoff rather than the example timestamp above.
+Timezone-aware timestamps are required for timestamp-level filtering. Malicious
+records with missing or timezone-naive timing are excluded from that strict
+timestamp-filtered subset. The older `--strict-temporal-malicious` option is
+retained for development-date filtering and backward compatibility.
+
