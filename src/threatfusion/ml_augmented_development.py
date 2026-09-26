@@ -5,6 +5,11 @@ from dataclasses import dataclass
 
 from .dns import DNSEvent
 from .ml_dataset import DomainSample, normalize_domain_candidate
+from .ml_snapshot import (
+    DatasetSnapshotMetadata,
+    DatasetSnapshotStatistics,
+    DomainDatasetSnapshot,
+)
 from .normalization import normalize_domain_name
 from .runtime_analysis import is_ml_scoring_candidate
 
@@ -119,3 +124,58 @@ def calculate_benign_source_fpr(
         )
         for source in sorted(totals)
     )
+
+def build_augmented_development_snapshot(
+    base_snapshot: DomainDatasetSnapshot,
+    events: Sequence[DNSEvent],
+    *,
+    source: str = "CESNET",
+    source_snapshot_id: str | None = None,
+) -> tuple[DomainDatasetSnapshot, AugmentedBenignPreparation]:
+    """Build a reproducible derivative development snapshot with added benign data."""
+    preparation = prepare_augmented_development_samples(
+        base_snapshot.samples,
+        events,
+        source=source,
+    )
+    samples = list(preparation.samples)
+    final_malicious_count = sum(sample.label == 1 for sample in samples)
+    final_benign_count = sum(sample.label == 0 for sample in samples)
+
+    malicious_by_source: dict[str, int] = {}
+    for sample in samples:
+        if sample.label != 1:
+            continue
+        malicious_by_source[sample.source] = (
+            malicious_by_source.get(sample.source, 0) + 1
+        )
+
+    source_id = (source_snapshot_id or source).strip()
+    base_id = base_snapshot.metadata.benign_snapshot_id or "base"
+    snapshot = DomainDatasetSnapshot(
+        samples=samples,
+        metadata=DatasetSnapshotMetadata(
+            benign_source=f"{base_snapshot.metadata.benign_source}+{source}",
+            benign_snapshot_id=f"{base_id}+{source_id}",
+            benign_snapshot_date=base_snapshot.metadata.benign_snapshot_date,
+        ),
+        statistics=DatasetSnapshotStatistics(
+            malicious_input_count=base_snapshot.statistics.malicious_input_count,
+            benign_input_count=(
+                base_snapshot.statistics.benign_input_count
+                + preparation.input_event_count
+            ),
+            malicious_unique_count=final_malicious_count,
+            benign_unique_count=final_benign_count,
+            final_malicious_count=final_malicious_count,
+            final_benign_count=final_benign_count,
+            final_total_count=len(samples),
+            overlap_removed_from_benign=(
+                base_snapshot.statistics.overlap_removed_from_benign
+                + preparation.overlap_with_base_removed
+            ),
+            malicious_by_source=malicious_by_source,
+        ),
+    )
+    return snapshot, preparation
+
