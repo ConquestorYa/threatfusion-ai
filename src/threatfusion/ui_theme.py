@@ -972,30 +972,44 @@ def render_main_brand() -> None:
             )
         with language_col:
             with st.container(key="language_picker"):
-                st.markdown(
-                    f'<div class="tf-theme-picker-label">{safe_text(tr("Language"))}</div>',
-                    unsafe_allow_html=True,
+                label_col, options_col = st.columns(
+                    [0.22, 0.78],
+                    vertical_alignment="center",
+                    gap="small",
                 )
-                st.segmented_control(
-                    "Language",
-                    list(LANGUAGE_OPTIONS),
-                    key="language_selector",
-                    label_visibility="collapsed",
-                    width="stretch",
-                )
+                with label_col:
+                    st.markdown(
+                        f'<div class="tf-theme-picker-label">{safe_text(tr("Language"))}</div>',
+                        unsafe_allow_html=True,
+                    )
+                with options_col:
+                    st.segmented_control(
+                        "Language",
+                        list(LANGUAGE_OPTIONS),
+                        key="language_selector",
+                        label_visibility="collapsed",
+                        width="stretch",
+                    )
         with theme_col:
             with st.container(key="theme_picker"):
-                st.markdown(
-                    f'<div class="tf-theme-picker-label">{safe_text(tr("Theme"))}</div>',
-                    unsafe_allow_html=True,
+                label_col, options_col = st.columns(
+                    [0.22, 0.78],
+                    vertical_alignment="center",
+                    gap="small",
                 )
-                st.segmented_control(
-                    "Theme",
-                    list(THEME_OPTIONS),
-                    key="visual_theme",
-                    label_visibility="collapsed",
-                    width="stretch",
-                )
+                with label_col:
+                    st.markdown(
+                        f'<div class="tf-theme-picker-label">{safe_text(tr("Theme"))}</div>',
+                        unsafe_allow_html=True,
+                    )
+                with options_col:
+                    st.segmented_control(
+                        "Theme",
+                        list(THEME_OPTIONS),
+                        key="visual_theme",
+                        label_visibility="collapsed",
+                        width="stretch",
+                    )
 
 
 def render_sidebar_brand() -> None:
