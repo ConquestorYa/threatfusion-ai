@@ -19,6 +19,7 @@ from threatfusion.ml_artifact import (
 from threatfusion.ml_benign_telemetry import (
     build_benign_telemetry_report,
     evaluate_benign_telemetry,
+    evaluate_benign_thresholds,
     write_benign_telemetry_report,
 )
 from threatfusion.ml_snapshot_io import read_domain_snapshot
@@ -46,6 +47,17 @@ def build_parser() -> argparse.ArgumentParser:
     inputs.add_argument("--zeek-dns-log", type=Path)
     inputs.add_argument("--pihole-db", type=Path)
     inputs.add_argument("--adguard-query-log", type=Path)
+    parser.add_argument(
+        "--diagnostic-thresholds",
+        type=float,
+        nargs="+",
+        default=None,
+        metavar="SCORE",
+        help=(
+            "Optional score thresholds to measure on the same benign corpus "
+            "without changing the frozen artifact"
+        ),
+    )
     parser.add_argument("--json-output", type=Path, default=None)
     parser.add_argument("--overwrite", action="store_true")
     return parser
@@ -111,6 +123,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             development.samples,
             parsed.events,
         )
+        diagnostic_points = None
+        if args.diagnostic_thresholds is not None:
+            _, diagnostic_points = evaluate_benign_thresholds(
+                artifact,
+                development.samples,
+                parsed.events,
+                thresholds=args.diagnostic_thresholds,
+            )
 
         report_path = None
         if args.json_output is not None:
@@ -159,6 +179,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     _print_operating_point("high", evaluation.high)
     _print_operating_point("medium", evaluation.medium)
     _print_operating_point("low", evaluation.low)
+    if diagnostic_points is not None:
+        print("Diagnostic operating points:")
+        for index, point in enumerate(diagnostic_points, start=1):
+            _print_operating_point(f"diagnostic_{index}", point)
     print(
         "Interpretation: all retained domains are treated as benign because "
         "the operator explicitly supplied them as benign-labeled evaluation data."
