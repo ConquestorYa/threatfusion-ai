@@ -69,14 +69,30 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
 
     downloaded_bytes = 0
+    next_progress_bytes = 16 * 1024 * 1024
 
     def byte_chunks(response: requests.Response):
-        nonlocal downloaded_bytes
+        nonlocal downloaded_bytes, next_progress_bytes
         for chunk in response.iter_content(chunk_size=args.chunk_size):
             if not chunk:
                 continue
             downloaded_bytes += len(chunk)
+            if downloaded_bytes >= next_progress_bytes:
+                print(
+                    f"  Streamed: {downloaded_bytes / (1024 * 1024):.1f} MiB",
+                    flush=True,
+                )
+                while downloaded_bytes >= next_progress_bytes:
+                    next_progress_bytes += 16 * 1024 * 1024
             yield chunk
+
+    print("ThreatFusion AI CESNET benign-corpus sample", flush=True)
+    print(f"  Source DOI: {CESNET_DATASET_DOI}", flush=True)
+    print(
+        f"  Target unique domains: {args.limit}",
+        flush=True,
+    )
+    print("  Connecting to Zenodo source...", flush=True)
 
     try:
         with requests.get(
@@ -89,6 +105,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             },
         ) as response:
             response.raise_for_status()
+            content_length = response.headers.get("Content-Length")
+            if content_length and content_length.isdigit():
+                print(
+                    "  Source size reported by server: "
+                    f"{int(content_length) / (1024 * 1024 * 1024):.2f} GiB",
+                    flush=True,
+                )
+            print("  Streaming source; no full-file save will be made.", flush=True)
             records = iter_json_array_objects(byte_chunks(response))
             domains, invalid_or_missing, duplicates = sample_cesnet_domain_names(
                 records,
@@ -120,8 +144,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"CESNET sample preparation failed: {type(error).__name__}: {error}"
         ) from None
 
-    print("ThreatFusion AI CESNET benign-corpus sample")
-    print(f"  Source DOI: {CESNET_DATASET_DOI}")
+    print("Sample complete.")
     print(f"  Source license: {CESNET_DATASET_LICENSE}")
     print(f"  Requested unique domains: {args.limit}")
     print(f"  Retained unique domains: {len(domains)}")
