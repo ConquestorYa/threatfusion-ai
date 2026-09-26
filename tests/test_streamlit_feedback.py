@@ -227,16 +227,14 @@ def test_local_feedback_form_upserts_and_isolates_run_and_domain(feedback_app):
     assert get_analyst_feedback(db_path, first_run_id) == []
 
 
-def test_quick_lookup_page_is_available_without_network_activity(feedback_app):
+def test_quick_lookup_is_default_primary_workspace_without_network_activity(
+    feedback_app,
+):
     app = AppTest.from_string("import streamlit_app\nstreamlit_app.main()")
     app.run(timeout=15)
 
     assert not app.exception
     assert app.button(key="open_quick_lookup_workspace").label == "Open quick lookup"
-
-    app.button(key="open_quick_lookup_workspace").click().run(timeout=15)
-
-    assert not app.exception
     assert any(item.label == "URL or domain" for item in app.text_input)
     assert any(
         button.label == "Check" and button.disabled
