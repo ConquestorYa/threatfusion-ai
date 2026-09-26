@@ -375,6 +375,8 @@ _TR: dict[str, str] = {
     "See a color-coded result, evidence path and model signal overview.": "Renk kodlu sonucu, kanıt yolunu ve model sinyali özetini gör.",
     "Passive analysis only · the destination is never opened or resolved.": "Yalnızca pasif analiz · hedef hiçbir zaman açılmaz veya çözümlenmez.",
     "Quick lookup is passive: ThreatFusion does not open the URL, resolve the domain, or download content. A low-risk result means no current signal was raised by the available local CTI cache and model; it is not a guarantee that a destination is safe.": "Hızlı sorgu pasiftir: ThreatFusion URL'yi açmaz, domaini çözümlemez veya içerik indirmez. Düşük risk sonucu, mevcut yerel CTI önbelleği ve model tarafından şu anda bir sinyal üretilmediği anlamına gelir; hedefin güvenli olduğunu garanti etmez.",
+    "Application configuration is invalid: {error}": "Uygulama yapılandırması geçersiz: {error}",
+    "Processed in memory. Raw DNS rows and client IPs are not saved. Reports and optional history contain aggregate findings only.": "Bellekte işlenir. Ham DNS satırları ve istemci IP'leri kaydedilmez. Raporlar ve isteğe bağlı geçmiş yalnızca toplu bulguları içerir.",
 }
 
 _COLUMN_TR = {
