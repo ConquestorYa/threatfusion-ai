@@ -120,16 +120,12 @@ def canonical_theme_name(theme: str) -> str:
 
 
 def active_theme() -> str:
-    """Return the explicit ThreatFusion theme, falling back to native mode."""
+    """Return the explicit ThreatFusion theme, defaulting to Midnight."""
     selected = st.session_state.get("visual_theme")
     if isinstance(selected, str):
         canonical = canonical_theme_name(selected)
         if canonical in THEME_OPTIONS:
             return canonical
-    try:
-        theme_type = st.context.theme.type
-    except (AttributeError, TypeError):
-        theme_type = "dark"
     return "Midnight"
 
 
