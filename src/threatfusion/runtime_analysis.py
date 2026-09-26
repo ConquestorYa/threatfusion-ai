@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
 
@@ -8,9 +9,11 @@ from .dns_ingest import DNSInputDetection, parse_dns_upload_with_diagnostics
 from .dns_adguard import parse_adguard_query_log_with_diagnostics
 from .dns_pihole import parse_pihole_query_db_with_diagnostics
 from .dns_zeek import parse_zeek_dns_log_with_diagnostics
+from .dns_behavior import DomainBehavior
 from .hybrid_assessment import (
     BehaviorHeuristicConfig,
     HybridAssessment,
+    HybridVerdict,
     assess_dns_domains,
 )
 from .matching import DNSIOCMatch, match_dns_events
@@ -72,6 +75,110 @@ def _validate_runtime_bounds(events: list[DNSEvent]) -> None:
         )
 
 
+def _connection_target_assessments(
+    events: list[DNSEvent],
+    matches: list[DNSIOCMatch],
+) -> list[HybridAssessment]:
+    grouped: dict[str, list[DNSEvent]] = defaultdict(list)
+    for event in events:
+        target = event.query_name.strip() if isinstance(event.query_name, str) else ""
+        if target:
+            grouped[target].append(event)
+
+    sources_by_target: dict[str, set[str]] = defaultdict(set)
+    match_types_by_target: dict[str, set[str]] = defaultdict(set)
+    for match in matches:
+        target = (
+            match.event.query_name.strip()
+            if isinstance(match.event.query_name, str)
+            else ""
+        )
+        if not target:
+            continue
+        sources_by_target[target].add(match.indicator.source)
+        match_types_by_target[target].add(match.match_type)
+
+    assessments: list[HybridAssessment] = []
+    for target in sorted(grouped):
+        target_events = grouped[target]
+        timestamps = [
+            event.timestamp
+            for event in target_events
+            if event.timestamp is not None
+        ]
+        first_seen = min(timestamps) if timestamps else None
+        last_seen = max(timestamps) if timestamps else None
+        span = (
+            (last_seen - first_seen).total_seconds()
+            if first_seen is not None and last_seen is not None
+            else None
+        )
+        clients = {
+            event.client_ip
+            for event in target_events
+            if event.client_ip is not None
+        }
+        query_types = tuple(
+            sorted(
+                {
+                    event.query_type
+                    for event in target_events
+                    if event.query_type is not None
+                }
+            )
+        )
+        sources = tuple(sorted(sources_by_target.get(target, set())))
+        match_types = tuple(sorted(match_types_by_target.get(target, set())))
+        reasons: list[str] = []
+        if "response_ip" in match_types:
+            reasons.append("response_ip_ioc_context")
+        if "response_ip_network" in match_types:
+            reasons.append("response_ip_network_ioc_context")
+
+        behavior = DomainBehavior(
+            domain=target,
+            event_count=len(target_events),
+            unique_client_count=len(clients),
+            unique_response_ip_count=1,
+            query_types=query_types,
+            first_seen=first_seen,
+            last_seen=last_seen,
+            observed_span_seconds=span,
+        )
+        assessments.append(
+            HybridAssessment(
+                domain=target,
+                verdict=HybridVerdict.REVIEW if sources else HybridVerdict.LOW,
+                known_ioc_sources=sources,
+                known_match_types=match_types,
+                ml_score=None,
+                ml_tier=None,
+                behavior=behavior,
+                behavior_signals=(),
+                reasons=tuple(reasons),
+            )
+        )
+    return assessments
+
+
+def analyze_connection_events(
+    events: Iterable[DNSEvent],
+    indicators: Iterable[IOCRecord],
+) -> RuntimeAnalysisResult:
+    """Analyze connection destination IPs against local CTI only."""
+    event_list = list(events)
+    indicator_list = list(indicators)
+    _validate_runtime_bounds(event_list)
+    matches = match_dns_events(event_list, indicator_list)
+    assessments = _connection_target_assessments(event_list, matches)
+    return RuntimeAnalysisResult(
+        events=tuple(event_list),
+        matches=tuple(matches),
+        ml_scores={},
+        assessments=tuple(assessments),
+    )
+
+
 def analyze_dns_events(
     events: Iterable[DNSEvent],
     indicators: Iterable[IOCRecord],
@@ -124,12 +231,15 @@ def analyze_dns_upload_with_diagnostics(
 ) -> tuple[RuntimeAnalysisResult, DNSParseDiagnostics, DNSInputDetection]:
     """Auto-detect uploaded DNS telemetry and run the local analysis pipeline."""
     parsed, detection = parse_dns_upload_with_diagnostics(content, filename)
-    result = analyze_dns_events(
-        parsed.events,
-        indicators,
-        artifact,
-        behavior_config=behavior_config,
-    )
+    if detection.analysis_mode == "connection":
+        result = analyze_connection_events(parsed.events, indicators)
+    else:
+        result = analyze_dns_events(
+            parsed.events,
+            indicators,
+            artifact,
+            behavior_config=behavior_config,
+        )
     return result, parsed.diagnostics, detection
 
 
