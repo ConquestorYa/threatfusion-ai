@@ -33,10 +33,12 @@ THREATFUSION_MODEL_DIR=/app/runtime/models/development-001
 THREATFUSION_CTI_STALE_HOURS_THREATFOX=24
 THREATFUSION_CTI_STALE_HOURS_URLHAUS=24
 THREATFUSION_CTI_STALE_HOURS_SGB=24
+THREATFUSION_CTI_STALE_HOURS_PHISHTANK=25
 ```
 
-The three freshness values default to 24 hours and can be tuned independently
-to match the maintenance cadence used for each source.
+ThreatFox, URLhaus, and SGB default to 24 hours. PhishTank defaults to 25
+hours because its downloadable database is updated hourly. These values can be
+tuned independently to match the maintenance cadence used for each source.
 
 The SQLite database must already contain the CTI cache, and the model directory
 must contain the trusted local `model.joblib` and `metadata.json` artifact.
@@ -146,6 +148,43 @@ analysis flow. It must not be cited as measured ML performance. Portfolio ML
 metrics come only from the separately frozen/evaluated local artifacts and
 aggregate evaluation reports.
 
+## Optional live-CTI public demo
+
+The default public-demo path above remains synthetic and network-free. For a
+more useful portfolio demo, the hosting build can create the synthetic model
+runtime and then replace its CTI cache with freshly fetched live intelligence.
+This keeps feed credentials out of the interactive request path and avoids
+loading the complete IOC table into each Quick lookup.
+
+Render build command:
+
+```text
+python -m pip install -r requirements.txt && python -m pip install --no-deps -e . && python scripts/generate_public_demo_runtime.py --output-dir runtime && python scripts/refresh_cti_cache.py --db runtime/threatfusion.sqlite
+```
+
+Configure these Render secrets for the build:
+
+```text
+THREATFOX_AUTH_KEY=...
+URLHAUS_AUTH_KEY=...
+PHISHTANK_APP_KEY=...   # optional
+```
+
+The resulting runtime uses real CTI but still uses the synthetic demo-only ML
+artifact unless a separately trusted model is supplied. The UI already labels
+that synthetic artifact and it must not be used for performance claims.
+
+Because Render's free web filesystem is ephemeral, the repository includes
+`.github/workflows/refresh-hosted-cti.yml`. If the repository secret
+`RENDER_DEPLOY_HOOK_URL` is configured, that workflow triggers a rebuild every
+six hours. Each rebuild runs the command above and receives a fresh CTI
+snapshot. If the secret is absent, the scheduled workflow exits successfully
+without doing anything.
+
+This approach does not commit third-party feed dumps or API credentials to the
+repository. Before public launch, verify that your use remains within each
+upstream source's current terms and fair-use rules.
+
 ## Local public-mode container test
 
 Mount only the sanitized runtime directory:
@@ -210,8 +249,10 @@ python scripts/refresh_cti_cache.py
 ```
 
 Provide `THREATFOX_AUTH_KEY` and `URLHAUS_AUTH_KEY` only in that maintenance
-job's environment. Do not put the values in the repository, Docker image,
-command-line arguments, or Streamlit configuration.
+job's environment. `PHISHTANK_APP_KEY` is optional; when present, the refresh
+also imports PhishTank's verified-online phishing feed. Do not put these values
+in the repository, Docker image, command-line arguments, or Streamlit
+configuration.
 
 Schedule the job comfortably inside the configured source freshness windows.
 The default dashboard stale thresholds are 24 hours, so a twice-daily refresh
