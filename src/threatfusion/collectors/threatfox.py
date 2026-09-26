@@ -8,6 +8,7 @@ from typing import Any
 
 import requests
 
+from ..http_safety import read_bounded_response_bytes
 from ..models import IOCRecord, IOCType
 
 THREATFOX_API_URL = "https://threatfox-api.abuse.ch/api/v1/"
@@ -15,6 +16,9 @@ THREATFOX_EXPORT_URL = (
     "https://threatfox-api.abuse.ch/v2/files/exports/{}/full.csv.zip"
 )
 REQUEST_TIMEOUT_SECONDS = 30
+MAX_THREATFOX_ARCHIVE_BYTES = 128 * 1024 * 1024
+MAX_THREATFOX_CSV_BYTES = 512 * 1024 * 1024
+MAX_THREATFOX_ZIP_RATIO = 200
 
 _THREATFOX_POSITIONAL_COLUMNS = (
     "first_seen",
@@ -179,7 +183,15 @@ def _parse_export_zip(content: bytes) -> list[IOCRecord]:
             ]
             if not names:
                 raise ValueError("ThreatFox export ZIP contains no CSV file")
-            csv_content = archive.read(names[0]).decode("utf-8-sig")
+            info = archive.getinfo(names[0])
+            if info.file_size > MAX_THREATFOX_CSV_BYTES:
+                raise ValueError("ThreatFox export CSV exceeds the safe import limit")
+            if (
+                info.compress_size > 0
+                and info.file_size > info.compress_size * MAX_THREATFOX_ZIP_RATIO
+            ):
+                raise ValueError("ThreatFox export ZIP compression ratio is unsafe")
+            csv_content = archive.read(info).decode("utf-8-sig")
     except (zipfile.BadZipFile, UnicodeDecodeError, KeyError) as error:
         raise ValueError("ThreatFox full export is invalid") from error
 
@@ -236,6 +248,7 @@ class ThreatFoxCollector:
                 export_url,
                 timeout=REQUEST_TIMEOUT_SECONDS,
                 allow_redirects=False,
+                stream=True,
             )
         except requests.RequestException:
             raise requests.HTTPError(
@@ -256,4 +269,9 @@ class ThreatFoxCollector:
                 f"ThreatFox export request failed (HTTP status {status_code})"
             )
 
-        return _parse_export_zip(response.content)
+        content = read_bounded_response_bytes(
+            response,
+            max_bytes=MAX_THREATFOX_ARCHIVE_BYTES,
+            label="ThreatFox export",
+        )
+        return _parse_export_zip(content)
