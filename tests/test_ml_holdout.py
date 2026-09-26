@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -65,6 +66,27 @@ def test_prepare_disjoint_holdout_removes_all_development_overlap() -> None:
         "new-good.example",
         "new-bad.example",
     ]
+
+
+def test_prepare_disjoint_holdout_preserves_timing_metadata() -> None:
+    first_seen = datetime(2026, 9, 25, 9, 0, tzinfo=timezone.utc)
+    last_seen = datetime(2026, 9, 26, 9, 0, tzinfo=timezone.utc)
+    holdout = [
+        DomainSample("new-good.example", 0, "Tranco"),
+        DomainSample(
+            "new-bad.example",
+            1,
+            "ThreatFox",
+            first_seen=first_seen,
+            last_seen=last_seen,
+        ),
+    ]
+
+    prepared = prepare_disjoint_holdout([], holdout)
+
+    malicious = next(sample for sample in prepared.samples if sample.label == 1)
+    assert malicious.first_seen == first_seen
+    assert malicious.last_seen == last_seen
 
 
 def test_prepare_disjoint_holdout_accepts_legacy_ineligible_development_rows() -> None:
