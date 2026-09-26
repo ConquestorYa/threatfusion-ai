@@ -114,6 +114,38 @@ If the output directory already contains files, rebuild explicitly with:
 python scripts/prepare_deployment_bundle.py --overwrite
 ```
 
+## Render public-demo path
+
+For the portfolio-hosted demo, the repository can generate its entire runtime
+during the Render build. The generated CTI cache and ML artifact are synthetic
+and demo-only; they are not the measured local model or third-party feed data.
+
+Build command:
+
+```text
+python -m pip install -r requirements.txt && python -m pip install --no-deps -e . && python scripts/generate_public_demo_runtime.py --output-dir runtime
+```
+
+Start command:
+
+```text
+streamlit run streamlit_app.py --server.address=0.0.0.0 --server.port=$PORT
+```
+
+Environment variables:
+
+```text
+THREATFUSION_PUBLIC_MODE=1
+THREATFUSION_DB_PATH=runtime/threatfusion.sqlite
+THREATFUSION_MODEL_DIR=runtime/models/development-001
+```
+
+No ThreatFox or URLhaus credential is required by this public-demo service.
+The synthetic demo artifact exists only so visitors can exercise the complete
+analysis flow. It must not be cited as measured ML performance. Portfolio ML
+metrics come only from the separately frozen/evaluated local artifacts and
+aggregate evaluation reports.
+
 ## Local public-mode container test
 
 Mount only the sanitized runtime directory:

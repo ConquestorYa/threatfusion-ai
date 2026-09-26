@@ -299,7 +299,18 @@ Third-party feeds and datasets remain governed by their own terms; see
 
 ## Hosted demo preparation
 
-The repository includes a non-root Dockerfile and an explicit public mode:
+The public portfolio deployment can build a completely synthetic runtime with:
+
+```powershell
+python scripts\generate_public_demo_runtime.py --output-dir runtime
+```
+
+This runtime contains documentation-only CTI values and a synthetic demo-only
+ML artifact so the full UI can be exercised without publishing third-party feed
+data or the locally measured model artifact. The synthetic artifact is not used
+for portfolio performance claims.
+
+The repository also includes a non-root Dockerfile and an explicit public mode:
 
 ```text
 THREATFUSION_PUBLIC_MODE=1
