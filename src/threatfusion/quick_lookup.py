@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -36,7 +37,9 @@ class QuickLookupResult:
     input_type: str
     normalized_domain: str
     normalized_url: str | None
+    normalized_ip: str | None
     uses_plain_http: bool
+    uses_public_ip_literal: bool
     verdict: HybridVerdict
     ml_score: float | None
     ml_tier: str | None
@@ -45,7 +48,15 @@ class QuickLookupResult:
     reasons: tuple[str, ...]
 
 
-def _normalized_url_parts(value: str) -> tuple[str, str]:
+def _normalize_host(value: str) -> tuple[str, str | None]:
+    try:
+        address = ipaddress.ip_address(value)
+    except ValueError:
+        return normalize_domain_name(value, strict=True), None
+    return str(address), str(address)
+
+
+def _normalized_url_parts(value: str) -> tuple[str, str, str | None]:
     candidate = value.strip()
     if not candidate:
         raise ValueError("URL or domain is required")
@@ -66,33 +77,39 @@ def _normalized_url_parts(value: str) -> tuple[str, str]:
     if not parsed.hostname:
         raise ValueError("URL must include a hostname")
 
-    domain = normalize_domain_name(parsed.hostname, strict=True)
+    host_value, normalized_ip = _normalize_host(parsed.hostname)
 
     try:
         port = parsed.port
     except ValueError as error:
         raise ValueError("URL contains an invalid port") from error
 
-    host = domain
+    if normalized_ip is not None and ":" in normalized_ip:
+        netloc = f"[{normalized_ip}]"
+    else:
+        netloc = host_value
+
     default_port = (scheme == "http" and port == 80) or (
         scheme == "https" and port == 443
     )
     if port is not None and not default_port:
-        host = f"{host}:{port}"
+        netloc = f"{netloc}:{port}"
 
     normalized = urlunsplit(
         SplitResult(
             scheme=scheme,
-            netloc=host,
+            netloc=netloc,
             path=parsed.path or "/",
             query=parsed.query,
             fragment="",
         )
     )
-    return normalized, domain
+    return normalized, host_value, normalized_ip
 
 
-def _parse_lookup_input(value: str) -> tuple[str, str, str | None]:
+def _parse_lookup_input(
+    value: str,
+) -> tuple[str, str, str | None, str | None]:
     candidate = value.strip()
     if not candidate:
         raise ValueError("URL or domain is required")
@@ -104,16 +121,22 @@ def _parse_lookup_input(value: str) -> tuple[str, str, str | None]:
         or "#" in candidate
     )
     if looks_like_url:
-        normalized_url, domain = _normalized_url_parts(candidate)
-        return "URL", domain, normalized_url
+        normalized_url, host, normalized_ip = _normalized_url_parts(candidate)
+        return "URL", host, normalized_url, normalized_ip
 
-    domain = normalize_domain_name(candidate, strict=True)
-    return "Domain", domain, None
+    try:
+        address = ipaddress.ip_address(candidate)
+    except ValueError:
+        domain = normalize_domain_name(candidate, strict=True)
+        return "Domain", domain, None, None
+
+    normalized_ip = str(address)
+    return f"IPv{address.version}", normalized_ip, None, normalized_ip
 
 
 def _normalize_indicator_url(value: str) -> str | None:
     try:
-        normalized, _ = _normalized_url_parts(value)
+        normalized, _, _ = _normalized_url_parts(value)
     except (TypeError, ValueError):
         return None
     return normalized
@@ -152,11 +175,12 @@ def analyze_quick_lookup_from_cache(
     artifact: TrainedMLArtifact,
 ) -> QuickLookupResult:
     """Analyze one target using indexed CTI candidates instead of loading the full cache."""
-    _, domain, normalized_url = _parse_lookup_input(value)
+    _, domain, normalized_url, normalized_ip = _parse_lookup_input(value)
     indicators = lookup_ioc_records(
         db_path,
         domain=domain,
         normalized_url=normalized_url,
+        ip_address=normalized_ip,
     )
     return analyze_quick_lookup(value, indicators, artifact)
 
@@ -167,7 +191,7 @@ def analyze_quick_lookup(
     artifact: TrainedMLArtifact,
 ) -> QuickLookupResult:
     """Analyze one inert URL/domain without DNS resolution or HTTP requests."""
-    input_type, domain, normalized_url = _parse_lookup_input(value)
+    input_type, domain, normalized_url, normalized_ip = _parse_lookup_input(value)
     indicator_list = list(indicators)
 
     event = DNSEvent(query_name=domain)
@@ -181,6 +205,23 @@ def analyze_quick_lookup(
             if _normalize_indicator_url(indicator.value) == normalized_url:
                 exact_url_indicators.append(indicator)
 
+    exact_ip_indicators: list[IOCRecord] = []
+    if normalized_ip is not None:
+        expected_type = (
+            IOCType.IPV4
+            if ipaddress.ip_address(normalized_ip).version == 4
+            else IOCType.IPV6
+        )
+        for indicator in indicator_list:
+            if indicator.ioc_type is not expected_type:
+                continue
+            try:
+                candidate_ip = str(ipaddress.ip_address(indicator.value.strip()))
+            except ValueError:
+                continue
+            if candidate_ip == normalized_ip:
+                exact_ip_indicators.append(indicator)
+
     exact_url_ids = {id(indicator) for indicator in exact_url_indicators}
     evidence = [
         _evidence_from_match(match)
@@ -190,6 +231,20 @@ def analyze_quick_lookup(
             and id(match.indicator) in exact_url_ids
         )
     ]
+    evidence.extend(
+        QuickLookupEvidence(
+            source=indicator.source,
+            match_type="exact_ip",
+            ioc_type=indicator.ioc_type.value,
+            indicator_value=indicator.value,
+            threat_type=indicator.threat_type,
+            confidence=indicator.confidence,
+            first_seen=indicator.first_seen,
+            last_seen=indicator.last_seen,
+            tags=tuple(indicator.tags),
+        )
+        for indicator in exact_ip_indicators
+    )
     evidence.extend(
         QuickLookupEvidence(
             source=indicator.source,
@@ -205,9 +260,13 @@ def analyze_quick_lookup(
         for indicator in exact_url_indicators
     )
 
-    scores = predict_domain_scores(artifact, [domain])
-    score = scores.get(domain)
-    tier = _ml_tier(artifact, score)
+    if normalized_ip is None:
+        scores = predict_domain_scores(artifact, [domain])
+        score = scores.get(domain)
+        tier = _ml_tier(artifact, score)
+    else:
+        score = None
+        tier = None
 
     lexical = aggregate_dns_behavior([event])[0]
     match_types = {item.match_type for item in evidence}
@@ -215,10 +274,17 @@ def analyze_quick_lookup(
     uses_plain_http = bool(
         normalized_url is not None and normalized_url.startswith("http://")
     )
+    uses_public_ip_literal = False
+    if normalized_url is not None and normalized_ip is not None:
+        uses_public_ip_literal = ipaddress.ip_address(normalized_ip).is_global
 
     reasons: list[str] = []
     if uses_plain_http:
         reasons.append("plaintext_http_transport")
+    if uses_public_ip_literal:
+        reasons.append("public_ip_literal_url")
+    if "exact_ip" in match_types:
+        reasons.append("exact_ip_ioc_match")
     if "exact_url" in match_types:
         reasons.append("exact_url_ioc_match")
     if "query_domain" in match_types:
@@ -235,7 +301,7 @@ def analyze_quick_lookup(
     if lexical.random_like_hostname:
         reasons.append("random_like_hostname")
 
-    if {"exact_url", "query_domain"} & match_types:
+    if {"exact_url", "exact_ip", "query_domain"} & match_types:
         verdict = HybridVerdict.KNOWN_THREAT
     elif tier == "high":
         verdict = HybridVerdict.HIGH_RISK
@@ -249,7 +315,9 @@ def analyze_quick_lookup(
         input_type=input_type,
         normalized_domain=domain,
         normalized_url=normalized_url,
+        normalized_ip=normalized_ip,
         uses_plain_http=uses_plain_http,
+        uses_public_ip_literal=uses_public_ip_literal,
         verdict=verdict,
         ml_score=score,
         ml_tier=tier,
