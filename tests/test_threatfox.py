@@ -1,11 +1,15 @@
 from datetime import datetime, timezone
+from io import BytesIO
+from zipfile import ZIP_DEFLATED, ZipFile
 
 import pytest
 import requests
 
 from threatfusion.collectors.threatfox import (
     THREATFOX_API_URL,
+    THREATFOX_EXPORT_URL,
     ThreatFoxCollector,
+    parse_threatfox_csv,
 )
 from threatfusion.models import IOCType
 
@@ -42,6 +46,46 @@ class FakeSession:
 
 def make_session(items: list[dict[str, object]]) -> FakeSession:
     return FakeSession(FakeResponse({"query_status": "ok", "data": items}))
+
+
+class FakeExportResponse:
+    def __init__(
+        self,
+        content: bytes,
+        *,
+        status_code: int = 200,
+        error: Exception | None = None,
+    ) -> None:
+        self.content = content
+        self.status_code = status_code
+        self.error = error
+
+    def raise_for_status(self) -> None:
+        if self.error is not None:
+            raise self.error
+
+
+class FakeExportSession:
+    def __init__(self, response: FakeExportResponse) -> None:
+        self.response = response
+        self.get_calls: list[tuple[str, int, bool]] = []
+
+    def get(
+        self,
+        url: str,
+        *,
+        timeout: int,
+        allow_redirects: bool,
+    ) -> FakeExportResponse:
+        self.get_calls.append((url, timeout, allow_redirects))
+        return self.response
+
+
+def _zipped_csv(content: str) -> bytes:
+    buffer = BytesIO()
+    with ZipFile(buffer, "w", compression=ZIP_DEFLATED) as archive:
+        archive.writestr("full.csv", content)
+    return buffer.getvalue()
 
 
 def test_successful_domain_conversion() -> None:
@@ -183,6 +227,46 @@ def test_http_errors_are_propagated() -> None:
 
     with pytest.raises(requests.HTTPError, match="service unavailable"):
         ThreatFoxCollector("secret", session).fetch_recent_iocs()
+
+
+def test_full_export_parser_supports_documented_positional_rows() -> None:
+    content = (
+        "2026-09-20 10:00:00,123,bad.example,domain,botnet_cc,"
+        "win.test,,Test Malware,,90,false,,c2,0,researcher\n"
+        "2026-09-20 10:01:00,124,https://bad.example/payload,url,"
+        "payload_delivery,win.test,,Test Malware,,75,false,,loader,0,researcher"
+    )
+
+    records = parse_threatfox_csv(content)
+
+    assert [item.value for item in records] == [
+        "bad.example",
+        "https://bad.example/payload",
+    ]
+    assert records[0].confidence == pytest.approx(0.9)
+    assert records[1].confidence == pytest.approx(0.75)
+
+
+def test_full_export_is_fetched_as_zip_without_requesting_ioc_urls() -> None:
+    auth_key = "full-export-key"
+    session = FakeExportSession(
+        FakeExportResponse(
+            _zipped_csv(
+                "first_seen,id,ioc,ioc_type,threat_type,malware,"
+                "malware_alias,malware_printable,last_seen,confidence_level,"
+                "is_compromised,reference,tags,anonymous,reporter\n"
+                "2026-09-20 10:00:00,123,bad.example,domain,botnet_cc,"
+                "win.test,,Test Malware,,90,false,,c2,0,researcher"
+            )
+        )
+    )
+
+    records = ThreatFoxCollector(auth_key, session).fetch_full_iocs()
+
+    assert [item.value for item in records] == ["bad.example"]
+    assert session.get_calls == [
+        (THREATFOX_EXPORT_URL.format(auth_key), 30, False)
+    ]
 
 
 def test_malicious_url_is_sent_as_data_only() -> None:
