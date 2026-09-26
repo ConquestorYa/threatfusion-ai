@@ -32,7 +32,7 @@ def capture_quick_lookup(page: Page) -> None:
     page.wait_for_timeout(3_000)
     result = page.get_by_text("Known Threat", exact=False).first
     result.wait_for(timeout=30_000)
-    result.scroll_into_view_if_needed()
+    result.evaluate("(el) => el.scrollIntoView({block: 'center'})")
     page.wait_for_timeout(800)
     save(page, "quick-lookup.png")
 
