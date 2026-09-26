@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import ipaddress
+import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from .cti_cache import load_ioc_records, lookup_ioc_records
-from .models import IOCType
-from .normalization import normalize_domain_name
+from .cti_cache import _normalize_url, initialize_cti_cache
 
 
 @dataclass(frozen=True)
@@ -27,22 +26,18 @@ class CTILookupCoverage:
         return self.exact_url_hits / self.audited_url_records
 
 
-def _normalized_lookup_host(url: str) -> tuple[str, str | None] | None:
+def _is_ip_hosted(url: str) -> bool:
     try:
         parsed = urlsplit(url.strip())
     except ValueError:
-        return None
-    if parsed.scheme.casefold() not in {"http", "https"} or not parsed.hostname:
-        return None
-
+        return False
+    if not parsed.hostname:
+        return False
     try:
-        address = ipaddress.ip_address(parsed.hostname)
+        ipaddress.ip_address(parsed.hostname)
     except ValueError:
-        try:
-            return normalize_domain_name(parsed.hostname, strict=True), None
-        except (TypeError, ValueError):
-            return None
-    return str(address), str(address)
+        return False
+    return True
 
 
 def audit_exact_url_lookup_coverage(
@@ -51,52 +46,73 @@ def audit_exact_url_lookup_coverage(
     source: str = "URLhaus",
     limit: int | None = None,
 ) -> CTILookupCoverage:
-    """Measure whether active cached URLs are retrievable by indexed quick lookup.
+    """Audit exact-URL lookup coverage with one local SQLite scan.
 
-    This is a local cache integrity audit. It performs no DNS resolution or HTTP
-    requests and never visits any IOC destination.
+    The old audit executed one indexed lookup per URL record. With a large live
+    URLhaus cache that meant thousands of repeated SQLite opens/migrations and
+    could take many minutes. This version initializes once, reads only the
+    indexed lookup fields, and validates them in memory.
+
+    It performs no DNS resolution, HTTP requests, or IOC destination visits.
     """
     if limit is not None and limit < 1:
         raise ValueError("limit must be at least 1")
 
-    records = [
-        item
-        for item in load_ioc_records(db_path, sources=[source])
-        if item.ioc_type is IOCType.URL
-    ]
-    total = len(records)
-    selected = records if limit is None else records[:limit]
+    path = Path(db_path)
+    initialize_cti_cache(path)
+
+    with sqlite3.connect(path) as connection:
+        total_row = connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM cti_records
+            WHERE source = ?
+              AND active = 1
+              AND ioc_type = 'url'
+            """,
+            (source,),
+        ).fetchone()
+        total = int(total_row[0]) if total_row is not None else 0
+
+        sql = """
+            SELECT value, normalized_value, url_hostname
+            FROM cti_records
+            WHERE source = ?
+              AND active = 1
+              AND ioc_type = 'url'
+            ORDER BY id ASC
+        """
+        parameters: list[object] = [source]
+        if limit is not None:
+            sql += " LIMIT ?"
+            parameters.append(limit)
+
+        rows = connection.execute(sql, parameters).fetchall()
 
     exact_hits = 0
     exact_misses = 0
     ip_hosted = 0
     ip_hosted_hits = 0
 
-    for record in selected:
-        host_data = _normalized_lookup_host(record.value)
-        if host_data is None:
+    for value, normalized_value, url_hostname in rows:
+        raw_value = str(value)
+        expected = _normalize_url(raw_value)
+        ip_hosted_record = _is_ip_hosted(raw_value)
+        if ip_hosted_record:
+            ip_hosted += 1
+
+        if expected is None:
             exact_misses += 1
             continue
 
-        host, normalized_ip = host_data
-        if normalized_ip is not None:
-            ip_hosted += 1
-
-        candidates = lookup_ioc_records(
-            db_path,
-            domain=host,
-            normalized_url=record.value,
-            ip_address=normalized_ip,
-        )
-        exact = any(
-            candidate.source == source
-            and candidate.ioc_type is IOCType.URL
-            and candidate.value == record.value
-            for candidate in candidates
+        expected_url, expected_host = expected
+        exact = (
+            str(normalized_value) == expected_url
+            and str(url_hostname) == expected_host
         )
         if exact:
             exact_hits += 1
-            if normalized_ip is not None:
+            if ip_hosted_record:
                 ip_hosted_hits += 1
         else:
             exact_misses += 1
@@ -104,7 +120,7 @@ def audit_exact_url_lookup_coverage(
     return CTILookupCoverage(
         source=source,
         total_url_records=total,
-        audited_url_records=len(selected),
+        audited_url_records=len(rows),
         exact_url_hits=exact_hits,
         exact_url_misses=exact_misses,
         ip_hosted_records=ip_hosted,

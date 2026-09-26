@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import time
 from pathlib import Path
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -37,14 +38,25 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = build_parser().parse_args()
+    print("ThreatFusion indexed CTI lookup audit", flush=True)
+    print(f"  Database: {args.db}", flush=True)
+    print(f"  Source: {args.source}", flush=True)
+    if args.limit is None:
+        print("  Auditing all active URL records with one local SQLite scan…", flush=True)
+    else:
+        print(f"  Auditing at most {args.limit:,} active URL records…", flush=True)
+
+    started = time.monotonic()
     report = audit_exact_url_lookup_coverage(
         args.db,
         source=args.source,
         limit=args.limit,
     )
+    elapsed = time.monotonic() - started
 
-    print("ThreatFusion indexed CTI lookup audit")
+    print("Results")
     print(f"  Source: {report.source}")
+    print(f"  Completed in: {elapsed:.2f}s")
     print(f"  Active URL records: {report.total_url_records:,}")
     print(f"  Audited URL records: {report.audited_url_records:,}")
     print(f"  Exact URL hits: {report.exact_url_hits:,}")
