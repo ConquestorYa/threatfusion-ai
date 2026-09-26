@@ -37,12 +37,15 @@ Single URL / domain
 known_threat / high_risk / review / low
 ```
 
-Exact known-domain IOC matches take precedence and produce the Known Threat
-verdict. URL-hostname and response-IP IOC matches remain deterministic CTI
-context but do not, by themselves, prove that the queried domain is malicious.
-ML is used as an additional signal for previously unseen domains, and DNS
-behavior can strengthen an assessment or trigger review. Behavioral signals are
-not treated as proof of malware.
+For DNS telemetry analysis, exact known-domain IOC matches take precedence and
+produce the Known Threat verdict. URL-hostname and response-IP IOC matches remain
+deterministic CTI context but do not, by themselves, prove that the queried
+domain is malicious. In the separate Quick lookup workflow, an exact input URL
+matching an exact URL IOC can also produce Known Threat for that URL; a hostname
+match to a different malicious URL remains Review context. ML is used as an
+additional signal for previously unseen domains, and DNS behavior can strengthen
+a telemetry assessment or trigger review. Behavioral signals are not treated as
+proof of malware.
 
 ## Architecture overview
 
