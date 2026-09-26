@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import csv
 import io
 import json
+import posixpath
+import re
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
+from xml.etree import ElementTree
 
 import pandas as pd
 
@@ -12,6 +16,17 @@ from .dns import DNSParseResult, parse_dns_csv_with_diagnostics
 from .dns_adguard import parse_adguard_query_log_with_diagnostics
 from .dns_pihole import parse_pihole_query_db_with_diagnostics
 from .dns_zeek import parse_zeek_dns_log_with_diagnostics
+
+_XLSX_MAIN_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+_XLSX_DOC_REL_NS = (
+    "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+)
+_XLSX_PACKAGE_REL_NS = (
+    "http://schemas.openxmlformats.org/package/2006/relationships"
+)
+_MAX_XLSX_ROWS = 100_001
+_MAX_XLSX_CELLS = 1_000_000
+_MAX_XLSX_XML_BYTES = 128 * 1024 * 1024
 
 
 @dataclass(frozen=True)
@@ -75,6 +90,22 @@ def _decode_text(content: bytes) -> tuple[str, str]:
     raise ValueError("text encoding could not be detected")
 
 
+def _is_xlsx_package(content: bytes) -> bool:
+    if not content.startswith(b"PK"):
+        return False
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            names = set(archive.namelist())
+    except zipfile.BadZipFile:
+        return False
+    return (
+        "[Content_Types].xml" in names
+        and "xl/workbook.xml" in names
+        and "xl/_rels/workbook.xml.rels" in names
+        and any(name.startswith("xl/worksheets/") for name in names)
+    )
+
+
 def _looks_like_excel(content: bytes, filename: str | None) -> bool:
     suffix = Path(filename or "").suffix.casefold()
     if suffix in {".xlsx", ".xlsm", ".xltx", ".xltm", ".xls"}:
@@ -83,23 +114,24 @@ def _looks_like_excel(content: bytes, filename: str | None) -> bool:
     if content.startswith(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"):
         return True
 
-    if not content.startswith(b"PK"):
-        return False
-    try:
-        with zipfile.ZipFile(io.BytesIO(content)) as archive:
-            names = set(archive.namelist())
-    except zipfile.BadZipFile:
-        return False
-    return "[Content_Types].xml" in names and any(
-        name.startswith("xl/") for name in names
-    )
+    return _is_xlsx_package(content)
 
 
-def _parse_excel(content: bytes) -> tuple[DNSParseResult, DNSInputDetection]:
+def _sheet_to_dns_result(
+    text: str,
+    sheet_name: str,
+) -> tuple[int, DNSParseResult, str] | None:
     try:
-        workbook = pd.ExcelFile(io.BytesIO(content))
-    except (ImportError, OSError, ValueError) as error:
-        raise ValueError("Excel DNS telemetry could not be opened") from error
+        parsed = parse_dns_csv_with_diagnostics(text)
+    except ValueError:
+        return None
+    return parsed.diagnostics.accepted_rows, parsed, sheet_name
+
+
+def _parse_excel_with_pandas(
+    content: bytes,
+) -> tuple[DNSParseResult, DNSInputDetection]:
+    workbook = pd.ExcelFile(io.BytesIO(content))
 
     best: tuple[int, DNSParseResult, str] | None = None
     errors: list[str] = []
@@ -119,16 +151,14 @@ def _parse_excel(content: bytes) -> tuple[DNSParseResult, DNSInputDetection]:
             continue
 
         frame = frame.where(pd.notna(frame), None)
-        text = frame.to_csv(index=False)
-        try:
-            parsed = parse_dns_csv_with_diagnostics(text)
-        except ValueError as error:
-            errors.append(f"{sheet_name}: {error}")
+        candidate = _sheet_to_dns_result(frame.to_csv(index=False), sheet_name)
+        if candidate is None:
+            errors.append(
+                f"{sheet_name}: no recognizable DNS query/domain column"
+            )
             continue
-
-        score = parsed.diagnostics.accepted_rows
-        if best is None or score > best[0]:
-            best = (score, parsed, sheet_name)
+        if best is None or candidate[0] > best[0]:
+            best = candidate
 
     if best is None:
         detail = "; ".join(errors[:3])
@@ -147,6 +177,269 @@ def _parse_excel(content: bytes) -> tuple[DNSParseResult, DNSInputDetection]:
         format_name="Excel DNS table",
         detail=f"worksheet: {sheet_name}",
     )
+
+
+def _xlsx_xml_bytes(
+    archive: zipfile.ZipFile,
+    name: str,
+) -> bytes:
+    try:
+        info = archive.getinfo(name)
+    except KeyError as error:
+        raise ValueError(f"XLSX package is missing {name}") from error
+    if info.file_size > _MAX_XLSX_XML_BYTES:
+        raise ValueError("XLSX worksheet XML exceeds the safe import limit")
+    return archive.read(info)
+
+
+def _xlsx_sheet_paths(
+    archive: zipfile.ZipFile,
+) -> list[tuple[str, str]]:
+    workbook_root = ElementTree.fromstring(
+        _xlsx_xml_bytes(archive, "xl/workbook.xml")
+    )
+    rels_root = ElementTree.fromstring(
+        _xlsx_xml_bytes(archive, "xl/_rels/workbook.xml.rels")
+    )
+
+    relationships = {
+        relation.attrib.get("Id", ""): relation.attrib.get("Target", "")
+        for relation in rels_root.findall(
+            f"{{{_XLSX_PACKAGE_REL_NS}}}Relationship"
+        )
+    }
+
+    sheets: list[tuple[str, str]] = []
+    for sheet in workbook_root.findall(
+        f".//{{{_XLSX_MAIN_NS}}}sheet"
+    ):
+        name = sheet.attrib.get("name", "").strip() or "Sheet"
+        relationship_id = sheet.attrib.get(
+            f"{{{_XLSX_DOC_REL_NS}}}id",
+            "",
+        )
+        target = relationships.get(relationship_id, "")
+        if not target:
+            continue
+
+        if target.startswith("/"):
+            sheet_path = target.lstrip("/")
+        else:
+            sheet_path = posixpath.normpath(
+                posixpath.join("xl", target)
+            )
+        if not sheet_path.startswith("xl/worksheets/"):
+            continue
+        sheets.append((name, sheet_path))
+
+    if not sheets:
+        raise ValueError("XLSX workbook contains no readable worksheets")
+    return sheets
+
+
+def _xlsx_shared_strings(
+    archive: zipfile.ZipFile,
+) -> list[str]:
+    if "xl/sharedStrings.xml" not in archive.namelist():
+        return []
+
+    root = ElementTree.fromstring(
+        _xlsx_xml_bytes(archive, "xl/sharedStrings.xml")
+    )
+    values: list[str] = []
+    for item in root.findall(f"{{{_XLSX_MAIN_NS}}}si"):
+        values.append(
+            "".join(
+                node.text or ""
+                for node in item.iter(f"{{{_XLSX_MAIN_NS}}}t")
+            )
+        )
+    return values
+
+
+def _xlsx_column_index(cell_reference: str) -> int:
+    match = re.match(r"([A-Za-z]+)", cell_reference)
+    if match is None:
+        raise ValueError("XLSX cell reference is invalid")
+
+    index = 0
+    for character in match.group(1).upper():
+        index = index * 26 + (ord(character) - ord("A") + 1)
+    return index - 1
+
+
+def _xlsx_cell_text(
+    cell: ElementTree.Element,
+    shared_strings: list[str],
+) -> str:
+    cell_type = cell.attrib.get("t", "")
+
+    if cell_type == "inlineStr":
+        return "".join(
+            node.text or ""
+            for node in cell.iter(f"{{{_XLSX_MAIN_NS}}}t")
+        )
+
+    value = cell.find(f"{{{_XLSX_MAIN_NS}}}v")
+    raw = value.text if value is not None and value.text is not None else ""
+
+    if cell_type == "s":
+        try:
+            return shared_strings[int(raw)]
+        except (IndexError, ValueError) as error:
+            raise ValueError("XLSX shared-string reference is invalid") from error
+    if cell_type == "b":
+        return "TRUE" if raw == "1" else "FALSE"
+    return raw
+
+
+def _xlsx_sheet_csv(
+    archive: zipfile.ZipFile,
+    sheet_path: str,
+    shared_strings: list[str],
+) -> str:
+    try:
+        info = archive.getinfo(sheet_path)
+    except KeyError as error:
+        raise ValueError("XLSX worksheet relationship is invalid") from error
+    if info.file_size > _MAX_XLSX_XML_BYTES:
+        raise ValueError("XLSX worksheet XML exceeds the safe import limit")
+
+    rows: list[list[str]] = []
+    cell_count = 0
+
+    with archive.open(info) as stream:
+        try:
+            iterator = ElementTree.iterparse(stream, events=("end",))
+            for _, element in iterator:
+                if element.tag != f"{{{_XLSX_MAIN_NS}}}row":
+                    continue
+
+                row_values: dict[int, str] = {}
+                max_column = -1
+                for cell in element.findall(f"{{{_XLSX_MAIN_NS}}}c"):
+                    reference = cell.attrib.get("r", "")
+                    column_index = _xlsx_column_index(reference)
+                    row_values[column_index] = _xlsx_cell_text(
+                        cell,
+                        shared_strings,
+                    )
+                    max_column = max(max_column, column_index)
+                    cell_count += 1
+                    if cell_count > _MAX_XLSX_CELLS:
+                        raise ValueError(
+                            "XLSX input exceeds the safe cell import limit"
+                        )
+
+                if max_column >= 0:
+                    row = [""] * (max_column + 1)
+                    for column_index, value in row_values.items():
+                        row[column_index] = value
+                    if any(value.strip() for value in row):
+                        rows.append(row)
+                        if len(rows) > _MAX_XLSX_ROWS:
+                            raise ValueError(
+                                "XLSX input exceeds the safe row import limit"
+                            )
+                element.clear()
+        except ElementTree.ParseError as error:
+            raise ValueError("XLSX worksheet XML is malformed") from error
+
+    if not rows:
+        return ""
+
+    output = io.StringIO(newline="")
+    writer = csv.writer(output)
+    writer.writerows(rows)
+    return output.getvalue()
+
+
+def _parse_xlsx_without_engine(
+    content: bytes,
+) -> tuple[DNSParseResult, DNSInputDetection]:
+    try:
+        archive = zipfile.ZipFile(io.BytesIO(content))
+    except zipfile.BadZipFile as error:
+        raise ValueError("uploaded file is not a readable XLSX workbook") from error
+
+    with archive:
+        sheets = _xlsx_sheet_paths(archive)
+        shared_strings = _xlsx_shared_strings(archive)
+        best: tuple[int, DNSParseResult, str] | None = None
+        errors: list[str] = []
+
+        for sheet_name, sheet_path in sheets:
+            try:
+                text = _xlsx_sheet_csv(
+                    archive,
+                    sheet_path,
+                    shared_strings,
+                )
+                if not text.strip():
+                    continue
+                candidate = _sheet_to_dns_result(text, sheet_name)
+            except ValueError as error:
+                errors.append(f"{sheet_name}: {error}")
+                continue
+
+            if candidate is None:
+                errors.append(
+                    f"{sheet_name}: no recognizable DNS query/domain column"
+                )
+                continue
+            if best is None or candidate[0] > best[0]:
+                best = candidate
+
+    if best is None:
+        detail = "; ".join(errors[:3])
+        if detail:
+            raise ValueError(
+                "Excel workbook has no worksheet with a recognizable DNS "
+                f"query/domain column ({detail})"
+            )
+        raise ValueError(
+            "Excel workbook has no worksheet with a recognizable DNS "
+            "query/domain column"
+        )
+
+    _, parsed, sheet_name = best
+    return parsed, DNSInputDetection(
+        format_name="Excel DNS table",
+        detail=f"worksheet: {sheet_name}",
+    )
+
+
+def _parse_excel(
+    content: bytes,
+    filename: str | None = None,
+) -> tuple[DNSParseResult, DNSInputDetection]:
+    pandas_error: Exception | None = None
+    try:
+        return _parse_excel_with_pandas(content)
+    except (ImportError, OSError, ValueError) as error:
+        pandas_error = error
+
+    if _is_xlsx_package(content):
+        try:
+            return _parse_xlsx_without_engine(content)
+        except ValueError as fallback_error:
+            raise ValueError(
+                "Excel DNS telemetry could not be opened: "
+                f"{fallback_error}"
+            ) from fallback_error
+
+    suffix = Path(filename or "").suffix.casefold()
+    if suffix in {".xlsx", ".xlsm", ".xltx", ".xltm"}:
+        raise ValueError(
+            "Excel DNS telemetry could not be opened because the uploaded "
+            "file is not a readable XLSX package"
+        ) from pandas_error
+
+    error_name = type(pandas_error).__name__ if pandas_error is not None else "Error"
+    raise ValueError(
+        "Legacy Excel DNS telemetry could not be opened "
+        f"({error_name}). Reinstall the project requirements to enable .xls support."
+    ) from pandas_error
 
 
 def _looks_like_zeek(text: str) -> bool:
@@ -209,7 +502,7 @@ def parse_dns_upload_with_diagnostics(
         )
 
     if _looks_like_excel(content, filename):
-        return _parse_excel(content)
+        return _parse_excel(content, filename)
 
     text, encoding = _decode_text(content)
 

@@ -5,6 +5,7 @@ import sqlite3
 
 import pandas as pd
 
+from threatfusion import dns_ingest
 from threatfusion.dns_ingest import parse_dns_upload_with_diagnostics
 
 
@@ -91,6 +92,38 @@ def test_auto_detects_xlsx_and_selects_dns_worksheet() -> None:
     assert [event.query_name for event in parsed.events] == [
         "example.com",
         "api.example.com",
+    ]
+    assert [event.query_type for event in parsed.events] == ["A", "AAAA"]
+
+
+def test_xlsx_uses_builtin_reader_when_excel_engine_is_unavailable(
+    monkeypatch,
+) -> None:
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+        pd.DataFrame(
+            {
+                "Query Domain": ["fallback.example", "api.fallback.example"],
+                "Client IP": ["10.0.0.5", "10.0.0.6"],
+                "Record Class": ["A", "AAAA"],
+            }
+        ).to_excel(writer, sheet_name="DNS", index=False)
+
+    def fail_excel_engine(*args, **kwargs):
+        raise ImportError("openpyxl is unavailable")
+
+    monkeypatch.setattr(dns_ingest.pd, "ExcelFile", fail_excel_engine)
+
+    parsed, detection = parse_dns_upload_with_diagnostics(
+        buffer.getvalue(),
+        "dns_logs.xlsx",
+    )
+
+    assert detection.format_name == "Excel DNS table"
+    assert detection.detail == "worksheet: DNS"
+    assert [event.query_name for event in parsed.events] == [
+        "fallback.example",
+        "api.fallback.example",
     ]
     assert [event.query_type for event in parsed.events] == ["A", "AAAA"]
 
