@@ -8,6 +8,7 @@ import requests
 from ..models import IOCRecord, IOCType
 
 URLHAUS_EXPORT_URL = "https://urlhaus-api.abuse.ch/v2/files/exports/{}/recent.csv"
+URLHAUS_FULL_EXPORT_URL = "https://urlhaus-api.abuse.ch/v2/files/exports/{}/full.csv"
 REQUEST_TIMEOUT_SECONDS = 30
 
 
@@ -113,8 +114,7 @@ class URLhausCollector:
         self.auth_key = auth_key
         self.session = session if session is not None else requests.Session()
 
-    def fetch_recent_urls(self) -> list[IOCRecord]:
-        export_url = URLHAUS_EXPORT_URL.format(self.auth_key)
+    def _fetch_export(self, export_url: str) -> list[IOCRecord]:
         try:
             response = self.session.get(
                 export_url,
@@ -137,3 +137,10 @@ class URLhausCollector:
             raise _sanitized_http_error(status_code)
 
         return parse_urlhaus_csv(response.text)
+
+    def fetch_recent_urls(self) -> list[IOCRecord]:
+        return self._fetch_export(URLHAUS_EXPORT_URL.format(self.auth_key))
+
+    def fetch_full_urls(self) -> list[IOCRecord]:
+        """Fetch URLhaus full dump: active URLs plus recent 90-day history."""
+        return self._fetch_export(URLHAUS_FULL_EXPORT_URL.format(self.auth_key))
