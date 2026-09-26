@@ -227,6 +227,15 @@ def test_local_feedback_form_upserts_and_isolates_run_and_domain(feedback_app):
     assert get_analyst_feedback(db_path, first_run_id) == []
 
 
+def test_legacy_theme_state_is_migrated_to_product_theme_name(feedback_app):
+    app = AppTest.from_string("import streamlit_app\nstreamlit_app.main()")
+    app.session_state["visual_theme"] = "White"
+    app.run(timeout=15)
+
+    assert not app.exception
+    assert app.session_state["visual_theme"] == "Arctic"
+
+
 def test_quick_lookup_is_default_primary_workspace_without_network_activity(
     feedback_app,
 ):
