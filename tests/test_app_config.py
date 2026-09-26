@@ -74,7 +74,6 @@ def test_cti_source_freshness_thresholds_are_configurable() -> None:
             "THREATFUSION_CTI_STALE_HOURS_THREATFOX": "6",
             "THREATFUSION_CTI_STALE_HOURS_URLHAUS": "12.5",
             "THREATFUSION_CTI_STALE_HOURS_SGB": "48",
-            "THREATFUSION_CTI_STALE_HOURS_PHISHTANK": "3",
         }
     )
 
@@ -82,7 +81,7 @@ def test_cti_source_freshness_thresholds_are_configurable() -> None:
         "ThreatFox": timedelta(hours=6),
         "URLhaus": timedelta(hours=12.5),
         "SGB": timedelta(hours=48),
-        "PhishTank": timedelta(hours=3),
+        "PhishTank": timedelta(hours=24),
     }
 
 
