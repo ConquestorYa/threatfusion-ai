@@ -77,12 +77,13 @@ def test_text_and_verdict_tokens_meet_normal_text_contrast(theme):
 
 
 def test_visual_theme_choices_match_product_ui():
-    assert THEME_OPTIONS == ("Obsidian", "Arctic", "Midnight", "Crimson")
-    assert canonical_theme_name("Dark") == "Obsidian"
-    assert canonical_theme_name("White") == "Arctic"
+    assert THEME_OPTIONS == ("Midnight", "Crimson", "Violet Noir")
+    assert canonical_theme_name("Dark") == "Midnight"
+    assert canonical_theme_name("White") == "Midnight"
+    assert canonical_theme_name("Arctic") == "Midnight"
     assert canonical_theme_name("Blue Dark") == "Midnight"
     assert canonical_theme_name("Red") == "Crimson"
-    assert palette("Light") == palette("Arctic")
+    assert palette("Light") == palette("Midnight")
 
 
 def test_each_theme_has_a_distinct_logo_tint_and_input_surface():
@@ -93,13 +94,12 @@ def test_each_theme_has_a_distinct_logo_tint_and_input_surface():
         assert colors["input_bg"] != colors["surface"]
 
 
-def test_arctic_theme_is_blue_gray_light_not_flat_white():
-    colors = palette("Arctic")
-    assert colors["bg"] == "#EEF4F8"
-    assert colors["bg_alt"] == "#E3EDF4"
-    assert colors["panel"] == "#F8FBFD"
-    assert colors["input_bg"] == "#F7FBFE"
-    assert len({colors["bg"], colors["bg_alt"], colors["panel"]}) == 3
+def test_violet_noir_theme_is_distinctly_purple_black():
+    colors = palette("Violet Noir")
+    assert colors["bg"] == "#09070F"
+    assert colors["panel"] == "#171022"
+    assert colors["cyan"] == "#A97BFF"
+    assert colors["logo"] == "#B98CFF"
 
 
 def test_distribution_keeps_semantic_colors_with_native_theme_text():
@@ -126,11 +126,11 @@ def test_distribution_keeps_semantic_colors_with_native_theme_text():
 def test_plotly_theme_uses_selected_product_palette():
     import plotly.graph_objects as go
 
-    figure = apply_plotly_theme(go.Figure(), theme="Arctic")
+    figure = apply_plotly_theme(go.Figure(), theme="Violet Noir")
 
-    assert figure.layout.font.color == palette("Arctic")["text"]
-    assert figure.layout.hoverlabel.bgcolor == palette("Arctic")["panel"]
-    assert figure.layout.xaxis.gridcolor == palette("Arctic")["grid"]
+    assert figure.layout.font.color == palette("Violet Noir")["text"]
+    assert figure.layout.hoverlabel.bgcolor == palette("Violet Noir")["panel"]
+    assert figure.layout.xaxis.gridcolor == palette("Violet Noir")["grid"]
 
 
 def test_loaded_evaluation_preserves_operating_points_and_source_diagnostics(tmp_path):
