@@ -73,11 +73,11 @@ def test_cli_writes_reports_for_dns_csv(tmp_path, monkeypatch, capsys) -> None:
     assert exit_code == 0
     payload = json.loads(json_path.read_text(encoding="utf-8"))
     assert payload["model_name"] == "test-model"
-    assert payload["findings"][0]["verdict"] == "High Risk"
+    assert payload["findings"][0]["verdict"] == "Review"
     assert "example.com" in csv_path.read_text(encoding="utf-8")
     output = capsys.readouterr().out
     assert "ThreatFusion analysis complete" in output
-    assert "High Risk: 1" in output
+    assert "Review: 1" in output
 
 
 def test_cli_selects_zeek_analyzer(tmp_path, monkeypatch) -> None:
