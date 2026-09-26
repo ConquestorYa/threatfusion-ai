@@ -521,6 +521,16 @@ def main() -> None:
                 st.caption(type(error).__name__)
             return
 
+        if (
+            getattr(artifact.metadata, "evaluation_status", None)
+            == "demo_only_synthetic"
+        ):
+            st.warning(
+                "Demo ML artifact active. It uses synthetic training data only "
+                "to exercise the interface and must not be interpreted as "
+                "measured model performance."
+            )
+
         indicators = load_ioc_records(db_path)
         if not indicators:
             st.warning(
