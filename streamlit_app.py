@@ -1036,11 +1036,19 @@ def main() -> None:
                     if detection.encoding
                     else ""
                 )
+                detail = detection.detail
+                if detail.startswith("worksheet: "):
+                    detail = tr(
+                        "worksheet: {sheet}",
+                        sheet=detail.split(": ", 1)[1],
+                    )
+                else:
+                    detail = tr(detail)
                 st.caption(
                     tr(
                         "Detected input: {format} · {detail}{encoding}",
-                        format=detection.format_name,
-                        detail=detection.detail,
+                        format=tr(detection.format_name),
+                        detail=detail,
                         encoding=encoding,
                     )
                 )
