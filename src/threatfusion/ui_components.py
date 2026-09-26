@@ -55,11 +55,11 @@ def source_status_html(row: dict[str, object]) -> str:
             tr("Updated just now")
             if hours < 0.1
             else (
-                tr("{minutes}m ago", minutes=round(hours * 60))
+                tr("Updated {minutes}m ago", minutes=round(hours * 60))
                 if hours < 1
-                else tr("{hours}h ago", hours=f"{hours:g}")
+                else tr("Updated {hours}h ago", hours=f"{hours:g}")
                 if hours < 48
-                else tr("{days}d ago", days=f"{hours / 24:.0f}")
+                else tr("Updated {days}d ago", days=f"{hours / 24:.0f}")
             )
         )
     except ValueError:
