@@ -432,44 +432,12 @@ def _render_primary_workspace_launcher(current_page: str) -> None:
             '<div><div class="tf-primary-workspace-kicker">Primary workspace</div>'
             '<div class="tf-primary-workspace-title">Choose how you want to investigate</div></div>'
             '<div class="tf-primary-workspace-hint">'
-            'The two main ThreatFusion workflows stay one click away, even while you inspect history or model evaluation.'
+            'Quick lookup is the default entry point; telemetry analysis is one click away for deeper batch investigation.'
             '</div></div>',
             unsafe_allow_html=True,
         )
 
-        telemetry_col, lookup_col = st.columns(2)
-
-        telemetry_active = current_page == "Analyze telemetry"
-        with telemetry_col:
-            telemetry_state = (
-                "Current workspace" if telemetry_active else "Batch investigation"
-            )
-            telemetry_class = " tf-primary-card--active" if telemetry_active else ""
-            st.markdown(
-                f'<div class="tf-primary-card{telemetry_class}">'
-                '<div class="tf-primary-card-top">'
-                '<span class="tf-primary-card-number">01 · TELEMETRY</span>'
-                f'<span class="tf-primary-card-state">{telemetry_state}</span>'
-                '</div>'
-                '<div class="tf-primary-card-title">Analyze telemetry</div>'
-                '<div class="tf-primary-card-copy">'
-                'Upload DNS CSV, Zeek, Pi-hole or AdGuard data and correlate CTI, ML and DNS behavior at scale.'
-                '</div>'
-                '<div class="tf-primary-card-tags">'
-                '<span class="tf-primary-card-tag">Multi-domain</span>'
-                '<span class="tf-primary-card-tag">Behavior signals</span>'
-                '<span class="tf-primary-card-tag">Investigation queue</span>'
-                '</div></div>',
-                unsafe_allow_html=True,
-            )
-            if st.button(
-                "Open telemetry analysis",
-                key="open_telemetry_workspace",
-                type="primary" if telemetry_active else "secondary",
-                width="stretch",
-            ):
-                st.session_state["workspace_nav"] = "Analyze telemetry"
-                st.rerun()
+        lookup_col, telemetry_col = st.columns(2)
 
         lookup_active = current_page == "Quick lookup"
         with lookup_col:
@@ -480,7 +448,7 @@ def _render_primary_workspace_launcher(current_page: str) -> None:
             st.markdown(
                 f'<div class="tf-primary-card{lookup_class}">'
                 '<div class="tf-primary-card-top">'
-                '<span class="tf-primary-card-number">02 · QUICK LOOKUP</span>'
+                '<span class="tf-primary-card-number">01 · QUICK LOOKUP</span>'
                 f'<span class="tf-primary-card-state">{lookup_state}</span>'
                 '</div>'
                 '<div class="tf-primary-card-title">Check a URL or domain</div>'
@@ -501,6 +469,38 @@ def _render_primary_workspace_launcher(current_page: str) -> None:
                 width="stretch",
             ):
                 st.session_state["workspace_nav"] = "Quick lookup"
+                st.rerun()
+
+        telemetry_active = current_page == "Analyze telemetry"
+        with telemetry_col:
+            telemetry_state = (
+                "Current workspace" if telemetry_active else "Batch investigation"
+            )
+            telemetry_class = " tf-primary-card--active" if telemetry_active else ""
+            st.markdown(
+                f'<div class="tf-primary-card{telemetry_class}">'
+                '<div class="tf-primary-card-top">'
+                '<span class="tf-primary-card-number">02 · TELEMETRY</span>'
+                f'<span class="tf-primary-card-state">{telemetry_state}</span>'
+                '</div>'
+                '<div class="tf-primary-card-title">Analyze telemetry</div>'
+                '<div class="tf-primary-card-copy">'
+                'Upload DNS CSV, Zeek, Pi-hole or AdGuard data and correlate CTI, ML and DNS behavior at scale.'
+                '</div>'
+                '<div class="tf-primary-card-tags">'
+                '<span class="tf-primary-card-tag">Multi-domain</span>'
+                '<span class="tf-primary-card-tag">Behavior signals</span>'
+                '<span class="tf-primary-card-tag">Investigation queue</span>'
+                '</div></div>',
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                "Open telemetry analysis",
+                key="open_telemetry_workspace",
+                type="primary" if telemetry_active else "secondary",
+                width="stretch",
+            ):
+                st.session_state["workspace_nav"] = "Analyze telemetry"
                 st.rerun()
 
 
@@ -541,9 +541,14 @@ def main() -> None:
     if config.public_mode:
         pages.remove("Analysis history")
 
-    page = st.session_state.get("workspace_nav", "Analyze telemetry")
+    default_page = (
+        "Analyze telemetry"
+        if st.session_state.get("analysis_result") is not None
+        else "Quick lookup"
+    )
+    page = st.session_state.get("workspace_nav", default_page)
     if page not in pages:
-        page = "Analyze telemetry"
+        page = default_page
         st.session_state["workspace_nav"] = page
 
     # Keep history/evaluation as secondary navigation. The two core workflows
