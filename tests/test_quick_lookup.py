@@ -7,9 +7,10 @@ from types import SimpleNamespace
 import pytest
 
 from threatfusion import quick_lookup
+from threatfusion.cti_cache import replace_source_records
 from threatfusion.hybrid_assessment import HybridVerdict, MLThresholds
 from threatfusion.models import IOCRecord, IOCType
-from threatfusion.quick_lookup import analyze_quick_lookup
+from threatfusion.quick_lookup import analyze_quick_lookup, analyze_quick_lookup_from_cache
 
 
 def fake_artifact():
@@ -177,6 +178,51 @@ def test_invalid_or_unsupported_lookup_input_is_rejected(value, monkeypatch):
 
     with pytest.raises(ValueError):
         analyze_quick_lookup(value, [], fake_artifact())
+
+
+def test_quick_lookup_from_cache_uses_indexed_candidates(tmp_path, monkeypatch):
+    db_path = tmp_path / "cti.sqlite"
+    replace_source_records(
+        db_path,
+        "ThreatFox",
+        [
+            IOCRecord("target.example", IOCType.DOMAIN, "ThreatFox"),
+            IOCRecord("unrelated.example", IOCType.DOMAIN, "ThreatFox"),
+        ],
+    )
+    replace_source_records(
+        db_path,
+        "URLhaus",
+        [
+            IOCRecord(
+                "https://target.example/payload",
+                IOCType.URL,
+                "URLhaus",
+            ),
+            IOCRecord(
+                "https://other.example/payload",
+                IOCType.URL,
+                "URLhaus",
+            ),
+        ],
+    )
+    monkeypatch.setattr(
+        quick_lookup,
+        "predict_domain_scores",
+        lambda artifact, domains: {"target.example": 0.10},
+    )
+
+    result = analyze_quick_lookup_from_cache(
+        "https://target.example/payload",
+        db_path,
+        fake_artifact(),
+    )
+
+    assert result.verdict is HybridVerdict.KNOWN_THREAT
+    assert {item.indicator_value for item in result.evidence} == {
+        "target.example",
+        "https://target.example/payload",
+    }
 
 
 def test_quick_lookup_never_performs_networking(monkeypatch):
