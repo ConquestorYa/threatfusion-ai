@@ -1,4 +1,7 @@
+import csv
+import io
 import ipaddress
+import zipfile
 from collections.abc import Mapping
 from datetime import datetime, timezone
 from typing import Any
@@ -8,7 +11,28 @@ import requests
 from ..models import IOCRecord, IOCType
 
 THREATFOX_API_URL = "https://threatfox-api.abuse.ch/api/v1/"
+THREATFOX_EXPORT_URL = (
+    "https://threatfox-api.abuse.ch/v2/files/exports/{}/full.csv.zip"
+)
 REQUEST_TIMEOUT_SECONDS = 30
+
+_THREATFOX_POSITIONAL_COLUMNS = (
+    "first_seen",
+    "id",
+    "ioc",
+    "ioc_type",
+    "threat_type",
+    "malware",
+    "malware_alias",
+    "malware_printable",
+    "last_seen",
+    "confidence_level",
+    "is_compromised",
+    "reference",
+    "tags",
+    "anonymous",
+    "reporter",
+)
 
 
 def _parse_timestamp(value: Any) -> datetime | None:
@@ -26,10 +50,21 @@ def _parse_timestamp(value: Any) -> datetime | None:
 
 
 def _parse_tags(value: Any) -> list[str]:
-    if not isinstance(value, list):
-        return []
+    if isinstance(value, list):
+        return [tag for tag in value if isinstance(tag, str)]
+    if isinstance(value, str):
+        return [tag.strip() for tag in value.split(",") if tag.strip()]
+    return []
 
-    return [tag for tag in value if isinstance(tag, str)]
+
+def _parse_confidence(value: Any) -> float | None:
+    try:
+        confidence = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not 0 <= confidence <= 100:
+        return None
+    return confidence / 100.0
 
 
 def _classify_ip_port(value: str) -> tuple[str, IOCType] | None:
@@ -86,12 +121,72 @@ def _record_from_threatfox_item(item: Mapping[str, Any]) -> IOCRecord:
         source="ThreatFox",
         first_seen=_parse_timestamp(item.get("first_seen")),
         last_seen=_parse_timestamp(item.get("last_seen")),
-        threat_type=item.get("threat_type")
-        if isinstance(item.get("threat_type"), str)
-        else None,
-        confidence=None,
+        threat_type=(
+            item.get("threat_type")
+            if isinstance(item.get("threat_type"), str)
+            else None
+        ),
+        confidence=_parse_confidence(item.get("confidence_level")),
         tags=_parse_tags(item.get("tags")),
     )
+
+
+def parse_threatfox_csv(content: str) -> list[IOCRecord]:
+    """Parse ThreatFox's full CSV export with or without a header row."""
+    csv_rows = [
+        row
+        for row in csv.reader(
+            line
+            for line in content.splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        )
+        if row
+    ]
+    if not csv_rows:
+        return []
+
+    first = [cell.strip().lower() for cell in csv_rows[0]]
+    has_header = "ioc" in first and "ioc_type" in first
+
+    if has_header:
+        header = [cell.strip() for cell in csv_rows[0]]
+        rows = (
+            dict(zip(header, values, strict=False))
+            for values in csv_rows[1:]
+        )
+    else:
+        rows = (
+            dict(zip(_THREATFOX_POSITIONAL_COLUMNS, values, strict=False))
+            for values in csv_rows
+            if len(values) >= 5
+        )
+
+    records: list[IOCRecord] = []
+    for row in rows:
+        if not str(row.get("ioc", "")).strip():
+            continue
+        records.append(_record_from_threatfox_item(row))
+    return records
+
+
+def _parse_export_zip(content: bytes) -> list[IOCRecord]:
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            names = [
+                name
+                for name in archive.namelist()
+                if name.casefold().endswith(".csv")
+            ]
+            if not names:
+                raise ValueError("ThreatFox export ZIP contains no CSV file")
+            csv_content = archive.read(names[0]).decode("utf-8-sig")
+    except (zipfile.BadZipFile, UnicodeDecodeError, KeyError) as error:
+        raise ValueError("ThreatFox full export is invalid") from error
+
+    records = parse_threatfox_csv(csv_content)
+    if not records:
+        raise ValueError("ThreatFox full export contained no usable IOCs")
+    return records
 
 
 class ThreatFoxCollector:
@@ -132,3 +227,33 @@ class ThreatFoxCollector:
             for item in data
             if isinstance(item, Mapping)
         ]
+
+    def fetch_full_iocs(self) -> list[IOCRecord]:
+        """Fetch ThreatFox's current non-expired full IOC export."""
+        export_url = THREATFOX_EXPORT_URL.format(self.auth_key)
+        try:
+            response = self.session.get(
+                export_url,
+                timeout=REQUEST_TIMEOUT_SECONDS,
+                allow_redirects=False,
+            )
+        except requests.RequestException:
+            raise requests.HTTPError(
+                "ThreatFox export request failed (request error)"
+            ) from None
+
+        try:
+            response.raise_for_status()
+        except requests.RequestException:
+            status_code = getattr(response, "status_code", "unknown")
+            raise requests.HTTPError(
+                f"ThreatFox export request failed (HTTP status {status_code})"
+            ) from None
+
+        status_code = getattr(response, "status_code", None)
+        if isinstance(status_code, int) and not 200 <= status_code < 300:
+            raise requests.HTTPError(
+                f"ThreatFox export request failed (HTTP status {status_code})"
+            )
+
+        return _parse_export_zip(response.content)
