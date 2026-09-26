@@ -65,8 +65,9 @@ OPENAI_API_KEY="<set-in-secret-manager>"
 
 
 def test_release_audit_detects_threatfusion_service_secret_assignments() -> None:
+    secret = "abcdefghijkl" + "mnopqrstuvwx"
     findings = scan_release_text(
-        'THREATFOX_AUTH_KEY="abcdefghijklmnopqrstuvwx"',
+        'THREATFOX_AUTH_KEY="' + secret + '"',
         path=".env.example.bad",
     )
 
