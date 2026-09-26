@@ -93,6 +93,41 @@ def test_url_hostname_context_is_review_not_known_threat(monkeypatch):
     assert [item.match_type for item in result.evidence] == ["url_hostname"]
 
 
+def test_plain_http_url_is_flagged_without_changing_verdict(monkeypatch):
+    monkeypatch.setattr(
+        quick_lookup,
+        "predict_domain_scores",
+        lambda artifact, domains: {"example.com": 0.10},
+    )
+
+    result = analyze_quick_lookup(
+        "http://example.com/login",
+        [],
+        fake_artifact(),
+    )
+
+    assert result.uses_plain_http is True
+    assert "plaintext_http_transport" in result.reasons
+    assert result.verdict is HybridVerdict.LOW
+
+
+def test_https_url_is_not_flagged_as_plain_http(monkeypatch):
+    monkeypatch.setattr(
+        quick_lookup,
+        "predict_domain_scores",
+        lambda artifact, domains: {"example.com": 0.10},
+    )
+
+    result = analyze_quick_lookup(
+        "https://example.com/login",
+        [],
+        fake_artifact(),
+    )
+
+    assert result.uses_plain_http is False
+    assert "plaintext_http_transport" not in result.reasons
+
+
 def test_high_ml_score_can_raise_high_risk_without_cti(monkeypatch):
     monkeypatch.setattr(
         quick_lookup,

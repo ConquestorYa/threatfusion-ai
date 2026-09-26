@@ -34,6 +34,7 @@ class QuickLookupResult:
     input_type: str
     normalized_domain: str
     normalized_url: str | None
+    uses_plain_http: bool
     verdict: HybridVerdict
     ml_score: float | None
     ml_tier: str | None
@@ -194,7 +195,13 @@ def analyze_quick_lookup(
     lexical = aggregate_dns_behavior([event])[0]
     match_types = {item.match_type for item in evidence}
 
+    uses_plain_http = bool(
+        normalized_url is not None and normalized_url.startswith("http://")
+    )
+
     reasons: list[str] = []
+    if uses_plain_http:
+        reasons.append("plaintext_http_transport")
     if "exact_url" in match_types:
         reasons.append("exact_url_ioc_match")
     if "query_domain" in match_types:
@@ -225,6 +232,7 @@ def analyze_quick_lookup(
         input_type=input_type,
         normalized_domain=domain,
         normalized_url=normalized_url,
+        uses_plain_http=uses_plain_http,
         verdict=verdict,
         ml_score=score,
         ml_tier=tier,

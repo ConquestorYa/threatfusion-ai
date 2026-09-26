@@ -112,6 +112,11 @@ def _cti_signal_label(result: QuickLookupResult) -> tuple[str, str]:
 def _reason_text(reason: str) -> str:
     if reason == "exact_url_ioc_match":
         return "The exact submitted URL appears in the local CTI cache."
+    if reason == "plaintext_http_transport":
+        return (
+            "The submitted URL uses HTTP, so traffic is not protected by HTTPS "
+            "transport encryption."
+        )
     return reason_label(reason)
 
 
@@ -382,6 +387,12 @@ def render_quick_lookup_empty_state() -> None:
 
 
 def render_quick_lookup_result(result: QuickLookupResult) -> None:
+    if result.uses_plain_http:
+        st.warning(
+            "HTTP link detected. This connection is not protected by HTTPS. "
+            "Transport security alone does not determine whether a site is malicious."
+        )
+
     _render_outcome_banner(result)
     _render_graphic_overview(result)
     _render_reasons(result)
