@@ -172,7 +172,10 @@ def write_ml_artifact(
     model_path = output_path / _MODEL_FILENAME
     metadata_path = output_path / _METADATA_FILENAME
 
-    if not overwrite and (model_path.exists() or metadata_path.exists()):
+    checksum_path = output_path / _CHECKSUM_FILENAME
+    if not overwrite and (
+        model_path.exists() or metadata_path.exists() or checksum_path.exists()
+    ):
         raise FileExistsError(
             "ML artifact already exists; pass overwrite=True to replace it"
         )
@@ -184,7 +187,7 @@ def write_ml_artifact(
         encoding="utf-8",
     )
     checksum = compute_ml_artifact_checksum(output_path)
-    (output_path / _CHECKSUM_FILENAME).write_text(
+    checksum_path.write_text(
         checksum + "\n",
         encoding="ascii",
     )
