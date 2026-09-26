@@ -22,6 +22,8 @@ class FakeResponse:
         self.text = text
         self.error = error
         self.status_code = status_code
+        self.content = text.encode("utf-8")
+        self.headers: dict[str, str] = {}
 
     def raise_for_status(self) -> None:
         if self.error is not None:
@@ -36,7 +38,7 @@ class FakeSession:
     ) -> None:
         self.response = response
         self.get_error = get_error
-        self.get_calls: list[tuple[str, int, bool]] = []
+        self.get_calls: list[tuple[str, int, bool, bool]] = []
 
     def get(
         self,
@@ -44,8 +46,9 @@ class FakeSession:
         *,
         timeout: int,
         allow_redirects: bool,
+        stream: bool,
     ) -> FakeResponse:
-        self.get_calls.append((url, timeout, allow_redirects))
+        self.get_calls.append((url, timeout, allow_redirects, stream))
         if self.get_error is not None:
             raise self.get_error
         return self.response
@@ -190,7 +193,7 @@ def test_only_official_export_is_requested_and_ioc_urls_are_not_requested() -> N
     record = URLhausCollector(auth_key, session).fetch_recent_urls()[0]
 
     assert session.get_calls == [
-        (URLHAUS_EXPORT_URL.format(auth_key), 30, False)
+        (URLHAUS_EXPORT_URL.format(auth_key), 30, False, True)
     ]
     assert record.value == malicious_url
     assert auth_key not in record.value
@@ -209,7 +212,7 @@ def test_full_export_uses_official_full_dump_endpoint() -> None:
 
     assert [item.value for item in records] == [malicious_url]
     assert session.get_calls == [
-        (URLHAUS_FULL_EXPORT_URL.format(auth_key), 30, False)
+        (URLHAUS_FULL_EXPORT_URL.format(auth_key), 30, False, True)
     ]
 
 
@@ -219,7 +222,7 @@ def test_full_export_falls_back_to_documented_recent_export_on_http_error() -> N
 
     class SequentialSession:
         def __init__(self) -> None:
-            self.get_calls: list[tuple[str, int, bool]] = []
+            self.get_calls: list[tuple[str, int, bool, bool]] = []
             self.responses = [
                 FakeResponse(
                     "",
@@ -239,8 +242,9 @@ def test_full_export_falls_back_to_documented_recent_export_on_http_error() -> N
             *,
             timeout: int,
             allow_redirects: bool,
+            stream: bool,
         ) -> FakeResponse:
-            self.get_calls.append((url, timeout, allow_redirects))
+            self.get_calls.append((url, timeout, allow_redirects, stream))
             return self.responses.pop(0)
 
     session = SequentialSession()
@@ -249,8 +253,8 @@ def test_full_export_falls_back_to_documented_recent_export_on_http_error() -> N
 
     assert [item.value for item in records] == [malicious_url]
     assert session.get_calls == [
-        (URLHAUS_FULL_EXPORT_URL.format(auth_key), 30, False),
-        (URLHAUS_EXPORT_URL.format(auth_key), 30, False),
+        (URLHAUS_FULL_EXPORT_URL.format(auth_key), 30, False, True),
+        (URLHAUS_EXPORT_URL.format(auth_key), 30, False, True),
     ]
 
 
@@ -273,3 +277,11 @@ def test_multiple_csv_rows_produce_multiple_records() -> None:
         "https://one.example/a",
         "https://two.example/b",
     ]
+
+def test_oversized_export_is_rejected_before_parsing() -> None:
+    response = FakeResponse(f"{CSV_HEADER}\n")
+    response.headers = {"Content-Length": str(257 * 1024 * 1024)}
+    session = FakeSession(response)
+
+    with pytest.raises(ValueError, match="safe download limit"):
+        URLhausCollector("secret", session).fetch_recent_urls()
