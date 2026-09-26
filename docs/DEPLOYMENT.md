@@ -33,16 +33,21 @@ THREATFUSION_MODEL_DIR=/app/runtime/models/development-001
 THREATFUSION_CTI_STALE_HOURS_THREATFOX=24
 THREATFUSION_CTI_STALE_HOURS_URLHAUS=24
 THREATFUSION_CTI_STALE_HOURS_SGB=24
+THREATFUSION_CTI_STALE_HOURS_PHISHTANK=6
 ```
 
-The three freshness values default to 24 hours and can be tuned independently
-to match the maintenance cadence used for each source.
+ThreatFox, URLhaus, and SGB default to 24-hour stale thresholds. PhishTank
+defaults to 6 hours. Each value can be tuned independently to match the
+maintenance cadence used for the source.
 
 The SQLite database must already contain the CTI cache, and the model directory
 must contain the trusted local `model.joblib` and `metadata.json` artifact.
 
-The interactive dashboard does not need ThreatFox or URLhaus API keys. CTI
-refresh should be performed as a separate maintenance workflow.
+The interactive dashboard does not need feed credentials when a prepared CTI
+cache is supplied. A separate maintenance workflow remains the preferred
+deployment model. For low-cost demo hosting that has no scheduler, ThreatFusion
+also supports an opt-in process-local background refresher; see the scheduled
+refresh section below.
 
 ## Container build
 
@@ -193,36 +198,48 @@ manager.
 
 ## Scheduled CTI refresh
 
-The interactive Streamlit request path must not refresh external feeds. Run
-`scripts/refresh_cti_cache.py` as a separate maintenance job that has write
-access to the runtime SQLite database and receives feed credentials from the
-hosting platform's secret manager.
-
-The refresh job and the public web app should use the same
-`THREATFUSION_DB_PATH`, but the public web container can keep the runtime
-volume read-only. The maintenance job is the only process that needs write
-access to the CTI cache.
-
-A simple local/hosted maintenance command is:
+Quick lookup never fetches external feeds in the user request path. The
+preferred deployment model is still a separate maintenance job with write
+access to the runtime SQLite database:
 
 ```text
 python scripts/refresh_cti_cache.py
 ```
 
-Provide `THREATFOX_AUTH_KEY` and `URLHAUS_AUTH_KEY` only in that maintenance
-job's environment. Do not put the values in the repository, Docker image,
-command-line arguments, or Streamlit configuration.
+The refresh now uses the current/full ThreatFox and URLhaus exports, completes
+the bounded SGB pagination before replacing its snapshot, and optionally adds
+PhishTank when `PHISHTANK_APP_KEY` is present. Feed credentials belong in the
+hosting platform's secret manager:
 
-Schedule the job comfortably inside the configured source freshness windows.
-The default dashboard stale thresholds are 24 hours, so a twice-daily refresh
-is a reasonable demo cadence when the hosting platform supports scheduled
-jobs. A failed or unexpectedly empty source refresh is rejected by the cache
-safety checks instead of replacing healthy data with an empty snapshot.
+```text
+THREATFOX_AUTH_KEY=...
+URLHAUS_AUTH_KEY=...
+PHISHTANK_APP_KEY=...   # optional
+```
 
-For Windows local demos, Task Scheduler can invoke the Python command from the
-project virtual environment. For Linux/container hosting, use the platform's
-scheduled-job facility or cron/systemd timer. Keep credentials in the
-platform/service environment rather than a checked-in script.
+Failed or unexpectedly empty source refreshes preserve the previous healthy
+snapshot. Old inactive lifecycle rows are pruned after 90 days so a long-running
+demo does not grow without bound.
+
+### Low-cost hosting fallback
+
+If the hosting tier has no separate cron/worker, the web process can start one
+background refresh loop by setting:
+
+```text
+THREATFUSION_AUTO_REFRESH_CTI=1
+THREATFUSION_CTI_REFRESH_HOURS=6
+THREATFUSION_SGB_MAX_PAGES=100
+```
+
+This loop runs outside the Streamlit request path and only refreshes stale
+sources. It is process-local: a service restart also restarts the timer. The
+runtime SQLite path must be writable, and feed credentials are then necessarily
+available to the web process. A separate maintenance job is preferable when the
+hosting platform provides one.
+
+For Windows local demos, Task Scheduler can invoke the refresh command. For
+Linux/container hosting, cron/systemd or a platform scheduler is preferred.
 
 ## Hosted-demo hardening boundary
 
