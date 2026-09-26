@@ -24,6 +24,14 @@ DNS CSV / Zeek dns.log / Pi-hole FTL DB / AdGuard Home
           |
           v
   Explainable hybrid verdict
+
+Single URL / domain
+          -> passive CTI lookup
+          + ML domain scoring
+          + domain-shape context
+          |
+          v
+  Quick lookup verdict
           |
           v
 known_threat / high_risk / review / low
@@ -69,6 +77,7 @@ See `docs/ARCHITECTURE.md` for full data-flow and module-level details.
 - common IOC model, normalization, and correlation
 - DNS CSV, Zeek `dns.log`, in-memory Pi-hole FTL database, and AdGuard Home query-log ingestion with aggregate input-quality diagnostics
 - known domain / URL-hostname / response-IP / IPv6-network matching with evidence-scope metadata
+- passive single URL/domain quick lookup with exact URL/domain CTI matching, ML scoring, and no network requests
 - reproducible ML dataset snapshots
 - character n-gram TF-IDF + Logistic Regression development model
 - validation-only threshold selection under explicit false-positive budgets
@@ -189,6 +198,12 @@ artifact; it does not refresh feeds or require API credentials.
 
 Supported telemetry formats are generic DNS CSV, Zeek `dns.log`, an uploaded
 Pi-hole FTL SQLite query database, and AdGuard Home query-log JSON.
+
+The dashboard also includes **Quick lookup** for a single HTTP(S) URL or domain.
+Quick lookup is passive: it does not open the URL, resolve the hostname, or
+download content. DNS-only behavior signals such as NXDOMAIN ratio, response-IP
+churn, periodicity, query volume, and client count are only available from
+telemetry analysis.
 
 The generic DNS CSV schema is:
 
