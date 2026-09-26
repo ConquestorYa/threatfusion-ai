@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -64,6 +65,15 @@ def _replace_nonempty(
     )
 
 
+def _fetch_complete_sgb(max_pages: int) -> list[IOCRecord]:
+    result = SGBCollector().fetch_bounded_addresses(max_pages=max_pages)
+    if not result.reached_source_end:
+        raise ValueError(
+            "SGB page bound reached before the source end; old cache preserved"
+        )
+    return list(result.records)
+
+
 def refresh_configured_sources(
     db_path: Path,
     *,
@@ -82,7 +92,7 @@ def refresh_configured_sources(
     if sgb_max_pages < 1:
         raise ValueError("sgb_max_pages must be at least 1")
 
-    jobs: list[tuple[str, object]] = []
+    jobs: list[tuple[str, Callable[[], list[IOCRecord]]]] = []
     if threatfox_key and threatfox_key.strip():
         jobs.append(
             (
@@ -110,11 +120,7 @@ def refresh_configured_sources(
     jobs.append(
         (
             "SGB",
-            lambda: list(
-                SGBCollector()
-                .fetch_bounded_addresses(max_pages=sgb_max_pages)
-                .records
-            ),
+            lambda: _fetch_complete_sgb(sgb_max_pages),
         )
     )
 
