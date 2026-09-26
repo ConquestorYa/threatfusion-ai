@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import socket
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -47,6 +48,8 @@ def test_url_lookup_detects_exact_url_without_duplicate_hostname_match(monkeypat
         "https://evil.example/payload",
         IOCType.URL,
         "URLhaus",
+        first_seen=datetime(2026, 9, 1, tzinfo=timezone.utc),
+        last_seen=datetime(2026, 9, 25, tzinfo=timezone.utc),
         threat_type="malware_download",
     )
 
@@ -60,6 +63,12 @@ def test_url_lookup_detects_exact_url_without_duplicate_hostname_match(monkeypat
     assert result.normalized_url == "https://evil.example/payload"
     assert result.verdict is HybridVerdict.KNOWN_THREAT
     assert [item.match_type for item in result.evidence] == ["exact_url"]
+    assert result.evidence[0].first_seen == datetime(
+        2026, 9, 1, tzinfo=timezone.utc
+    )
+    assert result.evidence[0].last_seen == datetime(
+        2026, 9, 25, tzinfo=timezone.utc
+    )
 
 
 def test_url_hostname_context_is_review_not_known_threat(monkeypatch):
