@@ -386,7 +386,10 @@ def parse_dnstop_with_diagnostics(content: str) -> DNSParseResult:
                 continue
             except ValueError:
                 pass
-            normalized = normalize_domain_name(candidate, strict=True)
+            try:
+                normalized = normalize_domain_name(candidate, strict=True)
+            except ValueError:
+                continue
             if normalized:
                 domain = normalized
                 break
