@@ -1,0 +1,156 @@
+from __future__ import annotations
+
+import socket
+from types import SimpleNamespace
+
+import pytest
+
+from threatfusion import quick_lookup
+from threatfusion.hybrid_assessment import HybridVerdict, MLThresholds
+from threatfusion.models import IOCRecord, IOCType
+from threatfusion.quick_lookup import analyze_quick_lookup
+
+
+def fake_artifact():
+    return SimpleNamespace(
+        thresholds=MLThresholds(
+            high_confidence=0.80,
+            medium_confidence=0.60,
+            low_confidence=0.50,
+        )
+    )
+
+
+def test_domain_lookup_uses_exact_domain_cti(monkeypatch):
+    monkeypatch.setattr(
+        quick_lookup,
+        "predict_domain_scores",
+        lambda artifact, domains: {"evil.example": 0.10},
+    )
+    indicator = IOCRecord("evil.example", IOCType.DOMAIN, "ThreatFox")
+
+    result = analyze_quick_lookup("Evil.Example.", [indicator], fake_artifact())
+
+    assert result.input_type == "Domain"
+    assert result.normalized_domain == "evil.example"
+    assert result.verdict is HybridVerdict.KNOWN_THREAT
+    assert [item.match_type for item in result.evidence] == ["query_domain"]
+
+
+def test_url_lookup_detects_exact_url_without_duplicate_hostname_match(monkeypatch):
+    monkeypatch.setattr(
+        quick_lookup,
+        "predict_domain_scores",
+        lambda artifact, domains: {"evil.example": 0.10},
+    )
+    indicator = IOCRecord(
+        "https://evil.example/payload",
+        IOCType.URL,
+        "URLhaus",
+        threat_type="malware_download",
+    )
+
+    result = analyze_quick_lookup(
+        "HTTPS://EVIL.EXAMPLE:443/payload#ignored",
+        [indicator],
+        fake_artifact(),
+    )
+
+    assert result.input_type == "URL"
+    assert result.normalized_url == "https://evil.example/payload"
+    assert result.verdict is HybridVerdict.KNOWN_THREAT
+    assert [item.match_type for item in result.evidence] == ["exact_url"]
+
+
+def test_url_hostname_context_is_review_not_known_threat(monkeypatch):
+    monkeypatch.setattr(
+        quick_lookup,
+        "predict_domain_scores",
+        lambda artifact, domains: {"evil.example": 0.10},
+    )
+    indicator = IOCRecord(
+        "https://evil.example/known-payload",
+        IOCType.URL,
+        "URLhaus",
+    )
+
+    result = analyze_quick_lookup(
+        "https://evil.example/different-path",
+        [indicator],
+        fake_artifact(),
+    )
+
+    assert result.verdict is HybridVerdict.REVIEW
+    assert [item.match_type for item in result.evidence] == ["url_hostname"]
+
+
+def test_high_ml_score_can_raise_high_risk_without_cti(monkeypatch):
+    monkeypatch.setattr(
+        quick_lookup,
+        "predict_domain_scores",
+        lambda artifact, domains: {"unknown.example": 0.91},
+    )
+
+    result = analyze_quick_lookup("unknown.example", [], fake_artifact())
+
+    assert result.verdict is HybridVerdict.HIGH_RISK
+    assert result.ml_tier == "high"
+    assert result.ml_score == pytest.approx(0.91)
+
+
+def test_domain_shape_is_context_only_when_ml_and_cti_are_low(monkeypatch):
+    monkeypatch.setattr(
+        quick_lookup,
+        "predict_domain_scores",
+        lambda artifact, domains: {"123456789012.example": 0.10},
+    )
+
+    result = analyze_quick_lookup("123456789012.example", [], fake_artifact())
+
+    assert result.lexical_context.numeric_character_ratio is not None
+    assert result.lexical_context.numeric_character_ratio >= 0.3
+    assert "numeric_heavy_hostname" in result.reasons
+    assert result.verdict is HybridVerdict.LOW
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "",
+        "localhost",
+        "not a valid domain",
+        "ftp://example.com/file",
+        "https://user:pass@example.com/",
+        "http://[::1",
+    ],
+)
+def test_invalid_or_unsupported_lookup_input_is_rejected(value, monkeypatch):
+    monkeypatch.setattr(
+        quick_lookup,
+        "predict_domain_scores",
+        lambda artifact, domains: {},
+    )
+
+    with pytest.raises(ValueError):
+        analyze_quick_lookup(value, [], fake_artifact())
+
+
+def test_quick_lookup_never_performs_networking(monkeypatch):
+    def fail(*args, **kwargs):
+        raise AssertionError("quick lookup must remain passive")
+
+    monkeypatch.setattr(socket, "getaddrinfo", fail)
+    monkeypatch.setattr(socket, "create_connection", fail)
+    monkeypatch.setattr(
+        quick_lookup,
+        "predict_domain_scores",
+        lambda artifact, domains: {"example.com": 0.10},
+    )
+
+    result = analyze_quick_lookup(
+        "https://example.com/path",
+        [IOCRecord("example.com", IOCType.DOMAIN, "SGB")],
+        fake_artifact(),
+    )
+
+    assert result.verdict is HybridVerdict.KNOWN_THREAT
