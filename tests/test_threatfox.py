@@ -1,3 +1,5 @@
+import io
+import zipfile
 from datetime import datetime, timezone
 
 import pytest
@@ -5,15 +7,27 @@ import requests
 
 from threatfusion.collectors.threatfox import (
     THREATFOX_API_URL,
+    THREATFOX_FULL_EXPORT_URL,
     ThreatFoxCollector,
+    parse_threatfox_csv,
 )
 from threatfusion.models import IOCType
 
 
 class FakeResponse:
-    def __init__(self, payload: object, error: Exception | None = None) -> None:
+    def __init__(
+        self,
+        payload: object,
+        error: Exception | None = None,
+        *,
+        content: bytes = b"",
+        status_code: int = 200,
+    ) -> None:
         self.payload = payload
         self.error = error
+        self.content = content
+        self.status_code = status_code
+        self.text = content.decode("utf-8", errors="replace")
 
     def raise_for_status(self) -> None:
         if self.error is not None:
@@ -27,6 +41,7 @@ class FakeSession:
     def __init__(self, response: FakeResponse) -> None:
         self.response = response
         self.post_calls: list[tuple[object, dict[str, str], dict[str, object], int]] = []
+        self.get_calls: list[tuple[object, int, bool]] = []
 
     def post(
         self,
@@ -37,6 +52,16 @@ class FakeSession:
         timeout: int,
     ) -> FakeResponse:
         self.post_calls.append((url, headers, json, timeout))
+        return self.response
+
+    def get(
+        self,
+        url: object,
+        *,
+        timeout: int,
+        allow_redirects: bool,
+    ) -> FakeResponse:
+        self.get_calls.append((url, timeout, allow_redirects))
         return self.response
 
 
@@ -195,3 +220,44 @@ def test_malicious_url_is_sent_as_data_only() -> None:
     assert len(session.post_calls) == 1
     assert session.post_calls[0][0] == THREATFOX_API_URL
     assert session.post_calls[0][2] == {"query": "get_iocs", "days": 1}
+
+
+def _zip_full_csv(text: str) -> bytes:
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr("full.csv", text)
+    return buffer.getvalue()
+
+
+def test_full_export_parser_maps_domain_url_and_confidence() -> None:
+    content = (
+        "# first_seen,ioc_id,ioc,ioc_type,threat_type,confidence_level,tags\n"
+        '2026-09-01 10:00:00 UTC,1,bad.example,domain,botnet_cc,90,"c2,test"\n'
+        "2026-09-02 11:00:00 UTC,2,https://bad.example/p,url,payload_delivery,75,malware"
+    )
+
+    records = parse_threatfox_csv(content)
+
+    assert [record.ioc_type for record in records] == [IOCType.DOMAIN, IOCType.URL]
+    assert records[0].value == "bad.example"
+    assert records[0].confidence == pytest.approx(0.9)
+    assert records[0].tags == ["c2", "test"]
+    assert records[1].confidence == pytest.approx(0.75)
+
+
+def test_full_export_fetch_uses_official_archive_and_hides_key() -> None:
+    auth_key = "secret-full-export-key"
+    csv_text = (
+        "# first_seen,ioc,ioc_type,threat_type,confidence_level,tags\n"
+        "2026-09-01 10:00:00 UTC,bad.example,domain,botnet_cc,100,c2"
+    )
+    session = FakeSession(
+        FakeResponse({}, content=_zip_full_csv(csv_text))
+    )
+
+    records = ThreatFoxCollector(auth_key, session).fetch_full_iocs()
+
+    assert [record.value for record in records] == ["bad.example"]
+    assert session.get_calls == [
+        (THREATFOX_FULL_EXPORT_URL.format(auth_key), 30, False)
+    ]
