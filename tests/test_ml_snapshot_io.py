@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import json
 import socket
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -61,10 +62,64 @@ def test_write_creates_nested_snapshot_files_and_csv_header(tmp_path: Path) -> N
         rows = list(csv.reader(dataset_file))
 
     assert rows == [
-        ["domain", "label", "source"],
-        ["evil.example", "1", "ThreatFox"],
-        ["safe.example", "0", "Tranco"],
+        ["domain", "label", "source", "first_seen", "last_seen"],
+        ["evil.example", "1", "ThreatFox", "", ""],
+        ["safe.example", "0", "Tranco", "", ""],
     ]
+
+
+def test_snapshot_round_trip_preserves_optional_ioc_timestamps(
+    tmp_path: Path,
+) -> None:
+    first_seen = datetime(2026, 9, 25, 10, 0, tzinfo=timezone.utc)
+    last_seen = datetime(2026, 9, 26, 10, 0, tzinfo=timezone.utc)
+    snapshot = make_snapshot(
+        [
+            DomainSample(
+                "evil.example",
+                1,
+                "ThreatFox",
+                first_seen=first_seen,
+                last_seen=last_seen,
+            ),
+            DomainSample("safe.example", 0, "Tranco"),
+        ]
+    )
+
+    write_domain_snapshot(snapshot, tmp_path)
+    loaded = read_domain_snapshot(tmp_path)
+
+    assert loaded.samples[0].first_seen == first_seen
+    assert loaded.samples[0].last_seen == last_seen
+    assert loaded.samples[1].first_seen is None
+    assert loaded.samples[1].last_seen is None
+
+
+def test_reader_accepts_legacy_three_column_snapshot(tmp_path: Path) -> None:
+    write_domain_snapshot(make_snapshot(), tmp_path)
+    (tmp_path / "dataset.csv").write_text(
+        "domain,label,source\n"
+        "evil.example,1,ThreatFox\n"
+        "safe.example,0,Tranco\n",
+        encoding="utf-8",
+    )
+
+    loaded = read_domain_snapshot(tmp_path)
+
+    assert loaded.samples == make_snapshot().samples
+
+
+def test_reader_rejects_invalid_ioc_timestamp(tmp_path: Path) -> None:
+    write_domain_snapshot(make_snapshot(), tmp_path)
+    (tmp_path / "dataset.csv").write_text(
+        "domain,label,source,first_seen,last_seen\n"
+        "evil.example,1,ThreatFox,not-a-date,\n"
+        "safe.example,0,Tranco,,\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="first_seen"):
+        read_domain_snapshot(tmp_path)
 
 
 def test_metadata_and_statistics_are_preserved(tmp_path: Path) -> None:
