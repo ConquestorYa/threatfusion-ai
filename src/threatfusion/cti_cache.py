@@ -51,10 +51,6 @@ CREATE INDEX IF NOT EXISTS idx_cti_records_source
 
 CREATE INDEX IF NOT EXISTS idx_cti_records_type_value
     ON cti_records(ioc_type, value);
-CREATE INDEX IF NOT EXISTS idx_cti_records_active_normalized
-    ON cti_records(active, ioc_type, normalized_value);
-CREATE INDEX IF NOT EXISTS idx_cti_records_active_url_hostname
-    ON cti_records(active, url_hostname);
 CREATE TABLE IF NOT EXISTS cti_refreshes (
     source TEXT PRIMARY KEY,
     refreshed_at TEXT NOT NULL,
