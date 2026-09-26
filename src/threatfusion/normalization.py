@@ -1,5 +1,6 @@
 import ipaddress
 import re
+from urllib.parse import SplitResult, urlsplit, urlunsplit
 
 from .models import IOCType
 
@@ -61,3 +62,53 @@ def normalize_ioc_value(value: str, ioc_type: IOCType) -> str:
         return str(ipaddress.IPv6Network(stripped_value, strict=False))
 
     return stripped_value
+
+
+
+def normalize_url_for_lookup(value: str) -> tuple[str, str]:
+    """Canonicalize an HTTP(S) URL and return (url, hostname)."""
+    if not isinstance(value, str):
+        raise TypeError("URL value must be a string")
+
+    candidate = value.strip()
+    if not candidate:
+        raise ValueError("URL value must not be empty")
+    if "://" not in candidate:
+        candidate = "https://" + candidate
+
+    try:
+        parsed = urlsplit(candidate)
+    except ValueError as error:
+        raise ValueError("URL could not be parsed") from error
+
+    scheme = parsed.scheme.casefold()
+    if scheme not in {"http", "https"}:
+        raise ValueError("only http and https URLs are supported")
+    if parsed.username is not None or parsed.password is not None:
+        raise ValueError("URLs containing credentials are not supported")
+    if not parsed.hostname:
+        raise ValueError("URL must include a hostname")
+
+    domain = normalize_domain_name(parsed.hostname, strict=True)
+    try:
+        port = parsed.port
+    except ValueError as error:
+        raise ValueError("URL contains an invalid port") from error
+
+    host = domain
+    default_port = (scheme == "http" and port == 80) or (
+        scheme == "https" and port == 443
+    )
+    if port is not None and not default_port:
+        host = f"{host}:{port}"
+
+    normalized = urlunsplit(
+        SplitResult(
+            scheme=scheme,
+            netloc=host,
+            path=parsed.path or "/",
+            query=parsed.query,
+            fragment="",
+        )
+    )
+    return normalized, domain
