@@ -1,383 +1,409 @@
-# ThreatFusion AI
+<div align="center">
 
-AI-assisted multi-source cyber threat intelligence and DNS threat-analysis platform.
+# 🛡️ ThreatFusion AI
 
-ThreatFusion AI combines public threat intelligence, local DNS telemetry,
-machine-learning domain scoring, and explainable DNS behavior signals. It is
-designed as a portfolio-quality educational security prototype rather than a
-replacement for a production SIEM or EDR.
+### Local-first cyber threat intelligence, network telemetry triage, and explainable ML
 
-## What it does
+<p>
+  <strong>English</strong>
+  &nbsp;•&nbsp;
+  <a href="README.tr.md"><strong>Türkçe</strong></a>
+</p>
 
-The current runtime flow is:
+<p>
+  <img alt="Python 3.12+" src="https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white">
+  <img alt="Streamlit" src="https://img.shields.io/badge/Streamlit-1.64-FF4B4B?logo=streamlit&logoColor=white">
+  <img alt="scikit-learn" src="https://img.shields.io/badge/scikit--learn-ML-F7931E?logo=scikitlearn&logoColor=white">
+  <img alt="SQLite" src="https://img.shields.io/badge/SQLite-CTI%20Cache-003B57?logo=sqlite&logoColor=white">
+  <img alt="Docker" src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white">
+  <img alt="License" src="https://img.shields.io/badge/License-MIT-success">
+</p>
 
-```text
-ThreatFox / URLhaus / PhishTank / SGB
-          |
-          v
-   Local CTI cache
-          |
-DNS CSV / Zeek dns.log / Pi-hole FTL DB / AdGuard Home
-          -> IOC matching
-          + ML domain scoring
-          + DNS behavior analysis
-          |
-          v
-  Explainable hybrid verdict
+<p>
+  <img alt="CI" src="https://github.com/ConquestorYa/threatfusion-ai/actions/workflows/ci.yml/badge.svg">
+  <img alt="Status" src="https://img.shields.io/badge/Status-v0.1.0%20Release%20Candidate-blueviolet">
+  <img alt="Privacy" src="https://img.shields.io/badge/Telemetry-local%20%2F%20in--memory-2ea44f">
+</p>
 
-Single URL / domain
-          -> passive CTI lookup
-          + ML domain scoring
-          + domain-shape context
-          |
-          v
-  Quick lookup verdict
-          |
-          v
-known_threat / high_risk / review / low
-```
+<strong>ThreatFusion AI turns public threat intelligence and local telemetry into an analyst-focused investigation queue without visiting suspicious destinations.</strong>
 
-For DNS telemetry analysis, exact known-domain IOC matches take precedence and
-produce the Known Threat verdict. URL-hostname and response-IP IOC matches remain
-deterministic CTI context but do not, by themselves, prove that the queried
-domain is malicious. In the separate Quick lookup workflow, an exact input URL
-matching an exact URL IOC can also produce Known Threat for that URL; a hostname
-match to a different malicious URL remains Review context. ML is used as an
-additional signal for previously unseen domains, and DNS behavior can strengthen
-a telemetry assessment or trigger review. Behavioral signals are not treated as
-proof of malware.
+</div>
 
-## Architecture overview
+---
 
-```mermaid
-flowchart LR
-    A[ThreatFox / URLhaus / SGB] --> B[Normalized CTI + SQLite cache]
-    C[DNS CSV / Zeek / Pi-hole / AdGuard] --> D[Runtime analysis]
-    B --> D
-    E[Frozen TF-IDF + Logistic Regression artifact] --> D
-    D --> F[IOC evidence]
-    D --> G[ML domain score]
-    D --> H[DNS behavior signals]
-    F --> I[Explainable hybrid verdict]
-    G --> I
-    H --> I
-    I --> J[Streamlit dashboard]
-    I --> K[Privacy-safe JSON / CSV reports]
-```
+## ✨ Why ThreatFusion AI?
 
-The architecture stays intentionally compact:
+Threat feeds are useful, but a feed alone does not answer the analyst's real question:
 
-- **Collection + normalization:** ThreatFox, URLhaus, and SGB IOC ingestion into a common model.
-- **Runtime analysis:** local DNS telemetry parsing, deterministic IOC matching, ML scoring, and behavior signals.
-- **Persistence:** local SQLite CTI cache, optional local analysis history, and trusted local model artifacts.
-- **Presentation:** Streamlit analyst dashboard and privacy-safe JSON/CSV report export.
+> **“Which threats actually appeared in my environment, and what deserves attention first?”**
 
-See `docs/ARCHITECTURE.md` for full data-flow and module-level details.
+ThreatFusion combines four evidence layers in one local workflow:
 
-## Implemented
+| Layer | Role |
+| --- | --- |
+| 🧭 **Threat Intelligence** | Deterministic matching against ThreatFox, URLhaus, PhishTank and SGB |
+| 🧠 **Machine Learning** | Auxiliary lexical risk scoring for previously unseen domain names |
+| 📡 **Telemetry Behavior** | DNS volume, NXDOMAIN, response-IP churn, timing and client-spread context |
+| 🔎 **Analyst Context** | Explainable verdicts, prior review, suppression, history and related activity |
 
-- ThreatFox full-current, URLhaus full-dump, optional PhishTank, and SGB collectors
-- common IOC model, normalization, and correlation
-- DNS CSV, Zeek `dns.log`, in-memory Pi-hole FTL database, and AdGuard Home query-log ingestion with aggregate input-quality diagnostics
-- known domain / URL-hostname / response-IP / IPv6-network matching with evidence-scope metadata
-- passive single URL/domain quick lookup with exact URL/domain CTI matching, ML scoring, and no network requests
-- reproducible ML dataset snapshots
-- character n-gram TF-IDF + Logistic Regression development model
-- validation-only threshold selection under explicit false-positive budgets
-- source-wise ML diagnostics
-- frozen-model fresh holdout evaluation workflow and aggregate JSON reporting
-- trusted local model artifact persistence
-- DNS behavior aggregation
+The project is intentionally built as an **educational / portfolio security-analysis prototype**. It is not presented as a production SIEM, EDR, or guaranteed malware detector.
+
+---
+
+## 🚀 At a glance
+
+<table>
+<tr>
+<td width="50%">
+
+### ⚡ Quick Lookup
+Paste a **URL, domain, or IP** and check it against the local indexed CTI cache.
+
+- passive only
+- no page visit
+- no DNS resolution
+- exact URL / domain / IP evidence
+- hostname context for malicious URLs
+- domain ML only when the target is a valid domain
+
+</td>
+<td width="50%">
+
+### 📂 Telemetry Analysis
+Upload network or DNS telemetry and let ThreatFusion auto-detect the format.
+
+- IOC correlation
 - explainable hybrid verdicts
-- reusable runtime analysis pipeline
-- SQLite CTI cache
-- privacy-conscious SQLite analysis history with local analyst feedback, prior-review context, and expiring local triage suppression
-- analyst-focused Streamlit dashboard with priority triage, evidence-first domain investigation, multi-source CTI corroboration, filtered history, and a dedicated model-evaluation view
-- explainable related-activity clustering
-- privacy-preserving relationship graph
-- public-mode privacy controls and non-root Docker packaging
-- privacy-safe JSON/CSV analysis report export with spreadsheet-safe CSV cells
-- bounded runtime analysis, IDNA/punycode canonicalization, and strict ML eligibility filtering for valid public-domain candidates, with explicit Not-scored presentation
-- CTI freshness/staleness visibility and optional scheduled background refresh
-- indexed single-target CTI lookup so Quick lookup does not load the full IOC cache into memory
-- bounded inactive-IOC retention to keep long-running caches compact
-- sparse evidence-driven related-activity pair generation with bounded and optimized timestamp comparison
-- CI coverage across Ubuntu quality checks, Windows pytest compatibility, and Docker build/health smoke validation
+- domain ML scoring
+- DNS behavior signals
+- related-activity clustering
+- privacy-safe report export
 
-## CI checks
+</td>
+</tr>
+<tr>
+<td width="50%">
 
-- **Quality (Ubuntu):** installs dependencies, runs Ruff, runs pytest with
-  coverage reporting, and runs `pip-audit` against `requirements.txt`.
-- **Pytest (Windows, Python 3.12):** verifies cross-platform pytest behavior on
-  the supported Windows runtime without requiring local CTI API credentials.
-- **Docker build + health:** builds the image, starts the app in public mode,
-  and verifies the Streamlit health endpoint.
+### 🗃️ Multi-source CTI
+Local SQLite cache with source freshness, lifecycle history and indexed lookup.
 
-## Python package installation
+- ThreatFox
+- URLhaus
+- PhishTank — verified & online
+- T.C. Siber Güvenlik Başkanlığı (SGB)
 
-ThreatFusion uses a standard `src/` package layout with metadata in
-`pyproject.toml`. For the repository's tested environment, install the pinned
-lock snapshot first and then install the local package without re-resolving
-dependencies:
+</td>
+<td width="50%">
 
-```powershell
-py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-python -m pip install --no-deps -e .
-```
+### 🧪 Reproducible ML
+Character n-gram TF-IDF + Logistic Regression with frozen artifacts and explicit FPR budgets.
 
-After the editable install, the analyzer is available as a normal command:
+- train / validation / test separation
+- source-aware diagnostics
+- fresh holdout workflow
+- no automatic model promotion
+- scores are not advertised as malware probabilities
 
-```powershell
-threatfusion --help
-threatfusion data\demo\demo_dns.csv --format dns-csv
-```
+</td>
+</tr>
+</table>
 
-The legacy repository command remains supported:
+---
 
-```powershell
-python scripts\analyze_dns.py data\demo\demo_dns.csv --format dns-csv
-```
+## 🧩 Architecture
 
-Dependency files have distinct roles:
+~~~mermaid
+flowchart LR
+    subgraph CTI["Threat Intelligence"]
+        TF[ThreatFox]
+        UH[URLhaus]
+        PT[PhishTank]
+        SGB[SGB]
+    end
 
-- `pyproject.toml`: package metadata and direct runtime dependencies.
-- `requirements.in`: human-maintained direct runtime dependency list.
-- `requirements-dev.in`: human-maintained direct development/quality tools.
-- `requirements.txt`: fully pinned tested environment used by CI and Docker.
+    subgraph INPUT["Telemetry"]
+        CSV[CSV / TSV / TXT]
+        XLS[Excel]
+        ZEEK[Zeek dns.log / conn.log]
+        PCAP[PCAP / PCAPNG]
+        SURI[Suricata EVE]
+        PI[Pi-hole]
+        AG[AdGuard Home]
+        DST[dnstop]
+    end
 
-Keeping the pinned environment separate from direct dependency declarations
-prevents package metadata from becoming a copy of every transitive dependency.
+    TF --> CACHE[(SQLite CTI Cache)]
+    UH --> CACHE
+    PT --> CACHE
+    SGB --> CACHE
 
-## Local dashboard
+    CSV --> INGEST[Auto-detect + normalize]
+    XLS --> INGEST
+    ZEEK --> INGEST
+    PCAP --> INGEST
+    SURI --> INGEST
+    PI --> INGEST
+    AG --> INGEST
+    DST --> INGEST
 
-The dashboard expects:
+    CACHE --> ANALYZE[Runtime Analysis]
+    INGEST --> ANALYZE
+    MODEL[Frozen ML Artifact] --> ANALYZE
 
-- a trusted local model artifact at `data/models/development-001`
-- a local SQLite database at `data/threatfusion.sqlite`
+    ANALYZE --> IOC[IOC Evidence]
+    ANALYZE --> ML[ML Signal]
+    ANALYZE --> DNS[Behavior Signals]
 
-Refresh the CTI cache with the broader current/full feeds. A failed or empty
-source preserves its previous healthy snapshot instead of replacing it:
+    IOC --> VERDICT[Explainable Hybrid Verdict]
+    ML --> VERDICT
+    DNS --> VERDICT
 
-```powershell
+    VERDICT --> UI[Streamlit Analyst Workspace]
+    VERDICT --> REPORT[Privacy-safe JSON / CSV]
+~~~
+
+### Evidence precedence
+
+ThreatFusion deliberately avoids treating every signal as equally strong.
+
+1. **Exact known IOC evidence** is deterministic evidence.
+2. **URL-hostname / response-IP matches** are contextual CTI evidence.
+3. **ML** is an auxiliary signal for eligible domains not already known to CTI.
+4. **Behavior heuristics** add context or trigger review; they are not malware proof.
+
+This distinction is one of the project's main design principles.
+
+---
+
+## 📥 Supported telemetry
+
+The dashboard defaults to **Auto-detect**.
+
+| Input | Support | Notes |
+| --- | :---: | --- |
+| CSV / TSV / TXT | ✅ | delimiter, encoding and DNS columns inferred automatically |
+| XLSX / XLS | ✅ | worksheet and common DNS columns detected automatically |
+| Zeek <code>dns.log</code> | ✅ | standard <code>#fields</code> parsing |
+| Zeek <code>conn.log</code> | ✅ | destination-IP CTI analysis; dataset labels are ignored |
+| PCAP / PCAPNG / CAP | ✅ | classic UDP/53 DNS extraction |
+| Suricata EVE JSON / JSONL | ✅ | DNS preferred, destination-IP fallback |
+| Pi-hole FTL SQLite | ✅ | query database parsed in memory |
+| AdGuard Home | ✅ | query-log JSON formats |
+| dnstop text | ✅ | recognizable domain rows |
+| <code>.capinfos</code> | ℹ️ | recognized as metadata; upload the original PCAP/PCAPNG instead |
+
+**Upload limit:** 100 MB  
+**Runtime safety bounds:** 100,000 events and 25,000 unique analysis targets.
+
+Encrypted DNS such as DoH/DoT is not claimed to be recoverable from packet captures.
+
+---
+
+## 🧠 Machine-learning position
+
+ThreatFusion uses a classical lexical model rather than treating AI as a black box:
+
+**character 2–6 TF-IDF → balanced Logistic Regression → frozen operating thresholds**
+
+The ML signal is designed for **previously unseen domain names** and is intentionally subordinate to deterministic CTI evidence.
+
+Important limitations:
+
+- model output is an **uncalibrated score**, not a malware probability;
+- model promotion is never automatic;
+- false-positive rate and recall are measured separately;
+- the final post-freeze temporal evaluation for the current C=4 candidate is still a release task;
+- the project does not claim perfect detection.
+
+Detailed methodology and evaluation history: **[docs/ML_DATASET.md](docs/ML_DATASET.md)**.
+
+---
+
+## 🔐 Privacy & safety by design
+
+ThreatFusion treats suspicious indicators as **inert data**.
+
+- uploaded telemetry is processed locally / in memory by default;
+- raw uploaded rows are not stored in analysis history;
+- raw client and response IP values are excluded from portable reports;
+- Quick Lookup does not visit URLs, resolve hosts, or download content;
+- public mode disables shared analysis-history browsing and saving;
+- third-party CTI dumps are not committed to the repository;
+- public demo packaging uses a sanitized runtime;
+- feed-refresh failures preserve the last healthy local snapshot.
+
+---
+
+## 🔄 CTI refresh lifecycle
+
+ThreatFusion separates interactive analysis from feed maintenance.
+
+~~~text
+ThreatFox / URLhaus / SGB  -> refresh when stale
+PhishTank                  -> maximum once every 24 hours
+failed / empty refresh     -> previous healthy snapshot preserved
+inactive lifecycle rows    -> pruned after 90 days
+~~~
+
+Manual refresh:
+
+~~~powershell
 $env:THREATFOX_AUTH_KEY="..."
 $env:URLHAUS_AUTH_KEY="..."
 python scripts\refresh_cti_cache.py --force
-```
+~~~
 
-ThreatFox uses its current full export rather than the 1-7 day recent API
-window. URLhaus uses its full malware URL dump. PhishTank uses its public
-verified-online CSV with no application key and is intentionally refreshed at
-most once every 24 hours. SGB pagination must reach the source end before its
-previous snapshot is replaced.
+Optional low-cost background refresh:
 
-For an opt-in process-local refresh loop on low-cost hosting:
-
-```text
+~~~text
 THREATFUSION_AUTO_REFRESH_CTI=1
 THREATFUSION_CTI_REFRESH_HOURS=6
 THREATFUSION_SGB_MAX_PAGES=100
-```
+~~~
 
-Generate a safe local demo DNS CSV:
+A separate scheduler / maintenance job is preferred for hosted deployments.
 
-```powershell
-python scripts\generate_demo_dns_csv.py
-```
+---
 
-This creates `data/demo/demo_dns.csv`. If the local CTI cache contains at
-least one domain IOC, the demo includes one cached IOC value as inert text so
-the known-threat matching path can be exercised. The generator does not print,
-visit, or resolve that IOC.
+## 🖥️ Quick start
 
-### Two-minute local demo
+### 1. Install
 
-With dependencies installed and a local CTI/model runtime already prepared:
+~~~powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
 
-```powershell
-python scripts\generate_demo_dns_csv.py
-python scripts\analyze_dns.py data\demo\demo_dns.csv --format dns-csv
-streamlit run streamlit_app.py
-```
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pip install --no-deps -e .
+~~~
 
-This exercises the same runtime pipeline used by the dashboard without
-requiring a live feed refresh during the demo. Generated demo data is inert and
-does not visit or resolve threat indicators.
+### 2. Start a safe synthetic demo runtime
 
-Run the same local detector from the CLI:
-
-```powershell
-python scripts\analyze_dns.py data\demo\demo_dns.csv --format dns-csv --json-output data\demo\analysis.json
-```
-
-The CLI also accepts `--format zeek`, `--format pihole`, and
-`--format adguard`. It reads the existing local CTI cache and trusted model
-artifact; it does not refresh feeds or require API credentials.
-
-Supported telemetry formats include generic DNS CSV/TSV/text tables, Excel,
-Zeek `dns.log`, Zeek `conn.log` destination-IP telemetry, PCAP/PCAPNG
-classic UDP DNS extraction, Suricata EVE JSON, dnstop domain summaries,
-Pi-hole FTL SQLite query databases, and AdGuard Home query-log JSON. Auto-detect
-is the default dashboard path. `.capinfos` metadata is recognized but is not
-packet telemetry; upload its original PCAP/PCAPNG instead.
-
-The dashboard also includes **Quick lookup** for a single HTTP(S) URL or domain.
-Quick lookup is passive: it does not open the URL, resolve the hostname, or
-download content. DNS-only behavior signals such as NXDOMAIN ratio, response-IP
-churn, periodicity, query volume, and client count are only available from
-telemetry analysis.
-
-The generic DNS CSV schema is:
-
-```text
-timestamp,client_ip,query_name,query_type,response_ip
-```
-
-Only `query_name` is required for generic CSV. Zeek imports use the standard
-`#fields` header and map `query`, `ts`, `id.orig_h`, `qtype_name`, and
-`answers` when available. Pi-hole imports read the standard `queries` view
-from an uploaded FTL SQLite database entirely in memory; the upstream
-`forward` value is not treated as a DNS response IP. The Streamlit uploader is
-configured with a 100 MB maximum file size. Runtime event and unique-target
-bounds remain enforced after parsing so a large upload cannot create an
-unbounded analysis workload. AdGuard Home imports accept both
-on-disk query-log JSON records and the structured query-log API response shape.
-
-## Privacy defaults
-
-Uploaded DNS telemetry is analyzed in memory. The current dashboard does not
-persist raw uploaded DNS rows or client IP values. Saving analysis history is
-explicit and stores aggregate/per-domain findings only. In local mode, an
-analyst can add a Confirmed Threat / Benign / Uncertain label and an optional
-short note to a saved finding. Later analyses can surface the most recent
-local review for the same domain. Local mode can also suppress a domain from
-the priority queue with a reason and optional expiry. Feedback and suppression
-do not alter the original ThreatFusion verdict, ML score, or model training.
-
-Threat URLs and domains received from CTI feeds are treated as inert data; the
-analysis pipeline does not visit or resolve them.
-
-## ML status
-
-The runtime default remains the original trusted local development artifact at
-`data/models/development-001`. ThreatFusion does **not** automatically promote
-new experimental artifacts.
-
-The selected model family is character 2-6 TF-IDF with sublinear term frequency
-plus balanced Logistic Regression. Its output is an uncalibrated model score,
-not a literal probability that a domain is malware.
-
-Three evaluation stages now define the ML work:
-
-- The original model was measured on a separately collected fresh/disjoint
-  holdout. It remains useful as an auxiliary unknown-domain signal, but its
-  long-tail benign false-positive behavior was too high for confident
-  promotion.
-- A CESNET-augmented `development-v2` candidate used lower 0.1% / 0.5% / 1%
-  validation FPR budgets. On its frozen fresh holdout, false positives improved
-  substantially, but malicious recall fell too far (high 6.06%, medium 12.18%,
-  low 18.95%), so v2 was **not** promoted as the runtime default.
-- One bounded regularization sweep kept the same model family and compared only
-  Logistic Regression `C=0.5, 1, 2, 4`. The `C=4` candidate improved the
-  development medium operating-point recall from 20.22% to 25.52% while test
-  FPR moved from 0.52% to 0.60%. It has been frozen separately as
-  `development-v3-c4` for one final untouched post-freeze temporal holdout.
-
-The evaluator preserves malicious IOC `first_seen` / `last_seen` metadata and
-supports an explicit timezone-aware post-freeze cutoff. The remaining ML task
-for v1 is one final untouched temporal holdout. After that measurement, model
-iteration stops for v1 regardless of the outcome.
-
-ThreatFusion is not expanding into neural networks or transformer models for
-v1.
-
-## Project direction
-
-The v1 scope is frozen around finishing and presenting the existing product:
-
-- complete one timing-preserving post-freeze temporal evaluation for the
-  already-frozen C=4 candidate
-- keep the strongest scientifically defensible frozen model as an auxiliary
-  signal, then stop v1 model iteration
-- align README/architecture/release documentation with measured results
-- complete public-release secret/history checks and licensing
-- capture sanitized screenshots and publish a hosted public-mode demo
-
-API, watch-folder ingestion, Suricata support, SOC integrations, transformer
-models, and LLM analyst reporting are deferred beyond v1 unless a concrete use
-case later justifies them.
-
-Principle:
-
-**Known IOC evidence is deterministic context. ML is an auxiliary unknown-domain
-signal. LLM features, if ever added, explain rather than detect.**
-
-## Data-source attribution and redistribution
-
-ThreatFusion AI integrates third-party CTI/telemetry sources. Source ownership, endpoint attribution, and redistribution notes are documented in `docs/DATA_SOURCES.md`.
-
-Where source-license or redistribution terms are not explicitly verified in this repository, they are marked as TODO rather than assumed.
-
-## Portfolio screenshots
-
-The public portfolio release will include three sanitized screenshots under
-`docs/images/`:
-
-- dashboard overview using inert demo telemetry
-- domain investigation/evidence view with no private client data
-- aggregate-only model evaluation view
-
-Screenshots are intentionally added only from a real local/public-mode run;
-the repository does not use fabricated UI images as release evidence.
-
-## License
-
-ThreatFusion AI source code is released under the MIT License. See `LICENSE`.
-Third-party feeds and datasets remain governed by their own terms; see
-`docs/DATA_SOURCES.md`.
-
-## Hosted demo preparation
-
-The public portfolio deployment can build a completely synthetic runtime with:
-
-```powershell
+~~~powershell
 python scripts\generate_public_demo_runtime.py --output-dir runtime
-```
 
-This runtime contains documentation-only CTI values and a synthetic demo-only
-ML artifact so the full UI can be exercised without publishing third-party feed
-data or the locally measured model artifact. The synthetic artifact is not used
-for portfolio performance claims.
+$env:THREATFUSION_PUBLIC_MODE="1"
+$env:THREATFUSION_DB_PATH="runtime/threatfusion.sqlite"
+$env:THREATFUSION_MODEL_DIR="runtime/models/development-001"
 
-The repository also includes a non-root Dockerfile and an explicit public mode:
+streamlit run streamlit_app.py
+~~~
 
-```text
-THREATFUSION_PUBLIC_MODE=1
-```
+The generated demo runtime contains **synthetic documentation-only CTI and a demo-only ML artifact**. It exists to exercise the interface and must not be used for performance claims.
 
-Public mode disables shared analysis-history saving/browsing so anonymous
-visitors cannot inspect another visitor's persisted domain findings.
+### 3. Full local CTI runtime
 
-Runtime paths can be configured with:
+~~~powershell
+$env:THREATFOX_AUTH_KEY="..."
+$env:URLHAUS_AUTH_KEY="..."
 
-```text
-THREATFUSION_DB_PATH
-THREATFUSION_MODEL_DIR
-THREATFUSION_EVALUATION_REPORT
-```
+python scripts\refresh_cti_cache.py --force
+streamlit run streamlit_app.py
+~~~
 
-Before hosting, create a sanitized runtime bundle instead of mounting the
-developer data directory:
+---
 
-```powershell
-python scripts\prepare_deployment_bundle.py \
-  --evaluation-report data\evaluation\final_holdout.json
-```
+## 🧰 Tech stack
 
-This copies only the CTI cache and trusted ML artifact into
-`data/deployment/runtime`; saved local analysis history and dataset snapshots
-are not included.
+<p>
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white">
+  <img alt="Streamlit" src="https://img.shields.io/badge/Streamlit-UI-FF4B4B?logo=streamlit&logoColor=white">
+  <img alt="pandas" src="https://img.shields.io/badge/pandas-Data-150458?logo=pandas&logoColor=white">
+  <img alt="scikit-learn" src="https://img.shields.io/badge/scikit--learn-ML-F7931E?logo=scikitlearn&logoColor=white">
+  <img alt="SQLite" src="https://img.shields.io/badge/SQLite-Storage-003B57?logo=sqlite&logoColor=white">
+  <img alt="Plotly" src="https://img.shields.io/badge/Plotly-Visualization-3F4F75?logo=plotly&logoColor=white">
+  <img alt="Docker" src="https://img.shields.io/badge/Docker-Container-2496ED?logo=docker&logoColor=white">
+  <img alt="GitHub Actions" src="https://img.shields.io/badge/GitHub%20Actions-CI-2088FF?logo=githubactions&logoColor=white">
+</p>
 
-See `docs/DEPLOYMENT.md` for container and hosting guidance.
+---
+
+## ✅ Quality gates
+
+GitHub Actions verifies the project on every relevant push / pull request:
+
+- **Ubuntu:** Ruff, pytest + coverage, public-release audit, <code>pip-audit</code>
+- **Windows / Python 3.12:** full pytest compatibility
+- **Docker:** image build, public-mode startup and Streamlit health check
+
+---
+
+## 🗂️ Project structure
+
+~~~text
+threatfusion-ai/
+├── src/threatfusion/        # Core package
+│   ├── collectors/          # CTI collectors
+│   ├── ...                  # Matching, ML, behavior, persistence, UI helpers
+├── scripts/                 # Refresh, evaluation, demo and release utilities
+├── tests/                   # Unit + integration + Streamlit regression tests
+├── docs/                    # Architecture, data sources, ML and deployment docs
+├── streamlit_app.py         # Analyst web workspace
+├── Dockerfile               # Non-root container
+└── pyproject.toml           # Package metadata
+~~~
+
+---
+
+## 📚 Documentation
+
+| Document | Purpose |
+| --- | --- |
+| **[Documentation hub](docs/README.md)** | Start here for all technical docs |
+| **[Architecture](docs/ARCHITECTURE.md)** | Data flow, components and trust boundaries |
+| **[Data sources](docs/DATA_SOURCES.md)** | Attribution, source scope and redistribution notes |
+| **[ML dataset & evaluation](docs/ML_DATASET.md)** | Model methodology and evaluation history |
+| **[Deployment](docs/DEPLOYMENT.md)** | Public mode, Docker, refresh jobs and hosting |
+| **[Release notes](docs/RELEASE_NOTES_v0.1.0.md)** | v0.1.0 release-candidate scope |
+
+---
+
+## 🎯 Project status
+
+**v0.1.0 is feature-complete as a university / portfolio project.**
+
+Remaining release work is intentionally narrow:
+
+- one final untouched post-freeze temporal ML measurement;
+- sanitized portfolio screenshots;
+- hosted public-mode demo;
+- final release checklist and GitHub release/tag.
+
+No new v1 detection family or major feature expansion is planned before release.
+
+---
+
+## 🧭 Scope boundaries
+
+ThreatFusion AI is **not**:
+
+- a production SIEM;
+- an EDR;
+- an automated incident-response system;
+- a guarantee that a destination is malicious or benign;
+- a replacement for analyst review.
+
+The goal is to demonstrate **multi-source CTI engineering, safe telemetry ingestion, explainable ML-assisted triage, reproducible evaluation, privacy-conscious design, and release-quality software practices** in one coherent project.
+
+---
+
+## 📄 License
+
+ThreatFusion AI source code is licensed under the **MIT License**.
+
+Third-party threat feeds and datasets remain subject to their own terms. See **[docs/DATA_SOURCES.md](docs/DATA_SOURCES.md)**.
+
+---
+
+<div align="center">
+
+### ThreatFusion AI
+
+**CTI evidence first. ML as an auxiliary signal. Analyst context always visible.**
+
+<a href="README.tr.md">🇹🇷 Türkçe README</a>
+&nbsp;•&nbsp;
+<a href="docs/README.md">📚 Documentation</a>
+
+</div>
