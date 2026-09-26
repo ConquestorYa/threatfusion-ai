@@ -17,6 +17,11 @@ Public mode disables:
 - browsing shared analysis history
 - saving analysis history
 
+The Docker image defaults to `THREATFUSION_PUBLIC_MODE=1` so a container
+started without extra environment variables fails safe for hosted/demo use.
+Explicitly set `THREATFUSION_PUBLIC_MODE=0` only for a trusted local/private
+workspace where history and analyst policy are intended to be available.
+
 This prevents one anonymous visitor from seeing another visitor's persisted
 domain findings.
 
@@ -30,6 +35,8 @@ variables:
 ```text
 THREATFUSION_DB_PATH=/app/runtime/threatfusion.sqlite
 THREATFUSION_MODEL_DIR=/app/runtime/models/development-001
+# Optional external trust pin for fixed production artifacts:
+# THREATFUSION_MODEL_SHA256=<64-character SHA-256 digest>
 THREATFUSION_CTI_STALE_HOURS_THREATFOX=24
 THREATFUSION_CTI_STALE_HOURS_URLHAUS=24
 THREATFUSION_CTI_STALE_HOURS_SGB=24
@@ -42,6 +49,10 @@ the public-feed download allowance.
 
 The SQLite database must already contain the CTI cache, and the model directory
 must contain the trusted local `model.joblib` and `metadata.json` artifact.
+Newly generated artifacts also include `artifact.sha256`; ThreatFusion verifies
+that manifest before calling the pickle-compatible joblib loader. A fixed
+deployment can additionally set `THREATFUSION_MODEL_SHA256` so the expected
+digest is held outside the artifact directory.
 
 The interactive dashboard does not need feed credentials when a prepared CTI
 cache is supplied. A separate maintenance workflow remains the preferred
@@ -102,6 +113,7 @@ data/deployment/runtime/
     development-001/
       model.joblib
       metadata.json
+      artifact.sha256
 ```
 
 The generated SQLite database contains only the currently active CTI snapshot
@@ -128,7 +140,7 @@ and demo-only; they are not the measured local model or third-party feed data.
 Build command:
 
 ```text
-python -m pip install -r requirements.txt && python -m pip install --no-deps -e . && python scripts/generate_public_demo_runtime.py --output-dir runtime
+python -m pip install -r requirements-runtime.txt && python -m pip install --no-deps -e . && python scripts/generate_public_demo_runtime.py --output-dir runtime
 ```
 
 Start command:
@@ -168,7 +180,9 @@ On Windows PowerShell, use a resolved absolute path if Docker does not accept
 the relative volume path. The runtime volume can be mounted read-only because
 public mode does not save shared analysis history.
 
-The container runs as a non-root user and exposes Streamlit on port 8501.
+The container runs as a non-root user, defaults to public mode, installs the
+runtime-only dependency lock (not pytest/Ruff), and exposes Streamlit on port
+8501.
 
 ## CI container smoke test
 
