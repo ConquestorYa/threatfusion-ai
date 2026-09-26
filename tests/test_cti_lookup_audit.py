@@ -30,6 +30,9 @@ def test_exact_url_lookup_coverage_audits_domain_and_ip_hosted_urls(tmp_path):
     assert report.exact_url_hits == 2
     assert report.exact_url_misses == 0
     assert report.exact_url_coverage == 1.0
+    assert report.hostname_hits == 2
+    assert report.hostname_misses == 0
+    assert report.hostname_coverage == 1.0
     assert report.ip_hosted_records == 1
     assert report.ip_hosted_exact_hits == 1
 
@@ -93,3 +96,34 @@ def test_exact_url_lookup_coverage_detects_corrupt_index_fields(tmp_path):
     assert report.exact_url_misses == 1
     assert report.ip_hosted_records == 1
     assert report.ip_hosted_exact_hits == 0
+
+
+def test_phishtank_hostname_lookup_coverage_is_audited(tmp_path):
+    db_path = tmp_path / "cti.sqlite"
+    replace_source_records(
+        db_path,
+        "PhishTank",
+        [
+            IOCRecord(
+                "https://phish.example/login",
+                IOCType.URL,
+                "PhishTank",
+            ),
+            IOCRecord(
+                "http://another-phish.example/",
+                IOCType.URL,
+                "PhishTank",
+            ),
+        ],
+    )
+
+    report = audit_exact_url_lookup_coverage(
+        db_path,
+        source="PhishTank",
+    )
+
+    assert report.source == "PhishTank"
+    assert report.total_url_records == 2
+    assert report.exact_url_coverage == 1.0
+    assert report.hostname_coverage == 1.0
+    assert report.hostname_misses == 0
