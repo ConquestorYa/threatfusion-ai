@@ -211,31 +211,54 @@ analysis pipeline does not visit or resolve them.
 
 ## ML status
 
-The selected development candidate is character 2-6 TF-IDF with sublinear term
-frequency plus balanced Logistic Regression.
+The runtime default remains the original trusted local development artifact at
+`data/models/development-001`. ThreatFusion does **not** automatically promote
+new experimental artifacts.
 
-The current local artifact uses validation-selected score thresholds at 1%,
-5%, and 10% false-positive-rate budgets. These scores are model decision
-outputs, not literal probabilities that a domain is malware.
+The selected model family is character 2-6 TF-IDF with sublinear term frequency
+plus balanced Logistic Regression. Its output is an uncalibrated model score,
+not a literal probability that a domain is malware.
 
-The current model artifact remains development-only until a separately
-collected disjoint holdout is measured. When that evaluation is run with
-`--json-output data/evaluation/final_holdout.json`, the Streamlit
-`Model evaluation` tab displays the frozen operating-point metrics and
-source-wise malicious recall.
+Two important evaluation phases have been completed:
+
+- The original model was measured on a separately collected fresh/disjoint
+  holdout. It remains useful as an auxiliary unknown-domain signal, but its
+  long-tail benign false-positive behavior was too high for confident
+  promotion.
+- A CESNET-augmented `development-v2` candidate used lower 0.1% / 0.5% / 1%
+  validation FPR budgets. On its frozen fresh holdout, false positives improved
+  substantially, but malicious recall fell too far (high 6.06%, medium 12.18%,
+  low 18.95%), so v2 was **not** promoted as the runtime default.
+
+The evaluator now supports preserving malicious IOC `first_seen` /
+`last_seen` metadata and an explicit first-seen-filtered temporal mode. A new
+timing-preserving holdout is still required before making a strict temporal
+performance claim.
+
+Current ML direction is intentionally narrow: one bounded Logistic Regression
+regularization comparison is allowed to seek a better recall/FPR tradeoff.
+ThreatFusion is not expanding into neural networks or transformer models for
+v1.
 
 ## Project direction
 
-Remaining planned work includes:
+The v1 scope is frozen around finishing and presenting the existing product:
 
-- collect and run the first disjoint final holdout dataset
-- deploy the prepared container to a hosted environment/domain
-- optional LLM-generated explanations and reports
+- run the bounded recall experiment and one timing-preserving temporal
+  evaluation
+- keep the strongest scientifically defensible model as an auxiliary signal
+- align README/architecture/release documentation with measured results
+- complete public-release secret/history checks and licensing
+- capture sanitized screenshots and publish a hosted public-mode demo
+
+API, watch-folder ingestion, Suricata support, SOC integrations, transformer
+models, and LLM analyst reporting are deferred beyond v1 unless a concrete use
+case later justifies them.
 
 Principle:
 
-**ML detects. LLM explains.**
-
+**Known IOC evidence is deterministic context. ML is an auxiliary unknown-domain
+signal. LLM features, if ever added, explain rather than detect.**
 
 ## Data-source attribution and redistribution
 
@@ -259,9 +282,11 @@ Placeholder markup:
 ![ThreatFusion model evaluation](docs/images/model-evaluation.png)
 ```
 
-## License status
+## License
 
-No repository license file is currently committed. A release-ready public portfolio version requires the repository owner to select and add a license file before visibility changes.
+ThreatFusion AI source code is released under the MIT License. See `LICENSE`.
+Third-party feeds and datasets remain governed by their own terms; see
+`docs/DATA_SOURCES.md`.
 
 ## Hosted demo preparation
 
