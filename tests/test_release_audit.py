@@ -21,7 +21,7 @@ def test_release_audit_detects_common_secret_formats_without_returning_values() 
 
 def test_release_audit_detects_private_key_marker() -> None:
     findings = scan_release_text(
-        "-----BEGIN PRIVATE KEY-----\nredacted\n",
+        "-----BEGIN " + "PRIVATE KEY-----\nredacted\n",
         path="key.pem",
     )
 
@@ -30,11 +30,11 @@ def test_release_audit_detects_private_key_marker() -> None:
 
 def test_release_audit_detects_local_user_paths() -> None:
     windows = scan_release_text(
-        r"saved at C:\Users\alice\project\file.txt",
+        "saved at C:" + "\\\\Users\\\\alice\\\\project\\\\file.txt",
         path="notes.txt",
     )
     macos = scan_release_text(
-        "saved at /Users/alice/project/file.txt",
+        "saved at /" + "Users/alice/project/file.txt",
         path="notes.txt",
     )
 
