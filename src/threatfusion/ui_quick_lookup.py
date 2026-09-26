@@ -252,11 +252,11 @@ def _render_signal_console(result: QuickLookupResult) -> None:
     elif result.ml_tier in {"medium", "low"}:
         ml_tone = "review"
         ml_value = tr("{tier} ML tier", tier=tr(result.ml_tier.title()))
-        ml_sub = f"Model score {result.ml_score:.4f}"
+        ml_sub = tr("Model score {score}", score=f"{result.ml_score:.4f}")
     else:
         ml_tone = "safe"
         ml_value = tr("Below threshold")
-        ml_sub = f"Model score {result.ml_score:.4f}"
+        ml_sub = tr("Model score {score}", score=f"{result.ml_score:.4f}")
 
     lexical = result.lexical_context
     shape_bits = [
