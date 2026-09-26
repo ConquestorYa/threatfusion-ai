@@ -10,6 +10,8 @@ from threatfusion.cti_cache import (
     list_cti_cache_status,
     list_cti_lifecycle_records,
     load_ioc_records,
+    lookup_ioc_records,
+    prune_inactive_records,
     replace_source_records,
     validate_nonempty_refresh_batch,
 )
@@ -82,6 +84,94 @@ def test_replace_is_atomic_per_source_and_does_not_touch_other_sources(
     assert [(item.source, item.value) for item in all_records] == [
         ("SGB", "sgb.example"),
         ("ThreatFox", "new.example"),
+    ]
+
+
+def test_indexed_lookup_returns_only_matching_domain_and_url_candidates(
+    tmp_path,
+) -> None:
+    db_path = tmp_path / "threatfusion.sqlite"
+    replace_source_records(
+        db_path,
+        "ThreatFox",
+        [
+            IOCRecord("target.example", IOCType.DOMAIN, "ThreatFox"),
+            IOCRecord("other.example", IOCType.DOMAIN, "ThreatFox"),
+        ],
+    )
+    replace_source_records(
+        db_path,
+        "URLhaus",
+        [
+            IOCRecord(
+                "https://target.example/payload",
+                IOCType.URL,
+                "URLhaus",
+            ),
+            IOCRecord(
+                "https://unrelated.example/payload",
+                IOCType.URL,
+                "URLhaus",
+            ),
+        ],
+    )
+
+    matches = lookup_ioc_records(
+        db_path,
+        domain="TARGET.EXAMPLE.",
+        normalized_url="https://target.example/payload",
+    )
+
+    assert [(item.source, item.value) for item in matches] == [
+        ("ThreatFox", "target.example"),
+        ("URLhaus", "https://target.example/payload"),
+    ]
+
+
+def test_indexed_lookup_excludes_inactive_indicators(tmp_path) -> None:
+    db_path = tmp_path / "threatfusion.sqlite"
+    replace_source_records(
+        db_path,
+        "ThreatFox",
+        [IOCRecord("old.example", IOCType.DOMAIN, "ThreatFox")],
+    )
+    replace_source_records(
+        db_path,
+        "ThreatFox",
+        [IOCRecord("current.example", IOCType.DOMAIN, "ThreatFox")],
+    )
+
+    assert lookup_ioc_records(db_path, domain="old.example") == []
+
+
+def test_inactive_retention_prunes_only_old_history(tmp_path) -> None:
+    db_path = tmp_path / "threatfusion.sqlite"
+    first = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    second = datetime(2026, 1, 2, tzinfo=timezone.utc)
+    reference = datetime(2026, 5, 1, tzinfo=timezone.utc)
+
+    replace_source_records(
+        db_path,
+        "ThreatFox",
+        [IOCRecord("old.example", IOCType.DOMAIN, "ThreatFox")],
+        refreshed_at=first,
+    )
+    replace_source_records(
+        db_path,
+        "ThreatFox",
+        [IOCRecord("current.example", IOCType.DOMAIN, "ThreatFox")],
+        refreshed_at=second,
+    )
+
+    removed = prune_inactive_records(
+        db_path,
+        older_than_days=90,
+        now=reference,
+    )
+
+    assert removed == 1
+    assert [item.value for item in load_ioc_records(db_path, include_inactive=True)] == [
+        "current.example"
     ]
 
 
