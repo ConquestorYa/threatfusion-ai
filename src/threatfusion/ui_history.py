@@ -73,10 +73,13 @@ def _show_history(db_path: Path) -> None:
             checksum = selected_summary.artifact_checksum or tr("Unknown")
             st.code(checksum, language="text")
             st.caption(
-                "Artifact SHA-256 checksum · artifact schema "
-                f"{selected_summary.artifact_schema_version or 'Unknown'} · "
-                "audit schema "
-                f"{selected_summary.audit_schema_version or 'Unknown'}"
+                tr(
+                    "Artifact SHA-256 checksum · artifact schema {artifact_schema} · audit schema {audit_schema}",
+                    artifact_schema=selected_summary.artifact_schema_version
+                    or tr("Unknown"),
+                    audit_schema=selected_summary.audit_schema_version
+                    or tr("Unknown"),
+                )
             )
             if (
                 selected_summary.high_threshold is not None
@@ -122,8 +125,11 @@ def _show_history(db_path: Path) -> None:
             )
         else:
             st.caption(
-                f"Comparing run #{run_id} with previous run "
-                f"#{comparison.previous_run_id}."
+                tr(
+                    "Comparing run #{run_id} with previous run #{previous_run_id}.",
+                    run_id=run_id,
+                    previous_run_id=comparison.previous_run_id,
+                )
             )
         compare_columns = st.columns(3)
         compare_columns[0].metric(tr("New domains"), len(comparison.new_domains))
@@ -332,8 +338,10 @@ def _show_history(db_path: Path) -> None:
                     note=bulk_note,
                 )
                 st.success(
-                    f"Saved analyst feedback for {len(bulk_domains)} "
-                    "selected findings. Detector verdicts were not changed."
+                    tr(
+                        "Saved analyst feedback for {count} selected findings. Detector verdicts were not changed.",
+                        count=len(bulk_domains),
+                    )
                 )
                 st.rerun()
 
@@ -395,20 +403,23 @@ def _show_history(db_path: Path) -> None:
             )
         )
         delete_confirm = st.checkbox(
-            f"I understand run #{run_id} will be permanently deleted.",
+            tr(
+                "I understand run #{run_id} will be permanently deleted.",
+                run_id=run_id,
+            ),
             key=f"delete_run_confirm_{run_id}",
         )
         if st.button(
-            f"Delete saved run #{run_id}",
+            tr("Delete saved run #{run_id}", run_id=run_id),
             key=f"delete_run_{run_id}",
             disabled=not delete_confirm,
         ):
             deleted = delete_analysis_run(db_path, run_id)
             if deleted:
-                st.success(f"Saved run #{run_id} was deleted.")
+                st.success(tr("Saved run #{run_id} was deleted.", run_id=run_id))
                 st.rerun()
             else:
-                st.info("The selected saved run no longer exists.")
+                st.info(tr("The selected saved run no longer exists."))
 
         keep_latest = int(
             st.number_input(
@@ -421,8 +432,9 @@ def _show_history(db_path: Path) -> None:
             )
         )
         retention_confirm = st.checkbox(
-            "I understand older saved runs beyond this limit will be "
-            "permanently deleted.",
+            tr(
+                "I understand older saved runs beyond this limit will be permanently deleted."
+            ),
             key="history_retention_confirm",
         )
         if st.button(
@@ -436,8 +448,10 @@ def _show_history(db_path: Path) -> None:
             )
             if deleted_ids:
                 st.success(
-                    "Deleted older saved runs: "
-                    + ", ".join(f"#{item}" for item in deleted_ids)
+                    tr(
+                        "Deleted older saved runs: {runs}",
+                        runs=", ".join(f"#{item}" for item in deleted_ids),
+                    )
                 )
                 st.rerun()
             else:
