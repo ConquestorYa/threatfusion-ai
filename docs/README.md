@@ -1,0 +1,49 @@
+# ThreatFusion AI Documentation
+
+This directory contains the technical documentation behind the portfolio-facing README.
+
+> Language note: the repository README is available in **[English](../README.md)** and **[Türkçe](../README.tr.md)**. Technical reference documents are kept in English to avoid maintaining two diverging specifications.
+
+## Start here
+
+| Document | Use it for |
+| --- | --- |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Current data flow, trust boundaries, runtime components and design principles |
+| [DATA_SOURCES.md](DATA_SOURCES.md) | CTI sources, attribution, redistribution boundaries and telemetry privacy |
+| [ML_DATASET.md](ML_DATASET.md) | Dataset construction, evaluation methodology, holdouts and model limitations |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | Docker, public mode, sanitized runtime bundles and scheduled CTI refresh |
+| [RELEASE_NOTES_v0.1.0.md](RELEASE_NOTES_v0.1.0.md) | v0.1.0 release-candidate scope and limitations |
+| [RELEASE_CHECKLIST_v0.1.0.md](RELEASE_CHECKLIST_v0.1.0.md) | Final publication checklist |
+| [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) | Problem statement, goals, implemented scope and intended users |
+| [DECISIONS.md](DECISIONS.md) | Important technical and product decisions |
+| [UI_REVIEW.md](UI_REVIEW.md) | Manual Streamlit presentation/regression review flow |
+
+## Current product boundaries
+
+ThreatFusion AI is an educational and portfolio security-analysis prototype.
+
+It currently demonstrates:
+
+- multi-source CTI ingestion and normalization;
+- indexed passive URL/domain/IP lookup;
+- automatic network/DNS telemetry ingestion;
+- deterministic IOC correlation;
+- ML-assisted domain scoring;
+- DNS behavior context;
+- explainable hybrid verdicts;
+- analyst feedback, suppression and history;
+- privacy-safe exports;
+- scheduled CTI refresh support;
+- Docker/public-mode packaging;
+- cross-platform CI and dependency auditing.
+
+It is not positioned as a production SIEM, EDR, IDS/IPS replacement, automated incident-response platform, or guaranteed malware detector.
+
+## Documentation principles
+
+The documentation follows four rules:
+
+1. **Implemented behavior is separated from future work.**
+2. **Known IOC evidence is distinguished from contextual evidence and ML signals.**
+3. **ML scores are not described as calibrated malware probabilities.**
+4. **Privacy and third-party data boundaries are documented alongside functionality.**
