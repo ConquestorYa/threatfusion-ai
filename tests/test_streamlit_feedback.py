@@ -233,7 +233,7 @@ def test_legacy_theme_state_is_migrated_to_product_theme_name(feedback_app):
     app.run(timeout=15)
 
     assert not app.exception
-    assert app.session_state["visual_theme"] == "Arctic"
+    assert app.session_state["visual_theme"] == "Midnight"
 
 
 def test_quick_lookup_is_default_primary_workspace_without_network_activity(

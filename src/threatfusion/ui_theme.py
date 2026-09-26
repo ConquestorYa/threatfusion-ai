@@ -9,63 +9,19 @@ import streamlit as st
 
 from .brand_assets import THREATFUSION_LOGO_DATA_URI
 
-THEME_OPTIONS = ("Obsidian", "Arctic", "Midnight", "Crimson")
+THEME_OPTIONS = ("Midnight", "Crimson", "Violet Noir")
 
 _LEGACY_THEME_NAMES = {
-    "Dark": "Obsidian",
-    "White": "Arctic",
-    "Light": "Arctic",
+    "Dark": "Midnight",
+    "White": "Midnight",
+    "Light": "Midnight",
     "Blue Dark": "Midnight",
+    "Obsidian": "Midnight",
+    "Arctic": "Midnight",
     "Red": "Crimson",
 }
 
 THEME_PALETTES = {
-    "Obsidian": {
-        "bg": "#0C121C",
-        "bg_alt": "#101923",
-        "panel": "#141F2C",
-        "panel_alt": "#182534",
-        "surface": "#213143",
-        "input_bg": "#111C28",
-        "border": "#2C3C4E",
-        "text": "#E5ECF4",
-        "muted": "#A0AFC1",
-        "cyan": "#53C9BE",
-        "cyan_soft": "rgba(83, 201, 190, 0.09)",
-        "logo": "#62D5CA",
-        "on_accent": "#0C121C",
-        "green": "#81CAA3",
-        "yellow": "#E8C76A",
-        "orange": "#F4A26D",
-        "red": "#FA8991",
-        "blue": "#97B6D5",
-        "grid": "rgba(160, 175, 193, 0.12)",
-        "plot_template": "plotly_dark",
-        "scheme": "dark",
-    },
-    "Arctic": {
-        "bg": "#EEF4F8",
-        "bg_alt": "#E3EDF4",
-        "panel": "#F8FBFD",
-        "panel_alt": "#EDF4F8",
-        "surface": "#D8E6EF",
-        "input_bg": "#F7FBFE",
-        "border": "#AFC2D0",
-        "text": "#183246",
-        "muted": "#4B6578",
-        "cyan": "#096A77",
-        "cyan_soft": "rgba(9, 106, 119, 0.09)",
-        "logo": "#0A7282",
-        "on_accent": "#FFFFFF",
-        "green": "#1F6B4B",
-        "yellow": "#795A00",
-        "orange": "#9A4618",
-        "red": "#A72D3A",
-        "blue": "#305F86",
-        "grid": "rgba(72, 97, 116, 0.14)",
-        "plot_template": "plotly_white",
-        "scheme": "light",
-    },
     "Midnight": {
         "bg": "#071525",
         "bg_alt": "#0B1D31",
@@ -112,6 +68,29 @@ THEME_PALETTES = {
         "plot_template": "plotly_dark",
         "scheme": "dark",
     },
+    "Violet Noir": {
+        "bg": "#09070F",
+        "bg_alt": "#100B19",
+        "panel": "#171022",
+        "panel_alt": "#21162F",
+        "surface": "#2E2041",
+        "input_bg": "#120D1B",
+        "border": "#49345F",
+        "text": "#F2ECFA",
+        "muted": "#B7A8C8",
+        "cyan": "#A97BFF",
+        "cyan_soft": "rgba(169, 123, 255, 0.12)",
+        "logo": "#B98CFF",
+        "on_accent": "#0B0712",
+        "green": "#88D3AD",
+        "yellow": "#E8C975",
+        "orange": "#F0A06F",
+        "red": "#F27E92",
+        "blue": "#B49DF4",
+        "grid": "rgba(183, 168, 200, 0.13)",
+        "plot_template": "plotly_dark",
+        "scheme": "dark",
+    },
 }
 
 _VERDICT_TOKENS = {
@@ -141,17 +120,13 @@ def canonical_theme_name(theme: str) -> str:
 
 
 def active_theme() -> str:
-    """Return the explicit ThreatFusion theme, falling back to native mode."""
+    """Return the explicit ThreatFusion theme, defaulting to Midnight."""
     selected = st.session_state.get("visual_theme")
     if isinstance(selected, str):
         canonical = canonical_theme_name(selected)
         if canonical in THEME_OPTIONS:
             return canonical
-    try:
-        theme_type = st.context.theme.type
-    except (AttributeError, TypeError):
-        theme_type = "dark"
-    return "Arctic" if theme_type == "light" else "Obsidian"
+    return "Midnight"
 
 
 def palette(theme: str | None = None) -> dict[str, str]:
