@@ -60,6 +60,10 @@ CREATE TABLE IF NOT EXISTS cti_refreshes (
     refreshed_at TEXT NOT NULL,
     record_count INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS cti_metadata (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 """
 
 
@@ -107,33 +111,52 @@ def _migrate_cti_records(connection: sqlite3.Connection) -> None:
     )
 
     connection.row_factory = sqlite3.Row
-    rows = connection.execute(
+    lookup_version = connection.execute(
         """
-        SELECT id, value, ioc_type
-        FROM cti_records
-        WHERE normalized_value IS NULL
-           OR (ioc_type = 'url' AND url_hostname IS NULL)
+        SELECT value
+        FROM cti_metadata
+        WHERE key = 'lookup_index_version'
         """
-    ).fetchall()
-    for row in rows:
-        try:
-            ioc_type = IOCType(str(row["ioc_type"]))
-        except ValueError:
-            ioc_type = IOCType.UNKNOWN
-        normalized_value, url_hostname = _lookup_fields(
-            IOCRecord(
-                value=str(row["value"]),
-                ioc_type=ioc_type,
-                source="migration",
+    ).fetchone()
+    if lookup_version is None or str(lookup_version["value"]) != "1":
+        rows = connection.execute(
+            """
+            SELECT id, value, ioc_type
+            FROM cti_records
+            WHERE normalized_value IS NULL
+            """
+        ).fetchall()
+        updates: list[tuple[str | None, str | None, int]] = []
+        for row in rows:
+            try:
+                ioc_type = IOCType(str(row["ioc_type"]))
+            except ValueError:
+                ioc_type = IOCType.UNKNOWN
+            normalized_value, url_hostname = _lookup_fields(
+                IOCRecord(
+                    value=str(row["value"]),
+                    ioc_type=ioc_type,
+                    source="migration",
+                )
             )
-        )
+            updates.append(
+                (normalized_value, url_hostname, int(row["id"]))
+            )
+        if updates:
+            connection.executemany(
+                """
+                UPDATE cti_records
+                SET normalized_value = ?, url_hostname = ?
+                WHERE id = ?
+                """,
+                updates,
+            )
         connection.execute(
             """
-            UPDATE cti_records
-            SET normalized_value = ?, url_hostname = ?
-            WHERE id = ?
-            """,
-            (normalized_value, url_hostname, int(row["id"])),
+            INSERT INTO cti_metadata (key, value)
+            VALUES ('lookup_index_version', '1')
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+            """
         )
 
 
@@ -254,23 +277,28 @@ def replace_source_records(
 
     with _connect(Path(db_path)) as connection:
         connection.row_factory = sqlite3.Row
+        existing_rows = connection.execute(
+            """
+            SELECT id, ioc_type, value
+            FROM cti_records
+            WHERE source = ?
+            ORDER BY id ASC
+            """,
+            (source_name,),
+        ).fetchall()
+        existing_by_identity = {
+            (str(row["ioc_type"]), str(row["value"])): int(row["id"])
+            for row in existing_rows
+        }
+
         connection.execute(
             "UPDATE cti_records SET active = 0 WHERE source = ?",
             (source_name,),
         )
 
+        inserts: list[tuple[object, ...]] = []
+        updates: list[tuple[object, ...]] = []
         for record in unique_records.values():
-            existing = connection.execute(
-                """
-                SELECT id, first_seen_in_cache
-                FROM cti_records
-                WHERE source = ? AND ioc_type = ? AND value = ?
-                ORDER BY id ASC
-                LIMIT 1
-                """,
-                (source_name, record.ioc_type.value, record.value),
-            ).fetchone()
-
             normalized_value, url_hostname = _lookup_fields(record)
             values = (
                 _datetime_text(record.first_seen),
@@ -280,64 +308,75 @@ def replace_source_records(
                 _tags_json(record.tags),
                 normalized_value,
                 url_hostname,
-                refresh_text,
             )
-            if existing is None:
-                connection.execute(
-                    """
-                    INSERT INTO cti_records (
-                        value,
-                        ioc_type,
-                        source,
-                        first_seen,
-                        last_seen,
-                        threat_type,
-                        confidence,
-                        tags_json,
-                        normalized_value,
-                        url_hostname,
-                        first_seen_in_cache,
-                        last_seen_in_refresh,
-                        active
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-                    """,
+            existing_id = existing_by_identity.get(
+                (record.ioc_type.value, record.value)
+            )
+            if existing_id is None:
+                inserts.append(
                     (
                         record.value,
                         record.ioc_type.value,
                         source_name,
-                        *values[:-1],
+                        *values,
                         refresh_text,
                         refresh_text,
-                    ),
+                    )
                 )
             else:
-                connection.execute(
-                    """
-                    UPDATE cti_records
-                    SET
-                        first_seen = ?,
-                        last_seen = ?,
-                        threat_type = ?,
-                        confidence = ?,
-                        tags_json = ?,
-                        normalized_value = ?,
-                        url_hostname = ?,
-                        first_seen_in_cache = COALESCE(
-                            first_seen_in_cache,
-                            ?
-                        ),
-                        last_seen_in_refresh = ?,
-                        active = 1
-                    WHERE id = ?
-                    """,
+                updates.append(
                     (
-                        *values[:-1],
+                        *values,
                         refresh_text,
                         refresh_text,
-                        int(existing["id"]),
-                    ),
+                        existing_id,
+                    )
                 )
+
+        if inserts:
+            connection.executemany(
+                """
+                INSERT INTO cti_records (
+                    value,
+                    ioc_type,
+                    source,
+                    first_seen,
+                    last_seen,
+                    threat_type,
+                    confidence,
+                    tags_json,
+                    normalized_value,
+                    url_hostname,
+                    first_seen_in_cache,
+                    last_seen_in_refresh,
+                    active
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                """,
+                inserts,
+            )
+        if updates:
+            connection.executemany(
+                """
+                UPDATE cti_records
+                SET
+                    first_seen = ?,
+                    last_seen = ?,
+                    threat_type = ?,
+                    confidence = ?,
+                    tags_json = ?,
+                    normalized_value = ?,
+                    url_hostname = ?,
+                    first_seen_in_cache = COALESCE(
+                        first_seen_in_cache,
+                        ?
+                    ),
+                    last_seen_in_refresh = ?,
+                    active = 1
+                WHERE id = ?
+                """,
+                updates,
+            )
 
         connection.execute(
             """
