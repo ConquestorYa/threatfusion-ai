@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -127,6 +127,71 @@ def test_prepare_disjoint_holdout_filters_malicious_by_first_seen_cutoff() -> No
     assert prepared.malicious_first_seen_after == "2026-09-23"
     assert prepared.malicious_missing_first_seen_removed == 1
     assert prepared.malicious_not_after_cutoff_removed == 2
+
+
+def test_prepare_disjoint_holdout_accepts_timezone_aware_timestamp_cutoff() -> None:
+    cutoff = datetime(2026, 9, 26, 9, 30, tzinfo=timezone.utc)
+    holdout = [
+        DomainSample("new-good.example", 0, "Tranco"),
+        DomainSample(
+            "after.example",
+            1,
+            "ThreatFox",
+            first_seen=datetime(2026, 9, 26, 9, 31, tzinfo=timezone.utc),
+        ),
+        DomainSample(
+            "before.example",
+            1,
+            "URLhaus",
+            first_seen=datetime(
+                2026,
+                9,
+                26,
+                12,
+                29,
+                tzinfo=timezone(timedelta(hours=3)),
+            ),
+        ),
+        DomainSample(
+            "naive.example",
+            1,
+            "SGB",
+            first_seen=datetime(2026, 9, 26, 10, 0),
+        ),
+    ]
+
+    prepared = prepare_disjoint_holdout(
+        [],
+        holdout,
+        malicious_first_seen_after=cutoff,
+    )
+
+    assert [sample.domain for sample in prepared.samples] == [
+        "new-good.example",
+        "after.example",
+    ]
+    assert prepared.malicious_first_seen_after == "2026-09-26T09:30:00+00:00"
+    assert prepared.malicious_missing_first_seen_removed == 1
+    assert prepared.malicious_not_after_cutoff_removed == 1
+
+
+def test_timestamp_cutoff_requires_timezone() -> None:
+    with pytest.raises(ValueError, match="timezone-aware"):
+        prepare_disjoint_holdout(
+            [],
+            [
+                DomainSample("new-good.example", 0, "Tranco"),
+                DomainSample(
+                    "new-bad.example",
+                    1,
+                    "ThreatFox",
+                    first_seen=datetime(
+                        2026, 9, 26, 10, 0, tzinfo=timezone.utc
+                    ),
+                ),
+            ],
+            malicious_first_seen_after=datetime(2026, 9, 26, 9, 30),
+        )
 
 
 def test_temporal_holdout_still_requires_both_classes() -> None:
