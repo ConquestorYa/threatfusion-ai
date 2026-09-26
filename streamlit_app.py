@@ -1606,7 +1606,9 @@ def main() -> None:
                 st.session_state.pop("analysis_audit_metadata", None)
 
             if len(content_bytes) > MAX_UPLOAD_BYTES:
-                st.error(\n                    "Uploaded telemetry exceeds the 10 MB application limit."\n                )
+                st.error(
+                    "Uploaded telemetry exceeds the 10 MB application limit."
+                )
             elif telemetry_format == "Pi-hole FTL database":
                 if st.button("Analyze", type="primary", width="stretch"):
                     try:
