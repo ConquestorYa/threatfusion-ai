@@ -111,6 +111,16 @@ def test_public_feed_uses_https_and_disables_redirects() -> None:
     assert PHISHTANK_FEED_URL.startswith("https://")
 
 
+def test_redirect_response_is_rejected_without_following_it() -> None:
+    session = FakeSession(FakeResponse("", status_code=302))
+
+    with pytest.raises(requests.HTTPError, match="HTTP status 302"):
+        PhishTankCollector(session).fetch_verified_online_urls()
+
+    assert len(session.get_calls) == 1
+    assert session.get_calls[0][-2:] == (False, True)
+
+
 def test_empty_or_invalid_public_feed_is_rejected() -> None:
     session = FakeSession(FakeResponse(HEADER))
 
