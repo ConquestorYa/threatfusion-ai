@@ -40,7 +40,7 @@ def test_public_demo_runtime_contains_cti_and_loadable_model(tmp_path) -> None:
 
     assert len(records) == 4
     assert {record.source for record in records} == {"ThreatFusion Demo"}
-    assert artifact.metadata.evaluation_status == "development_only"
+    assert artifact.metadata.evaluation_status == "demo_only_synthetic"
     assert (model_dir / "model.joblib").exists()
     assert (model_dir / "metadata.json").exists()
 
