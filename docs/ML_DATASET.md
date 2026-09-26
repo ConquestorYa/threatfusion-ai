@@ -747,3 +747,25 @@ prints overall recall/FPR plus benign-source FPR and malicious-source recall.
 This is development evidence only. If one candidate is selected from this
 output, it must be frozen before another untouched final holdout.
 
+## Freeze the bounded C=4 candidate
+
+The bounded recall iteration selected only one candidate for a final holdout
+check: the same 2-6 character TF-IDF + balanced Logistic Regression pipeline
+with `C=4`. This is not a new model family.
+
+Freeze it as a separate local artifact:
+
+```powershell
+python scripts\train_ml_artifact.py `
+  --snapshot-dir data\snapshots\development-v2 `
+  --output-dir data\models\development-v3-c4 `
+  --model-name lr_char_2_6_balanced_c4 `
+  --high-fpr-budget 0.001 `
+  --medium-fpr-budget 0.005 `
+  --low-fpr-budget 0.01
+```
+
+The runtime default remains unchanged until a new untouched holdout is
+evaluated. Existing C=1 artifacts remain supported by the trusted artifact
+loader.
+

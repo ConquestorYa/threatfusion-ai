@@ -8,7 +8,9 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 
 from threatfusion.ml_artifact import (
+    C4_DEVELOPMENT_CANDIDATE,
     SELECTED_DEVELOPMENT_MODEL,
+    SUPPORTED_DEVELOPMENT_MODELS,
     load_trusted_ml_artifact,
     predict_domain_probabilities,
     predict_domain_scores,
@@ -53,6 +55,56 @@ def test_selected_artifact_uses_wider_logistic_candidate() -> None:
     assert vectorizer.sublinear_tf is True
     assert isinstance(classifier, LogisticRegression)
     assert classifier.class_weight == "balanced"
+
+
+def test_c4_candidate_can_be_frozen_without_changing_default() -> None:
+    default_artifact = train_selected_model_artifact(make_samples())
+    c4_artifact = train_selected_model_artifact(
+        make_samples(),
+        model_name=C4_DEVELOPMENT_CANDIDATE,
+    )
+
+    assert default_artifact.metadata.model_name == SELECTED_DEVELOPMENT_MODEL
+    assert c4_artifact.metadata.model_name == C4_DEVELOPMENT_CANDIDATE
+    assert SUPPORTED_DEVELOPMENT_MODELS == (
+        SELECTED_DEVELOPMENT_MODEL,
+        C4_DEVELOPMENT_CANDIDATE,
+    )
+
+    classifier = c4_artifact.model.named_steps["classifier"]
+    vectorizer = c4_artifact.model.named_steps["tfidf"]
+    assert isinstance(classifier, LogisticRegression)
+    assert classifier.C == pytest.approx(4.0)
+    assert classifier.class_weight == "balanced"
+    assert isinstance(vectorizer, TfidfVectorizer)
+    assert vectorizer.ngram_range == (2, 6)
+    assert vectorizer.sublinear_tf is True
+
+
+def test_c4_artifact_roundtrip_is_trusted(tmp_path) -> None:
+    artifact = train_selected_model_artifact(
+        make_samples(),
+        model_name=C4_DEVELOPMENT_CANDIDATE,
+        high_fpr_budget=0.001,
+        medium_fpr_budget=0.005,
+        low_fpr_budget=0.01,
+    )
+    write_ml_artifact(artifact, tmp_path / "c4")
+
+    loaded = load_trusted_ml_artifact(tmp_path / "c4")
+
+    assert loaded.metadata.model_name == C4_DEVELOPMENT_CANDIDATE
+    assert loaded.metadata.high_fpr_budget == pytest.approx(0.001)
+    assert loaded.metadata.medium_fpr_budget == pytest.approx(0.005)
+    assert loaded.metadata.low_fpr_budget == pytest.approx(0.01)
+
+
+def test_unsupported_model_name_is_rejected() -> None:
+    with pytest.raises(ValueError, match="unsupported development model"):
+        train_selected_model_artifact(
+            make_samples(),
+            model_name="unsupported-model",
+        )
 
 
 def test_thresholds_are_validation_selected_and_ordered() -> None:
