@@ -426,80 +426,82 @@ def _clear_quick_lookup_state() -> None:
 
 def _render_primary_workspace_launcher(current_page: str) -> None:
     """Keep the two core user workflows visually dominant in the main canvas."""
-    st.markdown(
-        '<section class="tf-primary-workspace">'
-        '<div class="tf-primary-workspace-head">'
-        '<div><div class="tf-primary-workspace-kicker">Primary workspace</div>'
-        '<div class="tf-primary-workspace-title">Choose how you want to investigate</div></div>'
-        '<div class="tf-primary-workspace-hint">'
-        'The two main ThreatFusion workflows stay one click away, even while you inspect history or model evaluation.'
-        '</div></div>',
-        unsafe_allow_html=True,
-    )
-
-    telemetry_col, lookup_col = st.columns(2)
-
-    telemetry_active = current_page == "Analyze telemetry"
-    with telemetry_col:
-        telemetry_state = "Current workspace" if telemetry_active else "Batch investigation"
-        telemetry_class = " tf-primary-card--active" if telemetry_active else ""
+    with st.container(border=True, key="primary_workspace_launcher"):
         st.markdown(
-            f'<div class="tf-primary-card{telemetry_class}">'
-            '<div class="tf-primary-card-top">'
-            '<span class="tf-primary-card-number">01 · TELEMETRY</span>'
-            f'<span class="tf-primary-card-state">{telemetry_state}</span>'
-            '</div>'
-            '<div class="tf-primary-card-title">Analyze telemetry</div>'
-            '<div class="tf-primary-card-copy">'
-            'Upload DNS CSV, Zeek, Pi-hole or AdGuard data and correlate CTI, ML and DNS behavior at scale.'
-            '</div>'
-            '<div class="tf-primary-card-tags">'
-            '<span class="tf-primary-card-tag">Multi-domain</span>'
-            '<span class="tf-primary-card-tag">Behavior signals</span>'
-            '<span class="tf-primary-card-tag">Investigation queue</span>'
+            '<div class="tf-primary-workspace-head">'
+            '<div><div class="tf-primary-workspace-kicker">Primary workspace</div>'
+            '<div class="tf-primary-workspace-title">Choose how you want to investigate</div></div>'
+            '<div class="tf-primary-workspace-hint">'
+            'The two main ThreatFusion workflows stay one click away, even while you inspect history or model evaluation.'
             '</div></div>',
             unsafe_allow_html=True,
         )
-        if st.button(
-            "Open telemetry analysis",
-            key="open_telemetry_workspace",
-            type="primary" if telemetry_active else "secondary",
-            width="stretch",
-        ):
-            st.session_state["workspace_nav"] = "Analyze telemetry"
-            st.rerun()
 
-    lookup_active = current_page == "Quick lookup"
-    with lookup_col:
-        lookup_state = "Current workspace" if lookup_active else "Instant investigation"
-        lookup_class = " tf-primary-card--active" if lookup_active else ""
-        st.markdown(
-            f'<div class="tf-primary-card{lookup_class}">'
-            '<div class="tf-primary-card-top">'
-            '<span class="tf-primary-card-number">02 · QUICK LOOKUP</span>'
-            f'<span class="tf-primary-card-state">{lookup_state}</span>'
-            '</div>'
-            '<div class="tf-primary-card-title">Check a URL or domain</div>'
-            '<div class="tf-primary-card-copy">'
-            'Paste one address for a fast passive CTI + ML check with a clear color-coded result and evidence path.'
-            '</div>'
-            '<div class="tf-primary-card-tags">'
-            '<span class="tf-primary-card-tag">Single target</span>'
-            '<span class="tf-primary-card-tag">Passive</span>'
-            '<span class="tf-primary-card-tag">Fast verdict</span>'
-            '</div></div>',
-            unsafe_allow_html=True,
-        )
-        if st.button(
-            "Open quick lookup",
-            key="open_quick_lookup_workspace",
-            type="primary" if lookup_active else "secondary",
-            width="stretch",
-        ):
-            st.session_state["workspace_nav"] = "Quick lookup"
-            st.rerun()
+        telemetry_col, lookup_col = st.columns(2)
 
-    st.markdown("</section>", unsafe_allow_html=True)
+        telemetry_active = current_page == "Analyze telemetry"
+        with telemetry_col:
+            telemetry_state = (
+                "Current workspace" if telemetry_active else "Batch investigation"
+            )
+            telemetry_class = " tf-primary-card--active" if telemetry_active else ""
+            st.markdown(
+                f'<div class="tf-primary-card{telemetry_class}">'
+                '<div class="tf-primary-card-top">'
+                '<span class="tf-primary-card-number">01 · TELEMETRY</span>'
+                f'<span class="tf-primary-card-state">{telemetry_state}</span>'
+                '</div>'
+                '<div class="tf-primary-card-title">Analyze telemetry</div>'
+                '<div class="tf-primary-card-copy">'
+                'Upload DNS CSV, Zeek, Pi-hole or AdGuard data and correlate CTI, ML and DNS behavior at scale.'
+                '</div>'
+                '<div class="tf-primary-card-tags">'
+                '<span class="tf-primary-card-tag">Multi-domain</span>'
+                '<span class="tf-primary-card-tag">Behavior signals</span>'
+                '<span class="tf-primary-card-tag">Investigation queue</span>'
+                '</div></div>',
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                "Open telemetry analysis",
+                key="open_telemetry_workspace",
+                type="primary" if telemetry_active else "secondary",
+                width="stretch",
+            ):
+                st.session_state["workspace_nav"] = "Analyze telemetry"
+                st.rerun()
+
+        lookup_active = current_page == "Quick lookup"
+        with lookup_col:
+            lookup_state = (
+                "Current workspace" if lookup_active else "Instant investigation"
+            )
+            lookup_class = " tf-primary-card--active" if lookup_active else ""
+            st.markdown(
+                f'<div class="tf-primary-card{lookup_class}">'
+                '<div class="tf-primary-card-top">'
+                '<span class="tf-primary-card-number">02 · QUICK LOOKUP</span>'
+                f'<span class="tf-primary-card-state">{lookup_state}</span>'
+                '</div>'
+                '<div class="tf-primary-card-title">Check a URL or domain</div>'
+                '<div class="tf-primary-card-copy">'
+                'Paste one address for a fast passive CTI + ML check with a clear color-coded result and evidence path.'
+                '</div>'
+                '<div class="tf-primary-card-tags">'
+                '<span class="tf-primary-card-tag">Single target</span>'
+                '<span class="tf-primary-card-tag">Passive</span>'
+                '<span class="tf-primary-card-tag">Fast verdict</span>'
+                '</div></div>',
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                "Open quick lookup",
+                key="open_quick_lookup_workspace",
+                type="primary" if lookup_active else "secondary",
+                width="stretch",
+            ):
+                st.session_state["workspace_nav"] = "Quick lookup"
+                st.rerun()
 
 
 def main() -> None:
@@ -538,14 +540,34 @@ def main() -> None:
     ]
     if config.public_mode:
         pages.remove("Analysis history")
-    if st.session_state.get("workspace_nav") not in pages:
-        st.session_state.pop("workspace_nav", None)
-    # Navigation precedes health in the sidebar, using its reserved container.
+
+    page = st.session_state.get("workspace_nav", "Analyze telemetry")
+    if page not in pages:
+        page = "Analyze telemetry"
+        st.session_state["workspace_nav"] = page
+
+    # Keep history/evaluation as secondary navigation. The two core workflows
+    # live prominently in the main canvas instead of being tiny sidebar items.
     with navigation:
-        st.markdown("### More views")
-        page = st.radio(
-            "Workspace", pages, key="workspace_nav", label_visibility="collapsed"
-        )
+        st.markdown("### Secondary views")
+        if not config.public_mode:
+            if st.button(
+                "Analysis history",
+                key="nav_analysis_history",
+                type="primary" if page == "Analysis history" else "secondary",
+                width="stretch",
+            ):
+                st.session_state["workspace_nav"] = "Analysis history"
+                st.rerun()
+        if st.button(
+            "Model evaluation",
+            key="nav_model_evaluation",
+            type="primary" if page == "Model evaluation" else "secondary",
+            width="stretch",
+        ):
+            st.session_state["workspace_nav"] = "Model evaluation"
+            st.rerun()
+        st.caption("Primary tools are available in the main workspace.")
 
     _render_primary_workspace_launcher(page)
 
