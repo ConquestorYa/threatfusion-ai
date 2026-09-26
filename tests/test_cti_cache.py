@@ -6,10 +6,14 @@ from datetime import datetime, timezone
 import pytest
 
 from threatfusion.cti_cache import (
+    compact_cti_cache,
+    has_active_ioc_records,
     initialize_cti_cache,
     list_cti_cache_status,
     list_cti_lifecycle_records,
     load_ioc_records,
+    lookup_ioc_records,
+    prune_inactive_records,
     replace_source_records,
     validate_nonempty_refresh_batch,
 )
@@ -324,3 +328,119 @@ def test_existing_pre_lifecycle_database_is_migrated_in_place(tmp_path) -> None:
     assert migrated.first_seen_in_cache == refresh_time.isoformat()
     assert migrated.last_seen_in_refresh == refresh_time.isoformat()
 
+
+
+
+def test_indexed_lookup_returns_only_relevant_domain_and_url_context(tmp_path) -> None:
+    db_path = tmp_path / "threatfusion.sqlite"
+    replace_source_records(
+        db_path,
+        "ThreatFox",
+        [
+            IOCRecord("Evil.Example.", IOCType.DOMAIN, "ThreatFox"),
+            IOCRecord(
+                "https://evil.example/payload",
+                IOCType.URL,
+                "ThreatFox",
+            ),
+            IOCRecord("other.example", IOCType.DOMAIN, "ThreatFox"),
+        ],
+    )
+
+    records = lookup_ioc_records(
+        db_path,
+        domain="evil.example",
+        normalized_url="https://evil.example/payload",
+    )
+
+    assert {(item.ioc_type, item.value) for item in records} == {
+        (IOCType.DOMAIN, "Evil.Example."),
+        (IOCType.URL, "https://evil.example/payload"),
+    }
+
+
+def test_indexed_lookup_migrates_legacy_rows(tmp_path) -> None:
+    import sqlite3
+
+    db_path = tmp_path / "legacy-lookup.sqlite"
+    with sqlite3.connect(db_path) as connection:
+        connection.executescript(
+            """
+            CREATE TABLE cti_records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                value TEXT NOT NULL,
+                ioc_type TEXT NOT NULL,
+                source TEXT NOT NULL,
+                first_seen TEXT,
+                last_seen TEXT,
+                threat_type TEXT,
+                confidence REAL,
+                tags_json TEXT NOT NULL,
+                active INTEGER NOT NULL DEFAULT 1
+            );
+            CREATE TABLE cti_refreshes (
+                source TEXT PRIMARY KEY,
+                refreshed_at TEXT NOT NULL,
+                record_count INTEGER NOT NULL
+            );
+            INSERT INTO cti_records (
+                value, ioc_type, source, tags_json, active
+            ) VALUES (
+                'Legacy.Example.', 'domain', 'ThreatFox', '[]', 1
+            );
+            """
+        )
+
+    records = lookup_ioc_records(db_path, domain="legacy.example")
+
+    assert [item.value for item in records] == ["Legacy.Example."]
+
+
+def test_inactive_retention_prunes_only_old_inactive_rows(tmp_path) -> None:
+    db_path = tmp_path / "threatfusion.sqlite"
+    first = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    recent = datetime(2026, 9, 20, tzinfo=timezone.utc)
+    now = datetime(2026, 9, 26, tzinfo=timezone.utc)
+
+    replace_source_records(
+        db_path,
+        "ThreatFox",
+        [
+            IOCRecord("old.example", IOCType.DOMAIN, "ThreatFox"),
+            IOCRecord("stays.example", IOCType.DOMAIN, "ThreatFox"),
+        ],
+        refreshed_at=first,
+    )
+    replace_source_records(
+        db_path,
+        "ThreatFox",
+        [IOCRecord("stays.example", IOCType.DOMAIN, "ThreatFox")],
+        refreshed_at=recent,
+    )
+
+    deleted = prune_inactive_records(
+        db_path,
+        older_than_days=90,
+        now=now,
+    )
+
+    assert deleted == 1
+    assert [item.value for item in load_ioc_records(db_path, include_inactive=True)] == [
+        "stays.example"
+    ]
+    assert has_active_ioc_records(db_path) is True
+    compact_cti_cache(db_path)
+
+
+def test_inactive_retention_validates_arguments(tmp_path) -> None:
+    db_path = tmp_path / "threatfusion.sqlite"
+
+    with pytest.raises(ValueError, match="at least 1"):
+        prune_inactive_records(db_path, older_than_days=0)
+
+    with pytest.raises(ValueError, match="timezone-aware"):
+        prune_inactive_records(
+            db_path,
+            older_than_days=30,
+            now=datetime(2026, 9, 26),
+        )
