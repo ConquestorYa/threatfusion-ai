@@ -16,6 +16,12 @@ from .dns import DNSParseResult, parse_dns_csv_with_diagnostics
 from .dns_adguard import parse_adguard_query_log_with_diagnostics
 from .dns_pihole import parse_pihole_query_db_with_diagnostics
 from .dns_zeek import parse_zeek_dns_log_with_diagnostics
+from .network_telemetry import (
+    parse_dnstop_with_diagnostics,
+    parse_pcap_dns_with_diagnostics,
+    parse_suricata_eve_with_diagnostics,
+    parse_zeek_conn_log_with_diagnostics,
+)
 
 _XLSX_MAIN_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
 _XLSX_DOC_REL_NS = (
@@ -442,6 +448,31 @@ def _parse_excel(
     ) from pandas_error
 
 
+def _looks_like_zeek_conn(text: str) -> bool:
+    header = "\n".join(text.splitlines()[:40])
+    return (
+        "#fields" in header
+        and "id.orig_h" in header
+        and "id.resp_h" in header
+        and "#path" in header
+        and "conn" in header
+    )
+
+
+def _looks_like_suricata_eve(text: str, filename: str | None) -> bool:
+    name = Path(filename or "").name.casefold()
+    if name in {"eve.json", "eve.jsonl"} or "suricata" in name:
+        return True
+    sample = next((line.strip() for line in text.splitlines() if line.strip()), "")
+    if not sample.startswith(("{", "[")):
+        return False
+    return '"event_type"' in sample and (
+        '"dns"' in sample
+        or '"src_ip"' in sample
+        or '"dest_ip"' in sample
+    )
+
+
 def _looks_like_zeek(text: str) -> bool:
     header = "\n".join(text.splitlines()[:40])
     return (
@@ -494,6 +525,22 @@ def parse_dns_upload_with_diagnostics(
     if not isinstance(content, bytes) or not content:
         raise ValueError("DNS telemetry upload is empty")
 
+    suffix = Path(filename or "").suffix.casefold()
+    lowered_name = Path(filename or "").name.casefold()
+
+    if suffix == ".capinfos" or lowered_name.endswith(".capinfos"):
+        raise ValueError(
+            "capinfos is capture metadata only; upload the original .pcap or "
+            ".pcapng file for traffic analysis"
+        )
+
+    if suffix in {".pcap", ".pcapng", ".cap"}:
+        parsed = parse_pcap_dns_with_diagnostics(content)
+        return parsed, DNSInputDetection(
+            format_name="PCAP/PCAPNG DNS capture",
+            detail="classic UDP DNS packets extracted locally",
+        )
+
     if content.startswith(b"SQLite format 3\x00"):
         parsed = parse_pihole_query_db_with_diagnostics(content)
         return parsed, DNSInputDetection(
@@ -506,11 +553,35 @@ def parse_dns_upload_with_diagnostics(
 
     text, encoding = _decode_text(content)
 
+    if _looks_like_zeek_conn(text):
+        parsed = parse_zeek_conn_log_with_diagnostics(text)
+        return parsed, DNSInputDetection(
+            format_name="Zeek conn.log",
+            detail="destination-IP telemetry; domain ML is skipped for IP targets",
+            encoding=encoding,
+        )
+
     if _looks_like_zeek(text):
         parsed = parse_zeek_dns_log_with_diagnostics(text)
         return parsed, DNSInputDetection(
             format_name="Zeek dns.log",
             detail="Zeek #fields header detected",
+            encoding=encoding,
+        )
+
+    if _looks_like_suricata_eve(text, filename):
+        parsed = parse_suricata_eve_with_diagnostics(text)
+        return parsed, DNSInputDetection(
+            format_name="Suricata EVE JSON",
+            detail="DNS records preferred; destination-IP telemetry used as fallback",
+            encoding=encoding,
+        )
+
+    if suffix == ".dnstop" or lowered_name.endswith(".dnstop"):
+        parsed = parse_dnstop_with_diagnostics(text)
+        return parsed, DNSInputDetection(
+            format_name="dnstop text",
+            detail="recognizable domain rows extracted from dnstop output",
             encoding=encoding,
         )
 
