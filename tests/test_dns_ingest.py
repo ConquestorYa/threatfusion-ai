@@ -281,10 +281,11 @@ def test_auto_detects_pcap_and_extracts_udp_dns_query() -> None:
     buffer = io.BytesIO()
     writer = dpkt.pcap.Writer(buffer)
     writer.writepkt(bytes(ethernet), ts=1700000000.0)
+    pcap_bytes = buffer.getvalue()
     writer.close()
 
     parsed, detection = parse_dns_upload_with_diagnostics(
-        buffer.getvalue(),
+        pcap_bytes,
         "capture.pcap",
     )
 
