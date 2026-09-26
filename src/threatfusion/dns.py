@@ -388,7 +388,7 @@ def _read_dns_table(
     if "query_name" in mapping:
         return fieldnames, rows, mapping
 
-    if len(fieldnames) == 1 and _looks_like_dns_name(fieldnames[0]):
+    if len(fieldnames) == 1 and _looks_like_query_column_value(fieldnames[0]):
         raw_reader = csv.reader(io.StringIO(content), delimiter=delimiter)
         values = [
             row[0]
