@@ -58,6 +58,30 @@ databases, `.env` files, tests, and Git metadata.
 Do not mount the developer's whole local `data/` tree into a public
 container. It can contain dataset snapshots and local analysis history.
 
+For the public portfolio demo, prefer a synthetic CTI cache rather than
+redistributing a live copy of third-party feed data:
+
+```powershell
+python scripts\generate_public_demo_cti_cache.py
+```
+
+This writes only documentation-reserved values such as `.example`,
+`203.0.113.0/24`, and `2001:db8::/32` into
+`data/demo/public_demo_cti.sqlite`. No ThreatFox, URLhaus, SGB, or other
+third-party IOC values are copied. If the file already exists, rebuild it only
+with the explicit `--overwrite` flag.
+
+Then create the hosted bundle from that synthetic cache:
+
+```powershell
+python scripts\prepare_deployment_bundle.py `
+  --source-db data\demo\public_demo_cti.sqlite
+```
+
+A private/local deployment can still use the normal live CTI cache. The public
+portfolio demo uses synthetic CTI because the repository does not claim broad
+redistribution rights for third-party feed contents.
+
 Instead create a minimal hosted-runtime bundle:
 
 ```text
@@ -76,7 +100,9 @@ data/deployment/runtime/
 ```
 
 The generated SQLite database contains only the currently active CTI snapshot
-and refresh metadata. Inactive local IOC lifecycle history is intentionally not
+and refresh metadata from the selected source database. For the public portfolio
+demo, that selected source database should be the synthetic demo cache described
+above. Inactive local IOC lifecycle history is intentionally not
 copied into the public deployment bundle. Local analysis-history tables,
 including `analyst_feedback` labels/notes
 and `analyst_suppressions` policy, DNS uploads, and ML dataset snapshots are
