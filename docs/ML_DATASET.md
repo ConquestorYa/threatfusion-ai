@@ -654,3 +654,40 @@ the result must not be presented as a measurement of production DNS query
 volume or alert frequency. Query-frequency-weighted behavior remains separate
 future work.
 
+## CESNET-augmented development comparison
+
+After the frozen artifact produced a 3.60% high-threshold false-positive rate on
+the retained CESNET benign corpus, threshold-only diagnostics showed that a
+score threshold near 0.875784 reduced CESNET FPR to about 0.46% but retained
+only about 15% malicious recall on the original development test.
+
+The next development-only experiment therefore adds the confirmed-benign
+CESNET domains that are not already present in the baseline snapshot to the
+development dataset and repeats the low-FPR model comparison.
+
+Run:
+
+```powershell
+python scripts\evaluate_ml_augmented_benign.py `
+  --snapshot-dir data\snapshots\baseline-001 `
+  --benign-dns-csv data\evaluation\cesnet-benign-20k.csv `
+  --confirm-benign-label `
+  --fpr-budgets 0.001 0.005 0.01
+```
+
+The tool:
+
+- normalizes and deduplicates the added benign domains
+- removes every domain already present in the baseline snapshot
+- labels the retained additions as `CESNET`
+- trains the same predefined candidate models in memory only
+- selects thresholds on the augmented validation split
+- reports overall development-test recall/FPR
+- reports benign test FPR separately for Tranco and CESNET sources
+- does not overwrite the existing frozen artifact
+
+This corpus has already been inspected, so it is development evidence rather
+than an untouched benchmark. Any model or threshold selected using this
+experiment requires a new untouched final holdout before new final-performance
+claims.
+
