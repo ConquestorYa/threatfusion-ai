@@ -23,9 +23,22 @@ def empty_state(title: str, description: str) -> None:
 def intake_steps() -> None:
     st.markdown(
         '<div class="tf-steps" aria-label="Analysis workflow">'
-        "<span><strong>01</strong> Choose source</span>"
-        "<span><strong>02</strong> Upload telemetry</span>"
-        "<span><strong>03</strong> Analyze &amp; triage</span></div>",
+        '<div class="tf-step tf-step--active">'
+        '<div class="tf-step-number">01</div>'
+        '<div><div class="tf-step-title">Choose source</div>'
+        '<div class="tf-step-sub">Select the telemetry format you want to analyze.</div></div>'
+        '</div>'
+        '<div class="tf-step">'
+        '<div class="tf-step-number">02</div>'
+        '<div><div class="tf-step-title">Upload telemetry</div>'
+        '<div class="tf-step-sub">Provide DNS CSV, Zeek, Pi-hole or AdGuard data.</div></div>'
+        '</div>'
+        '<div class="tf-step">'
+        '<div class="tf-step-number">03</div>'
+        '<div><div class="tf-step-title">Analyze &amp; triage</div>'
+        '<div class="tf-step-sub">Correlate CTI, ML and DNS behavior, then prioritize findings.</div></div>'
+        '</div>'
+        '</div>',
         unsafe_allow_html=True,
     )
 
