@@ -7,8 +7,9 @@ Treat all threat indicators as inert data only.
 
 | Source | Purpose | Endpoint / reference in repo |
 | --- | --- | --- |
-| ThreatFox (abuse.ch) | Malicious IOC feed collection | `src/threatfusion/collectors/threatfox.py` (`THREATFOX_API_URL`) |
-| URLhaus (abuse.ch) | Malicious URL feed collection | `src/threatfusion/collectors/urlhaus.py` (`URLHAUS_EXPORT_URL`) |
+| ThreatFox (abuse.ch) | Malicious IOC feed collection | `src/threatfusion/collectors/threatfox.py` (authenticated full CSV export) |
+| URLhaus (abuse.ch) | Malware-distribution URL feed collection | `src/threatfusion/collectors/urlhaus.py` (authenticated full CSV export) |
+| PhishTank | Verified online phishing URL feed | `src/threatfusion/collectors/phishtank.py` (optional authenticated database download) |
 | SGB (T.C. Siber Güvenlik Başkanlığı) | Malicious address feed collection | `src/threatfusion/collectors/sgb.py` (`SGB_API_URL`) |
 | Tranco | Benign-domain baseline input | `src/threatfusion/collectors/tranco.py` (`TrancoCollector`) |
 | CESNET / DomainRadar 2024 | Real-traffic benign-domain evaluation corpus | DOI `10.5281/zenodo.14332167`; `scripts/sample_cesnet_benign_domains.py` |
@@ -29,10 +30,15 @@ Verified from current official source documentation:
 - ThreatFox and URLhaus are abuse.ch platforms governed by the abuse.ch Terms of
   Use and Fair Use Principles. The community APIs are intended for authenticated
   non-profit/fair-use access; commercial or for-profit use may require a
-  Spamhaus subscription. See:
+  Spamhaus subscription. ThreatFusion uses the current full exports during
+  maintenance refreshes rather than the short recent-only API window. See:
   - https://abuse.ch/terms-of-use/
   - https://threatfox.abuse.ch/api/
   - https://urlhaus.abuse.ch/api/
+- PhishTank provides downloadable databases of verified, online phishing URLs
+  for automated lookup use. Automated downloads should use an application key
+  and a descriptive User-Agent; the upstream database is updated hourly. See:
+  - https://phishtank.org/developer_info.php
 - The SGB API documentation explicitly describes automated integration of its
   malicious-address intelligence into security products/systems, but this
   repository does not rely on that statement as a broad redistribution license.
@@ -92,3 +98,26 @@ The CESNET subset was derived from real academic-network traffic and filtered
 by the dataset authors. ThreatFusion uses it only as a benign-labeled
 domain-string evaluation corpus. It is not represented as raw DNS telemetry or
 as a production query-frequency distribution.
+
+
+## Refresh and retention model
+
+ThreatFusion's maintenance refresh uses source snapshots rather than doing
+third-party network requests in the interactive lookup path:
+
+- ThreatFox: authenticated full non-expired IOC export.
+- URLhaus: authenticated full dump covering active malware URLs and its current
+  recent-history window.
+- PhishTank: optional verified-online phishing database when
+  `PHISHTANK_APP_KEY` is configured.
+- SGB: bounded pagination with a higher default ceiling and early stop when the
+  source reports completion.
+
+A source returning an unexpectedly empty snapshot causes the refresh batch to
+fail before any source is replaced. Successfully refreshed rows are indexed by
+normalized domain and URL so Quick lookup can fetch only matching rows instead
+of loading the entire CTI cache into application memory.
+
+Inactive lifecycle history is retained for 90 days by default and then pruned.
+This retention window is configurable in the refresh command. Pruning affects
+only inactive local history; active IOC rows remain available for matching.
