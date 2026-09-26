@@ -4,6 +4,7 @@ import csv
 import json
 from collections.abc import Mapping
 from dataclasses import asdict
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +18,7 @@ from .ml_snapshot import (
 _DATASET_FILENAME = "dataset.csv"
 _METADATA_FILENAME = "metadata.json"
 _REQUIRED_DATASET_COLUMNS = {"domain", "label", "source"}
+_DATASET_COLUMNS = ["domain", "label", "source", "first_seen", "last_seen"]
 _METADATA_FIELDS = {"benign_source", "benign_snapshot_id", "benign_snapshot_date"}
 _STATISTICS_FIELDS = {
     "malicious_input_count",
@@ -72,7 +74,7 @@ def write_domain_snapshot(
 
     output_path.mkdir(parents=True, exist_ok=True)
     with dataset_path.open("w", encoding="utf-8", newline="") as dataset_file:
-        writer = csv.DictWriter(dataset_file, fieldnames=["domain", "label", "source"])
+        writer = csv.DictWriter(dataset_file, fieldnames=_DATASET_COLUMNS)
         writer.writeheader()
         for sample in snapshot.samples:
             writer.writerow(
@@ -80,6 +82,16 @@ def write_domain_snapshot(
                     "domain": sample.domain,
                     "label": sample.label,
                     "source": sample.source,
+                    "first_seen": (
+                        sample.first_seen.isoformat()
+                        if sample.first_seen is not None
+                        else ""
+                    ),
+                    "last_seen": (
+                        sample.last_seen.isoformat()
+                        if sample.last_seen is not None
+                        else ""
+                    ),
                 }
             )
 
@@ -175,6 +187,15 @@ def _parse_statistics(payload: dict[str, Any]) -> DatasetSnapshotStatistics:
     )
 
 
+def _parse_optional_timestamp(value: str | None, field: str) -> datetime | None:
+    if value is None or not value.strip():
+        return None
+    try:
+        return datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+    except ValueError as error:
+        raise ValueError(f"dataset.csv {field} must be an ISO timestamp") from error
+
+
 def _read_samples(dataset_path: Path) -> list[DomainSample]:
     try:
         with dataset_path.open("r", encoding="utf-8", newline="") as dataset_file:
@@ -199,7 +220,19 @@ def _read_samples(dataset_path: Path) -> list[DomainSample]:
                 if parsed_label not in {0, 1}:
                     raise ValueError("dataset.csv labels must be integers 0 or 1")
                 samples.append(
-                    DomainSample(domain=domain, label=parsed_label, source=source)
+                    DomainSample(
+                        domain=domain,
+                        label=parsed_label,
+                        source=source,
+                        first_seen=_parse_optional_timestamp(
+                            row.get("first_seen"),
+                            "first_seen",
+                        ),
+                        last_seen=_parse_optional_timestamp(
+                            row.get("last_seen"),
+                            "last_seen",
+                        ),
+                    )
                 )
     except OSError as error:
         raise ValueError("dataset.csv could not be read") from error

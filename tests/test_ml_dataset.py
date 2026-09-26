@@ -1,4 +1,5 @@
 import socket
+from datetime import datetime, timezone
 
 import pytest
 
@@ -41,6 +42,30 @@ def test_domain_ioc_becomes_malicious_sample() -> None:
     samples = extract_malicious_domains([indicator])
 
     assert samples == [DomainSample(domain="example.com", label=1, source="ThreatFox")]
+
+
+def test_domain_ioc_preserves_timing_metadata() -> None:
+    first_seen = datetime(2026, 9, 25, 10, 30, tzinfo=timezone.utc)
+    last_seen = datetime(2026, 9, 26, 11, 45, tzinfo=timezone.utc)
+    indicator = IOCRecord(
+        "timed.example",
+        IOCType.DOMAIN,
+        "ThreatFox",
+        first_seen=first_seen,
+        last_seen=last_seen,
+    )
+
+    samples = extract_malicious_domains([indicator])
+
+    assert samples == [
+        DomainSample(
+            "timed.example",
+            1,
+            "ThreatFox",
+            first_seen=first_seen,
+            last_seen=last_seen,
+        )
+    ]
 
 
 def test_url_ioc_hostname_becomes_malicious_sample() -> None:
