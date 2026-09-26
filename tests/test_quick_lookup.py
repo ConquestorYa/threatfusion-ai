@@ -9,7 +9,10 @@ import pytest
 from threatfusion import quick_lookup
 from threatfusion.hybrid_assessment import HybridVerdict, MLThresholds
 from threatfusion.models import IOCRecord, IOCType
-from threatfusion.quick_lookup import analyze_quick_lookup
+from threatfusion.quick_lookup import (
+    analyze_quick_lookup,
+    analyze_quick_lookup_from_cache,
+)
 
 
 def fake_artifact():
@@ -198,3 +201,37 @@ def test_quick_lookup_never_performs_networking(monkeypatch):
     )
 
     assert result.verdict is HybridVerdict.KNOWN_THREAT
+
+
+
+def test_quick_lookup_from_cache_uses_indexed_relevant_rows(
+    tmp_path,
+    monkeypatch,
+):
+    from threatfusion.cti_cache import replace_source_records
+
+    db_path = tmp_path / "threatfusion.sqlite"
+    replace_source_records(
+        db_path,
+        "ThreatFox",
+        [
+            IOCRecord("evil.example", IOCType.DOMAIN, "ThreatFox"),
+            IOCRecord("other.example", IOCType.DOMAIN, "ThreatFox"),
+        ],
+    )
+    monkeypatch.setattr(
+        quick_lookup,
+        "predict_domain_scores",
+        lambda artifact, domains: {"evil.example": 0.10},
+    )
+
+    result = analyze_quick_lookup_from_cache(
+        "evil.example",
+        db_path,
+        fake_artifact(),
+    )
+
+    assert result.verdict is HybridVerdict.KNOWN_THREAT
+    assert [item.indicator_value for item in result.evidence] == [
+        "evil.example"
+    ]
