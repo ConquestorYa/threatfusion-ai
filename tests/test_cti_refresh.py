@@ -172,6 +172,7 @@ def test_failed_source_preserves_previous_healthy_cache(tmp_path, monkeypatch):
             raise ValueError("upstream unavailable")
 
     monkeypatch.setattr(cti_refresh, "ThreatFoxCollector", FailingThreatFox)
+    monkeypatch.setattr(cti_refresh, "PhishTankCollector", FakePhishTankCollector)
     monkeypatch.setattr(cti_refresh, "SGBCollector", FakeSGBCollector)
 
     outcomes = cti_refresh.refresh_configured_sources(
@@ -204,6 +205,7 @@ def test_fresh_source_is_skipped_without_fetching(tmp_path, monkeypatch):
             raise AssertionError("fresh source must not be fetched")
 
     monkeypatch.setattr(cti_refresh, "ThreatFoxCollector", ForbiddenThreatFox)
+    monkeypatch.setattr(cti_refresh, "PhishTankCollector", FakePhishTankCollector)
     monkeypatch.setattr(cti_refresh, "SGBCollector", FakeSGBCollector)
 
     outcomes = cti_refresh.refresh_configured_sources(
@@ -237,6 +239,7 @@ def test_incomplete_sgb_snapshot_is_rejected_and_old_cache_is_preserved(
                 reached_source_end=False,
             )
 
+    monkeypatch.setattr(cti_refresh, "PhishTankCollector", FakePhishTankCollector)
     monkeypatch.setattr(cti_refresh, "SGBCollector", IncompleteSGB)
 
     outcomes = cti_refresh.refresh_configured_sources(
