@@ -54,9 +54,11 @@ from threatfusion.ui_quick_lookup import (
     render_quick_lookup_result,
 )
 from threatfusion.ui_theme import (
+    THEME_OPTIONS,
     inject_theme_css,
     metric_card,
     render_app_header,
+    render_main_brand,
     render_priority_finding,
     render_sidebar_brand,
     section_label,
@@ -511,8 +513,12 @@ def main() -> None:
         layout="wide",
     )
 
-    inject_theme_css()
+    if st.session_state.get("visual_theme") not in THEME_OPTIONS:
+        st.session_state["visual_theme"] = "Dark"
+
+    inject_theme_css(st.session_state["visual_theme"])
     render_sidebar_brand()
+    render_main_brand()
     if "telemetry_format" in st.session_state:
         st.session_state["telemetry_format"] = st.session_state["telemetry_format"]
 
@@ -629,7 +635,6 @@ def main() -> None:
                 "Check",
                 type="primary",
                 width="stretch",
-                disabled=not lookup_value.strip(),
                 key="quick_lookup_analyze",
             )
 
@@ -638,16 +643,19 @@ def main() -> None:
         )
 
         if analyze_lookup:
-            try:
-                with st.spinner("Checking local threat signals…"):
-                    st.session_state["quick_lookup_result"] = analyze_quick_lookup(
-                        lookup_value,
-                        indicators,
-                        artifact,
-                    )
-            except (TypeError, ValueError) as error:
-                st.session_state.pop("quick_lookup_result", None)
-                st.error(f"Lookup input could not be analyzed: {error}")
+            if not lookup_value.strip():
+                st.warning("Enter a URL or domain before checking it.")
+            else:
+                try:
+                    with st.spinner("Checking local threat signals…"):
+                        st.session_state["quick_lookup_result"] = analyze_quick_lookup(
+                            lookup_value,
+                            indicators,
+                            artifact,
+                        )
+                except (TypeError, ValueError) as error:
+                    st.session_state.pop("quick_lookup_result", None)
+                    st.error(f"Lookup input could not be analyzed: {error}")
 
         lookup_result = st.session_state.get("quick_lookup_result")
         if lookup_result is not None:

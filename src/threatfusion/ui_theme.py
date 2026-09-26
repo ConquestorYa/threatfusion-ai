@@ -7,6 +7,10 @@ import html
 import plotly.graph_objects as go
 import streamlit as st
 
+from .brand_assets import THREATFUSION_LOGO_DATA_URI
+
+THEME_OPTIONS = ("Dark", "White", "Blue Dark", "Red")
+
 THEME_PALETTES = {
     "Dark": {
         "bg": "#0C121C",
@@ -27,18 +31,19 @@ THEME_PALETTES = {
         "blue": "#97B6D5",
         "grid": "rgba(160, 175, 193, 0.12)",
         "plot_template": "plotly_dark",
+        "scheme": "dark",
     },
-    "Light": {
-        "bg": "#F6F8FB",
-        "bg_alt": "#EDF1F6",
+    "White": {
+        "bg": "#F7F9FC",
+        "bg_alt": "#EEF2F7",
         "panel": "#FFFFFF",
-        "panel_alt": "#F1F5F9",
-        "surface": "#E5ECF3",
-        "border": "#CAD4E0",
-        "text": "#1D2B3D",
-        "muted": "#526278",
-        "cyan": "#0E706D",
-        "cyan_soft": "rgba(14, 112, 109, 0.07)",
+        "panel_alt": "#F3F6FA",
+        "surface": "#E7EDF4",
+        "border": "#C5D0DD",
+        "text": "#172234",
+        "muted": "#516278",
+        "cyan": "#0D716E",
+        "cyan_soft": "rgba(13, 113, 110, 0.08)",
         "on_accent": "#FFFFFF",
         "green": "#246843",
         "yellow": "#785A0D",
@@ -47,8 +52,54 @@ THEME_PALETTES = {
         "blue": "#3A628A",
         "grid": "rgba(82, 98, 120, 0.12)",
         "plot_template": "plotly_white",
+        "scheme": "light",
+    },
+    "Blue Dark": {
+        "bg": "#071525",
+        "bg_alt": "#0B1D31",
+        "panel": "#10243A",
+        "panel_alt": "#15304A",
+        "surface": "#1C3B58",
+        "border": "#2E4C68",
+        "text": "#E8F2FF",
+        "muted": "#9EB4CA",
+        "cyan": "#62B8FF",
+        "cyan_soft": "rgba(98, 184, 255, 0.11)",
+        "on_accent": "#06121F",
+        "green": "#83D8AE",
+        "yellow": "#F0D074",
+        "orange": "#FFA36C",
+        "red": "#FF8791",
+        "blue": "#91C6F4",
+        "grid": "rgba(158, 180, 202, 0.14)",
+        "plot_template": "plotly_dark",
+        "scheme": "dark",
+    },
+    "Red": {
+        "bg": "#170B10",
+        "bg_alt": "#211017",
+        "panel": "#2A141D",
+        "panel_alt": "#341925",
+        "surface": "#44202E",
+        "border": "#5A3040",
+        "text": "#F7EAF0",
+        "muted": "#C7A6B4",
+        "cyan": "#E9687B",
+        "cyan_soft": "rgba(233, 104, 123, 0.12)",
+        "on_accent": "#18090E",
+        "green": "#8FD2A4",
+        "yellow": "#F0C972",
+        "orange": "#F09A6C",
+        "red": "#FF8791",
+        "blue": "#D8A0B5",
+        "grid": "rgba(199, 166, 180, 0.13)",
+        "plot_template": "plotly_dark",
+        "scheme": "dark",
     },
 }
+# Backward-compatible alias for older tests/integrations.
+THEME_PALETTES["Light"] = THEME_PALETTES["White"]
+
 _VERDICT_TOKENS = {
     "Known Threat": "red",
     "High Risk": "orange",
@@ -71,12 +122,15 @@ VERDICT_COLORS = {
 
 
 def active_theme() -> str:
-    """Follow the viewer's native Streamlit setting."""
+    """Return the explicit ThreatFusion theme, falling back to native mode."""
+    selected = st.session_state.get("visual_theme")
+    if selected in THEME_OPTIONS:
+        return str(selected)
     try:
         theme_type = st.context.theme.type
     except (AttributeError, TypeError):
         theme_type = "dark"
-    return "Light" if theme_type == "light" else "Dark"
+    return "White" if theme_type == "light" else "Dark"
 
 
 def palette(theme: str | None = None) -> dict[str, str]:
@@ -93,32 +147,47 @@ def safe_text(value: object) -> str:
 
 
 def inject_theme_css(theme: str | None = None) -> None:
-    # Native Streamlit sets color-scheme on .stApp. CSS light-dark() follows it
-    # immediately, while st.context.theme can lag behind a theme-menu change.
-    colors = palette(theme)
+    selected = theme or active_theme()
+    colors = palette(selected)
     variables = ";".join(
-        f"--tf-{key.replace('_', '-')}:"
-        + (
-            value
-            if theme
-            else f"light-dark({THEME_PALETTES['Light'][key]}, {THEME_PALETTES['Dark'][key]})"
-        )
+        f"--tf-{key.replace('_', '-')}:{value}"
         for key, value in colors.items()
-        if key != "plot_template"
+        if key not in {"plot_template", "scheme"}
     )
     st.markdown(
-        "<style>:root{" + variables + "}" + _CSS + "</style>", unsafe_allow_html=True
+        "<style>:root{"
+        + variables
+        + f";color-scheme:{colors['scheme']};"
+        + "}"
+        + _CSS
+        + "</style>",
+        unsafe_allow_html=True,
     )
 
 
 _CSS = """
-[data-testid="stAppViewContainer"] { background:var(--tf-bg); color:var(--tf-text); }
+:root {
+    --tf-font-ui:"Aptos","Segoe UI Variable","Segoe UI",system-ui,-apple-system,sans-serif;
+    --tf-font-display:"Aptos Display","Aptos","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+}
+[data-testid="stAppViewContainer"] {
+    background:var(--tf-bg);
+    color:var(--tf-text);
+    font-family:var(--tf-font-ui);
+}
+[data-testid="stAppViewContainer"] button,
+[data-testid="stAppViewContainer"] input,
+[data-testid="stAppViewContainer"] textarea,
+[data-testid="stAppViewContainer"] label,
+[data-testid="stSidebar"] {
+    font-family:var(--tf-font-ui)!important;
+}
 [data-testid="stHeader"] { background:var(--tf-bg); }
 [data-testid="stSidebar"] {
     background:var(--tf-bg-alt); border-right:1px solid var(--tf-border);
 }
 .block-container { max-width:1440px; padding-top:4.5rem; padding-bottom:3rem; }
-h1,h2,h3,.tf-page-head,.tf-sidebar-brand { font-family:"Segoe UI",Arial,sans-serif; }
+h1,h2,h3,.tf-page-head,.tf-sidebar-brand,.tf-product-brand { font-family:var(--tf-font-display); }
 h1 { font-size:1.8rem!important; line-height:1.25!important; letter-spacing:-.03em; }
 h2 { font-size:1.3rem!important; line-height:1.35!important; }
 h3 { font-size:1.06rem!important; line-height:1.4!important; }
@@ -131,13 +200,79 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
 }
 .tf-section-label { margin:1.15rem 0 .65rem; }
 .tf-sidebar-brand { display:flex; align-items:center; gap:.7rem; margin:0 0 1.15rem; }
-.tf-brand-mark {
-    display:grid; place-items:center; width:2.1rem; height:2.3rem;
-    border:1px solid var(--tf-border); border-radius:6px; color:var(--tf-cyan);
-    font-size:.9rem; font-weight:700;
+.tf-sidebar-brand-logo {
+    width:2.65rem;
+    height:2.3rem;
+    object-fit:contain;
+    flex:0 0 auto;
+    filter:drop-shadow(0 5px 12px rgba(0,0,0,.16));
 }
 .tf-sidebar-brand-title { font-size:1rem; font-weight:650; color:var(--tf-text); }
 .tf-sidebar-brand-sub { color:var(--tf-muted); font-size:.75rem; margin-top:.1rem; }
+
+.st-key-product_topbar {
+    margin:-.45rem 0 1.15rem;
+    padding:.2rem 0 1rem;
+    border-bottom:1px solid var(--tf-border);
+}
+.tf-product-brand {
+    display:flex;
+    align-items:center;
+    gap:1rem;
+    min-height:4rem;
+}
+.tf-product-brand-main {
+    display:flex;
+    align-items:center;
+    gap:.9rem;
+    min-width:0;
+}
+.tf-product-brand-logo {
+    flex:0 0 auto;
+    width:4rem;
+    height:3.4rem;
+    object-fit:contain;
+    filter:drop-shadow(0 8px 20px rgba(0,0,0,.18));
+}
+.tf-theme-picker-label {
+    color:var(--tf-muted);
+    font-size:.7rem;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    text-align:right;
+    margin:0 0 .35rem;
+}
+.st-key-visual_theme {
+    display:flex;
+    justify-content:flex-end;
+}
+.tf-product-brand-title {
+    color:var(--tf-text);
+    font-size:1.55rem;
+    font-weight:780;
+    line-height:1.1;
+    letter-spacing:-.03em;
+}
+.tf-product-brand-sub {
+    color:var(--tf-muted);
+    font-family:var(--tf-font-ui);
+    font-size:.82rem;
+    line-height:1.4;
+    margin-top:.28rem;
+}
+.tf-product-brand-badge {
+    flex:0 0 auto;
+    padding:.38rem .62rem;
+    border:1px solid var(--tf-border);
+    border-radius:999px;
+    color:var(--tf-muted);
+    font-family:var(--tf-font-ui);
+    font-size:.7rem;
+    font-weight:650;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+}
 
 .tf-primary-workspace {
     margin:0 0 1.5rem;
@@ -666,6 +801,24 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     margin-bottom:1rem;
 }
 
+[data-baseweb="input"],
+[data-baseweb="select"] > div,
+[data-testid="stFileUploaderDropzone"] {
+    background:var(--tf-panel)!important;
+    color:var(--tf-text)!important;
+    border-color:var(--tf-border)!important;
+}
+.stButton > button,
+.stDownloadButton > button {
+    background:var(--tf-panel);
+    color:var(--tf-text);
+    border-color:var(--tf-border);
+}
+[data-testid="stBaseButton-primary"] {
+    background:var(--tf-cyan)!important;
+    border-color:var(--tf-cyan)!important;
+    color:var(--tf-on-accent)!important;
+}
 [data-testid="stDataFrame"] { border:1px solid var(--tf-border); border-radius:6px; }
 [data-testid="stExpander"] { border-color:var(--tf-border); border-radius:6px; }
 [data-testid="stMetric"] { padding:.4rem 0; }
@@ -696,6 +849,9 @@ button:focus-visible,a:focus-visible,input:focus-visible {
     .tf-primary-workspace-head { align-items:flex-start; flex-direction:column; }
     .tf-primary-workspace-hint { text-align:left; }
     .tf-primary-card { min-height:118px; }
+    .tf-product-brand { align-items:flex-start; }
+    .tf-product-brand-badge { display:none; }
+    .tf-product-brand-title { font-size:1.35rem; }
     .st-key-quick_lookup_input [data-baseweb="input"],
     .st-key-quick_lookup_analyze button { min-height:60px!important; }
     .st-key-quick_lookup_input input { min-height:58px; font-size:1rem!important; }
@@ -715,9 +871,36 @@ def render_app_header(
     )
 
 
+def render_main_brand() -> None:
+    with st.container(key="product_topbar"):
+        brand_col, theme_col = st.columns([1.6, 1], vertical_alignment="center")
+        with brand_col:
+            st.markdown(
+                '<div class="tf-product-brand">'
+                f'<img class="tf-product-brand-logo" src="{THREATFUSION_LOGO_DATA_URI}" alt="">'
+                '<div><div class="tf-product-brand-title">ThreatFusion AI</div>'
+                '<div class="tf-product-brand-sub">'
+                'Threat intelligence, DNS analysis and AI-assisted triage in one analyst workspace.'
+                '</div></div></div>',
+                unsafe_allow_html=True,
+            )
+        with theme_col:
+            st.markdown(
+                '<div class="tf-theme-picker-label">Theme</div>',
+                unsafe_allow_html=True,
+            )
+            st.segmented_control(
+                "Theme",
+                list(THEME_OPTIONS),
+                key="visual_theme",
+                label_visibility="collapsed",
+            )
+
+
 def render_sidebar_brand() -> None:
     st.sidebar.markdown(
-        '<div class="tf-sidebar-brand"><span class="tf-brand-mark" aria-hidden="true">TF</span>'
+        '<div class="tf-sidebar-brand">'
+        f'<img class="tf-sidebar-brand-logo" src="{THREATFUSION_LOGO_DATA_URI}" alt="">'
         '<div><div class="tf-sidebar-brand-title">ThreatFusion AI</div>'
         '<div class="tf-sidebar-brand-sub">DNS intelligence workspace</div></div></div>',
         unsafe_allow_html=True,
@@ -795,7 +978,10 @@ def apply_plotly_theme(
         template="streamlit",
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font={"family": "Segoe UI, Arial, sans-serif", "size": 13},
+        font={
+            "family": "Aptos, Segoe UI Variable, Segoe UI, Arial, sans-serif",
+            "size": 13,
+        },
         margin={"l": 20, "r": 20, "t": 35, "b": 20},
         height=height,
     )
