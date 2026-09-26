@@ -62,3 +62,23 @@ def test_public_demo_cache_generation_does_not_use_network(
     count = write_public_demo_cti_cache(tmp_path / "demo.sqlite")
 
     assert count == 4
+
+
+def test_public_demo_cache_refuses_existing_file_without_overwrite(tmp_path) -> None:
+    db_path = tmp_path / "public_demo.sqlite"
+    db_path.write_text("do-not-reuse", encoding="utf-8")
+
+    with pytest.raises(FileExistsError, match="overwrite"):
+        write_public_demo_cti_cache(db_path)
+
+    assert db_path.read_text(encoding="utf-8") == "do-not-reuse"
+
+
+def test_public_demo_cache_overwrite_replaces_existing_file(tmp_path) -> None:
+    db_path = tmp_path / "public_demo.sqlite"
+    db_path.write_text("stale", encoding="utf-8")
+
+    count = write_public_demo_cti_cache(db_path, overwrite=True)
+
+    assert count == 4
+    assert len(load_ioc_records(db_path)) == 4
