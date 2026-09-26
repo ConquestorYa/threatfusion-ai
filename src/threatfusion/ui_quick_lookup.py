@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from .dashboard import reason_label, verdict_label
+from .dashboard import format_timestamp, reason_label, verdict_label
 from .quick_lookup import QuickLookupResult
 from .ui_theme import metric_card, section_label, verdict_badge
 
@@ -74,6 +74,16 @@ def render_quick_lookup_result(result: QuickLookupResult) -> None:
                 "Indicator": item.indicator_value,
                 "Threat type": item.threat_type or "",
                 "Confidence": item.confidence,
+                "First seen": (
+                    format_timestamp(item.first_seen.isoformat())
+                    if item.first_seen is not None
+                    else ""
+                ),
+                "Last seen": (
+                    format_timestamp(item.last_seen.isoformat())
+                    if item.last_seen is not None
+                    else ""
+                ),
                 "Tags": ", ".join(item.tags),
             }
             for item in result.evidence
