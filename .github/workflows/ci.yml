@@ -22,6 +22,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -43,6 +45,9 @@ jobs:
 
       - name: Run Ruff
         run: python -m ruff check .
+
+      - name: Audit public-release secrets and local paths
+        run: python scripts/audit_public_release.py --history
 
       - name: Run pytest
         run: python -m pytest --cov=threatfusion --cov-report=term-missing --cov-report=xml

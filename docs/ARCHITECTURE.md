@@ -1,6 +1,6 @@
 # Architecture
 
-This document distinguishes the current implementation from the planned system. The current architecture includes IOC collection, correlation, DNS telemetry ingestion, in-memory known-IOC matching, reproducible ML dataset snapshots, persisted development-model inference, DNS behavior aggregation, explainable hybrid runtime assessment, SQLite persistence/cache layers, related-activity clustering, a Streamlit dashboard, and container/public-mode deployment packaging. The first fresh-collection disjoint final holdout has been completed with the frozen artifact; strict IOC first-seen temporal evaluation and hosted deployment remain planned. The evaluator persists an aggregate report that the dashboard can render.
+This document distinguishes the current implementation from the planned system. The current architecture includes IOC collection, correlation, DNS telemetry ingestion, in-memory known-IOC matching, reproducible ML dataset snapshots, persisted development-model inference, DNS behavior aggregation, explainable hybrid runtime assessment, SQLite persistence/cache layers, related-activity clustering, a Streamlit dashboard, and container/public-mode deployment packaging. Fresh-collection disjoint holdout evaluation has been completed, malicious IOC timing is preserved in new snapshots, and the evaluator supports an explicit first-seen-filtered temporal mode. A new timing-preserving holdout measurement and hosted deployment remain release work. The evaluator persists aggregate reports that the dashboard can render.
 
 ## Current Data Flow
 
@@ -36,16 +36,18 @@ flowchart LR
     CTI[Collected IOC records] --> Samples[DomainSample dataset]
     Tranco[Pinned Tranco domains] --> Samples
     Samples --> Snapshot[Persisted snapshot]
-    Snapshot --> Split[80/20 stratified split]
+    Snapshot --> Split[Train / validation / development-test split]
     Split --> TFIDF[Character n-gram TF-IDF]
     TFIDF --> LR[Logistic Regression]
     LR --> Metrics[Precision / Recall / F1 / FPR]
 ```
 
-The baseline vectorizer and classifier are fitted after splitting, so held-out
-test domains do not influence TF-IDF fitting. The current random stratified
-split is explicitly a development baseline rather than the final evaluation
-protocol.
+The vectorizer and classifier are fitted only on the training partition.
+Thresholds are selected on validation data and the development-test partition
+is reported separately. Random stratified splitting remains development
+evidence; final evaluation uses a separately collected disjoint snapshot. New
+snapshots can also preserve malicious IOC first-seen/last-seen timestamps for
+the optional temporal filter.
 
 ## Current Hybrid Analysis Flow
 
@@ -122,10 +124,12 @@ flowchart TD
     Dashboard --> Hosted
 ```
 
-Fresh source-aware or time-aware final evaluation and hosted deployment remain
-planned. Local model artifact persistence,
-domain-score inference, privacy-conscious SQLite analysis history, a
-local SQLite CTI cache, and a Streamlit MVP are implemented.
+Source-aware final evaluation is implemented, and a first-seen-filtered
+malicious temporal mode is available. A new timing-preserving holdout still
+needs to be collected before presenting a strict temporal measurement. Hosted
+deployment remains planned. Local model artifact persistence, domain-score
+inference, privacy-conscious SQLite analysis history, a local SQLite CTI cache,
+and the Streamlit application are implemented.
 
 ## Current Modules
 

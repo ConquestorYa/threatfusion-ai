@@ -4,15 +4,15 @@ Use this checklist before creating the `v0.1.0` portfolio release.
 
 ## 1) Repository and legal readiness
 
-- [ ] **License decision confirmed by repository owner** and `LICENSE` file added.
-- [ ] README and docs reflect current implementation accurately (no contradictory status notes).
+- [x] **License decision confirmed** and MIT `LICENSE` file added.
+- [x] README and docs reflect the current implementation/evaluation status.
 - [ ] Third-party data-source attribution and redistribution notes reviewed in `docs/DATA_SOURCES.md`.
 
 ## 2) Security and privacy readiness
 
-- [ ] `SECURITY.md` present and reviewed.
-- [ ] Secret scan completed on tracked files (including docs/config changes).
-- [ ] Git history reviewed for accidental committed secrets/private telemetry.
+- [x] `SECURITY.md` present and reviewed.
+- [ ] Public-release audit passes on tracked files.
+- [ ] Full reachable Git-history audit passes for known secret/privacy patterns.
 - [ ] Public release content excludes local paths, analyst history, and private telemetry.
 
 ## 3) Quality gates

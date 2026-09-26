@@ -133,6 +133,59 @@ feed credentials. If a hosting environment also runs CTI refresh jobs, provide
 those credentials only to the maintenance job through the platform's secret
 manager.
 
+## Scheduled CTI refresh
+
+The interactive Streamlit request path must not refresh external feeds. Run
+`scripts/refresh_cti_cache.py` as a separate maintenance job that has write
+access to the runtime SQLite database and receives feed credentials from the
+hosting platform's secret manager.
+
+The refresh job and the public web app should use the same
+`THREATFUSION_DB_PATH`, but the public web container can keep the runtime
+volume read-only. The maintenance job is the only process that needs write
+access to the CTI cache.
+
+A simple local/hosted maintenance command is:
+
+```text
+python scripts/refresh_cti_cache.py
+```
+
+Provide `THREATFOX_AUTH_KEY` and `URLHAUS_AUTH_KEY` only in that maintenance
+job's environment. Do not put the values in the repository, Docker image,
+command-line arguments, or Streamlit configuration.
+
+Schedule the job comfortably inside the configured source freshness windows.
+The default dashboard stale thresholds are 24 hours, so a twice-daily refresh
+is a reasonable demo cadence when the hosting platform supports scheduled
+jobs. A failed or unexpectedly empty source refresh is rejected by the cache
+safety checks instead of replacing healthy data with an empty snapshot.
+
+For Windows local demos, Task Scheduler can invoke the Python command from the
+project virtual environment. For Linux/container hosting, use the platform's
+scheduled-job facility or cron/systemd timer. Keep credentials in the
+platform/service environment rather than a checked-in script.
+
+## Hosted-demo hardening boundary
+
+Before exposing the demo publicly, keep these controls outside the application
+at the hosting/reverse-proxy layer:
+
+- HTTPS only
+- per-IP request/rate limiting
+- request/body limits consistent with the app's 10 MB upload cap
+- public mode enabled with shared history disabled
+- read-only runtime mount for the web process
+- no ThreatFox/URLhaus feed credentials in the web process
+- only a separate maintenance job may update the CTI cache
+- logs must not record uploaded DNS file contents or client-IP telemetry
+- use the sanitized deployment bundle rather than the developer `data/` tree
+
+The repository deliberately does not implement a custom authentication,
+rate-limiter, job scheduler, or reverse proxy for v1. Those are hosting-layer
+responsibilities and adding them to the Streamlit code would unnecessarily
+expand the project scope.
+
 ## Production notes
 
 A public demo should also provide:
