@@ -1,4 +1,4 @@
-# Fully pinned tested environment used by CI and Docker.
+# Fully pinned runtime environment used by Docker.
 # Direct runtime dependencies live in requirements.in and pyproject.toml.
 # Direct development tools are documented in requirements-dev.in.
 altair==6.3.0
