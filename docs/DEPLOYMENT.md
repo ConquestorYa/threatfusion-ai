@@ -20,7 +20,7 @@ Public mode disables:
 This prevents one anonymous visitor from seeing another visitor's persisted
 domain findings.
 
-Raw uploaded DNS rows and client IP values remain in memory only.
+Raw uploaded telemetry rows and client IP values remain in memory only.
 
 ## Runtime paths
 
@@ -256,7 +256,7 @@ at the hosting/reverse-proxy layer:
 - read-only runtime mount for the web process
 - no ThreatFox/URLhaus feed credentials in the web process
 - only a separate maintenance job may update the CTI cache
-- logs must not record uploaded DNS file contents or client-IP telemetry
+- logs must not record uploaded telemetry file contents or client-IP telemetry
 - use the sanitized deployment bundle rather than the developer `data/` tree
 
 The repository deliberately does not implement a custom authentication,

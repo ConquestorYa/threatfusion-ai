@@ -226,9 +226,9 @@ makes a future privacy mode straightforward.
 
 ## DEC-029: Refresh CTI separately from user analysis
 
-**Decision:** Cache ThreatFox, URLhaus, and SGB IOC records locally in SQLite
-and refresh that cache through an explicit maintenance workflow rather than
-calling external CTI services during each DNS analysis.
+**Decision:** Cache ThreatFox, URLhaus, PhishTank, and SGB IOC records locally
+in SQLite and refresh that cache through an explicit maintenance workflow
+rather than calling external CTI services during each user analysis.
 
 **Reason:** User analyses should be fast, reproducible, and independent of
 temporary feed/API availability. Separating refresh from analysis also avoids

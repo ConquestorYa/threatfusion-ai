@@ -13,7 +13,7 @@ Treat all threat indicators as inert data only.
 | SGB (T.C. Siber Güvenlik Başkanlığı) | Malicious address feed collection | `src/threatfusion/collectors/sgb.py` (`SGB_API_URL`) |
 | Tranco | Benign-domain baseline input | `src/threatfusion/collectors/tranco.py` (`TrancoCollector`) |
 | CESNET / DomainRadar 2024 | Real-traffic benign-domain evaluation corpus | DOI `10.5281/zenodo.14332167`; `scripts/sample_cesnet_benign_domains.py` |
-| Local DNS telemetry (user-provided) | Runtime analysis input | CSV/Zeek/Pi-hole/AdGuard ingestion modules |
+| Local network/DNS telemetry (user-provided) | Runtime analysis input | CSV/TSV/TXT, Excel, Zeek, PCAP/PCAPNG, Suricata EVE, Pi-hole, AdGuard and dnstop ingestion modules |
 
 ## Attribution requirements
 
@@ -69,7 +69,7 @@ every possible redistribution scenario.
 
 ## Telemetry privacy notes
 
-- User-uploaded DNS telemetry is analyzed locally/in-memory by default.
+- User-uploaded network/DNS telemetry is analyzed locally/in-memory by default.
 - Public release preparation must not include private telemetry exports, local analyst history, or secrets.
 
 ## Local CTI cache lifecycle

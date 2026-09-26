@@ -48,7 +48,7 @@ Open http://127.0.0.1:8502 and upload demo.csv from that temporary folder. The s
 Review sequence:
 
 1. Inspect CTI source summaries and expand source metadata. Fresh/stale/unknown/not-cached states preserve existing freshness rules.
-2. Analyze the CSV. Intake collapses, priority findings come first, and counts distinguish unique domains from DNS events.
+2. Analyze a supported telemetry file through Auto-detect. Intake collapses, priority findings come first, and counts distinguish unique targets from parsed events.
 3. Search/filter Domain findings; clear the filters. Open Domain investigation, IOC evidence, Related activity and Export & save.
 4. Save aggregate history, open Analysis history, then return to Analyze telemetry. Results must persist. Switching input format or explicitly removing the upload clears stale results.
 5. Switch Light/Dark in the native app menu without rerunning. Check text, surfaces, verdict colors and graphs. At 390 px, open the sidebar and scroll result tabs/tables.
