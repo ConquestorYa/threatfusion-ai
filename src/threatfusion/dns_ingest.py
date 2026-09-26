@@ -14,8 +14,12 @@ import pandas as pd
 
 from .dns import DNSParseResult, parse_dns_csv_with_diagnostics
 from .dns_adguard import parse_adguard_query_log_with_diagnostics
+from .dns_dnstop import parse_dnstop_with_diagnostics
+from .dns_pcap import parse_pcap_dns_with_diagnostics
 from .dns_pihole import parse_pihole_query_db_with_diagnostics
+from .dns_suricata import parse_suricata_eve_dns_with_diagnostics
 from .dns_zeek import parse_zeek_dns_log_with_diagnostics
+from .zeek_conn import parse_zeek_conn_log_with_diagnostics
 
 _XLSX_MAIN_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
 _XLSX_DOC_REL_NS = (
@@ -34,6 +38,7 @@ class DNSInputDetection:
     format_name: str
     detail: str
     encoding: str | None = None
+    analysis_mode: str = "dns"
 
 
 def _decode_text(content: bytes) -> tuple[str, str]:
@@ -442,16 +447,83 @@ def _parse_excel(
     ) from pandas_error
 
 
+def _filename_suffix(filename: str | None) -> str:
+    return Path(filename or "").suffix.casefold()
+
+
+def _looks_like_pcap(content: bytes, filename: str | None) -> bool:
+    suffix = _filename_suffix(filename)
+    if suffix in {".pcap", ".pcapng", ".cap"}:
+        return True
+    return content[:4] in {
+        b"\xa1\xb2\xc3\xd4",
+        b"\xd4\xc3\xb2\xa1",
+        b"\xa1\xb2\x3c\x4d",
+        b"\x4d\x3c\xb2\xa1",
+        b"\x0a\x0d\x0d\x0a",
+    }
+
+
+def _is_capinfos_file(filename: str | None, text: str | None = None) -> bool:
+    suffix = _filename_suffix(filename)
+    lowered_name = Path(filename or "").name.casefold()
+    if suffix in {".capinfos", ".pcapinfos"} or lowered_name.endswith(
+        ("capinfos", "pcapinfos")
+    ):
+        return True
+    if text:
+        head = "\n".join(text.splitlines()[:20]).casefold()
+        return (
+            "file name:" in head
+            and "number of packets:" in head
+            and "capture duration:" in head
+        )
+    return False
+
+
+def _zeek_path(text: str) -> str | None:
+    for line in text.splitlines()[:40]:
+        if not line.startswith("#path"):
+            continue
+        value = line[len("#path") :].strip()
+        return value.casefold() or None
+    return None
+
+
+def _looks_like_suricata_eve(text: str, filename: str | None) -> bool:
+    name = Path(filename or "").name.casefold()
+    if "eve" in name and _filename_suffix(filename) in {".json", ".jsonl", ".log"}:
+        return True
+
+    first_line = next(
+        (line.strip() for line in text.splitlines() if line.strip()),
+        "",
+    )
+    if not first_line.startswith(("{", "[")):
+        return False
+    try:
+        parsed = json.loads(first_line if first_line.startswith("{") else text)
+    except json.JSONDecodeError:
+        return False
+
+    if isinstance(parsed, dict):
+        return "event_type" in parsed and "dns" in parsed
+    if isinstance(parsed, list) and parsed:
+        first = parsed[0]
+        return (
+            isinstance(first, dict)
+            and "event_type" in first
+            and "dns" in first
+        )
+    return False
+
+
 def _looks_like_zeek(text: str) -> bool:
     header = "\n".join(text.splitlines()[:40])
-    return (
-        "#fields" in header
-        and "query" in header
-        and (
-            "#separator" in header
-            or "\t" in header
-            or " id.orig_h " in header
-        )
+    return "#fields" in header and (
+        "#separator" in header
+        or "\t" in header
+        or " id.orig_h " in header
     )
 
 
@@ -490,7 +562,7 @@ def parse_dns_upload_with_diagnostics(
     content: bytes,
     filename: str | None = None,
 ) -> tuple[DNSParseResult, DNSInputDetection]:
-    """Auto-detect and parse supported DNS telemetry without networking."""
+    """Auto-detect and parse supported local network telemetry."""
     if not isinstance(content, bytes) or not content:
         raise ValueError("DNS telemetry upload is empty")
 
@@ -501,16 +573,58 @@ def parse_dns_upload_with_diagnostics(
             detail="SQLite signature detected",
         )
 
+    if _looks_like_pcap(content, filename):
+        parsed = parse_pcap_dns_with_diagnostics(content)
+        return parsed, DNSInputDetection(
+            format_name="PCAP/PCAPNG DNS",
+            detail="DNS packets extracted locally from the capture",
+        )
+
     if _looks_like_excel(content, filename):
         return _parse_excel(content, filename)
 
     text, encoding = _decode_text(content)
 
+    if _is_capinfos_file(filename, text):
+        raise ValueError(
+            "capinfos/pcapinfos contains capture metadata only, not packet "
+            "or DNS records. Upload the matching .pcap/.pcapng file instead."
+        )
+
     if _looks_like_zeek(text):
-        parsed = parse_zeek_dns_log_with_diagnostics(text)
+        path = _zeek_path(text)
+        if path == "conn":
+            parsed = parse_zeek_conn_log_with_diagnostics(text)
+            return parsed, DNSInputDetection(
+                format_name="Zeek conn.log",
+                detail=(
+                    "connection destination IPs analyzed with local CTI; "
+                    "label/det_label ground-truth columns ignored"
+                ),
+                encoding=encoding,
+                analysis_mode="connection",
+            )
+        if path == "dns" or "query" in "\n".join(text.splitlines()[:40]):
+            parsed = parse_zeek_dns_log_with_diagnostics(text)
+            return parsed, DNSInputDetection(
+                format_name="Zeek dns.log",
+                detail="Zeek #fields header detected",
+                encoding=encoding,
+            )
+
+    if _looks_like_suricata_eve(text, filename):
+        parsed = parse_suricata_eve_dns_with_diagnostics(text)
         return parsed, DNSInputDetection(
-            format_name="Zeek dns.log",
-            detail="Zeek #fields header detected",
+            format_name="Suricata EVE DNS",
+            detail="DNS events extracted from EVE JSON",
+            encoding=encoding,
+        )
+
+    if _filename_suffix(filename) == ".dnstop":
+        parsed = parse_dnstop_with_diagnostics(text)
+        return parsed, DNSInputDetection(
+            format_name="dnstop summary",
+            detail="unique domain names extracted from aggregate dnstop text",
             encoding=encoding,
         )
 
