@@ -9,14 +9,16 @@ from threatfusion.ui_theme import (
 
 
 def test_theme_palettes_define_product_modes() -> None:
-    assert {"Obsidian", "Arctic", "Midnight", "Crimson"} == set(THEME_PALETTES)
-    assert palette("Light") == palette("Arctic")
-    assert palette("White") == palette("Arctic")
-    assert palette("Dark") == palette("Obsidian")
+    assert {"Midnight", "Crimson", "Violet Noir"} == set(THEME_PALETTES)
+    assert palette("Light") == palette("Midnight")
+    assert palette("White") == palette("Midnight")
+    assert palette("Dark") == palette("Midnight")
+    assert palette("Obsidian") == palette("Midnight")
+    assert palette("Arctic") == palette("Midnight")
     assert palette("Blue Dark") == palette("Midnight")
     assert palette("Red") == palette("Crimson")
-    assert palette("Obsidian")["bg"] != palette("Arctic")["bg"]
-    assert palette("Obsidian")["text"] != palette("Arctic")["text"]
+    assert palette("Midnight")["bg"] != palette("Crimson")["bg"]
+    assert palette("Midnight")["logo"] != palette("Violet Noir")["logo"]
 
 
 def test_verdict_palette_covers_all_runtime_verdicts() -> None:
