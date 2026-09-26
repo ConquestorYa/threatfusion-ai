@@ -47,6 +47,20 @@ def test_source_status_keeps_backend_state_and_escapes_metadata(status):
     assert "<table" not in rendered
 
 
+def test_phishtank_status_labels_verified_online_scope():
+    row = {
+        "Source": "PhishTank",
+        "Status": "Fresh",
+        "Records": 77321,
+        "Age": "1.3 h",
+    }
+
+    rendered = source_status_html(row)
+
+    assert "PhishTank · Verified &amp; Online" in rendered
+    assert "77,321 verified &amp; online phishing URLs" in rendered
+
+
 @pytest.mark.parametrize("theme", THEME_OPTIONS)
 def test_text_and_verdict_tokens_meet_normal_text_contrast(theme):
     def luminance(hex_color):
