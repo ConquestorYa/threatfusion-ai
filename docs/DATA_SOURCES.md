@@ -22,23 +22,41 @@ Treat all threat indicators as inert data only.
 
 ## Redistribution and licensing status
 
-Verified in this repository:
+Verified from current official source documentation:
 
-- The code contains feed endpoints and ingestion logic.
-- The code does **not** include a bundled copy of full third-party feed datasets.
-- The CESNET/DomainRadar 2024 dataset is published under CC BY 4.0. ThreatFusion stores only source attribution and locally sampled evaluation input; no CESNET corpus is committed to the repository.
+- The code contains feed endpoints and ingestion logic; it does **not** bundle a
+  copy of the live ThreatFox, URLhaus, SGB, or Tranco datasets.
+- ThreatFox and URLhaus are abuse.ch platforms governed by the abuse.ch Terms of
+  Use and Fair Use Principles. The community APIs are intended for authenticated
+  non-profit/fair-use access; commercial or for-profit use may require a
+  Spamhaus subscription. See:
+  - https://abuse.ch/terms-of-use/
+  - https://threatfox.abuse.ch/api/
+  - https://urlhaus.abuse.ch/api/
+- The SGB API documentation explicitly describes automated integration of its
+  malicious-address intelligence into security products/systems, but this
+  repository does not rely on that statement as a broad redistribution license.
+  See: https://siberguvenlik.gov.tr/api/
+- Tranco publishes reproducible downloadable rankings assembled from multiple
+  upstream providers whose stated licenses differ. ThreatFusion therefore does
+  not treat the combined ranking as a repository asset to redistribute. See:
+  https://tranco-list.eu/
+- The CESNET/DomainRadar 2024 dataset is published under CC BY 4.0. ThreatFusion
+  stores attribution and locally sampled evaluation inputs only; no CESNET
+  corpus is committed to the repository.
 
-Not yet verified in this repository (requires owner/legal review):
+Public-demo policy:
 
-- exact redistribution permissions for each feed's raw IOC data
-- any attribution text requirements for public redistribution of derived datasets
-- any usage constraints for commercial/public-hosted reuse
+- do not publish raw third-party feed dumps or the developer's live CTI cache
+- generate the hosted demo cache with
+  `scripts/generate_public_demo_cti_cache.py`
+- the synthetic public-demo cache contains only reserved documentation values,
+  not ThreatFox, URLhaus, SGB, Tranco, or CESNET records
+- keep source attribution when presenting results derived from locally fetched
+  third-party data
 
-Until verified:
-
-- treat third-party feed data as externally governed content
-- avoid publishing raw feed dumps from this project
-- publish only minimal, attribution-preserving, portfolio-safe derived examples
+This is a conservative portfolio-release boundary, not a legal conclusion about
+every possible redistribution scenario.
 
 ## Telemetry privacy notes
 
