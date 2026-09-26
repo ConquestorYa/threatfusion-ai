@@ -9,8 +9,8 @@ WORKDIR /app
 
 RUN useradd --create-home --uid 10001 threatfusion
 
-COPY requirements.txt ./
-RUN python -m pip install --no-cache-dir -r requirements.txt
+COPY requirements-runtime.txt ./
+RUN python -m pip install --no-cache-dir -r requirements-runtime.txt
 
 COPY . .
 
