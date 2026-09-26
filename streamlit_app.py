@@ -502,28 +502,38 @@ def main() -> None:
             )
 
         st.caption(
-            "Passive lookup only. ThreatFusion does not open the URL, perform "
-            "DNS resolution, or download remote content."
+            "Paste one address. ThreatFusion checks the local CTI cache and "
+            "domain model without opening the destination."
         )
-        lookup_value = st.text_input(
-            "URL or domain",
-            placeholder="https://example.com/path or example.com",
-            key="quick_lookup_input",
-            on_change=_clear_quick_lookup_state,
+        lookup_input, lookup_action = st.columns([5, 1.15], vertical_alignment="bottom")
+        with lookup_input:
+            lookup_value = st.text_input(
+                "URL or domain",
+                placeholder="example.com or https://example.com/path",
+                key="quick_lookup_input",
+                on_change=_clear_quick_lookup_state,
+            )
+        with lookup_action:
+            analyze_lookup = st.button(
+                "Check",
+                type="primary",
+                width="stretch",
+                disabled=not lookup_value.strip(),
+                key="quick_lookup_analyze",
+            )
+
+        st.caption(
+            "Passive by design · no page visit · no DNS resolution · no download"
         )
-        if st.button(
-            "Analyze URL / domain",
-            type="primary",
-            width="stretch",
-            disabled=not lookup_value.strip(),
-            key="quick_lookup_analyze",
-        ):
+
+        if analyze_lookup:
             try:
-                st.session_state["quick_lookup_result"] = analyze_quick_lookup(
-                    lookup_value,
-                    indicators,
-                    artifact,
-                )
+                with st.spinner("Checking local threat signals…"):
+                    st.session_state["quick_lookup_result"] = analyze_quick_lookup(
+                        lookup_value,
+                        indicators,
+                        artifact,
+                    )
             except (TypeError, ValueError) as error:
                 st.session_state.pop("quick_lookup_result", None)
                 st.error(f"Lookup input could not be analyzed: {error}")
