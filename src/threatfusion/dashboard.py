@@ -118,6 +118,9 @@ _REASON_LABELS = {
     "ml_high_confidence": "High ML score tier",
     "ml_medium_confidence": "Medium ML score tier",
     "ml_low_confidence": "Low ML score tier",
+    "ml_high_uncorroborated": (
+        "High ML score has no independent corroborating threat signal"
+    ),
     "high_query_volume": "High DNS query volume",
     "multi_client_observation": "Observed from multiple clients",
     "response_ip_churn": "Multiple response IPs observed",
