@@ -355,6 +355,32 @@ def _render_evidence_state(result: QuickLookupResult) -> None:
     )
 
 
+def render_quick_lookup_empty_state() -> None:
+    st.markdown(
+        '<div class="tf-lookup-empty-visual">'
+        '<div class="tf-lookup-empty-step">'
+        '<div class="tf-lookup-empty-step-num">01 · Input</div>'
+        '<div class="tf-lookup-empty-step-title">URL or domain</div>'
+        '<div class="tf-lookup-empty-step-copy">Paste one address into the large lookup field above.</div>'
+        '</div>'
+        '<div class="tf-lookup-empty-arrow" aria-hidden="true">→</div>'
+        '<div class="tf-lookup-empty-step">'
+        '<div class="tf-lookup-empty-step-num">02 · Signals</div>'
+        '<div class="tf-lookup-empty-step-title">CTI + ML</div>'
+        '<div class="tf-lookup-empty-step-copy">Check the local ThreatFox, URLhaus and SGB cache plus the domain model.</div>'
+        '</div>'
+        '<div class="tf-lookup-empty-arrow" aria-hidden="true">→</div>'
+        '<div class="tf-lookup-empty-step">'
+        '<div class="tf-lookup-empty-step-num">03 · Result</div>'
+        '<div class="tf-lookup-empty-step-title">Clear verdict</div>'
+        '<div class="tf-lookup-empty-step-copy">See a color-coded result, evidence path and model signal overview.</div>'
+        '</div>'
+        '</div>'
+        '<div class="tf-lookup-empty-note">Passive analysis only · the destination is never opened or resolved.</div>',
+        unsafe_allow_html=True,
+    )
+
+
 def render_quick_lookup_result(result: QuickLookupResult) -> None:
     _render_outcome_banner(result)
     _render_graphic_overview(result)
