@@ -199,6 +199,185 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
 .tf-empty strong { display:block; color:var(--tf-text); font-size:.95rem; margin-bottom:.35rem; }
 .tf-empty p { font-size:.85rem; margin:0; line-height:1.6; }
 .tf-privacy { color:var(--tf-muted); font-size:.78rem; line-height:1.6; margin:.45rem 0; }
+
+/* Quick lookup: one clear outcome first, then evidence. Inspired by the
+   simplicity of breach-check tools without copying their branding or layout. */
+.tf-lookup-result {
+    --tf-lookup-accent:var(--tf-blue);
+    --tf-lookup-soft:color-mix(in srgb, var(--tf-lookup-accent) 10%, transparent);
+    --tf-lookup-border:color-mix(in srgb, var(--tf-lookup-accent) 32%, var(--tf-border));
+    margin:1.05rem 0 1.25rem;
+    padding:1.35rem 1.45rem;
+    border:1px solid var(--tf-lookup-border);
+    border-left:5px solid var(--tf-lookup-accent);
+    border-radius:12px;
+    background:linear-gradient(
+        90deg,
+        var(--tf-lookup-soft) 0%,
+        color-mix(in srgb, var(--tf-panel) 96%, transparent) 48%,
+        var(--tf-panel) 100%
+    );
+}
+.tf-lookup-result--safe { --tf-lookup-accent:var(--tf-green); }
+.tf-lookup-result--review { --tf-lookup-accent:var(--tf-yellow); }
+.tf-lookup-result--danger { --tf-lookup-accent:var(--tf-orange); }
+.tf-lookup-result--critical { --tf-lookup-accent:var(--tf-red); }
+
+.tf-lookup-result-top {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:1.25rem;
+}
+.tf-lookup-result-copy {
+    display:flex;
+    align-items:center;
+    gap:1rem;
+    min-width:0;
+}
+.tf-lookup-icon {
+    flex:0 0 auto;
+    display:grid;
+    place-items:center;
+    width:3.3rem;
+    height:3.3rem;
+    border-radius:999px;
+    border:1px solid color-mix(in srgb, var(--tf-lookup-accent) 48%, transparent);
+    background:color-mix(in srgb, var(--tf-lookup-accent) 14%, transparent);
+    color:var(--tf-lookup-accent);
+    font-family:"Segoe UI Symbol","Segoe UI",Arial,sans-serif;
+    font-size:1.7rem;
+    font-weight:700;
+    line-height:1;
+}
+.tf-lookup-kicker {
+    color:var(--tf-lookup-accent);
+    font-size:.72rem;
+    font-weight:700;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+}
+.tf-lookup-title {
+    color:var(--tf-text);
+    font-size:1.55rem;
+    font-weight:700;
+    letter-spacing:-.025em;
+    line-height:1.22;
+    margin:.18rem 0 .2rem;
+}
+.tf-lookup-summary {
+    color:var(--tf-muted);
+    font-size:.9rem;
+    line-height:1.55;
+}
+.tf-lookup-target {
+    flex:0 1 42%;
+    max-width:42rem;
+    min-width:15rem;
+    font-family:ui-monospace,"Cascadia Code",Consolas,monospace;
+    color:var(--tf-text);
+    background:color-mix(in srgb, var(--tf-bg) 72%, transparent);
+    border:1px solid var(--tf-border);
+    border-radius:8px;
+    padding:.72rem .85rem;
+    overflow-wrap:anywhere;
+    font-size:.83rem;
+}
+.tf-lookup-meta {
+    display:flex;
+    flex-wrap:wrap;
+    gap:.45rem 1rem;
+    margin-top:1rem;
+    padding-top:.9rem;
+    border-top:1px solid color-mix(in srgb, var(--tf-lookup-accent) 20%, var(--tf-border));
+    color:var(--tf-muted);
+    font-size:.78rem;
+}
+.tf-lookup-meta strong { color:var(--tf-text); font-weight:600; }
+
+.tf-signal-grid {
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:.7rem;
+    margin:.2rem 0 1rem;
+}
+.tf-signal {
+    min-height:76px;
+    padding:.78rem .85rem;
+    border:1px solid var(--tf-border);
+    border-radius:8px;
+    background:var(--tf-panel);
+}
+.tf-signal-label {
+    color:var(--tf-muted);
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.07em;
+    font-weight:600;
+}
+.tf-signal-value {
+    color:var(--tf-text);
+    font-size:1rem;
+    font-weight:650;
+    margin-top:.32rem;
+}
+.tf-signal-sub {
+    color:var(--tf-muted);
+    font-size:.74rem;
+    line-height:1.45;
+    margin-top:.18rem;
+}
+.tf-signal--safe .tf-signal-value { color:var(--tf-green); }
+.tf-signal--review .tf-signal-value { color:var(--tf-yellow); }
+.tf-signal--danger .tf-signal-value { color:var(--tf-red); }
+
+.tf-reason-list {
+    margin:.25rem 0 1rem;
+    border-top:1px solid var(--tf-border);
+}
+.tf-reason-row {
+    display:grid;
+    grid-template-columns:1.35rem minmax(0,1fr);
+    gap:.55rem;
+    align-items:start;
+    padding:.72rem 0;
+    border-bottom:1px solid var(--tf-border);
+    color:var(--tf-text);
+    font-size:.86rem;
+    line-height:1.5;
+}
+.tf-reason-icon {
+    color:var(--tf-cyan);
+    font-weight:700;
+    text-align:center;
+}
+.tf-evidence-state {
+    display:flex;
+    gap:.7rem;
+    align-items:flex-start;
+    padding:.85rem 1rem;
+    border:1px solid var(--tf-border);
+    border-radius:8px;
+    background:var(--tf-panel);
+    font-size:.84rem;
+    line-height:1.55;
+    margin:.15rem 0 .85rem;
+}
+.tf-evidence-state strong { display:block; color:var(--tf-text); margin-bottom:.12rem; }
+.tf-evidence-state span { color:var(--tf-muted); }
+.tf-evidence-state--safe { border-left:4px solid var(--tf-green); }
+.tf-evidence-state--review { border-left:4px solid var(--tf-yellow); }
+.tf-evidence-state--danger { border-left:4px solid var(--tf-red); }
+.tf-evidence-state-icon {
+    flex:0 0 auto;
+    width:1.6rem;
+    color:var(--tf-text);
+    font-size:1.05rem;
+    font-weight:700;
+    line-height:1.4;
+    text-align:center;
+}
+
 [data-testid="stDataFrame"] { border:1px solid var(--tf-border); border-radius:6px; }
 [data-testid="stExpander"] { border-color:var(--tf-border); border-radius:6px; }
 [data-testid="stMetric"] { padding:.4rem 0; }
@@ -216,6 +395,10 @@ button:focus-visible,a:focus-visible,input:focus-visible {
     .tf-finding-evidence { grid-column:1 / -1; }
     .block-container { padding-left:1rem; padding-right:1rem; }
     .tf-steps { gap:.55rem 1rem; }
+    .tf-lookup-result { padding:1rem; }
+    .tf-lookup-result-top { align-items:flex-start; flex-direction:column; }
+    .tf-lookup-target { flex-basis:auto; min-width:0; width:100%; max-width:none; }
+    .tf-signal-grid { grid-template-columns:1fr; }
 }
 @media(prefers-reduced-motion:reduce) { .tf-finding-row { transition:none; } }
 """
