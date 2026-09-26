@@ -7,8 +7,9 @@ Treat all threat indicators as inert data only.
 
 | Source | Purpose | Endpoint / reference in repo |
 | --- | --- | --- |
-| ThreatFox (abuse.ch) | Malicious IOC feed collection | `src/threatfusion/collectors/threatfox.py` (`THREATFOX_API_URL`) |
-| URLhaus (abuse.ch) | Malicious URL feed collection | `src/threatfusion/collectors/urlhaus.py` (`URLHAUS_EXPORT_URL`) |
+| ThreatFox (abuse.ch) | Malicious IOC feed collection | `src/threatfusion/collectors/threatfox.py` (full current export + recent API fallback) |
+| URLhaus (abuse.ch) | Malware-distribution URL feed collection | `src/threatfusion/collectors/urlhaus.py` (full database dump) |
+| PhishTank | Verified online phishing URL collection | `src/threatfusion/collectors/phishtank.py` |
 | SGB (T.C. Siber Güvenlik Başkanlığı) | Malicious address feed collection | `src/threatfusion/collectors/sgb.py` (`SGB_API_URL`) |
 | Tranco | Benign-domain baseline input | `src/threatfusion/collectors/tranco.py` (`TrancoCollector`) |
 | CESNET / DomainRadar 2024 | Real-traffic benign-domain evaluation corpus | DOI `10.5281/zenodo.14332167`; `scripts/sample_cesnet_benign_domains.py` |
@@ -25,7 +26,7 @@ Treat all threat indicators as inert data only.
 Verified from current official source documentation:
 
 - The code contains feed endpoints and ingestion logic; it does **not** bundle a
-  copy of the live ThreatFox, URLhaus, SGB, or Tranco datasets.
+  copy of the live ThreatFox, URLhaus, PhishTank, SGB, or Tranco datasets.
 - ThreatFox and URLhaus are abuse.ch platforms governed by the abuse.ch Terms of
   Use and Fair Use Principles. The community APIs are intended for authenticated
   non-profit/fair-use access; commercial or for-profit use may require a
@@ -33,6 +34,11 @@ Verified from current official source documentation:
   - https://abuse.ch/terms-of-use/
   - https://threatfox.abuse.ch/api/
   - https://urlhaus.abuse.ch/api/
+- PhishTank provides downloadable files containing verified, online phishing
+  URLs. Automated use should use a registered application key and respect the
+  source's update/rate guidance. ThreatFusion stores source attribution and does
+  not commit the downloaded feed to this repository. See:
+  - https://phishtank.org/developer_info.php
 - The SGB API documentation explicitly describes automated integration of its
   malicious-address intelligence into security products/systems, but this
   repository does not rely on that statement as a broad redistribution license.
@@ -75,7 +81,16 @@ not be confused with a feed's own IOC `first_seen` / `last_seen` metadata.
 
 SGB collection is bounded by a caller-controlled maximum page count and stops
 earlier when the API reports that all rows were collected or returns an empty
-page. This avoids treating a fixed page count as the source's actual size.
+page. A scheduled refresh refuses to replace the previous SGB snapshot when the
+configured page bound is reached before the source end.
+
+ThreatFox refreshes use its full current export rather than only the 1-7 day
+recent-IOC API window. URLhaus refreshes use its full malware URL dump. This
+prevents Quick lookup coverage from shrinking to only recently added IOCs.
+
+Quick lookup does not load the complete active CTI dataset into Python. The
+SQLite cache stores normalized lookup keys and indexed URL hostnames so a
+single URL/domain query retrieves only relevant candidate indicators.
 
 
 
