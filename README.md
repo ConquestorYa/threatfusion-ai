@@ -12,7 +12,7 @@ replacement for a production SIEM or EDR.
 The current runtime flow is:
 
 ```text
-ThreatFox / URLhaus / SGB
+ThreatFox / URLhaus / PhishTank / SGB
           |
           v
    Local CTI cache
@@ -76,7 +76,7 @@ See `docs/ARCHITECTURE.md` for full data-flow and module-level details.
 
 ## Implemented
 
-- ThreatFox, URLhaus, and SGB collectors
+- ThreatFox full-current, URLhaus full-dump, optional PhishTank, and SGB collectors
 - common IOC model, normalization, and correlation
 - DNS CSV, Zeek `dns.log`, in-memory Pi-hole FTL database, and AdGuard Home query-log ingestion with aggregate input-quality diagnostics
 - known domain / URL-hostname / response-IP / IPv6-network matching with evidence-scope metadata
@@ -98,7 +98,9 @@ See `docs/ARCHITECTURE.md` for full data-flow and module-level details.
 - public-mode privacy controls and non-root Docker packaging
 - privacy-safe JSON/CSV analysis report export with spreadsheet-safe CSV cells
 - bounded runtime analysis, IDNA/punycode canonicalization, and strict ML eligibility filtering for valid public-domain candidates, with explicit Not-scored presentation
-- CTI freshness/staleness visibility
+- CTI freshness/staleness visibility and optional scheduled background refresh
+- indexed single-target CTI lookup so Quick lookup does not load the full IOC cache into memory
+- bounded inactive-IOC retention to keep long-running caches compact
 - sparse evidence-driven related-activity pair generation with bounded and optimized timestamp comparison
 - CI coverage across Ubuntu quality checks, Windows pytest compatibility, and Docker build/health smoke validation
 
@@ -156,12 +158,27 @@ The dashboard expects:
 - a trusted local model artifact at `data/models/development-001`
 - a local SQLite database at `data/threatfusion.sqlite`
 
-Refresh the CTI cache (the refresh is rejected before cache replacement if an expected source unexpectedly returns zero records):
+Refresh the CTI cache with the broader current/full feeds. A failed or empty
+source preserves its previous healthy snapshot instead of replacing it:
 
 ```powershell
 $env:THREATFOX_AUTH_KEY="..."
 $env:URLHAUS_AUTH_KEY="..."
-python scripts\refresh_cti_cache.py
+$env:PHISHTANK_APP_KEY="..."  # optional phishing coverage
+python scripts\refresh_cti_cache.py --force
+```
+
+ThreatFox uses its current full export rather than the 1-7 day recent API
+window. URLhaus uses its full malware URL dump. PhishTank adds verified online
+phishing URLs when an application key is configured. SGB pagination must reach
+the source end before its previous snapshot is replaced.
+
+For an opt-in process-local refresh loop on low-cost hosting:
+
+```text
+THREATFUSION_AUTO_REFRESH_CTI=1
+THREATFUSION_CTI_REFRESH_HOURS=6
+THREATFUSION_SGB_MAX_PAGES=100
 ```
 
 Generate a safe local demo DNS CSV:
