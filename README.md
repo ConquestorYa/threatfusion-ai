@@ -390,7 +390,6 @@ threatfusion-ai/
 Remaining release work is intentionally narrow:
 
 - one final untouched post-freeze temporal ML measurement;
-- sanitized portfolio screenshots;
 - hosted public-mode demo;
 - final release checklist and GitHub release/tag.
 
