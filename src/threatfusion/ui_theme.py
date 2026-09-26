@@ -1084,7 +1084,7 @@ def render_priority_finding(row: dict[str, object]) -> None:
     st.markdown(
         f'<div class="tf-finding-row" style="--tf-row-accent:{accent}"><div>'
         f'<div class="tf-finding-domain">{safe_text(row["Domain"])}</div>'
-        f'<div class="tf-finding-meta">{safe_text(row.get("DNS events", 0))} events'
+        f'<div class="tf-finding-meta">{safe_text(row.get("DNS events", 0))} {safe_text(tr("events"))}'
         f" · {safe_text(sources)}</div></div>{verdict_badge(verdict)}"
         f'<div class="tf-finding-evidence">{safe_text(evidence)}</div></div>',
         unsafe_allow_html=True,
