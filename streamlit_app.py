@@ -26,6 +26,7 @@ from threatfusion.dashboard import (
     relationship_rows,
     summarize_runtime_result,
 )
+from threatfusion.i18n import tr, translate_dataframe
 from threatfusion.ml_artifact import load_trusted_ml_artifact
 from threatfusion.persistence import (
     get_active_analyst_suppressions,
@@ -82,14 +83,14 @@ def _show_system_status(
     *,
     cti_stale_after_by_source=None,
 ) -> None:
-    st.sidebar.markdown("### Workspace health")
+    st.sidebar.markdown(f"### {tr('Workspace health')}")
 
     model_path = model_dir / "model.joblib"
     metadata_path = model_dir / "metadata.json"
     model_ready = model_path.exists() and metadata_path.exists()
     status_card(
-        "ML artifact",
-        "Present" if model_ready else "Missing",
+        tr("ML artifact"),
+        tr("Present") if model_ready else tr("Missing"),
         "good" if model_ready else "bad",
     )
 
@@ -105,25 +106,25 @@ def _show_system_status(
     stale_sources = [row["Source"] for row in status_rows if row["Status"] != "Fresh"]
 
     if not statuses:
-        cti_value = "Empty"
+        cti_value = tr("Empty")
         cti_tone = "warn"
     elif stale_sources:
-        cti_value = f"{len(stale_sources)} need review"
+        cti_value = tr("{count} need review", count=len(stale_sources))
         cti_tone = "warn"
     else:
-        cti_value = f"{len(statuses)} cached"
+        cti_value = tr("{count} cached", count=len(statuses))
         cti_tone = "good"
 
-    status_card("CTI cache", cti_value, cti_tone)
+    status_card(tr("CTI cache"), cti_value, cti_tone)
 
     holdout_ready = evaluation_report_path.is_file()
     status_card(
-        "Final evaluation",
-        "Available" if holdout_ready else "Pending holdout",
+        tr("Final evaluation"),
+        tr("Available") if holdout_ready else tr("Pending holdout"),
         "good" if holdout_ready else "info",
     )
 
-    st.sidebar.markdown("### CTI sources")
+    st.sidebar.markdown(f"### {tr('CTI sources')}")
     cached = {str(row["Source"]): row for row in status_rows}
     source_names = list(dict.fromkeys(["ThreatFox", "URLhaus", "SGB", *cached]))
     for source in source_names:
@@ -140,12 +141,14 @@ def _show_system_status(
             },
         )
         render_source_status(row)
-    with st.sidebar.expander("Workspace details", expanded=False):
+    with st.sidebar.expander(tr("Workspace details"), expanded=False):
         st.caption(
-            "Artifact status checks for local model and metadata files. The model is validated when analysis opens."
+            tr(
+                "Artifact status checks for local model and metadata files. The model is validated when analysis opens."
+            )
         )
-        st.caption("Theme follows Settings → Theme in the app menu.")
-        st.caption("CTI status describes the local cache, not a live feed connection.")
+        st.caption(tr("Theme and language controls are available in the top bar."))
+        st.caption(tr("CTI status describes the local cache, not a live feed connection."))
 
 
 def _show_analysis_result(
@@ -157,9 +160,11 @@ def _show_analysis_result(
 ) -> None:
     summary = summarize_runtime_result(result)
 
-    st.subheader("Priority findings")
+    st.subheader(tr("Priority findings"))
     st.caption(
-        "Start with the highest-priority domains, then open Domain investigation for the evidence."
+        tr(
+            "Start with the highest-priority domains, then open Domain investigation for the evidence."
+        )
     )
 
     domains = [assessment.domain for assessment in result.assessments]
@@ -214,54 +219,56 @@ def _show_analysis_result(
                 st.success("No Known Threat, High Risk, or Review findings.")
 
     with overview_right:
-        section_label("Verdict distribution")
+        section_label(tr("Verdict distribution"))
         st.plotly_chart(
             _verdict_distribution_figure(summary),
             width="stretch",
             config={"displayModeBar": False},
         )
 
-    section_label("Analysis overview")
+    section_label(tr("Analysis overview"))
     columns = st.columns(6)
-    metric_card(columns[0], "DNS events", summary.event_count, accent="neutral")
+    metric_card(columns[0], tr("DNS events"), summary.event_count, accent="neutral")
     metric_card(
         columns[1],
-        "Unique domains",
+        tr("Unique domains"),
         summary.domain_count,
         accent="neutral",
     )
     metric_card(
         columns[2],
-        "Known Threat",
+        tr("Known Threat"),
         summary.known_threat_count,
         accent="red",
     )
     metric_card(
         columns[3],
-        "High Risk",
+        tr("High Risk"),
         summary.high_risk_count,
         accent="orange",
     )
     metric_card(
         columns[4],
-        "Review",
+        tr("Review"),
         summary.review_count,
         accent="yellow",
     )
-    metric_card(columns[5], "Low", summary.low_count, accent="green")
+    metric_card(columns[5], tr("Low"), summary.low_count, accent="green")
 
     st.caption(
-        "Verdicts are assigned per unique domain; DNS events count individual "
-        "telemetry rows."
+        tr(
+            "Verdicts are assigned per unique domain; DNS events count individual "
+            "telemetry rows."
+        )
     )
 
     findings_tab, investigation_tab, matches_tab, campaign_tab, export_tab = st.tabs(
         [
-            "Domain findings",
-            "Domain investigation",
-            "IOC evidence",
-            "Related activity",
-            "Export & save",
+            tr("Domain findings"),
+            tr("Domain investigation"),
+            tr("IOC evidence"),
+            tr("Related activity"),
+            tr("Export & save"),
         ]
     )
     with findings_tab:
@@ -274,7 +281,7 @@ def _show_analysis_result(
             if st.session_state.get("live_domain_detail") not in domain_options:
                 st.session_state.pop("live_domain_detail", None)
             selected_domain = st.selectbox(
-                "Inspect a domain",
+                tr("Inspect a domain"),
                 domain_options,
                 key="live_domain_detail",
             )
@@ -287,33 +294,35 @@ def _show_analysis_result(
                 analyst_policy_enabled=history_enabled,
             )
         else:
-            empty_state("No domains to investigate", "Upload telemetry to begin.")
+            empty_state(tr("No domains to investigate"), tr("Upload telemetry to begin."))
 
     with matches_tab:
         corroboration = ioc_corroboration_rows(result)
         rows = match_rows(result)
 
         if corroboration:
-            st.markdown("#### Source corroboration")
+            st.markdown(f"#### {tr('Source corroboration')}")
             st.caption(
-                "Multiple cached CTI sources strengthen analyst context. "
-                "Corroboration does not override evidence-scope rules."
+                tr(
+                    "Multiple cached CTI sources strengthen analyst context. "
+                    "Corroboration does not override evidence-scope rules."
+                )
             )
             st.dataframe(
-                pd.DataFrame(corroboration),
+                translate_dataframe(pd.DataFrame(corroboration)),
                 hide_index=True,
                 width="stretch",
             )
 
         if rows:
-            st.markdown("#### IOC evidence")
+            st.markdown(f"#### {tr('IOC evidence')}")
             st.dataframe(
-                pd.DataFrame(rows),
+                translate_dataframe(pd.DataFrame(rows)),
                 hide_index=True,
                 width="stretch",
             )
         else:
-            st.info("No cached IOC matches were found.")
+            st.info(tr("No cached IOC matches were found."))
 
     with campaign_tab:
         try:
@@ -336,18 +345,18 @@ def _show_analysis_result(
                 _relationship_figure(related_report, result),
                 width="stretch",
             )
-            st.write("**Possible related-activity groups**")
+            st.write(f"**{tr('Possible related-activity groups')}**")
             st.dataframe(
-                pd.DataFrame(cluster_rows(related_report)),
+                translate_dataframe(pd.DataFrame(cluster_rows(related_report))),
                 hide_index=True,
                 width="stretch",
             )
             with st.expander(
-                "Relationship evidence and noise adjustments", expanded=False
+                tr("Relationship evidence and noise adjustments"), expanded=False
             ):
-                st.write("**Relationship evidence**")
+                st.write(f"**{tr('Relationship evidence')}**")
                 st.dataframe(
-                    pd.DataFrame(relationship_rows(related_report)),
+                    translate_dataframe(pd.DataFrame(relationship_rows(related_report))),
                     hide_index=True,
                     width="stretch",
                 )
@@ -370,14 +379,14 @@ def _show_analysis_result(
         )
         export_columns = st.columns(2)
         export_columns[0].download_button(
-            "Download JSON report",
+            tr("Download JSON report"),
             data=report.json_text,
             file_name="threatfusion_analysis.json",
             mime="application/json",
             width="stretch",
         )
         export_columns[1].download_button(
-            "Download CSV findings",
+            tr("Download CSV findings"),
             data=report.csv_text,
             file_name="threatfusion_findings.csv",
             mime="text/csv",
@@ -388,7 +397,7 @@ def _show_analysis_result(
             "client IP values, and response IP values are not included."
         )
 
-        if history_enabled and st.button("Save aggregate analysis history"):
+        if history_enabled and st.button(tr("Save aggregate analysis history")):
             audit_metadata = st.session_state.get("analysis_audit_metadata")
             if audit_metadata is None:
                 st.error(
@@ -433,10 +442,10 @@ def _render_primary_workspace_launcher(current_page: str) -> None:
     with st.container(border=True, key="primary_workspace_launcher"):
         st.markdown(
             '<div class="tf-primary-workspace-head">'
-            '<div><div class="tf-primary-workspace-kicker">Primary workspace</div>'
-            '<div class="tf-primary-workspace-title">Choose how you want to investigate</div></div>'
+            f'<div><div class="tf-primary-workspace-kicker">{tr("Primary workspace")}</div>'
+            f'<div class="tf-primary-workspace-title">{tr("Choose how you want to investigate")}</div></div>'
             '<div class="tf-primary-workspace-hint">'
-            'Quick lookup is the default entry point; telemetry analysis is one click away for deeper batch investigation.'
+            f'{tr("Quick lookup is the default entry point; telemetry analysis is one click away for deeper batch investigation.")}'
             '</div></div>',
             unsafe_allow_html=True,
         )
@@ -446,28 +455,28 @@ def _render_primary_workspace_launcher(current_page: str) -> None:
         lookup_active = current_page == "Quick lookup"
         with lookup_col:
             lookup_state = (
-                "Current workspace" if lookup_active else "Instant investigation"
+                tr("Current workspace") if lookup_active else tr("Instant investigation")
             )
             lookup_class = " tf-primary-card--active" if lookup_active else ""
             st.markdown(
                 f'<div class="tf-primary-card{lookup_class}">'
                 '<div class="tf-primary-card-top">'
-                '<span class="tf-primary-card-number">01 · QUICK LOOKUP</span>'
+                f'<span class="tf-primary-card-number">01 · {tr("QUICK LOOKUP")}</span>'
                 f'<span class="tf-primary-card-state">{lookup_state}</span>'
                 '</div>'
-                '<div class="tf-primary-card-title">Check a URL, domain or IP</div>'
+                f'<div class="tf-primary-card-title">{tr("Check a URL, domain or IP")}</div>'
                 '<div class="tf-primary-card-copy">'
-                'Paste one address for a fast passive CTI + ML check with a clear color-coded result and evidence path.'
+                f'{tr("Paste one address for a fast passive CTI + ML check with a clear color-coded result and evidence path.")}'
                 '</div>'
                 '<div class="tf-primary-card-tags">'
-                '<span class="tf-primary-card-tag">Single target</span>'
-                '<span class="tf-primary-card-tag">Passive</span>'
-                '<span class="tf-primary-card-tag">Fast verdict</span>'
+                f'<span class="tf-primary-card-tag">{tr("Single target")}</span>'
+                f'<span class="tf-primary-card-tag">{tr("Passive")}</span>'
+                f'<span class="tf-primary-card-tag">{tr("Fast verdict")}</span>'
                 '</div></div>',
                 unsafe_allow_html=True,
             )
             if st.button(
-                "Open quick lookup",
+                tr("Open quick lookup"),
                 key="open_quick_lookup_workspace",
                 type="primary" if lookup_active else "secondary",
                 width="stretch",
@@ -478,28 +487,28 @@ def _render_primary_workspace_launcher(current_page: str) -> None:
         telemetry_active = current_page == "Analyze telemetry"
         with telemetry_col:
             telemetry_state = (
-                "Current workspace" if telemetry_active else "Batch investigation"
+                tr("Current workspace") if telemetry_active else tr("Batch investigation")
             )
             telemetry_class = " tf-primary-card--active" if telemetry_active else ""
             st.markdown(
                 f'<div class="tf-primary-card{telemetry_class}">'
                 '<div class="tf-primary-card-top">'
-                '<span class="tf-primary-card-number">02 · TELEMETRY</span>'
+                f'<span class="tf-primary-card-number">02 · {tr("TELEMETRY")}</span>'
                 f'<span class="tf-primary-card-state">{telemetry_state}</span>'
                 '</div>'
-                '<div class="tf-primary-card-title">Analyze telemetry</div>'
+                f'<div class="tf-primary-card-title">{tr("Analyze telemetry")}</div>'
                 '<div class="tf-primary-card-copy">'
-                'Upload DNS CSV, Zeek, Pi-hole or AdGuard data and correlate CTI, ML and DNS behavior at scale.'
+                f'{tr("Upload DNS CSV, Zeek, Pi-hole or AdGuard data and correlate CTI, ML and DNS behavior at scale.")}'
                 '</div>'
                 '<div class="tf-primary-card-tags">'
-                '<span class="tf-primary-card-tag">Multi-domain</span>'
-                '<span class="tf-primary-card-tag">Behavior signals</span>'
-                '<span class="tf-primary-card-tag">Investigation queue</span>'
+                f'<span class="tf-primary-card-tag">{tr("Multi-domain")}</span>'
+                f'<span class="tf-primary-card-tag">{tr("Behavior signals")}</span>'
+                f'<span class="tf-primary-card-tag">{tr("Investigation queue")}</span>'
                 '</div></div>',
                 unsafe_allow_html=True,
             )
             if st.button(
-                "Open telemetry analysis",
+                tr("Open telemetry analysis"),
                 key="open_telemetry_workspace",
                 type="primary" if telemetry_active else "secondary",
                 width="stretch",
@@ -541,7 +550,7 @@ def main() -> None:
         auto_refresh_started = start_background_refresh_if_enabled(db_path)
     except (TypeError, ValueError):
         auto_refresh_started = False
-        st.sidebar.warning("Automatic CTI refresh configuration is invalid.")
+        st.sidebar.warning(tr("Automatic CTI refresh configuration is invalid."))
 
     navigation = st.sidebar.container()
     _show_system_status(
@@ -551,7 +560,7 @@ def main() -> None:
         cti_stale_after_by_source=config.cti_stale_after_by_source,
     )
     if auto_refresh_started:
-        st.sidebar.caption("CTI auto-refresh · enabled")
+        st.sidebar.caption(tr("CTI auto-refresh · enabled"))
 
     pages = [
         "Analyze telemetry",
@@ -575,10 +584,10 @@ def main() -> None:
     # Keep history/evaluation as secondary navigation. The two core workflows
     # live prominently in the main canvas instead of being tiny sidebar items.
     with navigation:
-        st.markdown("### Secondary views")
+        st.markdown(f"### {tr('Secondary views')}")
         if not config.public_mode:
             if st.button(
-                "Analysis history",
+                tr("Analysis history"),
                 key="nav_analysis_history",
                 type="primary" if page == "Analysis history" else "secondary",
                 width="stretch",
@@ -586,14 +595,14 @@ def main() -> None:
                 st.session_state["workspace_nav"] = "Analysis history"
                 st.rerun()
         if st.button(
-            "Model evaluation",
+            tr("Model evaluation"),
             key="nav_model_evaluation",
             type="primary" if page == "Model evaluation" else "secondary",
             width="stretch",
         ):
             st.session_state["workspace_nav"] = "Model evaluation"
             st.rerun()
-        st.caption("Primary tools are available in the main workspace.")
+        st.caption(tr("Primary tools are available in the main workspace."))
 
     _render_primary_workspace_launcher(page)
 
@@ -608,10 +617,12 @@ def main() -> None:
             artifact = _load_artifact(str(model_dir))
         except (OSError, TypeError, ValueError) as error:
             st.error(
-                "The local ML artifact is not ready. Set up a trusted artifact "
-                "to run quick lookup."
+                tr(
+                    "The local ML artifact is not ready. Set up a trusted artifact "
+                    "to run quick lookup."
+                )
             )
-            with st.expander("Setup details", expanded=False):
+            with st.expander(tr("Setup details"), expanded=False):
                 st.code("python scripts/train_ml_artifact.py", language="shell")
                 st.caption(type(error).__name__)
             return
@@ -621,47 +632,53 @@ def main() -> None:
             == "demo_only_synthetic"
         ):
             st.warning(
-                "Demo ML artifact active. It uses synthetic training data only "
-                "to exercise the interface and must not be interpreted as "
-                "measured model performance."
+                tr(
+                    "Demo ML artifact active. It uses synthetic training data only "
+                    "to exercise the interface and must not be interpreted as "
+                    "measured model performance."
+                )
             )
 
         if not list_cti_cache_status(db_path):
             st.warning(
-                "CTI cache is empty. Quick lookup can still use the ML model, "
-                "but known-indicator matching is unavailable."
+                tr(
+                    "CTI cache is empty. Quick lookup can still use the ML model, "
+                    "but known-indicator matching is unavailable."
+                )
             )
 
         st.caption(
-            "Paste one URL, domain or IP. ThreatFusion checks the local CTI "
-            "cache and uses the domain model only when the host is a domain."
+            tr(
+                "Paste one URL, domain or IP. ThreatFusion checks the local CTI "
+                "cache and uses the domain model only when the host is a domain."
+            )
         )
         lookup_input, lookup_action = st.columns([5, 1.15], vertical_alignment="bottom")
         with lookup_input:
             lookup_value = st.text_input(
-                "URL, domain or IP",
+                tr("URL, domain or IP"),
                 placeholder="example.com, 143.20.185.213, or https://example.com/path",
                 key="quick_lookup_input",
                 on_change=_clear_quick_lookup_state,
             )
         with lookup_action:
             analyze_lookup = st.button(
-                "Check",
+                tr("Check"),
                 type="primary",
                 width="stretch",
                 key="quick_lookup_analyze",
             )
 
         st.caption(
-            "Passive by design · no page visit · no DNS resolution · no download"
+            tr("Passive by design · no page visit · no DNS resolution · no download")
         )
 
         if analyze_lookup:
             if not lookup_value.strip():
-                st.warning("Enter a URL, domain or IP before checking it.")
+                st.warning(tr("Enter a URL, domain or IP before checking it."))
             else:
                 try:
-                    with st.spinner("Checking local threat signals…"):
+                    with st.spinner(tr("Checking local threat signals…")):
                         st.session_state["quick_lookup_result"] = (
                             analyze_quick_lookup_from_cache(
                                 lookup_value,
@@ -671,7 +688,7 @@ def main() -> None:
                         )
                 except (TypeError, ValueError) as error:
                     st.session_state.pop("quick_lookup_result", None)
-                    st.error(f"Lookup input could not be analyzed: {error}")
+                    st.error(tr("Lookup input could not be analyzed: {error}", error=error))
 
         lookup_result = st.session_state.get("quick_lookup_result")
         if lookup_result is not None:
@@ -697,16 +714,16 @@ def main() -> None:
 
     render_app_header()
     if config.public_mode:
-        st.caption("Public workspace · Shared analysis history is disabled.")
+        st.caption(tr("Public workspace · Shared analysis history is disabled."))
     with st.expander(
-        "New analysis"
+        tr("New analysis")
         if st.session_state.get("analysis_result") is not None
-        else "Telemetry intake",
+        else tr("Telemetry intake"),
         expanded=st.session_state.get("analysis_result") is None,
     ):
         intake_steps()
         telemetry_format = st.selectbox(
-            "Telemetry format",
+            tr("Telemetry format"),
             [
                 "Generic DNS CSV",
                 "Zeek dns.log",
@@ -715,6 +732,7 @@ def main() -> None:
             ],
             key="telemetry_format",
             on_change=_clear_analysis_state,
+            format_func=tr,
         )
 
         format_caption = {
@@ -730,17 +748,17 @@ def main() -> None:
             "AdGuard Home query log": "query-log JSON with host and timestamp fields",
         }
         st.caption(format_caption[telemetry_format])
-        with st.expander("Input requirements", expanded=False):
-            st.write(required_caption[telemetry_format])
+        with st.expander(tr("Input requirements"), expanded=False):
+            st.write(tr(required_caption[telemetry_format]))
             st.caption(
-                "Optional fields enrich the evidence. Missing values are handled by the existing parser."
+                tr("Optional fields enrich the evidence. Missing values are handled by the existing parser.")
             )
 
         try:
             artifact = _load_artifact(str(model_dir))
         except (OSError, TypeError, ValueError) as error:
             st.error(
-                "The local ML artifact is not ready. Set up a trusted artifact to analyze telemetry."
+                tr("The local ML artifact is not ready. Set up a trusted artifact to analyze telemetry.")
             )
             with st.expander("Setup details", expanded=False):
                 st.code("python scripts/train_ml_artifact.py", language="shell")
@@ -800,9 +818,9 @@ def main() -> None:
             ),
         }[telemetry_format]
         uploaded = st.file_uploader(
-            upload_label,
+            tr(upload_label),
             type=upload_types,
-            help=upload_help,
+            help=tr(upload_help),
             key=f"telemetry_upload_{telemetry_format}",
             on_change=_on_upload_change,
             args=(f"telemetry_upload_{telemetry_format}",),
@@ -814,7 +832,7 @@ def main() -> None:
             unsafe_allow_html=True,
         )
         if uploaded is None:
-            st.button("Analyze", type="primary", disabled=True, key="analyze_empty")
+            st.button(tr("Analyze"), type="primary", disabled=True, key="analyze_empty")
         else:
             content_bytes = uploaded.getvalue()
             fingerprint = f"{telemetry_format}:" + content_fingerprint(content_bytes)
@@ -825,9 +843,9 @@ def main() -> None:
                 st.session_state.pop("analysis_audit_metadata", None)
 
             if len(content_bytes) > MAX_UPLOAD_BYTES:
-                st.error("Uploaded telemetry exceeds the 10 MB application limit.")
+                st.error(tr("Uploaded telemetry exceeds the 10 MB application limit."))
             elif telemetry_format == "Pi-hole FTL database":
-                if st.button("Analyze", type="primary"):
+                if st.button(tr("Analyze"), type="primary"):
                     try:
                         result, diagnostics = analyze_pihole_query_db_with_diagnostics(
                             content_bytes,
@@ -863,9 +881,9 @@ def main() -> None:
                 try:
                     content = content_bytes.decode("utf-8-sig")
                 except UnicodeDecodeError:
-                    st.error("Telemetry input must use UTF-8 encoding.")
+                    st.error(tr("Telemetry input must use UTF-8 encoding."))
                 else:
-                    if st.button("Analyze", type="primary"):
+                    if st.button(tr("Analyze"), type="primary"):
                         try:
                             analyzers = {
                                 "Generic DNS CSV": analyze_dns_csv_with_diagnostics,
@@ -875,7 +893,7 @@ def main() -> None:
                                 ),
                             }
                             analyzer = analyzers[telemetry_format]
-                            with st.spinner("Analyzing telemetry…"):
+                            with st.spinner(tr("Analyzing telemetry…")):
                                 result, diagnostics = analyzer(
                                     content,
                                     indicators,
@@ -913,7 +931,7 @@ def main() -> None:
     result = st.session_state.get("analysis_result")
     diagnostics = st.session_state.get("dns_parse_diagnostics")
     if result is not None and diagnostics is not None:
-        with st.expander("Input quality", expanded=False):
+        with st.expander(tr("Input quality"), expanded=False):
             st.caption(
                 "Input quality: "
                 f"{diagnostics.accepted_rows}/{diagnostics.total_rows} rows "
@@ -932,8 +950,8 @@ def main() -> None:
 
     else:
         empty_state(
-            "Your findings will appear here",
-            "Choose a source and upload a file to build your priority queue. Then select a domain to inspect the evidence.",
+            tr("Your findings will appear here"),
+            tr("Choose a source and upload a file to build your priority queue. Then select a domain to inspect the evidence."),
         )
 
 
