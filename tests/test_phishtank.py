@@ -98,7 +98,7 @@ def test_collector_uses_public_feed_with_descriptive_user_agent() -> None:
             PHISHTANK_FEED_URL,
             {"User-Agent": PHISHTANK_USER_AGENT},
             30,
-            False,
+            True,
         )
     ]
 
