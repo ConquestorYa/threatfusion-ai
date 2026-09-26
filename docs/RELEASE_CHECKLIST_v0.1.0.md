@@ -24,7 +24,7 @@ Use this checklist before creating the `v0.1.0` portfolio release.
 ## 4) Release notes and versioning
 
 - [x] `CHANGELOG.md` updated for `0.1.0`.
-- [ ] Release notes drafted from changelog highlights.
+- [x] Release notes drafted from changelog highlights.
 - [ ] Tag plan confirmed (`v0.1.0`).
 
 ## 5) Portfolio presentation assets
