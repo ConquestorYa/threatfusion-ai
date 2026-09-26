@@ -138,6 +138,107 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
 }
 .tf-sidebar-brand-title { font-size:1rem; font-weight:650; color:var(--tf-text); }
 .tf-sidebar-brand-sub { color:var(--tf-muted); font-size:.75rem; margin-top:.1rem; }
+
+.tf-primary-workspace {
+    margin:0 0 1.5rem;
+    padding:1.15rem 1.2rem 1.25rem;
+    border:1px solid var(--tf-border);
+    border-radius:14px;
+    background:color-mix(in srgb, var(--tf-panel) 94%, var(--tf-cyan-soft));
+}
+.tf-primary-workspace-head {
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:1rem;
+    margin-bottom:.9rem;
+}
+.tf-primary-workspace-kicker {
+    color:var(--tf-cyan);
+    font-size:.72rem;
+    font-weight:700;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+}
+.tf-primary-workspace-title {
+    color:var(--tf-text);
+    font-size:1.15rem;
+    font-weight:700;
+    letter-spacing:-.015em;
+    margin-top:.2rem;
+}
+.tf-primary-workspace-hint {
+    color:var(--tf-muted);
+    font-size:.78rem;
+    text-align:right;
+    max-width:26rem;
+}
+.tf-primary-card {
+    min-height:132px;
+    padding:1rem 1.05rem;
+    border:1px solid var(--tf-border);
+    border-radius:11px;
+    background:var(--tf-bg-alt);
+    transition:border-color .15s ease, background .15s ease, transform .15s ease;
+}
+.tf-primary-card--active {
+    border-color:color-mix(in srgb, var(--tf-cyan) 62%, var(--tf-border));
+    background:color-mix(in srgb, var(--tf-cyan-soft) 72%, var(--tf-bg-alt));
+    box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--tf-cyan) 14%, transparent);
+}
+.tf-primary-card-top {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:.75rem;
+}
+.tf-primary-card-number {
+    color:var(--tf-cyan);
+    font-size:.72rem;
+    font-weight:700;
+    letter-spacing:.08em;
+}
+.tf-primary-card-state {
+    color:var(--tf-muted);
+    font-size:.7rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.07em;
+}
+.tf-primary-card--active .tf-primary-card-state { color:var(--tf-cyan); }
+.tf-primary-card-title {
+    color:var(--tf-text);
+    font-size:1.08rem;
+    font-weight:700;
+    margin-top:.65rem;
+}
+.tf-primary-card-copy {
+    color:var(--tf-muted);
+    font-size:.8rem;
+    line-height:1.5;
+    margin-top:.3rem;
+}
+.tf-primary-card-tags {
+    display:flex;
+    flex-wrap:wrap;
+    gap:.35rem;
+    margin-top:.7rem;
+}
+.tf-primary-card-tag {
+    padding:.16rem .42rem;
+    border:1px solid var(--tf-border);
+    border-radius:999px;
+    color:var(--tf-muted);
+    font-size:.68rem;
+}
+.st-key-open_telemetry_workspace button,
+.st-key-open_quick_lookup_workspace button {
+    min-height:48px!important;
+    border-radius:9px!important;
+    font-weight:700!important;
+    margin-top:.2rem;
+}
+
 .st-key-workspace_nav [data-testid="stRadio"] label {
     padding:.5rem .65rem; border-radius:6px; margin:0; min-height:42px;
 }
@@ -193,8 +294,52 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     padding:.4rem 0 1rem; border-bottom:1px solid var(--tf-border); margin-bottom:1rem;
 }
 .tf-domain-name { font-size:1.05rem; font-weight:600; margin-top:.35rem; }
-.tf-steps { display:flex; gap:1.5rem; flex-wrap:wrap; margin:.25rem 0 1.1rem; color:var(--tf-muted); font-size:.8rem; }
-.tf-steps strong { color:var(--tf-text); font-weight:600; margin-right:.4rem; }
+.tf-steps {
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:.8rem;
+    margin:.65rem 0 1.35rem;
+}
+.tf-step {
+    display:flex;
+    gap:.8rem;
+    align-items:flex-start;
+    min-height:92px;
+    padding:.9rem 1rem;
+    border:1px solid var(--tf-border);
+    border-radius:10px;
+    background:var(--tf-bg-alt);
+}
+.tf-step--active {
+    border-color:color-mix(in srgb, var(--tf-cyan) 52%, var(--tf-border));
+    background:color-mix(in srgb, var(--tf-cyan-soft) 72%, var(--tf-bg-alt));
+    box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--tf-cyan) 10%, transparent);
+}
+.tf-step-number {
+    flex:0 0 auto;
+    display:grid;
+    place-items:center;
+    width:2.25rem;
+    height:2.25rem;
+    border-radius:999px;
+    border:1px solid color-mix(in srgb, var(--tf-cyan) 42%, var(--tf-border));
+    background:color-mix(in srgb, var(--tf-cyan) 14%, transparent);
+    color:var(--tf-cyan);
+    font-size:.8rem;
+    font-weight:800;
+}
+.tf-step-title {
+    color:var(--tf-text);
+    font-size:.92rem;
+    font-weight:700;
+    line-height:1.35;
+}
+.tf-step-sub {
+    color:var(--tf-muted);
+    font-size:.75rem;
+    line-height:1.45;
+    margin-top:.22rem;
+}
 .tf-empty { padding:1.25rem 0; color:var(--tf-muted); border-top:1px solid var(--tf-border); }
 .tf-empty strong { display:block; color:var(--tf-text); font-size:.95rem; margin-bottom:.35rem; }
 .tf-empty p { font-size:.85rem; margin:0; line-height:1.6; }
@@ -537,7 +682,8 @@ button:focus-visible,a:focus-visible,input:focus-visible {
     .tf-finding-row { grid-template-columns:minmax(0,1fr) auto; gap:.5rem; padding:.7rem; }
     .tf-finding-evidence { grid-column:1 / -1; }
     .block-container { padding-left:1rem; padding-right:1rem; }
-    .tf-steps { gap:.55rem 1rem; }
+    .tf-steps { grid-template-columns:1fr; gap:.65rem; }
+    .tf-step { min-height:auto; }
     .tf-lookup-result { padding:1rem; }
     .tf-lookup-result-top { align-items:flex-start; flex-direction:column; }
     .tf-lookup-target { flex-basis:auto; min-width:0; width:100%; max-width:none; }
@@ -546,6 +692,10 @@ button:focus-visible,a:focus-visible,input:focus-visible {
     .tf-signal-node--wide { grid-column:auto; }
     .tf-lookup-empty-visual { grid-template-columns:1fr; }
     .tf-lookup-empty-arrow { transform:rotate(90deg); }
+    .tf-primary-workspace { padding:.9rem; }
+    .tf-primary-workspace-head { align-items:flex-start; flex-direction:column; }
+    .tf-primary-workspace-hint { text-align:left; }
+    .tf-primary-card { min-height:118px; }
     .st-key-quick_lookup_input [data-baseweb="input"],
     .st-key-quick_lookup_analyze button { min-height:60px!important; }
     .st-key-quick_lookup_input input { min-height:58px; font-size:1rem!important; }

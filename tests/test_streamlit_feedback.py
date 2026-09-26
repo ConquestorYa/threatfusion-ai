@@ -98,7 +98,7 @@ def test_public_mode_never_reads_or_writes_history_or_feedback(
 
     assert not app.exception
     assert "Priority findings" in [item.value for item in app.subheader]
-    assert "Analysis history" not in app.radio(key="workspace_nav").options
+    assert not any(button.key == "nav_analysis_history" for button in app.button)
     assert "Save aggregate analysis history" not in [b.label for b in app.button]
     assert "Save analyst feedback" not in [b.label for b in app.button]
     assert not app.text_area
@@ -227,16 +227,14 @@ def test_local_feedback_form_upserts_and_isolates_run_and_domain(feedback_app):
     assert get_analyst_feedback(db_path, first_run_id) == []
 
 
-def test_quick_lookup_page_is_available_without_network_activity(feedback_app):
+def test_quick_lookup_is_default_primary_workspace_without_network_activity(
+    feedback_app,
+):
     app = AppTest.from_string("import streamlit_app\nstreamlit_app.main()")
     app.run(timeout=15)
 
     assert not app.exception
-    assert "Quick lookup" in app.radio(key="workspace_nav").options
-
-    app.radio(key="workspace_nav").set_value("Quick lookup").run(timeout=15)
-
-    assert not app.exception
+    assert app.button(key="open_quick_lookup_workspace").label == "Open quick lookup"
     assert any(item.label == "URL or domain" for item in app.text_input)
     assert any(
         button.label == "Check" and button.disabled
@@ -255,9 +253,9 @@ def test_navigation_preserves_current_analysis_and_format(feedback_app):
     app.session_state["upload_fingerprint"] = "previous-upload"
     app.session_state["telemetry_format"] = "Zeek dns.log"
     app.run(timeout=15)
-    app.radio(key="workspace_nav").set_value("Analysis history").run(timeout=15)
+    app.button(key="nav_analysis_history").click().run(timeout=15)
     assert not app.exception
-    app.radio(key="workspace_nav").set_value("Analyze telemetry").run(timeout=15)
+    app.button(key="open_telemetry_workspace").click().run(timeout=15)
     assert not app.exception
     assert app.session_state["analysis_result"] == result
     assert app.selectbox(key="telemetry_format").value == "Zeek dns.log"
@@ -291,7 +289,7 @@ def test_history_and_evaluation_work_without_model(feedback_app, monkeypatch):
     assert not app.exception
     assert not app.error
     assert any("Final holdout not evaluated" in item.value for item in app.markdown)
-    app.radio(key="workspace_nav").set_value("Analysis history").run(timeout=15)
+    app.button(key="nav_analysis_history").click().run(timeout=15)
     assert not app.exception
     assert app.selectbox(key="feedback_domain_1").value == "a.example"
 
@@ -332,8 +330,8 @@ def test_public_mode_rejects_stale_history_navigation(feedback_app, monkeypatch)
     app.session_state["analysis_result"] = result
     app.run(timeout=15)
     assert not app.exception
-    assert app.radio(key="workspace_nav").value == "Analyze telemetry"
-    assert "Analysis history" not in app.radio(key="workspace_nav").options
+    assert app.session_state["workspace_nav"] == "Analyze telemetry"
+    assert not any(button.key == "nav_analysis_history" for button in app.button)
     assert not app.text_area
 
 
@@ -399,6 +397,7 @@ def test_analyze_keeps_parser_dispatch_and_collapses_intake(
     monkeypatch.setattr(app_module, analyzer_name, analyze)
     monkeypatch.setattr(app_module, "capture_analysis_audit_metadata", lambda *a, **kw: "audit")
     app = AppTest.from_string("import streamlit_app\nstreamlit_app.main()")
+    app.session_state["workspace_nav"] = "Analyze telemetry"
     app.session_state["telemetry_format"] = telemetry_format
     app.run(timeout=15)
     next(button for button in app.button if button.label == "Analyze").click()
