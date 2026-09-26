@@ -9,6 +9,8 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT / "src"))
 
 from threatfusion.ml_artifact import (
+    SELECTED_DEVELOPMENT_MODEL,
+    SUPPORTED_DEVELOPMENT_MODELS,
     train_selected_model_artifact,
     write_ml_artifact,
 )
@@ -24,6 +26,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--high-fpr-budget", type=float, default=0.01)
     parser.add_argument("--medium-fpr-budget", type=float, default=0.05)
     parser.add_argument("--low-fpr-budget", type=float, default=0.10)
+    parser.add_argument(
+        "--model-name",
+        choices=SUPPORTED_DEVELOPMENT_MODELS,
+        default=SELECTED_DEVELOPMENT_MODEL,
+        help="Development model candidate to freeze",
+    )
     parser.add_argument("--overwrite", action="store_true")
     return parser
 
@@ -51,6 +59,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             high_fpr_budget=args.high_fpr_budget,
             medium_fpr_budget=args.medium_fpr_budget,
             low_fpr_budget=args.low_fpr_budget,
+            model_name=args.model_name,
         )
         model_path, metadata_path = write_ml_artifact(
             artifact,
