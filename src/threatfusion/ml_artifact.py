@@ -24,6 +24,7 @@ from .ml_recall_iteration import build_recall_iteration_candidates
 _ARTIFACT_SCHEMA_VERSION = 1
 _MODEL_FILENAME = "model.joblib"
 _METADATA_FILENAME = "metadata.json"
+_CHECKSUM_FILENAME = "artifact.sha256"
 SELECTED_DEVELOPMENT_MODEL = "lr_char_2_6_sublinear_balanced"
 C4_DEVELOPMENT_CANDIDATE = "lr_char_2_6_balanced_c4"
 SUPPORTED_DEVELOPMENT_MODELS = (
@@ -182,6 +183,11 @@ def write_ml_artifact(
         json.dumps(asdict(artifact.metadata), indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+    checksum = compute_ml_artifact_checksum(output_path)
+    (output_path / _CHECKSUM_FILENAME).write_text(
+        checksum + "\n",
+        encoding="ascii",
+    )
     return model_path, metadata_path
 
 
@@ -263,8 +269,15 @@ def load_trusted_ml_artifact(
     model_path = input_path / _MODEL_FILENAME
     metadata_path = input_path / _METADATA_FILENAME
 
+    checksum_path = input_path / _CHECKSUM_FILENAME
     if expected_checksum is not None:
         verify_ml_artifact_checksum(input_path, expected_checksum)
+    elif checksum_path.is_file():
+        try:
+            manifest_checksum = checksum_path.read_text(encoding="ascii").strip()
+        except OSError as error:
+            raise ValueError("ML artifact checksum manifest could not be read") from error
+        verify_ml_artifact_checksum(input_path, manifest_checksum)
 
     metadata = _read_metadata(metadata_path)
     model = joblib.load(model_path)
