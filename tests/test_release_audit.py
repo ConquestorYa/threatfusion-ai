@@ -30,7 +30,15 @@ def test_release_audit_detects_private_key_marker() -> None:
 
 def test_release_audit_detects_local_user_paths() -> None:
     windows = scan_release_text(
-        "saved at C:" + "\\\\Users\\\\alice\\\\project\\\\file.txt",
+        "saved at C:"
+        + "\\"
+        + "Users"
+        + "\\"
+        + "alice"
+        + "\\"
+        + "project"
+        + "\\"
+        + "file.txt",
         path="notes.txt",
     )
     macos = scan_release_text(
