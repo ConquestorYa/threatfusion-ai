@@ -96,9 +96,14 @@ jobs:
       - name: Build image
         run: docker build -t threatfusion-ci .
 
-      - name: Start public-mode container
+      - name: Start container with safe public default
         run: |
-          docker run -d --name threatfusion-ci             -p 8501:8501             -e THREATFUSION_PUBLIC_MODE=1             threatfusion-ci
+          docker run -d --name threatfusion-ci -p 8501:8501 threatfusion-ci
+
+      - name: Verify container security defaults
+        run: |
+          docker exec threatfusion-ci sh -c 'test "$THREATFUSION_PUBLIC_MODE" = "1"'
+          docker exec threatfusion-ci python -c "import importlib.util; assert importlib.util.find_spec('pytest') is None; assert importlib.util.find_spec('ruff') is None"
 
       - name: Wait for Streamlit health endpoint
         run: |
