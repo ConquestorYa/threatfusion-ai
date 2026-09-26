@@ -112,13 +112,28 @@ def inject_theme_css(theme: str | None = None) -> None:
 
 
 _CSS = """
-[data-testid="stAppViewContainer"] { background:var(--tf-bg); color:var(--tf-text); }
+:root {
+    --tf-font-ui:"Aptos","Segoe UI Variable","Segoe UI",system-ui,-apple-system,sans-serif;
+    --tf-font-display:"Aptos Display","Aptos","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+}
+[data-testid="stAppViewContainer"] {
+    background:var(--tf-bg);
+    color:var(--tf-text);
+    font-family:var(--tf-font-ui);
+}
+[data-testid="stAppViewContainer"] button,
+[data-testid="stAppViewContainer"] input,
+[data-testid="stAppViewContainer"] textarea,
+[data-testid="stAppViewContainer"] label,
+[data-testid="stSidebar"] {
+    font-family:var(--tf-font-ui)!important;
+}
 [data-testid="stHeader"] { background:var(--tf-bg); }
 [data-testid="stSidebar"] {
     background:var(--tf-bg-alt); border-right:1px solid var(--tf-border);
 }
 .block-container { max-width:1440px; padding-top:4.5rem; padding-bottom:3rem; }
-h1,h2,h3,.tf-page-head,.tf-sidebar-brand { font-family:"Segoe UI",Arial,sans-serif; }
+h1,h2,h3,.tf-page-head,.tf-sidebar-brand,.tf-product-brand { font-family:var(--tf-font-display); }
 h1 { font-size:1.8rem!important; line-height:1.25!important; letter-spacing:-.03em; }
 h2 { font-size:1.3rem!important; line-height:1.35!important; }
 h3 { font-size:1.06rem!important; line-height:1.4!important; }
@@ -138,6 +153,62 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
 }
 .tf-sidebar-brand-title { font-size:1rem; font-weight:650; color:var(--tf-text); }
 .tf-sidebar-brand-sub { color:var(--tf-muted); font-size:.75rem; margin-top:.1rem; }
+
+.tf-product-brand {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:1.2rem;
+    margin:-.45rem 0 1.15rem;
+    padding:.25rem 0 1.15rem;
+    border-bottom:1px solid var(--tf-border);
+}
+.tf-product-brand-main {
+    display:flex;
+    align-items:center;
+    gap:.9rem;
+    min-width:0;
+}
+.tf-product-brand-mark {
+    flex:0 0 auto;
+    display:grid;
+    place-items:center;
+    width:3rem;
+    height:3rem;
+    border:1px solid color-mix(in srgb, var(--tf-cyan) 52%, var(--tf-border));
+    border-radius:11px;
+    background:color-mix(in srgb, var(--tf-cyan-soft) 78%, var(--tf-panel));
+    color:var(--tf-cyan);
+    font-size:1rem;
+    font-weight:800;
+    letter-spacing:.04em;
+}
+.tf-product-brand-title {
+    color:var(--tf-text);
+    font-size:1.55rem;
+    font-weight:780;
+    line-height:1.1;
+    letter-spacing:-.03em;
+}
+.tf-product-brand-sub {
+    color:var(--tf-muted);
+    font-family:var(--tf-font-ui);
+    font-size:.82rem;
+    line-height:1.4;
+    margin-top:.28rem;
+}
+.tf-product-brand-badge {
+    flex:0 0 auto;
+    padding:.38rem .62rem;
+    border:1px solid var(--tf-border);
+    border-radius:999px;
+    color:var(--tf-muted);
+    font-family:var(--tf-font-ui);
+    font-size:.7rem;
+    font-weight:650;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+}
 
 .tf-primary-workspace {
     margin:0 0 1.5rem;
@@ -696,6 +767,9 @@ button:focus-visible,a:focus-visible,input:focus-visible {
     .tf-primary-workspace-head { align-items:flex-start; flex-direction:column; }
     .tf-primary-workspace-hint { text-align:left; }
     .tf-primary-card { min-height:118px; }
+    .tf-product-brand { align-items:flex-start; }
+    .tf-product-brand-badge { display:none; }
+    .tf-product-brand-title { font-size:1.35rem; }
     .st-key-quick_lookup_input [data-baseweb="input"],
     .st-key-quick_lookup_analyze button { min-height:60px!important; }
     .st-key-quick_lookup_input input { min-height:58px; font-size:1rem!important; }
@@ -711,6 +785,21 @@ def render_app_header(
     st.markdown(
         '<header class="tf-page-head"><div class="tf-eyebrow">Analyst workspace</div>'
         f"<h1>{safe_text(title)}</h1><p>{safe_text(description)}</p></header>",
+        unsafe_allow_html=True,
+    )
+
+
+def render_main_brand() -> None:
+    st.markdown(
+        '<div class="tf-product-brand">'
+        '<div class="tf-product-brand-main">'
+        '<span class="tf-product-brand-mark" aria-hidden="true">TF</span>'
+        '<div><div class="tf-product-brand-title">ThreatFusion AI</div>'
+        '<div class="tf-product-brand-sub">'
+        'Threat intelligence, DNS analysis and AI-assisted triage in one analyst workspace.'
+        '</div></div></div>'
+        '<span class="tf-product-brand-badge">Threat intelligence workspace</span>'
+        '</div>',
         unsafe_allow_html=True,
     )
 
@@ -795,7 +884,10 @@ def apply_plotly_theme(
         template="streamlit",
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font={"family": "Segoe UI, Arial, sans-serif", "size": 13},
+        font={
+            "family": "Aptos, Segoe UI Variable, Segoe UI, Arial, sans-serif",
+            "size": 13,
+        },
         margin={"l": 20, "r": 20, "t": 35, "b": 20},
         height=height,
     )
