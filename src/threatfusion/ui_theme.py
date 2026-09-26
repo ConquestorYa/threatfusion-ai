@@ -467,6 +467,59 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     line-height:1.45;
     margin-top:.55rem;
 }
+.tf-lookup-empty-visual {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr);
+    gap:.75rem;
+    align-items:center;
+    margin:1.4rem 0 .55rem;
+    padding:1rem;
+    border:1px solid var(--tf-border);
+    border-radius:12px;
+    background:color-mix(in srgb, var(--tf-panel) 92%, var(--tf-cyan-soft));
+}
+.tf-lookup-empty-step {
+    min-height:108px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding:.9rem 1rem;
+    border:1px solid var(--tf-border);
+    border-radius:9px;
+    background:var(--tf-bg-alt);
+}
+.tf-lookup-empty-step-num {
+    color:var(--tf-cyan);
+    font-size:.7rem;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+}
+.tf-lookup-empty-step-title {
+    color:var(--tf-text);
+    font-size:1rem;
+    font-weight:700;
+    margin-top:.3rem;
+}
+.tf-lookup-empty-step-copy {
+    color:var(--tf-muted);
+    font-size:.76rem;
+    line-height:1.45;
+    margin-top:.22rem;
+}
+.tf-lookup-empty-arrow {
+    color:var(--tf-cyan);
+    font-size:1.4rem;
+    font-weight:700;
+    text-align:center;
+}
+.tf-lookup-empty-note {
+    color:var(--tf-muted);
+    font-size:.78rem;
+    line-height:1.5;
+    text-align:center;
+    margin-bottom:1rem;
+}
 
 [data-testid="stDataFrame"] { border:1px solid var(--tf-border); border-radius:6px; }
 [data-testid="stExpander"] { border-color:var(--tf-border); border-radius:6px; }
@@ -491,6 +544,8 @@ button:focus-visible,a:focus-visible,input:focus-visible {
     .tf-signal-grid { grid-template-columns:1fr; }
     .tf-signal-console { grid-template-columns:1fr; }
     .tf-signal-node--wide { grid-column:auto; }
+    .tf-lookup-empty-visual { grid-template-columns:1fr; }
+    .tf-lookup-empty-arrow { transform:rotate(90deg); }
     .st-key-quick_lookup_input [data-baseweb="input"],
     .st-key-quick_lookup_analyze button { min-height:60px!important; }
     .st-key-quick_lookup_input input { min-height:58px; font-size:1rem!important; }
