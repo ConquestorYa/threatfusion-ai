@@ -124,6 +124,8 @@ def _show_model_evaluation(report_path: Path) -> None:
         var_name="Metric",
         value_name="Rate",
     )
+    chart_frame["Operating point"] = chart_frame["Operating point"].map(tr)
+    chart_frame["Metric"] = chart_frame["Metric"].map(tr)
     figure = px.bar(
         chart_frame,
         x="Operating point",
@@ -133,8 +135,8 @@ def _show_model_evaluation(report_path: Path) -> None:
         title=tr("Final holdout recall vs false-positive rate"),
         labels={"Rate": tr("Rate"), "Operating point": tr("Operating point"), "Metric": tr("Metric")},
         color_discrete_map={
-            "Recall": palette()["cyan"],
-            "False-positive rate": palette()["muted"],
+            tr("Recall"): palette()["cyan"],
+            tr("False-positive rate"): palette()["muted"],
         },
     )
     figure.update_yaxes(tickformat=".0%")
