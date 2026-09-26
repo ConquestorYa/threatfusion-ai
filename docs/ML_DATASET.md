@@ -316,8 +316,25 @@ python scripts\evaluate_ml_fpr_comparison.py `
 
 Those rates correspond to 0.1%, 0.5%, and 1% validation FPR budgets. This is
 development analysis only: it does not rewrite the frozen artifact or change
-runtime thresholds. If later model/threshold changes are chosen using these
-results or the CESNET diagnostic, a new untouched final holdout is required.
+runtime thresholds.
+
+To measure the resulting score thresholds directly on the already-collected
+confirmed-benign CESNET corpus without changing the artifact, pass them as
+diagnostic thresholds:
+
+```powershell
+python scripts\evaluate_ml_benign_telemetry.py `
+  --artifact-dir data\models\development-001 `
+  --development-snapshot-dir data\snapshots\baseline-001 `
+  --dns-csv data\evaluation\cesnet-benign-20k.csv `
+  --confirm-benign-label `
+  --diagnostic-thresholds 0.875784 0.805109 0.757369
+```
+
+Diagnostic thresholds are console-only measurements and do not replace the
+artifact's frozen high / medium / low thresholds. If later model/threshold
+changes are chosen using these results or the CESNET diagnostic, a new
+untouched final holdout is required.
 
 The script prints aggregate metrics only and never prints domain values.
 

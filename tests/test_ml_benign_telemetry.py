@@ -10,6 +10,7 @@ from threatfusion.hybrid_assessment import MLThresholds
 from threatfusion.ml_benign_telemetry import (
     build_benign_telemetry_report,
     evaluate_benign_telemetry,
+    evaluate_benign_thresholds,
     prepare_benign_telemetry,
     write_benign_telemetry_report,
 )
@@ -97,6 +98,41 @@ def test_evaluate_benign_telemetry_uses_frozen_thresholds() -> None:
     interval = result.high.false_positive_rate_ci
     assert 0.0 <= interval.lower < result.high.false_positive_rate
     assert result.high.false_positive_rate < interval.upper <= 1.0
+
+
+def test_evaluate_benign_thresholds_supports_custom_points() -> None:
+    model = artifact(
+        {
+            "good-one.example": 0.90,
+            "good-two.example": 0.65,
+            "good-three.example": 0.20,
+        }
+    )
+    preparation, points = evaluate_benign_thresholds(
+        model,
+        [],
+        [
+            DNSEvent(query_name="good-one.example"),
+            DNSEvent(query_name="good-two.example"),
+            DNSEvent(query_name="good-three.example"),
+        ],
+        thresholds=(0.85, 0.60),
+    )
+
+    assert len(preparation.retained_domains) == 3
+    assert [point.threshold for point in points] == pytest.approx([0.85, 0.60])
+    assert [point.false_positive_count for point in points] == [1, 2]
+
+
+def test_evaluate_benign_thresholds_rejects_invalid_thresholds() -> None:
+    model = artifact({"good.example": 0.10})
+    events = [DNSEvent(query_name="good.example")]
+
+    with pytest.raises(ValueError, match="at least one"):
+        evaluate_benign_thresholds(model, [], events, thresholds=())
+
+    with pytest.raises(ValueError, match="between 0 and 1"):
+        evaluate_benign_thresholds(model, [], events, thresholds=(1.1,))
 
 
 def test_aggregate_report_contains_no_domain_rows(tmp_path) -> None:
