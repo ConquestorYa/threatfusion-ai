@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import date
 from collections.abc import Sequence
+from datetime import date, datetime
 from pathlib import Path
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -21,6 +21,32 @@ from threatfusion.ml_holdout import (
 from threatfusion.ml_snapshot_io import read_domain_snapshot
 
 
+def _first_seen_cutoff(value: str) -> date | datetime:
+    text = value.strip()
+    if not text:
+        raise argparse.ArgumentTypeError("cutoff must not be empty")
+
+    if len(text) == 10:
+        try:
+            return date.fromisoformat(text)
+        except ValueError as error:
+            raise argparse.ArgumentTypeError(
+                "date cutoff must use YYYY-MM-DD"
+            ) from error
+
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(
+            "timestamp cutoff must use ISO 8601"
+        ) from error
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise argparse.ArgumentTypeError(
+            "timestamp cutoff must include a timezone offset"
+        )
+    return parsed
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Evaluate the frozen ThreatFusion ML artifact on a fresh holdout"
@@ -29,12 +55,24 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--development-snapshot-dir", type=Path, required=True)
     parser.add_argument("--holdout-snapshot-dir", type=Path, required=True)
     parser.add_argument("--json-output", type=Path, default=None)
-    parser.add_argument(
+    temporal_group = parser.add_mutually_exclusive_group()
+    temporal_group.add_argument(
         "--strict-temporal-malicious",
         action="store_true",
         help=(
             "Retain malicious holdout samples only when first_seen is present "
             "and strictly later than the development snapshot date"
+        ),
+    )
+    temporal_group.add_argument(
+        "--malicious-first-seen-after",
+        type=_first_seen_cutoff,
+        default=None,
+        metavar="ISO_CUTOFF",
+        help=(
+            "Use an explicit ISO date or timezone-aware timestamp cutoff for "
+            "malicious first_seen filtering; use the artifact freeze time for "
+            "a post-freeze final evaluation"
         ),
     )
     parser.add_argument("--overwrite", action="store_true")
@@ -64,7 +102,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             development.metadata.benign_snapshot_date,
             holdout.metadata.benign_snapshot_date,
         )
-        malicious_first_seen_after = None
+        malicious_first_seen_after = args.malicious_first_seen_after
         if args.strict_temporal_malicious:
             development_date = development.metadata.benign_snapshot_date
             if development_date is None:
@@ -124,7 +162,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"{evaluation.malicious_first_seen_after}"
         )
         print(
-            "  Removed malicious with missing first_seen: "
+            "  Removed malicious with missing/unusable first_seen: "
             f"{evaluation.malicious_missing_first_seen_removed}"
         )
         print(
@@ -152,7 +190,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if evaluation.malicious_first_seen_after is not None:
         print(
             "Malicious samples are first-seen filtered relative to the "
-            "development snapshot date; records without timing are excluded."
+            "reported cutoff; records without usable timing are excluded."
         )
         print(
             "This improves temporal separation but does not by itself remove "
