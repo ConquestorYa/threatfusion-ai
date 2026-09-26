@@ -946,37 +946,54 @@ def render_app_header(
     )
 
 
+def _logo_markup(css_class: str) -> str:
+    return (
+        f'<span class="{safe_text(css_class)}" role="img" '
+        'aria-label="ThreatFusion AI logo" '
+        f'style="--tf-brand-logo:url(&quot;{THREATFUSION_LOGO_DATA_URI}&quot;)"></span>'
+    )
+
+
 def render_main_brand() -> None:
     with st.container(key="product_topbar"):
-        brand_col, theme_col = st.columns([1.6, 1], vertical_alignment="center")
+        brand_col, theme_col = st.columns([1.55, 1.15], vertical_alignment="center")
         with brand_col:
             st.markdown(
                 '<div class="tf-product-brand">'
-                f'<img class="tf-product-brand-logo" src="{THREATFUSION_LOGO_DATA_URI}" alt="">'
-                '<div><div class="tf-product-brand-title">ThreatFusion AI</div>'
+                + _logo_markup("tf-product-brand-logo")
+                + '<div><div class="tf-product-brand-title">ThreatFusion AI</div>'
                 '<div class="tf-product-brand-sub">'
                 'Threat intelligence, DNS analysis and AI-assisted triage in one analyst workspace.'
                 '</div></div></div>',
                 unsafe_allow_html=True,
             )
         with theme_col:
-            st.markdown(
-                '<div class="tf-theme-picker-label">Theme</div>',
-                unsafe_allow_html=True,
-            )
-            st.segmented_control(
-                "Theme",
-                list(THEME_OPTIONS),
-                key="visual_theme",
-                label_visibility="collapsed",
-            )
+            with st.container(key="theme_picker"):
+                label_col, options_col = st.columns(
+                    [0.22, 0.78],
+                    vertical_alignment="center",
+                    gap="small",
+                )
+                with label_col:
+                    st.markdown(
+                        '<div class="tf-theme-picker-label">Theme</div>',
+                        unsafe_allow_html=True,
+                    )
+                with options_col:
+                    st.segmented_control(
+                        "Theme",
+                        list(THEME_OPTIONS),
+                        key="visual_theme",
+                        label_visibility="collapsed",
+                        width="stretch",
+                    )
 
 
 def render_sidebar_brand() -> None:
     st.sidebar.markdown(
         '<div class="tf-sidebar-brand">'
-        f'<img class="tf-sidebar-brand-logo" src="{THREATFUSION_LOGO_DATA_URI}" alt="">'
-        '<div><div class="tf-sidebar-brand-title">ThreatFusion AI</div>'
+        + _logo_markup("tf-sidebar-brand-logo")
+        + '<div><div class="tf-sidebar-brand-title">ThreatFusion AI</div>'
         '<div class="tf-sidebar-brand-sub">DNS intelligence workspace</div></div></div>',
         unsafe_allow_html=True,
     )
@@ -1048,16 +1065,36 @@ def render_priority_finding(row: dict[str, object]) -> None:
 def apply_plotly_theme(
     figure: go.Figure, *, theme: str | None = None, height: int | None = None
 ) -> go.Figure:
-    # Let Streamlit update chart typography and hover surfaces on theme changes.
+    """Apply the selected product theme independently of Streamlit's native theme."""
+    colors = palette(theme)
     figure.update_layout(
-        template="streamlit",
+        template=colors["plot_template"],
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         font={
             "family": "Aptos, Segoe UI Variable, Segoe UI, Arial, sans-serif",
             "size": 13,
+            "color": colors["text"],
+        },
+        legend={"font": {"color": colors["text"]}},
+        hoverlabel={
+            "bgcolor": colors["panel"],
+            "bordercolor": colors["border"],
+            "font": {"color": colors["text"]},
         },
         margin={"l": 20, "r": 20, "t": 35, "b": 20},
         height=height,
+    )
+    figure.update_xaxes(
+        gridcolor=colors["grid"],
+        zerolinecolor=colors["border"],
+        tickfont={"color": colors["muted"]},
+        title_font={"color": colors["text"]},
+    )
+    figure.update_yaxes(
+        gridcolor=colors["grid"],
+        zerolinecolor=colors["border"],
+        tickfont={"color": colors["muted"]},
+        title_font={"color": colors["text"]},
     )
     return figure
