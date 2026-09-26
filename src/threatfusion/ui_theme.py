@@ -822,7 +822,7 @@ def source_status_card(row: dict[str, object]) -> None:
     }.get(status, "tf-tone-info")
     records = row.get("Records", 0)
     inactive = row.get("Inactive history", 0)
-    st.sidebar.markdown(
+    st.markdown(
         f"""
         <div class="tf-source-card">
             <div class="tf-source-head">
