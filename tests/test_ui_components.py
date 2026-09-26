@@ -3,7 +3,7 @@ from copy import deepcopy
 import pytest
 
 from threatfusion.ui_components import filter_findings, source_status_html
-from threatfusion.ui_theme import palette, verdict_colors
+from threatfusion.ui_theme import THEME_OPTIONS, palette, verdict_colors
 
 
 def test_filters_use_literal_search_and_preserve_data_and_order():
@@ -41,7 +41,7 @@ def test_source_status_keeps_backend_state_and_escapes_metadata(status):
     assert "<table" not in rendered
 
 
-@pytest.mark.parametrize("theme", ["Dark", "Light"])
+@pytest.mark.parametrize("theme", THEME_OPTIONS)
 def test_text_and_verdict_tokens_meet_normal_text_contrast(theme):
     def luminance(hex_color):
         values = [int(hex_color[index : index + 2], 16) / 255 for index in (1, 3, 5)]
@@ -59,6 +59,13 @@ def test_text_and_verdict_tokens_meet_normal_text_contrast(theme):
         for background in [colors["bg"], colors["panel"], colors["bg_alt"]]:
             a, b = sorted((luminance(foreground), luminance(background)))
             assert (b + 0.05) / (a + 0.05) >= 4.5
+
+
+
+
+def test_visual_theme_choices_match_product_ui():
+    assert THEME_OPTIONS == ("Dark", "White", "Blue Dark", "Red")
+    assert palette("Light") == palette("White")
 
 
 def test_distribution_keeps_semantic_colors_with_native_theme_text():
