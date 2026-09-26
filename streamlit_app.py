@@ -31,6 +31,7 @@ from threatfusion.persistence import (
     get_latest_analyst_feedback_for_domains,
     save_runtime_analysis,
 )
+from threatfusion.quick_lookup import analyze_quick_lookup
 from threatfusion.reporting import build_analysis_report
 from threatfusion.runtime_analysis import (
     analyze_adguard_query_log_with_diagnostics,
@@ -48,6 +49,7 @@ from threatfusion.ui_components import (
 from threatfusion.ui_evaluation import _show_model_evaluation
 from threatfusion.ui_history import _show_history
 from threatfusion.ui_investigation import _show_domain_detail
+from threatfusion.ui_quick_lookup import render_quick_lookup_result
 from threatfusion.ui_theme import (
     inject_theme_css,
     metric_card,
@@ -415,6 +417,10 @@ def _on_upload_change(upload_key: str) -> None:
         _clear_analysis_state()
 
 
+def _clear_quick_lookup_state() -> None:
+    st.session_state.pop("quick_lookup_result", None)
+
+
 def main() -> None:
     st.set_page_config(
         page_title="ThreatFusion AI",
@@ -443,7 +449,12 @@ def main() -> None:
         cti_stale_after_by_source=config.cti_stale_after_by_source,
     )
 
-    pages = ["Analyze telemetry", "Analysis history", "Model evaluation"]
+    pages = [
+        "Analyze telemetry",
+        "Quick lookup",
+        "Analysis history",
+        "Model evaluation",
+    ]
     if config.public_mode:
         pages.remove("Analysis history")
     if st.session_state.get("workspace_nav") not in pages:
@@ -453,6 +464,80 @@ def main() -> None:
         page = st.radio(
             "Workspace", pages, key="workspace_nav", label_visibility="collapsed"
         )
+
+    if page == "Quick lookup":
+        render_app_header(
+            "Quick lookup",
+            "Check one URL or domain against local threat intelligence and the "
+            "domain ML model without visiting the destination.",
+        )
+
+        try:
+            artifact = _load_artifact(str(model_dir))
+        except (OSError, TypeError, ValueError) as error:
+            st.error(
+                "The local ML artifact is not ready. Set up a trusted artifact "
+                "to run quick lookup."
+            )
+            with st.expander("Setup details", expanded=False):
+                st.code("python scripts/train_ml_artifact.py", language="shell")
+                st.caption(type(error).__name__)
+            return
+
+        if (
+            getattr(artifact.metadata, "evaluation_status", None)
+            == "demo_only_synthetic"
+        ):
+            st.warning(
+                "Demo ML artifact active. It uses synthetic training data only "
+                "to exercise the interface and must not be interpreted as "
+                "measured model performance."
+            )
+
+        indicators = load_ioc_records(db_path)
+        if not indicators:
+            st.warning(
+                "CTI cache is empty. Quick lookup can still use the ML model, "
+                "but known-indicator matching is unavailable."
+            )
+
+        st.caption(
+            "Passive lookup only. ThreatFusion does not open the URL, perform "
+            "DNS resolution, or download remote content."
+        )
+        lookup_value = st.text_input(
+            "URL or domain",
+            placeholder="https://example.com/path or example.com",
+            key="quick_lookup_input",
+            on_change=_clear_quick_lookup_state,
+        )
+        if st.button(
+            "Analyze URL / domain",
+            type="primary",
+            width="stretch",
+            disabled=not lookup_value.strip(),
+            key="quick_lookup_analyze",
+        ):
+            try:
+                st.session_state["quick_lookup_result"] = analyze_quick_lookup(
+                    lookup_value,
+                    indicators,
+                    artifact,
+                )
+            except (TypeError, ValueError) as error:
+                st.session_state.pop("quick_lookup_result", None)
+                st.error(f"Lookup input could not be analyzed: {error}")
+
+        lookup_result = st.session_state.get("quick_lookup_result")
+        if lookup_result is not None:
+            render_quick_lookup_result(lookup_result)
+        else:
+            empty_state(
+                "Enter one URL or domain",
+                "ThreatFusion will normalize it, check the local CTI cache, "
+                "score the domain, and explain the result.",
+            )
+        return
 
     if page == "Analysis history":
         render_app_header(
