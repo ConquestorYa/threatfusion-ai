@@ -76,10 +76,15 @@ from threatfusion.ui_theme import (
     metric_card,
     palette,
     render_app_header,
+    render_page_intro,
+    render_pipeline_overview,
     render_priority_finding,
+    render_privacy_note,
     render_sidebar_brand,
     safe_text,
     section_label,
+    sidebar_label,
+    source_status_card,
     status_card,
     verdict_badge,
 )
@@ -232,7 +237,7 @@ def _show_system_status(
     *,
     cti_stale_after_by_source=None,
 ) -> None:
-    st.sidebar.markdown("### System health")
+    sidebar_label("Workspace status")
 
     model_path = model_dir / "model.joblib"
     metadata_path = model_dir / "metadata.json"
@@ -263,38 +268,30 @@ def _show_system_status(
         cti_value = f"{len(stale_sources)} stale"
         cti_tone = "warn"
     else:
-        cti_value = f"{len(statuses)} sources ready"
+        cti_value = f"{len(statuses)} ready"
         cti_tone = "good"
 
-    status_card("CTI cache", cti_value, cti_tone)
+    status_card("Threat intelligence", cti_value, cti_tone)
 
     holdout_ready = evaluation_report_path.is_file()
     status_card(
         "Final evaluation",
-        "Available" if holdout_ready else "Pending holdout",
+        "Available" if holdout_ready else "Pending",
         "good" if holdout_ready else "info",
     )
 
     if status_rows:
-        with st.sidebar.expander("CTI source details", expanded=False):
-            st.dataframe(
-                pd.DataFrame(status_rows),
-                hide_index=True,
-                width="stretch",
-                column_config={
-                    "Refreshed at": st.column_config.TextColumn(
-                        width="medium"
-                    ),
-                    "Age": st.column_config.TextColumn(width="small"),
-                    "Status": st.column_config.TextColumn(width="small"),
-                },
-            )
+        with st.sidebar.expander(
+            "Threat intelligence sources",
+            expanded=False,
+        ):
+            for row in status_rows:
+                source_status_card(row)
     else:
         st.sidebar.caption(
             "Known-IOC matching is unavailable until the CTI cache is "
             "populated."
         )
-
 
 def _show_domain_detail(
     result,
@@ -571,7 +568,12 @@ def _show_analysis_result(
 ) -> None:
     summary = summarize_runtime_result(result)
 
-    st.subheader("Analysis overview")
+    render_page_intro(
+        "Analysis results",
+        "Review prioritized findings first, then drill into domain evidence "
+        "and supporting telemetry when needed.",
+        eyebrow="Current run",
+    )
     columns = st.columns(6)
     metric_card(columns[0], "DNS events", summary.event_count, accent="cyan")
     metric_card(
@@ -831,7 +833,12 @@ def _show_analysis_result(
             )
 
 def _show_history(db_path: Path) -> None:
-    st.subheader("Saved analysis history")
+    render_page_intro(
+        "Analysis history",
+        "Review saved aggregate runs, compare changes, and record analyst "
+        "decisions without persisting raw DNS rows.",
+        eyebrow="Local workspace",
+    )
     summaries = list_analysis_runs(db_path)
     if not summaries:
         st.info("No saved analyses yet.")
@@ -1241,7 +1248,12 @@ def _show_history(db_path: Path) -> None:
                 st.info("No saved runs were old enough to delete.")
 
 def _show_model_evaluation(report_path: Path) -> None:
-    st.subheader("Model evaluation")
+    render_page_intro(
+        "Model evaluation",
+        "Inspect frozen operating points and holdout diagnostics separately "
+        "from live analysis results.",
+        eyebrow="Model assurance",
+    )
 
     if not report_path.is_file():
         with st.container(border=True):
@@ -1415,9 +1427,6 @@ def main() -> None:
 
     inject_theme_css(active_theme())
     render_sidebar_brand()
-    st.sidebar.caption(
-        f"Theme: {active_theme()} · Change it from ⋮ → Settings → Theme."
-    )
     render_app_header()
 
     try:
@@ -1441,33 +1450,28 @@ def main() -> None:
             "one visitor cannot browse another visitor's saved findings."
         )
         analysis_tab, evaluation_tab = st.tabs(
-            ["Analyze telemetry", "Model evaluation"]
+            ["Analysis", "Model evaluation"]
         )
         history_tab = None
     else:
         analysis_tab, evaluation_tab, history_tab = st.tabs(
             [
-                "Analyze telemetry",
+                "Analysis",
                 "Model evaluation",
-                "Analysis history",
+                "History",
             ]
         )
 
     with analysis_tab:
-        st.markdown("## Telemetry intake")
-        st.info(
-            "Uploaded DNS data is processed in memory. Raw DNS rows and "
-            "client IP values are not persisted by this application."
+        render_page_intro(
+            "Analyze telemetry",
+            "Choose a DNS source, upload a sample, and let ThreatFusion "
+            "correlate CTI, ML, and DNS-behavior evidence into explainable "
+            "domain verdicts.",
+            eyebrow="Start here",
         )
+        render_privacy_note()
 
-        telemetry_format = st.selectbox(
-            "Telemetry format",
-            ["Generic DNS CSV", "Zeek dns.log", "Pi-hole FTL database", "AdGuard Home query log"],
-            key="telemetry_format",
-        )
-
-        input_columns = st.columns(3)
-        input_columns[0].markdown("**Input format**")
         format_caption = {
             "Generic DNS CSV": "Generic DNS CSV · UTF-8 · max 10 MB",
             "Zeek dns.log": "Zeek dns.log text export · max 10 MB",
@@ -1478,13 +1482,40 @@ def main() -> None:
             "Generic DNS CSV": "query_name; all other fields are optional",
             "Zeek dns.log": "Zeek #fields header with query",
             "Pi-hole FTL database": "queries view with standard Pi-hole fields",
-            "AdGuard Home query log": "query-log JSON with host and timestamp fields",
+            "AdGuard Home query log": (
+                "query-log JSON with host and timestamp fields"
+            ),
         }
-        input_columns[0].caption(format_caption[telemetry_format])
-        input_columns[1].markdown("**Required field**")
-        input_columns[1].caption(required_caption[telemetry_format])
-        input_columns[2].markdown("**Privacy**")
-        input_columns[2].caption("Raw rows stay in memory unless you export them")
+
+        intake_column, pipeline_column = st.columns(
+            [2.15, 1],
+            gap="large",
+        )
+        with intake_column:
+            telemetry_format = st.selectbox(
+                "Telemetry source",
+                [
+                    "Generic DNS CSV",
+                    "Zeek dns.log",
+                    "Pi-hole FTL database",
+                    "AdGuard Home query log",
+                ],
+                key="telemetry_format",
+            )
+            with st.expander("Input requirements", expanded=False):
+                st.markdown(
+                    f"**Format**  \n{format_caption[telemetry_format]}"
+                )
+                st.markdown(
+                    f"**Required**  \n{required_caption[telemetry_format]}"
+                )
+                st.caption(
+                    "The upload limit is 10 MB. Raw rows are analyzed in "
+                    "memory and are not added to saved analysis history."
+                )
+
+        with pipeline_column:
+            render_pipeline_overview()
 
         try:
             artifact = _load_artifact(str(model_dir))
@@ -1495,6 +1526,16 @@ def main() -> None:
             )
             st.caption(type(error).__name__)
             return
+
+        if (
+            getattr(artifact.metadata, "evaluation_status", None)
+            == "demo_only_synthetic"
+        ):
+            st.warning(
+                "Demo ML artifact active. It uses synthetic training data "
+                "only to exercise the interface and must not be interpreted "
+                "as measured model performance."
+            )
 
         indicators = load_ioc_records(db_path)
         if not indicators:
@@ -1538,12 +1579,14 @@ def main() -> None:
                 "objects are accepted."
             ),
         }[telemetry_format]
-        uploaded = st.file_uploader(
-            upload_label,
-            type=upload_types,
-            help=upload_help,
-            key=f"telemetry_upload_{telemetry_format}",
-        )
+        section_label("Upload telemetry")
+        with st.container(border=True):
+            uploaded = st.file_uploader(
+                upload_label,
+                type=upload_types,
+                help=upload_help,
+                key=f"telemetry_upload_{telemetry_format}",
+            )
 
         if uploaded is None:
             if st.session_state.pop("upload_fingerprint", None) is not None:
