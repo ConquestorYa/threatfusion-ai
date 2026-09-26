@@ -22,6 +22,8 @@ class FakeResponse:
         self.text = text
         self.status_code = status_code
         self.error = error
+        self.content = text.encode("utf-8")
+        self.headers: dict[str, str] = {}
 
     def raise_for_status(self) -> None:
         if self.error is not None:
@@ -37,7 +39,7 @@ class FakeSession:
     ) -> None:
         self.response = response
         self.get_error = get_error
-        self.get_calls: list[tuple[str, dict[str, str], int, bool]] = []
+        self.get_calls: list[tuple[str, dict[str, str], int, bool, bool]] = []
 
     def get(
         self,
@@ -46,8 +48,9 @@ class FakeSession:
         headers: dict[str, str],
         timeout: int,
         allow_redirects: bool,
+        stream: bool,
     ) -> FakeResponse:
-        self.get_calls.append((url, headers, timeout, allow_redirects))
+        self.get_calls.append((url, headers, timeout, allow_redirects, stream))
         if self.get_error is not None:
             raise self.get_error
         return self.response
@@ -98,9 +101,14 @@ def test_collector_uses_public_feed_with_descriptive_user_agent() -> None:
             PHISHTANK_FEED_URL,
             {"User-Agent": PHISHTANK_USER_AGENT},
             30,
+            False,
             True,
         )
     ]
+
+
+def test_public_feed_uses_https_and_disables_redirects() -> None:
+    assert PHISHTANK_FEED_URL.startswith("https://")
 
 
 def test_empty_or_invalid_public_feed_is_rejected() -> None:
@@ -125,3 +133,12 @@ def test_connection_error_is_sanitized() -> None:
         PhishTankCollector(session).fetch_verified_online_urls()
 
     assert PHISHTANK_FEED_URL not in str(exc.value)
+
+
+def test_oversized_public_feed_is_rejected() -> None:
+    response = FakeResponse(HEADER)
+    response.headers = {"Content-Length": str(65 * 1024 * 1024)}
+    session = FakeSession(response)
+
+    with pytest.raises(ValueError, match="safe download limit"):
+        PhishTankCollector(session).fetch_verified_online_urls()
