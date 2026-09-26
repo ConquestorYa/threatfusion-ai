@@ -4,6 +4,7 @@ from __future__ import annotations
 import pandas as pd
 import plotly.graph_objects as go
 from .dashboard import build_relationship_graph
+from .i18n import tr
 from .ui_theme import VERDICT_COLORS, apply_plotly_theme, palette
 
 
@@ -28,10 +29,11 @@ def _verdict_chart(summary) -> pd.DataFrame:
 
 def _verdict_distribution_figure(summary) -> go.Figure:
     frame = _verdict_chart(summary)
+    display_labels = [tr(label) for label in frame["verdict"]]
     figure = go.Figure(
         data=[
             go.Pie(
-                labels=frame["verdict"],
+                labels=display_labels,
                 values=frame["count"],
                 hole=0.70,
                 sort=False,
@@ -39,12 +41,12 @@ def _verdict_distribution_figure(summary) -> go.Figure:
                     "colors": [VERDICT_COLORS[label] for label in frame["verdict"]]
                 },
                 textinfo="none",
-                hovertemplate=("<b>%{label}</b><br>Domains: %{value}<extra></extra>"),
+                hovertemplate=(f"<b>%{{label}}</b><br>{tr('Domains')}: %{{value}}<extra></extra>"),
             )
         ]
     )
     figure.add_annotation(
-        text=(f"<b>{summary.domain_count}</b><br><span>domains</span>"),
+        text=(f"<b>{summary.domain_count}</b><br><span>{tr('domains')}</span>"),
         x=0.5,
         y=0.5,
         showarrow=False,
@@ -103,11 +105,11 @@ def _relationship_figure(report, result) -> go.Figure:
                 hovertext=[
                     (
                         f"{node.domain}<br>"
-                        f"Group: {node.cluster_id}<br>"
-                        f"Verdict: {node.verdict}<br>"
-                        f"ML tier: {node.ml_tier}<br>"
-                        f"Known CTI sources: "
-                        f"{', '.join(node.known_sources) or 'None'}"
+                        f"{tr('Group')}: {node.cluster_id}<br>"
+                        f"{tr('Verdict')}: {tr(node.verdict)}<br>"
+                        f"{tr('ML tier')}: {tr(node.ml_tier)}<br>"
+                        f"{tr('Known CTI sources')}: "
+                        f"{', '.join(node.known_sources) or tr('None')}"
                     )
                     for node in graph.nodes
                 ],
@@ -117,7 +119,7 @@ def _relationship_figure(report, result) -> go.Figure:
 
     figure.update_layout(
         title={
-            "text": "Possible related-activity graph",
+            "text": tr("Possible related-activity graph"),
             "font": {"size": 15},
         },
         xaxis={"visible": False},
