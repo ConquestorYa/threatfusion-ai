@@ -14,6 +14,7 @@ from threatfusion.app_config import load_app_config
 from threatfusion.audit import capture_analysis_audit_metadata
 from threatfusion.campaign import find_related_activity
 from threatfusion.cti_cache import list_cti_cache_status, load_ioc_records
+from threatfusion.cti_refresh import start_background_refresh_if_enabled
 from threatfusion.dashboard import (
     assessment_rows,
     cluster_rows,
@@ -530,6 +531,13 @@ def main() -> None:
 
     db_path = config.db_path
     model_dir = config.model_dir
+
+    try:
+        auto_refresh_started = start_background_refresh_if_enabled(db_path)
+    except (TypeError, ValueError):
+        auto_refresh_started = False
+        st.sidebar.warning("Automatic CTI refresh configuration is invalid.")
+
     navigation = st.sidebar.container()
     _show_system_status(
         db_path,
@@ -537,6 +545,8 @@ def main() -> None:
         config.evaluation_report_path,
         cti_stale_after_by_source=config.cti_stale_after_by_source,
     )
+    if auto_refresh_started:
+        st.sidebar.caption("CTI auto-refresh · enabled")
 
     pages = [
         "Analyze telemetry",
