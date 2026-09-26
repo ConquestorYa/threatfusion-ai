@@ -254,6 +254,19 @@ def test_quick_lookup_is_default_primary_workspace_without_network_activity(
     assert any("ThreatFusion AI" in item.value for item in app.markdown)
 
 
+def test_turkish_mode_localizes_quick_lookup_placeholder(feedback_app):
+    app = AppTest.from_string("import streamlit_app\nstreamlit_app.main()")
+    app.session_state["language_selector"] = "🇹🇷 Türkçe"
+    app.run(timeout=15)
+
+    assert not app.exception
+    lookup = app.text_input(key="quick_lookup_input")
+    assert lookup.label == "URL, domain veya IP"
+    assert lookup.proto.placeholder == (
+        "example.com, 143.20.185.213 veya https://example.com/yol"
+    )
+
+
 def test_quick_lookup_check_uses_current_input_value(feedback_app, monkeypatch):
     app_module, _, _, _ = feedback_app
     calls = []

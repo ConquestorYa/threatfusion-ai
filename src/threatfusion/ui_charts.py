@@ -7,6 +7,37 @@ from .dashboard import build_relationship_graph
 from .i18n import tr
 from .ui_theme import VERDICT_COLORS, apply_plotly_theme, palette
 
+_RELATION_HOVER_TERMS = (
+    "Strength",
+    "Shared clients",
+    "Shared response IPs",
+    "Shared CTI sources",
+    "Shared CTI tags",
+    "Shared threat types",
+    "Closest time delta",
+    "Evidence",
+    "Noise adjustment",
+    "not comparable",
+    "Strong",
+    "Moderate",
+    "Weak",
+    "Shared client observation",
+    "Shared response IP observation",
+    "Observed close together in time",
+    "Shared CTI source context",
+    "Shared CTI tag context",
+    "Shared CTI threat-type context",
+    "Shared client appears across several suspicious domains",
+    "Shared response IP appears across several suspicious domains",
+)
+
+
+def _localized_relationship_hover(text: str) -> str:
+    localized = text
+    for term in _RELATION_HOVER_TERMS:
+        localized = localized.replace(term, tr(term))
+    return localized
+
 
 def _verdict_chart(summary) -> pd.DataFrame:
     return pd.DataFrame(
@@ -76,7 +107,10 @@ def _relationship_figure(report, result) -> go.Figure:
                 },
                 opacity=0.42,
                 hoverinfo="text",
-                text=[edge.hover_text, edge.hover_text],
+                text=[
+                    _localized_relationship_hover(edge.hover_text),
+                    _localized_relationship_hover(edge.hover_text),
+                ],
                 showlegend=False,
             )
         )

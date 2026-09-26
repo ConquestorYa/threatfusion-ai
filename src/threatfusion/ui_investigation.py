@@ -54,7 +54,7 @@ def _show_domain_detail(
         if prior_feedback is not None:
             st.info(
                 tr("Previous analyst review") + ": "
-                f"{feedback_label(prior_feedback.label)} · "
+                f"{tr(feedback_label(prior_feedback.label))} · "
                 f"{format_timestamp(prior_feedback.updated_at)}"
                 + (f" · {prior_feedback.note}" if prior_feedback.note else "")
             )
@@ -74,7 +74,7 @@ def _show_domain_detail(
         section_label(tr("Why this verdict?"))
         if evidence:
             for item in evidence:
-                st.markdown(f"- {item}")
+                st.markdown(f"- {tr(item)}")
         else:
             st.caption(tr("No strong CTI, ML-tier, or DNS-behavior signal was recorded."))
 
@@ -91,7 +91,7 @@ def _show_domain_detail(
             section_label(tr("Primary CTI evidence"))
             primary = evidence_rows[0]
             st.write(
-                f"{primary['Evidence scope']} · {primary['Source']}"
+                f"{tr(str(primary['Evidence scope']))} · {primary['Source']}"
                 + (f" · {primary['Threat type']}" if primary["Threat type"] else "")
             )
             metadata_columns = st.columns(4)
@@ -177,7 +177,7 @@ def _show_domain_detail(
             )
             st.caption(tr("Response codes") + f": {response_codes or tr('None')}")
             st.caption(
-                "NXDOMAIN ratio: "
+                tr("NXDOMAIN ratio") + ": "
                 + (
                     f"{detail['nxdomain_ratio']:.2f}"
                     if detail["nxdomain_ratio"] is not None
@@ -185,11 +185,13 @@ def _show_domain_detail(
                 )
             )
             st.caption(
-                "Label count / subdomain depth: "
+                tr("Label count / subdomain depth")
+                + ": "
                 + f"{detail['label_count']} / {detail['subdomain_depth']}"
             )
             st.caption(
-                "Numeric ratio / entropy: "
+                tr("Numeric ratio / entropy")
+                + ": "
                 + (
                     f"{detail['numeric_character_ratio']:.2f}"
                     if detail["numeric_character_ratio"] is not None
@@ -203,7 +205,8 @@ def _show_domain_detail(
                 )
             )
             st.caption(
-                "Response-IP churn rate: "
+                tr("Response-IP churn rate")
+                + ": "
                 + (
                     f"{detail['response_ip_churn_rate']:.2f}"
                     if detail["response_ip_churn_rate"] is not None
@@ -220,7 +223,9 @@ def _show_domain_detail(
                 if detail["periodic_interval_seconds"] is not None
                 else "N/A"
             )
-            st.caption("Periodicity score / interval: " + f"{periodicity} / {interval}")
+            st.caption(
+                tr("Periodicity score / interval") + ": " + f"{periodicity} / {interval}"
+            )
 
         if analyst_policy_enabled and db_path is not None:
             st.markdown(f"**{tr('Local analyst policy')}**")
