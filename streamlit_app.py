@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 from datetime import timedelta
 from pathlib import Path
@@ -74,7 +75,11 @@ MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 
 @st.cache_resource
 def _load_artifact(path_text: str):
-    return load_trusted_ml_artifact(Path(path_text))
+    expected_checksum = os.environ.get("THREATFUSION_MODEL_SHA256")
+    return load_trusted_ml_artifact(
+        Path(path_text),
+        expected_checksum=expected_checksum,
+    )
 
 
 def _show_system_status(
