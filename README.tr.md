@@ -110,6 +110,30 @@ Character n-gram TF-IDF + Logistic Regression; dondurulmuş artifact ve açık F
 
 ---
 
+## 🖼️ Arayüz önizlemesi
+
+> Ekran görüntüleri gerçek Streamlit arayüzünden, **sentetik public-demo runtime** kullanılarak alınmıştır. Canlı CTI anahtarı, özel telemetri veya kişisel veri gösterilmez.
+
+### ⚡ Pasif Hızlı Sorgu
+
+<p align="center">
+  <img src="docs/screenshots/quick-lookup.png" alt="ThreatFusion AI sentetik bilinen tehdit sonucunu gösteren pasif Hızlı Sorgu ekranı" width="100%">
+</p>
+
+### 📡 Telemetri analiz genel görünümü
+
+<p align="center">
+  <img src="docs/screenshots/telemetry-overview.png" alt="ThreatFusion AI telemetri analizi öncelikli bulgular ve genel görünüm ekranı" width="100%">
+</p>
+
+### 🔎 Kanıt odaklı domain incelemesi
+
+<p align="center">
+  <img src="docs/screenshots/investigation.png" alt="ThreatFusion AI kanıt odaklı domain inceleme çalışma alanı" width="100%">
+</p>
+
+---
+
 ## 🧩 Mimari
 
 ~~~mermaid
@@ -366,7 +390,6 @@ threatfusion-ai/
 Release için kalan işler bilinçli olarak dar tutulmuştur:
 
 - son untouched post-freeze temporal ML ölçümü;
-- sanitize edilmiş portföy ekran görüntüleri;
 - hosted public-mode demo;
 - final release checklist ve GitHub release/tag.
 

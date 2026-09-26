@@ -110,6 +110,30 @@ Character n-gram TF-IDF + Logistic Regression with frozen artifacts and explicit
 
 ---
 
+## 🖼️ Interface preview
+
+> Screenshots are captured from the real Streamlit interface using the **synthetic public-demo runtime**. No live CTI credentials, private telemetry, or personal data are shown.
+
+### ⚡ Passive Quick Lookup
+
+<p align="center">
+  <img src="docs/screenshots/quick-lookup.png" alt="ThreatFusion AI passive Quick Lookup showing a synthetic known-threat result" width="100%">
+</p>
+
+### 📡 Telemetry analysis overview
+
+<p align="center">
+  <img src="docs/screenshots/telemetry-overview.png" alt="ThreatFusion AI telemetry analysis priority findings and overview" width="100%">
+</p>
+
+### 🔎 Evidence-first domain investigation
+
+<p align="center">
+  <img src="docs/screenshots/investigation.png" alt="ThreatFusion AI evidence-first domain investigation workspace" width="100%">
+</p>
+
+---
+
 ## 🧩 Architecture
 
 ~~~mermaid
@@ -366,7 +390,6 @@ threatfusion-ai/
 Remaining release work is intentionally narrow:
 
 - one final untouched post-freeze temporal ML measurement;
-- sanitized portfolio screenshots;
 - hosted public-mode demo;
 - final release checklist and GitHub release/tag.
 
