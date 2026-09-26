@@ -5,6 +5,7 @@ import requests
 
 from threatfusion.collectors.urlhaus import (
     URLHAUS_EXPORT_URL,
+    URLHAUS_FULL_EXPORT_URL,
     URLhausCollector,
     parse_urlhaus_csv,
 )
@@ -208,4 +209,19 @@ def test_multiple_csv_rows_produce_multiple_records() -> None:
     assert [record.value for record in records] == [
         "https://one.example/a",
         "https://two.example/b",
+    ]
+
+
+def test_full_export_uses_full_database_endpoint() -> None:
+    malicious_url = "https://full.example/payload"
+    auth_key = "test-full-key"
+    session = make_session(
+        f"1,2026-08-20 05:17:07 UTC,{malicious_url},online,malware,,link,reporter"
+    )
+
+    records = URLhausCollector(auth_key, session).fetch_full_urls()
+
+    assert [record.value for record in records] == [malicious_url]
+    assert session.get_calls == [
+        (URLHAUS_FULL_EXPORT_URL.format(auth_key), 30, False)
     ]
