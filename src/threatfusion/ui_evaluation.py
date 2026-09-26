@@ -62,8 +62,8 @@ def _show_model_evaluation(report_path: Path) -> None:
     st.write(f"**{tr('Model')}:** {summary.model_name}")
     st.write(
         f"**{tr('Snapshot dates')}:** "
-        f"development {summary.development_snapshot_date} → "
-        f"holdout {summary.holdout_snapshot_date}"
+        f"{tr('development')} {summary.development_snapshot_date} → "
+        f"{tr('holdout')} {summary.holdout_snapshot_date}"
     )
 
     columns = st.columns(5)
@@ -131,7 +131,7 @@ def _show_model_evaluation(report_path: Path) -> None:
         color="Metric",
         barmode="group",
         title=tr("Final holdout recall vs false-positive rate"),
-        labels={"Rate": "Rate"},
+        labels={"Rate": tr("Rate"), "Operating point": tr("Operating point"), "Metric": tr("Metric")},
         color_discrete_map={
             "Recall": palette()["cyan"],
             "False-positive rate": palette()["muted"],
@@ -167,20 +167,26 @@ def _show_model_evaluation(report_path: Path) -> None:
                 width="stretch",
             )
             st.caption(
-                "Recall is shown for malicious samples and false-positive rate "
-                "for benign samples. A source with no samples for one class shows "
-                "n/a for that class-specific rate."
+                tr(
+                    "Recall is shown for malicious samples and false-positive rate "
+                    "for benign samples. A source with no samples for one class shows "
+                    "n/a for that class-specific rate."
+                )
             )
 
     st.info(
-        "Dataset precision is not the same as operational positive predictive "
-        "value (PPV). Real DNS traffic may contain a much lower malicious "
-        "base rate, so even a small false-positive rate can produce many "
-        "benign alerts."
+        tr(
+            "Dataset precision is not the same as operational positive predictive "
+            "value (PPV). Real DNS traffic may contain a much lower malicious "
+            "base rate, so even a small false-positive rate can produce many "
+            "benign alerts."
+        )
     )
     st.caption(
-        "Protocol: fresh-collection disjoint holdout. Every domain seen in "
-        "the development snapshot is removed before evaluation. This is not "
-        "a strict IOC first-seen temporal split because DomainSample does not "
-        "store malicious IOC first_seen timestamps."
+        tr(
+            "Protocol: fresh-collection disjoint holdout. Every domain seen in "
+            "the development snapshot is removed before evaluation. This is not "
+            "a strict IOC first-seen temporal split because DomainSample does not "
+            "store malicious IOC first_seen timestamps."
+        )
     )
