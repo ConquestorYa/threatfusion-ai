@@ -3,7 +3,13 @@ from copy import deepcopy
 import pytest
 
 from threatfusion.ui_components import filter_findings, source_status_html
-from threatfusion.ui_theme import THEME_OPTIONS, palette, verdict_colors
+from threatfusion.ui_theme import (
+    THEME_OPTIONS,
+    apply_plotly_theme,
+    canonical_theme_name,
+    palette,
+    verdict_colors,
+)
 
 
 def test_filters_use_literal_search_and_preserve_data_and_order():
@@ -56,7 +62,14 @@ def test_text_and_verdict_tokens_meet_normal_text_contrast(theme):
         colors["muted"],
         *verdict_colors(theme).values(),
     ]:
-        for background in [colors["bg"], colors["panel"], colors["bg_alt"]]:
+        for background in [
+            colors["bg"],
+            colors["bg_alt"],
+            colors["panel"],
+            colors["panel_alt"],
+            colors["surface"],
+            colors["input_bg"],
+        ]:
             a, b = sorted((luminance(foreground), luminance(background)))
             assert (b + 0.05) / (a + 0.05) >= 4.5
 
@@ -64,8 +77,29 @@ def test_text_and_verdict_tokens_meet_normal_text_contrast(theme):
 
 
 def test_visual_theme_choices_match_product_ui():
-    assert THEME_OPTIONS == ("Dark", "White", "Blue Dark", "Red")
-    assert palette("Light") == palette("White")
+    assert THEME_OPTIONS == ("Obsidian", "Arctic", "Midnight", "Crimson")
+    assert canonical_theme_name("Dark") == "Obsidian"
+    assert canonical_theme_name("White") == "Arctic"
+    assert canonical_theme_name("Blue Dark") == "Midnight"
+    assert canonical_theme_name("Red") == "Crimson"
+    assert palette("Light") == palette("Arctic")
+
+
+def test_each_theme_has_a_distinct_logo_tint_and_input_surface():
+    logo_colors = {palette(theme)["logo"] for theme in THEME_OPTIONS}
+    assert len(logo_colors) == len(THEME_OPTIONS)
+    for theme in THEME_OPTIONS:
+        colors = palette(theme)
+        assert colors["input_bg"] != colors["surface"]
+
+
+def test_arctic_theme_is_blue_gray_light_not_flat_white():
+    colors = palette("Arctic")
+    assert colors["bg"] == "#EEF4F8"
+    assert colors["bg_alt"] == "#E3EDF4"
+    assert colors["panel"] == "#F8FBFD"
+    assert colors["input_bg"] == "#F7FBFE"
+    assert len({colors["bg"], colors["bg_alt"], colors["panel"]}) == 3
 
 
 def test_distribution_keeps_semantic_colors_with_native_theme_text():
@@ -86,7 +120,17 @@ def test_distribution_keeps_semantic_colors_with_native_theme_text():
     pie = figure.data[0]
     assert list(pie.values) == [1, 2, 3, 4]
     assert dict(zip(pie.labels, pie.marker.colors)) == VERDICT_COLORS
-    assert figure.layout.font.color is None
+    assert figure.layout.font.color is not None
+
+
+def test_plotly_theme_uses_selected_product_palette():
+    import plotly.graph_objects as go
+
+    figure = apply_plotly_theme(go.Figure(), theme="Arctic")
+
+    assert figure.layout.font.color == palette("Arctic")["text"]
+    assert figure.layout.hoverlabel.bgcolor == palette("Arctic")["panel"]
+    assert figure.layout.xaxis.gridcolor == palette("Arctic")["grid"]
 
 
 def test_loaded_evaluation_preserves_operating_points_and_source_diagnostics(tmp_path):

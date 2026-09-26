@@ -9,20 +9,30 @@ import streamlit as st
 
 from .brand_assets import THREATFUSION_LOGO_DATA_URI
 
-THEME_OPTIONS = ("Dark", "White", "Blue Dark", "Red")
+THEME_OPTIONS = ("Obsidian", "Arctic", "Midnight", "Crimson")
+
+_LEGACY_THEME_NAMES = {
+    "Dark": "Obsidian",
+    "White": "Arctic",
+    "Light": "Arctic",
+    "Blue Dark": "Midnight",
+    "Red": "Crimson",
+}
 
 THEME_PALETTES = {
-    "Dark": {
+    "Obsidian": {
         "bg": "#0C121C",
         "bg_alt": "#101923",
         "panel": "#141F2C",
         "panel_alt": "#182534",
         "surface": "#213143",
+        "input_bg": "#111C28",
         "border": "#2C3C4E",
         "text": "#E5ECF4",
         "muted": "#A0AFC1",
         "cyan": "#53C9BE",
         "cyan_soft": "rgba(83, 201, 190, 0.09)",
+        "logo": "#62D5CA",
         "on_accent": "#0C121C",
         "green": "#81CAA3",
         "yellow": "#E8C76A",
@@ -33,38 +43,42 @@ THEME_PALETTES = {
         "plot_template": "plotly_dark",
         "scheme": "dark",
     },
-    "White": {
-        "bg": "#F7F9FC",
-        "bg_alt": "#EEF2F7",
-        "panel": "#FFFFFF",
-        "panel_alt": "#F3F6FA",
-        "surface": "#E7EDF4",
-        "border": "#C5D0DD",
-        "text": "#172234",
-        "muted": "#516278",
-        "cyan": "#0D716E",
-        "cyan_soft": "rgba(13, 113, 110, 0.08)",
+    "Arctic": {
+        "bg": "#EEF4F8",
+        "bg_alt": "#E3EDF4",
+        "panel": "#F8FBFD",
+        "panel_alt": "#EDF4F8",
+        "surface": "#D8E6EF",
+        "input_bg": "#F7FBFE",
+        "border": "#AFC2D0",
+        "text": "#183246",
+        "muted": "#4B6578",
+        "cyan": "#096A77",
+        "cyan_soft": "rgba(9, 106, 119, 0.09)",
+        "logo": "#0A7282",
         "on_accent": "#FFFFFF",
-        "green": "#246843",
-        "yellow": "#785A0D",
-        "orange": "#A04413",
-        "red": "#AE2B3B",
-        "blue": "#3A628A",
-        "grid": "rgba(82, 98, 120, 0.12)",
+        "green": "#1F6B4B",
+        "yellow": "#795A00",
+        "orange": "#9A4618",
+        "red": "#A72D3A",
+        "blue": "#305F86",
+        "grid": "rgba(72, 97, 116, 0.14)",
         "plot_template": "plotly_white",
         "scheme": "light",
     },
-    "Blue Dark": {
+    "Midnight": {
         "bg": "#071525",
         "bg_alt": "#0B1D31",
         "panel": "#10243A",
         "panel_alt": "#15304A",
         "surface": "#1C3B58",
+        "input_bg": "#0C2136",
         "border": "#2E4C68",
         "text": "#E8F2FF",
         "muted": "#9EB4CA",
         "cyan": "#62B8FF",
         "cyan_soft": "rgba(98, 184, 255, 0.11)",
+        "logo": "#69C1FF",
         "on_accent": "#06121F",
         "green": "#83D8AE",
         "yellow": "#F0D074",
@@ -75,17 +89,19 @@ THEME_PALETTES = {
         "plot_template": "plotly_dark",
         "scheme": "dark",
     },
-    "Red": {
+    "Crimson": {
         "bg": "#170B10",
         "bg_alt": "#211017",
         "panel": "#2A141D",
         "panel_alt": "#341925",
         "surface": "#44202E",
+        "input_bg": "#26121B",
         "border": "#5A3040",
         "text": "#F7EAF0",
         "muted": "#C7A6B4",
         "cyan": "#E9687B",
         "cyan_soft": "rgba(233, 104, 123, 0.12)",
+        "logo": "#F06D80",
         "on_accent": "#18090E",
         "green": "#8FD2A4",
         "yellow": "#F0C972",
@@ -97,8 +113,6 @@ THEME_PALETTES = {
         "scheme": "dark",
     },
 }
-# Backward-compatible alias for older tests/integrations.
-THEME_PALETTES["Light"] = THEME_PALETTES["White"]
 
 _VERDICT_TOKENS = {
     "Known Threat": "red",
@@ -121,20 +135,28 @@ VERDICT_COLORS = {
 }
 
 
+def canonical_theme_name(theme: str) -> str:
+    """Map legacy theme labels to the current product-facing names."""
+    return _LEGACY_THEME_NAMES.get(theme, theme)
+
+
 def active_theme() -> str:
     """Return the explicit ThreatFusion theme, falling back to native mode."""
     selected = st.session_state.get("visual_theme")
-    if selected in THEME_OPTIONS:
-        return str(selected)
+    if isinstance(selected, str):
+        canonical = canonical_theme_name(selected)
+        if canonical in THEME_OPTIONS:
+            return canonical
     try:
         theme_type = st.context.theme.type
     except (AttributeError, TypeError):
         theme_type = "dark"
-    return "White" if theme_type == "light" else "Dark"
+    return "Arctic" if theme_type == "light" else "Obsidian"
 
 
 def palette(theme: str | None = None) -> dict[str, str]:
-    return THEME_PALETTES[theme or active_theme()]
+    selected = canonical_theme_name(theme) if theme is not None else active_theme()
+    return THEME_PALETTES[selected]
 
 
 def verdict_colors(theme: str | None = None) -> dict[str, str]:
@@ -203,8 +225,10 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
 .tf-sidebar-brand-logo {
     width:2.65rem;
     height:2.3rem;
-    object-fit:contain;
     flex:0 0 auto;
+    background:var(--tf-logo);
+    -webkit-mask:var(--tf-brand-logo) center / contain no-repeat;
+    mask:var(--tf-brand-logo) center / contain no-repeat;
     filter:drop-shadow(0 5px 12px rgba(0,0,0,.16));
 }
 .tf-sidebar-brand-title { font-size:1rem; font-weight:650; color:var(--tf-text); }
@@ -231,21 +255,46 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     flex:0 0 auto;
     width:4rem;
     height:3.4rem;
-    object-fit:contain;
+    background:var(--tf-logo);
+    -webkit-mask:var(--tf-brand-logo) center / contain no-repeat;
+    mask:var(--tf-brand-logo) center / contain no-repeat;
     filter:drop-shadow(0 8px 20px rgba(0,0,0,.18));
+    transition:background-color .18s ease;
+}
+.st-key-theme_picker [data-testid="stHorizontalBlock"] {
+    align-items:center;
 }
 .tf-theme-picker-label {
     color:var(--tf-muted);
-    font-size:.7rem;
-    font-weight:700;
+    font-size:.72rem;
+    font-weight:750;
     letter-spacing:.08em;
     text-transform:uppercase;
     text-align:right;
-    margin:0 0 .35rem;
+    margin:0;
+    line-height:1;
+    white-space:nowrap;
 }
 .st-key-visual_theme {
     display:flex;
     justify-content:flex-end;
+    align-items:center;
+    margin:0;
+}
+.st-key-visual_theme [role="radiogroup"] {
+    justify-content:flex-end;
+}
+.st-key-visual_theme button {
+    background:var(--tf-panel)!important;
+    color:var(--tf-text)!important;
+    border-color:var(--tf-border)!important;
+    min-height:38px!important;
+}
+.st-key-visual_theme button[aria-pressed="true"],
+.st-key-visual_theme button[data-selected="true"] {
+    background:var(--tf-cyan-soft)!important;
+    color:var(--tf-cyan)!important;
+    border-color:color-mix(in srgb, var(--tf-cyan) 56%, var(--tf-border))!important;
 }
 .tf-product-brand-title {
     color:var(--tf-text);
@@ -663,8 +712,11 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     min-height:68px;
     border-radius:12px;
     border:1px solid color-mix(in srgb, var(--tf-cyan) 42%, var(--tf-border));
-    background:color-mix(in srgb, var(--tf-panel) 94%, var(--tf-cyan-soft));
+    background:var(--tf-input-bg)!important;
     box-shadow:0 0 0 1px color-mix(in srgb, var(--tf-cyan) 8%, transparent);
+}
+.st-key-quick_lookup_input [data-baseweb="input"] > div {
+    background:transparent!important;
 }
 .st-key-quick_lookup_input input {
     min-height:66px;
@@ -804,9 +856,44 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
 [data-baseweb="input"],
 [data-baseweb="select"] > div,
 [data-testid="stFileUploaderDropzone"] {
+    background:var(--tf-input-bg)!important;
+    color:var(--tf-text)!important;
+    border-color:var(--tf-border)!important;
+}
+[data-baseweb="input"] input,
+[data-baseweb="textarea"] textarea,
+[data-baseweb="select"] input {
+    background:transparent!important;
+    color:var(--tf-text)!important;
+    -webkit-text-fill-color:var(--tf-text)!important;
+    caret-color:var(--tf-cyan)!important;
+}
+[data-baseweb="input"] input::placeholder,
+[data-baseweb="textarea"] textarea::placeholder {
+    color:var(--tf-muted)!important;
+    -webkit-text-fill-color:var(--tf-muted)!important;
+    opacity:.82!important;
+}
+[data-testid="stWidgetLabel"] p,
+[data-testid="stCaptionContainer"],
+[data-testid="stMarkdownContainer"] {
+    color:var(--tf-text);
+}
+[data-testid="stCaptionContainer"] {
+    color:var(--tf-muted)!important;
+}
+[data-baseweb="select"] span,
+[data-baseweb="select"] svg {
+    color:var(--tf-text)!important;
+}
+[data-baseweb="popover"] [role="listbox"],
+[data-baseweb="menu"] {
     background:var(--tf-panel)!important;
     color:var(--tf-text)!important;
     border-color:var(--tf-border)!important;
+}
+[data-baseweb="popover"] [role="option"] {
+    color:var(--tf-text)!important;
 }
 .stButton > button,
 .stDownloadButton > button {
@@ -852,6 +939,9 @@ button:focus-visible,a:focus-visible,input:focus-visible {
     .tf-product-brand { align-items:flex-start; }
     .tf-product-brand-badge { display:none; }
     .tf-product-brand-title { font-size:1.35rem; }
+    .tf-theme-picker-label { text-align:left; }
+    .st-key-visual_theme,
+    .st-key-visual_theme [role="radiogroup"] { justify-content:flex-start; }
     .st-key-quick_lookup_input [data-baseweb="input"],
     .st-key-quick_lookup_analyze button { min-height:60px!important; }
     .st-key-quick_lookup_input input { min-height:58px; font-size:1rem!important; }
@@ -871,37 +961,54 @@ def render_app_header(
     )
 
 
+def _logo_markup(css_class: str) -> str:
+    return (
+        f'<span class="{safe_text(css_class)}" role="img" '
+        'aria-label="ThreatFusion AI logo" '
+        f'style="--tf-brand-logo:url(&quot;{THREATFUSION_LOGO_DATA_URI}&quot;)"></span>'
+    )
+
+
 def render_main_brand() -> None:
     with st.container(key="product_topbar"):
-        brand_col, theme_col = st.columns([1.6, 1], vertical_alignment="center")
+        brand_col, theme_col = st.columns([1.55, 1.15], vertical_alignment="center")
         with brand_col:
             st.markdown(
                 '<div class="tf-product-brand">'
-                f'<img class="tf-product-brand-logo" src="{THREATFUSION_LOGO_DATA_URI}" alt="">'
-                '<div><div class="tf-product-brand-title">ThreatFusion AI</div>'
+                + _logo_markup("tf-product-brand-logo")
+                + '<div><div class="tf-product-brand-title">ThreatFusion AI</div>'
                 '<div class="tf-product-brand-sub">'
                 'Threat intelligence, DNS analysis and AI-assisted triage in one analyst workspace.'
                 '</div></div></div>',
                 unsafe_allow_html=True,
             )
         with theme_col:
-            st.markdown(
-                '<div class="tf-theme-picker-label">Theme</div>',
-                unsafe_allow_html=True,
-            )
-            st.segmented_control(
-                "Theme",
-                list(THEME_OPTIONS),
-                key="visual_theme",
-                label_visibility="collapsed",
-            )
+            with st.container(key="theme_picker"):
+                label_col, options_col = st.columns(
+                    [0.22, 0.78],
+                    vertical_alignment="center",
+                    gap="small",
+                )
+                with label_col:
+                    st.markdown(
+                        '<div class="tf-theme-picker-label">Theme</div>',
+                        unsafe_allow_html=True,
+                    )
+                with options_col:
+                    st.segmented_control(
+                        "Theme",
+                        list(THEME_OPTIONS),
+                        key="visual_theme",
+                        label_visibility="collapsed",
+                        width="stretch",
+                    )
 
 
 def render_sidebar_brand() -> None:
     st.sidebar.markdown(
         '<div class="tf-sidebar-brand">'
-        f'<img class="tf-sidebar-brand-logo" src="{THREATFUSION_LOGO_DATA_URI}" alt="">'
-        '<div><div class="tf-sidebar-brand-title">ThreatFusion AI</div>'
+        + _logo_markup("tf-sidebar-brand-logo")
+        + '<div><div class="tf-sidebar-brand-title">ThreatFusion AI</div>'
         '<div class="tf-sidebar-brand-sub">DNS intelligence workspace</div></div></div>',
         unsafe_allow_html=True,
     )
@@ -973,16 +1080,36 @@ def render_priority_finding(row: dict[str, object]) -> None:
 def apply_plotly_theme(
     figure: go.Figure, *, theme: str | None = None, height: int | None = None
 ) -> go.Figure:
-    # Let Streamlit update chart typography and hover surfaces on theme changes.
+    """Apply the selected product theme independently of Streamlit's native theme."""
+    colors = palette(theme)
     figure.update_layout(
-        template="streamlit",
+        template=colors["plot_template"],
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         font={
             "family": "Aptos, Segoe UI Variable, Segoe UI, Arial, sans-serif",
             "size": 13,
+            "color": colors["text"],
+        },
+        legend={"font": {"color": colors["text"]}},
+        hoverlabel={
+            "bgcolor": colors["panel"],
+            "bordercolor": colors["border"],
+            "font": {"color": colors["text"]},
         },
         margin={"l": 20, "r": 20, "t": 35, "b": 20},
         height=height,
+    )
+    figure.update_xaxes(
+        gridcolor=colors["grid"],
+        zerolinecolor=colors["border"],
+        tickfont={"color": colors["muted"]},
+        title_font={"color": colors["text"]},
+    )
+    figure.update_yaxes(
+        gridcolor=colors["grid"],
+        zerolinecolor=colors["border"],
+        tickfont={"color": colors["muted"]},
+        title_font={"color": colors["text"]},
     )
     return figure
