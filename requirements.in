@@ -2,6 +2,7 @@
 # Keep these versions synchronized with [project].dependencies in pyproject.toml.
 # requirements.txt remains the fully pinned tested environment used by CI/Docker.
 
+dpkt==1.9.8
 joblib==1.6.0
 numpy==2.5.3
 openpyxl==3.1.5
