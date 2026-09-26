@@ -5,6 +5,7 @@ import requests
 
 from threatfusion.collectors.phishtank import (
     PHISHTANK_FEED_URL,
+    PHISHTANK_USER_AGENT,
     PhishTankCollector,
     parse_phishtank_csv,
 )
@@ -36,16 +37,17 @@ class FakeSession:
     ) -> None:
         self.response = response
         self.get_error = get_error
-        self.get_calls: list[tuple[str, int, bool]] = []
+        self.get_calls: list[tuple[str, dict[str, str], int, bool]] = []
 
     def get(
         self,
         url: str,
         *,
+        headers: dict[str, str],
         timeout: int,
         allow_redirects: bool,
     ) -> FakeResponse:
-        self.get_calls.append((url, timeout, allow_redirects))
+        self.get_calls.append((url, headers, timeout, allow_redirects))
         if self.get_error is not None:
             raise self.get_error
         return self.response
@@ -80,8 +82,7 @@ def test_parser_keeps_only_verified_online_urls() -> None:
     assert "target:Example Bank" in record.tags
 
 
-def test_collector_uses_keyed_feed_and_does_not_visit_phish_urls() -> None:
-    app_key = "test-app-key"
+def test_collector_uses_public_feed_with_descriptive_user_agent() -> None:
     content = (
         HEADER
         + "\n1,https://bad.example/login,detail,"
@@ -89,36 +90,38 @@ def test_collector_uses_keyed_feed_and_does_not_visit_phish_urls() -> None:
     )
     session = FakeSession(FakeResponse(content))
 
-    records = PhishTankCollector(app_key, session).fetch_verified_online_urls()
+    records = PhishTankCollector(session).fetch_verified_online_urls()
 
     assert [item.value for item in records] == ["https://bad.example/login"]
     assert session.get_calls == [
-        (PHISHTANK_FEED_URL.format(app_key), 30, False)
+        (
+            PHISHTANK_FEED_URL,
+            {"User-Agent": PHISHTANK_USER_AGENT},
+            30,
+            False,
+        )
     ]
 
 
-def test_missing_key_is_rejected() -> None:
-    with pytest.raises(ValueError, match="app key"):
-        PhishTankCollector("   ")
-
-
-def test_empty_or_invalid_feed_is_rejected() -> None:
+def test_empty_or_invalid_public_feed_is_rejected() -> None:
     session = FakeSession(FakeResponse(HEADER))
 
     with pytest.raises(ValueError, match="no usable verified URLs"):
-        PhishTankCollector("secret", session).fetch_verified_online_urls()
+        PhishTankCollector(session).fetch_verified_online_urls()
 
 
-def test_connection_error_does_not_leak_keyed_url() -> None:
-    app_key = "SUPER-SECRET-PHISHTANK-KEY"
-    feed_url = PHISHTANK_FEED_URL.format(app_key)
+def test_connection_error_is_sanitized() -> None:
     session = FakeSession(
         FakeResponse(""),
-        get_error=requests.ConnectionError(f"failed to connect to {feed_url}"),
+        get_error=requests.ConnectionError(
+            f"failed to connect to {PHISHTANK_FEED_URL}"
+        ),
     )
 
-    with pytest.raises(requests.HTTPError, match="PhishTank feed request failed") as exc:
-        PhishTankCollector(app_key, session).fetch_verified_online_urls()
+    with pytest.raises(
+        requests.HTTPError,
+        match="PhishTank public feed request failed",
+    ) as exc:
+        PhishTankCollector(session).fetch_verified_online_urls()
 
-    assert app_key not in str(exc.value)
-    assert feed_url not in str(exc.value)
+    assert PHISHTANK_FEED_URL not in str(exc.value)
