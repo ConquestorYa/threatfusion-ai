@@ -32,7 +32,7 @@ def intake_steps() -> None:
         '<div class="tf-step">'
         '<div class="tf-step-number">02</div>'
         f'<div><div class="tf-step-title">{safe_text(tr("Upload telemetry"))}</div>'
-        f'<div class="tf-step-sub">{safe_text(tr("Provide DNS CSV, Zeek, Pi-hole or AdGuard data."))}</div></div>'
+        f'<div class="tf-step-sub">{safe_text(tr("Provide DNS, packet-capture, Zeek, Suricata, Pi-hole or AdGuard data."))}</div></div>'
         '</div>'
         '<div class="tf-step">'
         '<div class="tf-step-number">03</div>'

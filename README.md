@@ -216,8 +216,12 @@ The CLI also accepts `--format zeek`, `--format pihole`, and
 `--format adguard`. It reads the existing local CTI cache and trusted model
 artifact; it does not refresh feeds or require API credentials.
 
-Supported telemetry formats are generic DNS CSV, Zeek `dns.log`, an uploaded
-Pi-hole FTL SQLite query database, and AdGuard Home query-log JSON.
+Supported telemetry formats include generic DNS CSV/TSV/text tables, Excel,
+Zeek `dns.log`, Zeek `conn.log` destination-IP telemetry, PCAP/PCAPNG
+classic UDP DNS extraction, Suricata EVE JSON, dnstop domain summaries,
+Pi-hole FTL SQLite query databases, and AdGuard Home query-log JSON. Auto-detect
+is the default dashboard path. `.capinfos` metadata is recognized but is not
+packet telemetry; upload its original PCAP/PCAPNG instead.
 
 The dashboard also includes **Quick lookup** for a single HTTP(S) URL or domain.
 Quick lookup is passive: it does not open the URL, resolve the hostname, or
@@ -236,7 +240,9 @@ Only `query_name` is required for generic CSV. Zeek imports use the standard
 `answers` when available. Pi-hole imports read the standard `queries` view
 from an uploaded FTL SQLite database entirely in memory; the upstream
 `forward` value is not treated as a DNS response IP. The Streamlit uploader is
-configured with a 10 MB maximum file size. AdGuard Home imports accept both
+configured with a 100 MB maximum file size. Runtime event and unique-target
+bounds remain enforced after parsing so a large upload cannot create an
+unbounded analysis workload. AdGuard Home imports accept both
 on-disk query-log JSON records and the structured query-log API response shape.
 
 ## Privacy defaults

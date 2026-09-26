@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 import sqlite3
 
+import dpkt
 import pandas as pd
 
 from threatfusion import dns_ingest
@@ -185,3 +186,109 @@ def test_auto_detects_pihole_sqlite_signature(tmp_path) -> None:
 
     assert detection.format_name == "Pi-hole FTL database"
     assert parsed.events[0].query_name == "example.com"
+
+
+def test_auto_detects_zeek_conn_log_as_destination_ip_telemetry() -> None:
+    content = (
+        "#separator \\x09\n"
+        "#path\tconn\n"
+        "#fields\tts\tuid\tid.orig_h\tid.orig_p\tid.resp_h\tid.resp_p"
+        "\tproto\tservice\tlabel\tdet_label\n"
+        "1545404132.353979\tC1\t192.168.1.195\t48986\t185.244.25.235"
+        "\t6667\ttcp\t-\tMalicious\tC&C\n"
+    ).encode("utf-8")
+
+    parsed, detection = parse_dns_upload_with_diagnostics(
+        content,
+        "conn.log.labeled.txt",
+    )
+
+    assert detection.format_name == "Zeek conn.log"
+    assert parsed.diagnostics.accepted_rows == 1
+    assert parsed.events[0].query_name == "185.244.25.235"
+    assert parsed.events[0].response_ip == "185.244.25.235"
+    assert parsed.events[0].client_ip == "192.168.1.195"
+
+
+def test_auto_detects_suricata_eve_dns_jsonl() -> None:
+    content = (
+        '{"timestamp":"2026-09-26T12:00:00Z","event_type":"dns",'
+        '"src_ip":"10.0.0.5","dns":{"type":"query","rrname":"evil.example",'
+        '"rrtype":"A"}}\n'
+    ).encode("utf-8")
+
+    parsed, detection = parse_dns_upload_with_diagnostics(
+        content,
+        "eve.json",
+    )
+
+    assert detection.format_name == "Suricata EVE JSON"
+    assert parsed.events[0].query_name == "evil.example"
+    assert parsed.events[0].query_type == "A"
+
+
+def test_auto_detects_dnstop_domain_rows() -> None:
+    content = (
+        "Domain Count Percent\n"
+        "example.com 12 60.0\n"
+        "api.example.net 8 40.0\n"
+    ).encode("utf-8")
+
+    parsed, detection = parse_dns_upload_with_diagnostics(
+        content,
+        "capture.dnstop",
+    )
+
+    assert detection.format_name == "dnstop text"
+    assert [event.query_name for event in parsed.events] == [
+        "example.com",
+        "api.example.net",
+    ]
+
+
+def test_capinfos_metadata_is_rejected_with_actionable_message() -> None:
+    try:
+        parse_dns_upload_with_diagnostics(
+            b"File name: capture.pcap\nNumber of packets: 10\n",
+            "capture.capinfos",
+        )
+    except ValueError as error:
+        assert "upload the original .pcap" in str(error)
+    else:
+        raise AssertionError("capinfos metadata must not be analyzed as telemetry")
+
+
+def test_auto_detects_pcap_and_extracts_udp_dns_query() -> None:
+    dns = dpkt.dns.DNS(
+        id=1,
+        qd=[dpkt.dns.DNS.Q(name="pcap.example", type=dpkt.dns.DNS_A)],
+    )
+    udp = dpkt.udp.UDP(sport=53000, dport=53, data=bytes(dns))
+    udp.ulen = len(udp)
+    ip = dpkt.ip.IP(
+        src=b"\x0a\x00\x00\x05",
+        dst=b"\x08\x08\x08\x08",
+        p=dpkt.ip.IP_PROTO_UDP,
+        data=udp,
+    )
+    ip.len = len(ip)
+    ethernet = dpkt.ethernet.Ethernet(
+        src=b"\x00\x01\x02\x03\x04\x05",
+        dst=b"\x06\x07\x08\x09\x0a\x0b",
+        type=dpkt.ethernet.ETH_TYPE_IP,
+        data=ip,
+    )
+    buffer = io.BytesIO()
+    writer = dpkt.pcap.Writer(buffer)
+    writer.writepkt(bytes(ethernet), ts=1700000000.0)
+    pcap_bytes = buffer.getvalue()
+    writer.close()
+
+    parsed, detection = parse_dns_upload_with_diagnostics(
+        pcap_bytes,
+        "capture.pcap",
+    )
+
+    assert detection.format_name == "PCAP/PCAPNG DNS capture"
+    assert parsed.events[0].query_name == "pcap.example"
+    assert parsed.events[0].client_ip == "10.0.0.5"
