@@ -126,7 +126,7 @@ def load_app_config(
                 _positive_float(
                     values,
                     "THREATFUSION_CTI_STALE_HOURS_PHISHTANK",
-                    6.0,
+                    24.0,
                 ),
             ),
         ),
