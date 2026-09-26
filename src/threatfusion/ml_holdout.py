@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime, timezone
 
 from .ml_artifact import TrainedMLArtifact
 from .ml_dataset import DomainSample, normalize_domain_candidate
@@ -93,11 +93,38 @@ def _development_overlap_key(value: str) -> str | None:
     return normalized or None
 
 
+def _temporal_cutoff_text(value: date | datetime) -> str:
+    if isinstance(value, datetime):
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError(
+                "datetime first-seen cutoff must be timezone-aware"
+            )
+        return value.isoformat()
+    return value.isoformat()
+
+
+def _first_seen_is_after(
+    first_seen: datetime,
+    cutoff: date | datetime,
+) -> bool | None:
+    if isinstance(cutoff, datetime):
+        if cutoff.tzinfo is None or cutoff.utcoffset() is None:
+            raise ValueError(
+                "datetime first-seen cutoff must be timezone-aware"
+            )
+        if first_seen.tzinfo is None or first_seen.utcoffset() is None:
+            return None
+        return first_seen.astimezone(timezone.utc) > cutoff.astimezone(
+            timezone.utc
+        )
+    return first_seen.date() > cutoff
+
+
 def prepare_disjoint_holdout(
     development_samples: Sequence[DomainSample],
     holdout_samples: Sequence[DomainSample],
     *,
-    malicious_first_seen_after: date | None = None,
+    malicious_first_seen_after: date | datetime | None = None,
 ) -> HoldoutPreparation:
     """Remove every canonical domain seen in development from the holdout.
 
@@ -133,7 +160,14 @@ def prepare_disjoint_holdout(
             if sample.first_seen is None:
                 malicious_missing_first_seen_removed += 1
                 continue
-            if sample.first_seen.date() <= malicious_first_seen_after:
+            is_after = _first_seen_is_after(
+                sample.first_seen,
+                malicious_first_seen_after,
+            )
+            if is_after is None:
+                malicious_missing_first_seen_removed += 1
+                continue
+            if not is_after:
                 malicious_not_after_cutoff_removed += 1
                 continue
 
@@ -163,7 +197,7 @@ def prepare_disjoint_holdout(
         input_count=len(holdout_samples),
         overlap_removed=overlap_removed,
         malicious_first_seen_after=(
-            malicious_first_seen_after.isoformat()
+            _temporal_cutoff_text(malicious_first_seen_after)
             if malicious_first_seen_after is not None
             else None
         ),
@@ -284,7 +318,7 @@ def evaluate_frozen_artifact_on_holdout(
     development_samples: Sequence[DomainSample],
     holdout_samples: Sequence[DomainSample],
     *,
-    malicious_first_seen_after: date | None = None,
+    malicious_first_seen_after: date | datetime | None = None,
 ) -> FrozenHoldoutEvaluation:
     """Evaluate a frozen artifact and frozen thresholds on a disjoint holdout."""
     prepared = prepare_disjoint_holdout(
