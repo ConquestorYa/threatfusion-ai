@@ -761,7 +761,7 @@ def main() -> None:
 
         format_caption = {
             "Auto-detect": (
-                "Auto-detect · CSV/TSV/TXT/XLSX/XLS/Zeek/Pi-hole/AdGuard · max 100 MB"
+                "Auto-detect · CSV/TSV/TXT/XLSX/XLS/PCAP/Zeek/Suricata/Pi-hole/AdGuard · max 100 MB"
             ),
             "Generic DNS CSV": "Generic DNS CSV · UTF-8 · max 100 MB",
             "Zeek dns.log": "Zeek dns.log text export · max 100 MB",
@@ -820,7 +820,7 @@ def main() -> None:
             )
 
         upload_label = {
-            "Auto-detect": "Upload DNS telemetry",
+            "Auto-detect": "Upload telemetry",
             "Generic DNS CSV": "Upload DNS CSV",
             "Zeek dns.log": "Upload Zeek dns.log",
             "Pi-hole FTL database": "Upload Pi-hole FTL database",
