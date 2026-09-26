@@ -68,8 +68,9 @@ def test_runtime_pipeline_uses_artifact_thresholds_for_ml_verdict(
     result = analyze_dns_events([event], [], fake_artifact())
 
     assessment = result.assessments[0]
-    assert assessment.verdict is HybridVerdict.HIGH_RISK
+    assert assessment.verdict is HybridVerdict.REVIEW
     assert assessment.ml_tier == "high"
+    assert "ml_high_uncorroborated" in assessment.reasons
     assert assessment.ml_score == pytest.approx(0.85)
     assert assessment.ml_probability == assessment.ml_score
 

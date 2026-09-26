@@ -441,6 +441,7 @@ _TR: dict[str, str] = {
     "Strong": "Güçlü",
     "Moderate": "Orta",
     "Weak": "Zayıf",
+    "High ML score has no independent corroborating threat signal": "Yüksek ML skorunu destekleyen bağımsız bir tehdit sinyali yok.",
 }
 
 _COLUMN_TR = {

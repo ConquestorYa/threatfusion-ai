@@ -301,11 +301,17 @@ def analyze_quick_lookup(
     if lexical.random_like_hostname:
         reasons.append("random_like_hostname")
 
+    ml_high_corroborated = (
+        "url_hostname" in match_types or lexical.random_like_hostname is True
+    )
+    if tier == "high" and not ml_high_corroborated:
+        reasons.append("ml_high_uncorroborated")
+
     if {"exact_url", "exact_ip", "query_domain"} & match_types:
         verdict = HybridVerdict.KNOWN_THREAT
-    elif tier == "high":
+    elif tier == "high" and ml_high_corroborated:
         verdict = HybridVerdict.HIGH_RISK
-    elif "url_hostname" in match_types or tier in {"medium", "low"}:
+    elif "url_hostname" in match_types or tier in {"high", "medium", "low"}:
         verdict = HybridVerdict.REVIEW
     else:
         verdict = HybridVerdict.LOW

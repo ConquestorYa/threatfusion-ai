@@ -20,6 +20,16 @@ class HybridVerdict(str, Enum):
     LOW = "low"
 
 
+_STRONG_CORROBORATION_REASONS = frozenset(
+    {
+        "nxdomain_heavy_responses",
+        "high_response_ip_churn_rate",
+        "random_like_hostname",
+        "periodic_query_pattern",
+    }
+)
+
+
 @dataclass(frozen=True)
 class MLThresholds:
     high_confidence: float
@@ -245,17 +255,28 @@ def assess_dns_domains(
         if tier is not None:
             reasons.append(f"ml_{tier}_confidence")
         reasons.extend(behavior_signals)
-        reasons.extend(_behavior_context_reasons(behavior))
+        behavior_context_reasons = _behavior_context_reasons(behavior)
+        reasons.extend(behavior_context_reasons)
+
+        strong_corroboration = contextual_ioc or bool(
+            _STRONG_CORROBORATION_REASONS & set(behavior_context_reasons)
+        )
+        if tier == "high" and not strong_corroboration:
+            reasons.append("ml_high_uncorroborated")
 
         if exact_domain_ioc:
             verdict = HybridVerdict.KNOWN_THREAT
-        elif tier == "high" or (
-            tier == "medium" and len(behavior_signals) >= 2
+        elif (
+            tier == "high" and strong_corroboration
+        ) or (
+            tier == "medium"
+            and len(behavior_signals) >= 2
+            and strong_corroboration
         ):
             verdict = HybridVerdict.HIGH_RISK
         elif (
             contextual_ioc
-            or tier in {"medium", "low"}
+            or tier in {"high", "medium", "low"}
             or len(behavior_signals) >= 2
         ):
             verdict = HybridVerdict.REVIEW

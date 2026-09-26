@@ -186,7 +186,7 @@ def test_local_feedback_form_upserts_and_isolates_run_and_domain(feedback_app):
         frame.value for frame in app.dataframe if "Analyst feedback" in frame.value
     ).set_index("Domain")
     assert findings.loc["a.example", "Analyst feedback"] == "Benign"
-    assert findings.loc["a.example", "Verdict"] == "High Risk"
+    assert findings.loc["a.example", "Verdict"] == "Review"
 
     label = next(item for item in app.selectbox if item.label == "Analyst label")
     label.select("Confirmed Threat")
