@@ -239,11 +239,11 @@ def test_quick_lookup_page_is_available_without_network_activity(feedback_app):
     assert not app.exception
     assert any(item.label == "URL or domain" for item in app.text_input)
     assert any(
-        button.label == "Analyze URL / domain" and button.disabled
+        button.label == "Check" and button.disabled
         for button in app.button
     )
     assert any(
-        "does not open the URL" in item.value
+        "Passive by design" in item.value
         for item in app.caption
     )
 
