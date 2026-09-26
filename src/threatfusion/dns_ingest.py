@@ -38,10 +38,19 @@ def _decode_text(content: bytes) -> tuple[str, str]:
     elif content.startswith((b"\xff\xfe", b"\xfe\xff")):
         candidates.append("utf-16")
 
+    if not candidates:
+        sample = content[:4096]
+        even_nulls = sample[0::2].count(0)
+        odd_nulls = sample[1::2].count(0)
+        pairs = max(1, len(sample) // 2)
+        if odd_nulls / pairs > 0.25 and even_nulls / pairs < 0.05:
+            candidates.append("utf-16-le")
+        elif even_nulls / pairs > 0.25 and odd_nulls / pairs < 0.05:
+            candidates.append("utf-16-be")
+
     for encoding in (
         "utf-8-sig",
         "utf-8",
-        "utf-16",
         "cp1254",
         "cp1252",
         "latin-1",
@@ -54,7 +63,12 @@ def _decode_text(content: bytes) -> tuple[str, str]:
             text = content.decode(encoding)
         except (LookupError, UnicodeDecodeError):
             continue
-        if "\x00" in text[:2000] and encoding not in {"utf-16", "utf-32"}:
+        if "\x00" in text[:2000] and encoding not in {
+            "utf-16",
+            "utf-16-le",
+            "utf-16-be",
+            "utf-32",
+        }:
             continue
         return text, encoding
 
