@@ -49,7 +49,10 @@ from threatfusion.ui_components import (
 from threatfusion.ui_evaluation import _show_model_evaluation
 from threatfusion.ui_history import _show_history
 from threatfusion.ui_investigation import _show_domain_detail
-from threatfusion.ui_quick_lookup import render_quick_lookup_result
+from threatfusion.ui_quick_lookup import (
+    render_quick_lookup_empty_state,
+    render_quick_lookup_result,
+)
 from threatfusion.ui_theme import (
     inject_theme_css,
     metric_card,
@@ -542,11 +545,7 @@ def main() -> None:
         if lookup_result is not None:
             render_quick_lookup_result(lookup_result)
         else:
-            empty_state(
-                "Enter one URL or domain",
-                "ThreatFusion will normalize it, check the local CTI cache, "
-                "score the domain, and explain the result.",
-            )
+            render_quick_lookup_empty_state()
         return
 
     if page == "Analysis history":
