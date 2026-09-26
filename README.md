@@ -164,14 +164,14 @@ source preserves its previous healthy snapshot instead of replacing it:
 ```powershell
 $env:THREATFOX_AUTH_KEY="..."
 $env:URLHAUS_AUTH_KEY="..."
-$env:PHISHTANK_APP_KEY="..."  # optional phishing coverage
 python scripts\refresh_cti_cache.py --force
 ```
 
 ThreatFox uses its current full export rather than the 1-7 day recent API
-window. URLhaus uses its full malware URL dump. PhishTank adds verified online
-phishing URLs when an application key is configured. SGB pagination must reach
-the source end before its previous snapshot is replaced.
+window. URLhaus uses its full malware URL dump. PhishTank uses its public
+verified-online CSV with no application key and is intentionally refreshed at
+most once every 24 hours. SGB pagination must reach the source end before its
+previous snapshot is replaced.
 
 For an opt-in process-local refresh loop on low-cost hosting:
 

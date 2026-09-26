@@ -19,6 +19,8 @@ from .cti_cache import (
 )
 from .models import IOCRecord
 
+PHISHTANK_PUBLIC_REFRESH_INTERVAL = timedelta(hours=24)
+
 
 @dataclass(frozen=True)
 class CTIRefreshOutcome:
@@ -79,7 +81,6 @@ def refresh_configured_sources(
     *,
     threatfox_key: str | None,
     urlhaus_key: str | None,
-    phishtank_key: str | None = None,
     sgb_max_pages: int = 100,
     stale_after: timedelta = timedelta(hours=6),
     force: bool = False,
@@ -107,15 +108,12 @@ def refresh_configured_sources(
                 lambda: URLhausCollector(urlhaus_key.strip()).fetch_full_urls(),
             )
         )
-    if phishtank_key and phishtank_key.strip():
-        jobs.append(
-            (
-                "PhishTank",
-                lambda: PhishTankCollector(
-                    phishtank_key.strip()
-                ).fetch_verified_online_urls(),
-            )
+    jobs.append(
+        (
+            "PhishTank",
+            lambda: PhishTankCollector().fetch_verified_online_urls(),
         )
+    )
 
     jobs.append(
         (
@@ -126,12 +124,24 @@ def refresh_configured_sources(
 
     outcomes: list[CTIRefreshOutcome] = []
     for source, fetcher in jobs:
-        if not force and not _source_is_stale(
+        source_stale_after = (
+            PHISHTANK_PUBLIC_REFRESH_INTERVAL
+            if source == "PhishTank"
+            else stale_after
+        )
+        public_feed_fresh = source == "PhishTank" and not _source_is_stale(
             db_path,
             source,
-            stale_after=stale_after,
+            stale_after=source_stale_after,
             now=reference,
-        ):
+        )
+        normal_feed_fresh = not force and not _source_is_stale(
+            db_path,
+            source,
+            stale_after=source_stale_after,
+            now=reference,
+        )
+        if public_feed_fresh or normal_feed_fresh:
             outcomes.append(CTIRefreshOutcome(source=source, status="fresh"))
             continue
 
@@ -198,7 +208,6 @@ def start_background_refresh_if_enabled(db_path: Path) -> bool:
                 db_path,
                 threatfox_key=os.environ.get("THREATFOX_AUTH_KEY"),
                 urlhaus_key=os.environ.get("URLHAUS_AUTH_KEY"),
-                phishtank_key=os.environ.get("PHISHTANK_APP_KEY"),
                 sgb_max_pages=sgb_pages,
                 stale_after=timedelta(seconds=interval_seconds),
             )
