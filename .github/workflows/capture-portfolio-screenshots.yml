@@ -1,0 +1,75 @@
+name: Capture portfolio screenshots
+
+on:
+  push:
+    branches:
+      - docs/portfolio-screenshots
+    paths:
+      - ".github/workflows/capture-portfolio-screenshots.yml"
+      - "scripts/capture_portfolio_screenshots.py"
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: docs/portfolio-screenshots
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install project and browser tooling
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install --no-deps -e .
+          python -m pip install playwright==1.55.0
+          python -m playwright install --with-deps chromium
+
+      - name: Build synthetic public-demo runtime
+        run: |
+          python scripts/generate_public_demo_runtime.py --output-dir runtime --overwrite
+          cat > runtime/portfolio_dns.csv <<'EOF'
+          timestamp,client_ip,query_name,query_type,response_ip,response_code
+          2026-09-26T12:00:00Z,10.0.0.10,known-threat.example,A,203.0.113.66,NOERROR
+          2026-09-26T12:00:05Z,10.0.0.10,known-threat.example,A,203.0.113.66,NOERROR
+          2026-09-26T12:00:10Z,10.0.0.11,docs-001-portal.example.com,A,203.0.113.10,NOERROR
+          2026-09-26T12:00:15Z,10.0.0.12,xj001qz-update-check.example.net,A,203.0.113.20,NXDOMAIN
+          2026-09-26T12:00:20Z,10.0.0.12,xj001qz-update-check.example.net,A,203.0.113.21,NXDOMAIN
+          EOF
+
+      - name: Start Streamlit
+        env:
+          THREATFUSION_PUBLIC_MODE: "1"
+          THREATFUSION_DB_PATH: runtime/threatfusion.sqlite
+          THREATFUSION_MODEL_DIR: runtime/models/development-001
+        run: |
+          streamlit run streamlit_app.py --server.address 127.0.0.1 --server.port 8501 > /tmp/threatfusion-streamlit.log 2>&1 &
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:8501/_stcore/health >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/threatfusion-streamlit.log
+          exit 1
+
+      - name: Capture screenshots
+        run: python scripts/capture_portfolio_screenshots.py
+
+      - name: Commit screenshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots/*.png
+          git diff --cached --quiet && exit 0
+          git commit -m "docs: add portfolio screenshots"
+          git push origin HEAD:docs/portfolio-screenshots
