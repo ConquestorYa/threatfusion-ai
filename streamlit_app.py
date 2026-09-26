@@ -69,7 +69,7 @@ from threatfusion.ui_theme import (
     status_card,
 )
 
-MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 
 
 @st.cache_resource
@@ -761,17 +761,18 @@ def main() -> None:
 
         format_caption = {
             "Auto-detect": (
-                "Auto-detect · CSV/TSV/TXT/XLSX/XLS/Zeek/Pi-hole/AdGuard · max 10 MB"
+                "Auto-detect · CSV/TSV/TXT/XLSX/XLS/Zeek/Pi-hole/AdGuard · max 100 MB"
             ),
-            "Generic DNS CSV": "Generic DNS CSV · UTF-8 · max 10 MB",
-            "Zeek dns.log": "Zeek dns.log text export · max 10 MB",
-            "Pi-hole FTL database": "Pi-hole FTL SQLite database · max 10 MB",
-            "AdGuard Home query log": "AdGuard Home JSON query log · max 10 MB",
+            "Generic DNS CSV": "Generic DNS CSV · UTF-8 · max 100 MB",
+            "Zeek dns.log": "Zeek dns.log text export · max 100 MB",
+            "Pi-hole FTL database": "Pi-hole FTL SQLite database · max 100 MB",
+            "AdGuard Home query log": "AdGuard Home JSON query log · max 100 MB",
         }
         required_caption = {
             "Auto-detect": (
                 "No manual mapping required. ThreatFusion detects the file type, "
-                "delimiter, text encoding and DNS columns."
+                "delimiter, text encoding, DNS columns, packet captures, Zeek "
+                "logs and supported network telemetry automatically."
             ),
             "Generic DNS CSV": "query_name; all other fields are optional",
             "Zeek dns.log": "Zeek #fields header with query",
@@ -837,6 +838,11 @@ def main() -> None:
                 "db",
                 "sqlite",
                 "sqlite3",
+                "pcap",
+                "pcapng",
+                "cap",
+                "capinfos",
+                "dnstop",
             ],
             "Generic DNS CSV": ["csv"],
             "Zeek dns.log": ["log", "txt"],
@@ -847,8 +853,9 @@ def main() -> None:
             "Auto-detect": (
                 "Upload a DNS telemetry file. ThreatFusion detects CSV/TSV "
                 "delimiters, common text encodings, Excel worksheets, common "
-                "DNS column names, Zeek dns.log, Pi-hole FTL SQLite, and "
-                "AdGuard Home query logs automatically."
+                "DNS column names, Zeek dns.log/conn.log, PCAP/PCAPNG DNS, "
+                "Pi-hole FTL SQLite, Suricata EVE, dnstop, and AdGuard Home "
+                "query logs automatically."
             ),
             "Generic DNS CSV": (
                 "Expected columns: timestamp, client_ip, query_name, "
@@ -897,7 +904,7 @@ def main() -> None:
                 st.session_state.pop("analysis_audit_metadata", None)
 
             if len(content_bytes) > MAX_UPLOAD_BYTES:
-                st.error(tr("Uploaded telemetry exceeds the 10 MB application limit."))
+                st.error(tr("Uploaded telemetry exceeds the 100 MB application limit."))
             elif telemetry_format == "Auto-detect":
                 if st.button(tr("Analyze"), type="primary"):
                     try:
