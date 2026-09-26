@@ -227,6 +227,27 @@ def test_local_feedback_form_upserts_and_isolates_run_and_domain(feedback_app):
     assert get_analyst_feedback(db_path, first_run_id) == []
 
 
+def test_quick_lookup_page_is_available_without_network_activity(feedback_app):
+    app = AppTest.from_string("import streamlit_app\nstreamlit_app.main()")
+    app.run(timeout=15)
+
+    assert not app.exception
+    assert "Quick lookup" in app.radio(key="workspace_nav").options
+
+    app.radio(key="workspace_nav").set_value("Quick lookup").run(timeout=15)
+
+    assert not app.exception
+    assert any(item.label == "URL or domain" for item in app.text_input)
+    assert any(
+        button.label == "Analyze URL / domain" and button.disabled
+        for button in app.button
+    )
+    assert any(
+        "does not open the URL" in item.value
+        for item in app.caption
+    )
+
+
 def test_navigation_preserves_current_analysis_and_format(feedback_app):
     _, _, result, _ = feedback_app
     app = AppTest.from_string("import streamlit_app\nstreamlit_app.main()")

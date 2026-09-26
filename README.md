@@ -24,17 +24,28 @@ DNS CSV / Zeek dns.log / Pi-hole FTL DB / AdGuard Home
           |
           v
   Explainable hybrid verdict
+
+Single URL / domain
+          -> passive CTI lookup
+          + ML domain scoring
+          + domain-shape context
+          |
+          v
+  Quick lookup verdict
           |
           v
 known_threat / high_risk / review / low
 ```
 
-Exact known-domain IOC matches take precedence and produce the Known Threat
-verdict. URL-hostname and response-IP IOC matches remain deterministic CTI
-context but do not, by themselves, prove that the queried domain is malicious.
-ML is used as an additional signal for previously unseen domains, and DNS
-behavior can strengthen an assessment or trigger review. Behavioral signals are
-not treated as proof of malware.
+For DNS telemetry analysis, exact known-domain IOC matches take precedence and
+produce the Known Threat verdict. URL-hostname and response-IP IOC matches remain
+deterministic CTI context but do not, by themselves, prove that the queried
+domain is malicious. In the separate Quick lookup workflow, an exact input URL
+matching an exact URL IOC can also produce Known Threat for that URL; a hostname
+match to a different malicious URL remains Review context. ML is used as an
+additional signal for previously unseen domains, and DNS behavior can strengthen
+a telemetry assessment or trigger review. Behavioral signals are not treated as
+proof of malware.
 
 ## Architecture overview
 
@@ -69,6 +80,7 @@ See `docs/ARCHITECTURE.md` for full data-flow and module-level details.
 - common IOC model, normalization, and correlation
 - DNS CSV, Zeek `dns.log`, in-memory Pi-hole FTL database, and AdGuard Home query-log ingestion with aggregate input-quality diagnostics
 - known domain / URL-hostname / response-IP / IPv6-network matching with evidence-scope metadata
+- passive single URL/domain quick lookup with exact URL/domain CTI matching, ML scoring, and no network requests
 - reproducible ML dataset snapshots
 - character n-gram TF-IDF + Logistic Regression development model
 - validation-only threshold selection under explicit false-positive budgets
@@ -189,6 +201,12 @@ artifact; it does not refresh feeds or require API credentials.
 
 Supported telemetry formats are generic DNS CSV, Zeek `dns.log`, an uploaded
 Pi-hole FTL SQLite query database, and AdGuard Home query-log JSON.
+
+The dashboard also includes **Quick lookup** for a single HTTP(S) URL or domain.
+Quick lookup is passive: it does not open the URL, resolve the hostname, or
+download content. DNS-only behavior signals such as NXDOMAIN ratio, response-IP
+churn, periodicity, query volume, and client count are only available from
+telemetry analysis.
 
 The generic DNS CSV schema is:
 
