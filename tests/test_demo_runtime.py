@@ -19,6 +19,10 @@ def test_public_demo_model_samples_are_balanced_and_synthetic() -> None:
     assert sum(sample.label == 0 for sample in samples) == 40
     assert sum(sample.label == 1 for sample in samples) == 40
     assert {sample.source for sample in samples} == {"ThreatFusion Demo"}
+    assert all(
+        sample.domain.endswith(("example.com", "example.net"))
+        for sample in samples
+    )
 
 
 def test_public_demo_model_samples_require_minimum_size() -> None:
