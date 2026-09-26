@@ -169,9 +169,20 @@ def test_artifact_roundtrip_preserves_predictions(tmp_path) -> None:
 
     assert model_path.exists()
     assert metadata_path.exists()
+    assert (tmp_path / "model" / "artifact.sha256").exists()
     assert loaded.metadata == artifact.metadata
     assert loaded.thresholds == artifact.thresholds
     assert after == pytest.approx(before)
+
+
+def test_manifest_checksum_blocks_tampered_model_before_load(tmp_path) -> None:
+    artifact = train_selected_model_artifact(make_samples())
+    artifact_dir = tmp_path / "model"
+    model_path, _ = write_ml_artifact(artifact, artifact_dir)
+    model_path.write_bytes(model_path.read_bytes() + b"tampered")
+
+    with pytest.raises(ValueError, match="checksum does not match"):
+        load_trusted_ml_artifact(artifact_dir)
 
 
 def test_pinned_checksum_is_verified_before_artifact_load(tmp_path) -> None:
