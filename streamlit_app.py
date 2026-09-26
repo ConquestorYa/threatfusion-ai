@@ -549,7 +549,7 @@ def main() -> None:
     page = st.session_state.get("workspace_nav", default_page)
     if page not in pages:
         page = default_page
-        st.session_state["workspace_nav"] = page
+    st.session_state["workspace_nav"] = page
 
     # Keep history/evaluation as secondary navigation. The two core workflows
     # live prominently in the main canvas instead of being tiny sidebar items.
