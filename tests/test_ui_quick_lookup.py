@@ -40,3 +40,21 @@ def test_unknown_lookup_falls_back_to_review_state():
 
     assert view.css_class == "review"
     assert view.kicker == "Unknown"
+
+
+def test_ml_score_figure_keeps_score_on_zero_to_one_scale():
+    from types import SimpleNamespace
+
+    from threatfusion.ui_quick_lookup import _ml_score_figure
+
+    result = SimpleNamespace(
+        verdict=SimpleNamespace(value="low"),
+        ml_score=0.42,
+    )
+
+    figure = _ml_score_figure(result)
+
+    indicator = figure.data[0]
+    assert indicator.value == 0.42
+    assert tuple(indicator.gauge.axis.range) == (0, 1)
+    assert "not probability" in indicator.title.text
