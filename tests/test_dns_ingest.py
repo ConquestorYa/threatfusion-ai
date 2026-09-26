@@ -27,6 +27,9 @@ def test_auto_detects_flexible_csv_headers_and_semantic_query_type() -> None:
         "example.com",
     ]
     assert [event.query_type for event in parsed.events] == ["AAAA", "A"]
+    assert parsed.events[0].timestamp is not None
+    assert parsed.events[0].timestamp.year == 2000
+    assert parsed.diagnostics.invalid_timestamps == 0
     assert parsed.diagnostics.accepted_rows == 2
 
 
