@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 from urllib.parse import SplitResult, urlsplit, urlunsplit
 
+from .cti_cache import lookup_ioc_records
 from .dns import DNSEvent
 from .dns_behavior import DomainBehavior, aggregate_dns_behavior
 from .hybrid_assessment import HybridVerdict
@@ -142,6 +144,21 @@ def _evidence_from_match(match: DNSIOCMatch) -> QuickLookupEvidence:
         last_seen=indicator.last_seen,
         tags=tuple(indicator.tags),
     )
+
+
+def analyze_quick_lookup_from_cache(
+    value: str,
+    db_path: Path,
+    artifact: TrainedMLArtifact,
+) -> QuickLookupResult:
+    """Analyze one target using indexed CTI candidates instead of loading the full cache."""
+    _, domain, normalized_url = _parse_lookup_input(value)
+    indicators = lookup_ioc_records(
+        db_path,
+        domain=domain,
+        normalized_url=normalized_url,
+    )
+    return analyze_quick_lookup(value, indicators, artifact)
 
 
 def analyze_quick_lookup(
