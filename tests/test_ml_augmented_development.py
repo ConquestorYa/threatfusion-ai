@@ -6,11 +6,17 @@ import pytest
 
 from threatfusion.dns import DNSEvent
 from threatfusion.ml_augmented_development import (
+    build_augmented_development_snapshot,
     calculate_benign_source_fpr,
     prepare_augmented_development_samples,
 )
 from threatfusion.ml_dataset import DomainSample
 from threatfusion.ml_fpr_comparison import run_fpr_budget_comparison
+from threatfusion.ml_snapshot import (
+    DatasetSnapshotMetadata,
+    DatasetSnapshotStatistics,
+    DomainDatasetSnapshot,
+)
 
 
 def test_prepare_augmented_development_samples_filters_and_deduplicates() -> None:
@@ -49,6 +55,53 @@ def test_prepare_augmented_development_samples_requires_new_domains() -> None:
             base,
             [DNSEvent(query_name="seen.example")],
         )
+
+
+def test_build_augmented_development_snapshot_preserves_provenance() -> None:
+    base = DomainDatasetSnapshot(
+        samples=[
+            DomainSample("bad.example", 1, "ThreatFox"),
+            DomainSample("safe.example", 0, "Tranco"),
+        ],
+        metadata=DatasetSnapshotMetadata(
+            benign_source="Tranco",
+            benign_snapshot_id="L5PV4",
+            benign_snapshot_date="2026-09-23",
+        ),
+        statistics=DatasetSnapshotStatistics(
+            malicious_input_count=1,
+            benign_input_count=1,
+            malicious_unique_count=1,
+            benign_unique_count=1,
+            final_malicious_count=1,
+            final_benign_count=1,
+            final_total_count=2,
+            overlap_removed_from_benign=0,
+            malicious_by_source={"ThreatFox": 1},
+        ),
+    )
+
+    snapshot, preparation = build_augmented_development_snapshot(
+        base,
+        [
+            DNSEvent(query_name="safe.example"),
+            DNSEvent(query_name="longtail.example"),
+        ],
+        source="CESNET",
+        source_snapshot_id="zenodo-14332167-first20k",
+    )
+
+    assert preparation.added_benign_count == 1
+    assert snapshot.metadata.benign_source == "Tranco+CESNET"
+    assert (
+        snapshot.metadata.benign_snapshot_id
+        == "L5PV4+zenodo-14332167-first20k"
+    )
+    assert snapshot.metadata.benign_snapshot_date == "2026-09-23"
+    assert snapshot.statistics.final_total_count == 3
+    assert snapshot.statistics.final_malicious_count == 1
+    assert snapshot.statistics.final_benign_count == 2
+    assert snapshot.statistics.malicious_by_source == {"ThreatFox": 1}
 
 
 def test_calculate_benign_source_fpr_groups_only_benign_sources() -> None:

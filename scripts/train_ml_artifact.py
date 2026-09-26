@@ -21,6 +21,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--snapshot-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--high-fpr-budget", type=float, default=0.01)
+    parser.add_argument("--medium-fpr-budget", type=float, default=0.05)
+    parser.add_argument("--low-fpr-budget", type=float, default=0.10)
     parser.add_argument("--overwrite", action="store_true")
     return parser
 
@@ -43,7 +46,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
 
     try:
-        artifact = train_selected_model_artifact(snapshot.samples)
+        artifact = train_selected_model_artifact(
+            snapshot.samples,
+            high_fpr_budget=args.high_fpr_budget,
+            medium_fpr_budget=args.medium_fpr_budget,
+            low_fpr_budget=args.low_fpr_budget,
+        )
         model_path, metadata_path = write_ml_artifact(
             artifact,
             args.output_dir,

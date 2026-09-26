@@ -70,6 +70,24 @@ def test_thresholds_are_validation_selected_and_ordered() -> None:
     assert artifact.metadata.low_fpr_budget == pytest.approx(0.10)
 
 
+def test_selected_artifact_accepts_lower_operational_fpr_budgets() -> None:
+    artifact = train_selected_model_artifact(
+        make_samples(),
+        high_fpr_budget=0.001,
+        medium_fpr_budget=0.005,
+        low_fpr_budget=0.01,
+    )
+
+    assert artifact.metadata.high_fpr_budget == pytest.approx(0.001)
+    assert artifact.metadata.medium_fpr_budget == pytest.approx(0.005)
+    assert artifact.metadata.low_fpr_budget == pytest.approx(0.01)
+    assert (
+        artifact.thresholds.high_confidence
+        >= artifact.thresholds.medium_confidence
+        >= artifact.thresholds.low_confidence
+    )
+
+
 def test_artifact_split_counts_are_recorded() -> None:
     artifact = train_selected_model_artifact(make_samples())
 

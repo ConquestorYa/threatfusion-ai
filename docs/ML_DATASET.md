@@ -691,3 +691,39 @@ than an untouched benchmark. Any model or threshold selected using this
 experiment requires a new untouched final holdout before new final-performance
 claims.
 
+## Freeze the v2 development snapshot and artifact
+
+Once the CESNET-augmented comparison has been reviewed, build a separate
+development-v2 snapshot instead of overwriting the original baseline:
+
+```powershell
+python scripts\build_ml_augmented_snapshot.py `
+  --base-snapshot-dir data\snapshots\baseline-001 `
+  --benign-dns-csv data\evaluation\cesnet-benign-20k.csv `
+  --output-dir data\snapshots\development-v2 `
+  --confirm-benign-label
+```
+
+The snapshot metadata records the base benign snapshot, the augmentation
+source identifier, the added-corpus SHA-256, overlap removal, and the explicit
+benign-label basis.
+
+Then train the selected development model with the lower operational budgets:
+
+```powershell
+python scripts\train_ml_artifact.py `
+  --snapshot-dir data\snapshots\development-v2 `
+  --output-dir data\models\development-v2 `
+  --high-fpr-budget 0.001 `
+  --medium-fpr-budget 0.005 `
+  --low-fpr-budget 0.01
+```
+
+These correspond to 0.1%, 0.5%, and 1% validation FPR budgets. The output is a
+new development-only artifact; it does not replace `development-001` unless
+the operator explicitly chooses the same output path with `--overwrite`.
+
+After the v2 artifact is frozen, collect a new untouched holdout. Do not reuse
+the inspected CESNET 20k sample or the earlier final holdout as final evidence
+for the v2 artifact.
+
