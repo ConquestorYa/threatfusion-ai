@@ -10,11 +10,13 @@ from sklearn.linear_model import LogisticRegression
 from threatfusion.ml_artifact import (
     C4_DEVELOPMENT_CANDIDATE,
     SELECTED_DEVELOPMENT_MODEL,
+    compute_ml_artifact_checksum,
     SUPPORTED_DEVELOPMENT_MODELS,
     load_trusted_ml_artifact,
     predict_domain_probabilities,
     predict_domain_scores,
     train_selected_model_artifact,
+    verify_ml_artifact_checksum,
     write_ml_artifact,
 )
 from threatfusion.ml_dataset import DomainSample
@@ -170,6 +172,55 @@ def test_artifact_roundtrip_preserves_predictions(tmp_path) -> None:
     assert loaded.metadata == artifact.metadata
     assert loaded.thresholds == artifact.thresholds
     assert after == pytest.approx(before)
+
+
+def test_pinned_checksum_is_verified_before_artifact_load(tmp_path) -> None:
+    artifact = train_selected_model_artifact(make_samples())
+    artifact_dir = tmp_path / "model"
+    write_ml_artifact(artifact, artifact_dir)
+    checksum = compute_ml_artifact_checksum(artifact_dir)
+
+    assert verify_ml_artifact_checksum(artifact_dir, checksum.upper()) == checksum
+    loaded = load_trusted_ml_artifact(
+        artifact_dir,
+        expected_checksum=checksum,
+    )
+
+    assert loaded.metadata == artifact.metadata
+
+
+def test_checksum_mismatch_blocks_deserialization(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    artifact = train_selected_model_artifact(make_samples())
+    artifact_dir = tmp_path / "model"
+    model_path, _ = write_ml_artifact(artifact, artifact_dir)
+    trusted_checksum = compute_ml_artifact_checksum(artifact_dir)
+    model_path.write_bytes(model_path.read_bytes() + b"tampered")
+
+    def forbidden_load(*args, **kwargs):
+        raise AssertionError("joblib.load must not run before checksum verification")
+
+    monkeypatch.setattr("threatfusion.ml_artifact.joblib.load", forbidden_load)
+
+    with pytest.raises(ValueError, match="checksum does not match"):
+        load_trusted_ml_artifact(
+            artifact_dir,
+            expected_checksum=trusted_checksum,
+        )
+
+
+def test_invalid_expected_checksum_is_rejected(tmp_path) -> None:
+    artifact = train_selected_model_artifact(make_samples())
+    artifact_dir = tmp_path / "model"
+    write_ml_artifact(artifact, artifact_dir)
+
+    with pytest.raises(ValueError, match="SHA-256"):
+        load_trusted_ml_artifact(
+            artifact_dir,
+            expected_checksum="not-a-sha256",
+        )
 
 
 def test_metadata_contains_no_training_domains(tmp_path) -> None:
