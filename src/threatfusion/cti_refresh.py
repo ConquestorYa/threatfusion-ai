@@ -20,6 +20,7 @@ from .cti_cache import (
 from .models import IOCRecord
 
 PHISHTANK_PUBLIC_REFRESH_INTERVAL = timedelta(hours=24)
+ProgressCallback = Callable[[str, str, str | None], None]
 
 
 @dataclass(frozen=True)
@@ -78,6 +79,16 @@ def _fetch_complete_sgb(max_pages: int) -> list[IOCRecord]:
     return list(result.records)
 
 
+def _emit_progress(
+    callback: ProgressCallback | None,
+    source: str,
+    stage: str,
+    detail: str | None = None,
+) -> None:
+    if callback is not None:
+        callback(source, stage, detail)
+
+
 def refresh_configured_sources(
     db_path: Path,
     *,
@@ -87,6 +98,7 @@ def refresh_configured_sources(
     stale_after: timedelta = timedelta(hours=6),
     force: bool = False,
     now: datetime | None = None,
+    progress: ProgressCallback | None = None,
 ) -> tuple[CTIRefreshOutcome, ...]:
     """Refresh configured feeds independently while preserving old cache on failure."""
     reference = now or datetime.now(timezone.utc)
@@ -144,11 +156,26 @@ def refresh_configured_sources(
             now=reference,
         )
         if public_feed_fresh or normal_feed_fresh:
+            _emit_progress(progress, source, "skipped", "cache still fresh")
             outcomes.append(CTIRefreshOutcome(source=source, status="fresh"))
             continue
 
+        fetch_detail = {
+            "ThreatFox": "downloading full current export",
+            "URLhaus": "downloading full export with recent-feed fallback",
+            "PhishTank": "downloading public phishing feed",
+            "SGB": f"fetching paginated feed (up to {sgb_max_pages} pages)",
+        }.get(source)
+        _emit_progress(progress, source, "fetching", fetch_detail)
+
         try:
             records = fetcher()
+            _emit_progress(
+                progress,
+                source,
+                "saving",
+                f"{len(records):,} records fetched; updating local cache",
+            )
             count = _replace_nonempty(
                 db_path,
                 source,
@@ -156,6 +183,12 @@ def refresh_configured_sources(
                 refreshed_at=reference,
             )
         except Exception as error:
+            _emit_progress(
+                progress,
+                source,
+                "failed",
+                f"{type(error).__name__}: {error}",
+            )
             outcomes.append(
                 CTIRefreshOutcome(
                     source=source,
@@ -166,6 +199,12 @@ def refresh_configured_sources(
             )
             continue
 
+        _emit_progress(
+            progress,
+            source,
+            "refreshed",
+            f"{count:,} active records",
+        )
         outcomes.append(
             CTIRefreshOutcome(
                 source=source,

@@ -88,6 +88,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             "Missing required environment variable(s): " + ", ".join(missing)
         )
 
+    print("ThreatFusion CTI refresh", flush=True)
+    print(f"  Database: {args.db}", flush=True)
+
+    def show_progress(source: str, stage: str, detail: str | None) -> None:
+        message = f"  [{source}] {stage}"
+        if detail:
+            message += f" · {detail}"
+        print(message, flush=True)
+
     outcomes = refresh_configured_sources(
         args.db,
         threatfox_key=threatfox_key,
@@ -95,10 +104,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         sgb_max_pages=args.sgb_max_pages,
         stale_after=timedelta(hours=args.stale_hours),
         force=args.force,
+        progress=show_progress,
     )
 
-    print("ThreatFusion CTI refresh")
-    print(f"  Database: {args.db}")
+    print("Summary")
     for outcome in outcomes:
         if outcome.status == "refreshed":
             print(f"  {outcome.source}: refreshed ({outcome.record_count} records)")

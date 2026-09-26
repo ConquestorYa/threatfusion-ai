@@ -95,6 +95,43 @@ def test_refresh_updates_all_configured_sources(tmp_path, monkeypatch):
     }
 
 
+def test_refresh_emits_source_progress(tmp_path, monkeypatch):
+    _patch_collectors(monkeypatch)
+    db_path = tmp_path / "cti.sqlite"
+    events: list[tuple[str, str, str | None]] = []
+
+    cti_refresh.refresh_configured_sources(
+        db_path,
+        threatfox_key="tf",
+        urlhaus_key="uh",
+        force=True,
+        now=datetime(2026, 9, 26, 12, 0, tzinfo=timezone.utc),
+        progress=lambda source, stage, detail: events.append(
+            (source, stage, detail)
+        ),
+    )
+
+    assert ("ThreatFox", "fetching", "downloading full current export") in events
+    assert any(
+        source == "ThreatFox"
+        and stage == "saving"
+        and detail is not None
+        and "records fetched" in detail
+        for source, stage, detail in events
+    )
+    assert any(
+        source == "SGB"
+        and stage == "fetching"
+        and detail is not None
+        and "1000 pages" in detail
+        for source, stage, detail in events
+    )
+    assert any(
+        source == "SGB" and stage == "refreshed"
+        for source, stage, _ in events
+    )
+
+
 def test_public_phishtank_refresh_is_throttled_even_with_force(
     tmp_path,
     monkeypatch,
