@@ -9,20 +9,30 @@ import streamlit as st
 
 from .brand_assets import THREATFUSION_LOGO_DATA_URI
 
-THEME_OPTIONS = ("Dark", "White", "Blue Dark", "Red")
+THEME_OPTIONS = ("Obsidian", "Arctic", "Midnight", "Crimson")
+
+_LEGACY_THEME_NAMES = {
+    "Dark": "Obsidian",
+    "White": "Arctic",
+    "Light": "Arctic",
+    "Blue Dark": "Midnight",
+    "Red": "Crimson",
+}
 
 THEME_PALETTES = {
-    "Dark": {
+    "Obsidian": {
         "bg": "#0C121C",
         "bg_alt": "#101923",
         "panel": "#141F2C",
         "panel_alt": "#182534",
         "surface": "#213143",
+        "input_bg": "#111C28",
         "border": "#2C3C4E",
         "text": "#E5ECF4",
         "muted": "#A0AFC1",
         "cyan": "#53C9BE",
         "cyan_soft": "rgba(83, 201, 190, 0.09)",
+        "logo": "#62D5CA",
         "on_accent": "#0C121C",
         "green": "#81CAA3",
         "yellow": "#E8C76A",
@@ -33,38 +43,42 @@ THEME_PALETTES = {
         "plot_template": "plotly_dark",
         "scheme": "dark",
     },
-    "White": {
-        "bg": "#F7F9FC",
-        "bg_alt": "#EEF2F7",
-        "panel": "#FFFFFF",
-        "panel_alt": "#F3F6FA",
-        "surface": "#E7EDF4",
-        "border": "#C5D0DD",
-        "text": "#172234",
-        "muted": "#516278",
-        "cyan": "#0D716E",
-        "cyan_soft": "rgba(13, 113, 110, 0.08)",
+    "Arctic": {
+        "bg": "#EEF4F8",
+        "bg_alt": "#E3EDF4",
+        "panel": "#F8FBFD",
+        "panel_alt": "#EDF4F8",
+        "surface": "#D8E6EF",
+        "input_bg": "#F7FBFE",
+        "border": "#AFC2D0",
+        "text": "#183246",
+        "muted": "#4B6578",
+        "cyan": "#096A77",
+        "cyan_soft": "rgba(9, 106, 119, 0.09)",
+        "logo": "#0A7282",
         "on_accent": "#FFFFFF",
-        "green": "#246843",
-        "yellow": "#785A0D",
-        "orange": "#A04413",
-        "red": "#AE2B3B",
-        "blue": "#3A628A",
-        "grid": "rgba(82, 98, 120, 0.12)",
+        "green": "#1F6B4B",
+        "yellow": "#795A00",
+        "orange": "#9A4618",
+        "red": "#A72D3A",
+        "blue": "#305F86",
+        "grid": "rgba(72, 97, 116, 0.14)",
         "plot_template": "plotly_white",
         "scheme": "light",
     },
-    "Blue Dark": {
+    "Midnight": {
         "bg": "#071525",
         "bg_alt": "#0B1D31",
         "panel": "#10243A",
         "panel_alt": "#15304A",
         "surface": "#1C3B58",
+        "input_bg": "#0C2136",
         "border": "#2E4C68",
         "text": "#E8F2FF",
         "muted": "#9EB4CA",
         "cyan": "#62B8FF",
         "cyan_soft": "rgba(98, 184, 255, 0.11)",
+        "logo": "#69C1FF",
         "on_accent": "#06121F",
         "green": "#83D8AE",
         "yellow": "#F0D074",
@@ -75,17 +89,19 @@ THEME_PALETTES = {
         "plot_template": "plotly_dark",
         "scheme": "dark",
     },
-    "Red": {
+    "Crimson": {
         "bg": "#170B10",
         "bg_alt": "#211017",
         "panel": "#2A141D",
         "panel_alt": "#341925",
         "surface": "#44202E",
+        "input_bg": "#26121B",
         "border": "#5A3040",
         "text": "#F7EAF0",
         "muted": "#C7A6B4",
         "cyan": "#E9687B",
         "cyan_soft": "rgba(233, 104, 123, 0.12)",
+        "logo": "#F06D80",
         "on_accent": "#18090E",
         "green": "#8FD2A4",
         "yellow": "#F0C972",
@@ -97,8 +113,6 @@ THEME_PALETTES = {
         "scheme": "dark",
     },
 }
-# Backward-compatible alias for older tests/integrations.
-THEME_PALETTES["Light"] = THEME_PALETTES["White"]
 
 _VERDICT_TOKENS = {
     "Known Threat": "red",
@@ -121,20 +135,28 @@ VERDICT_COLORS = {
 }
 
 
+def canonical_theme_name(theme: str) -> str:
+    """Map legacy theme labels to the current product-facing names."""
+    return _LEGACY_THEME_NAMES.get(theme, theme)
+
+
 def active_theme() -> str:
     """Return the explicit ThreatFusion theme, falling back to native mode."""
     selected = st.session_state.get("visual_theme")
-    if selected in THEME_OPTIONS:
-        return str(selected)
+    if isinstance(selected, str):
+        canonical = canonical_theme_name(selected)
+        if canonical in THEME_OPTIONS:
+            return canonical
     try:
         theme_type = st.context.theme.type
     except (AttributeError, TypeError):
         theme_type = "dark"
-    return "White" if theme_type == "light" else "Dark"
+    return "Arctic" if theme_type == "light" else "Obsidian"
 
 
 def palette(theme: str | None = None) -> dict[str, str]:
-    return THEME_PALETTES[theme or active_theme()]
+    selected = canonical_theme_name(theme) if theme is not None else active_theme()
+    return THEME_PALETTES[selected]
 
 
 def verdict_colors(theme: str | None = None) -> dict[str, str]:
