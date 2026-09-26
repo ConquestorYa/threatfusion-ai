@@ -17,6 +17,17 @@ def build_parser() -> argparse.ArgumentParser:
         description="Compare malicious-domain models under FPR budgets"
     )
     parser.add_argument("--snapshot-dir", type=Path, required=True)
+    parser.add_argument(
+        "--fpr-budgets",
+        type=float,
+        nargs="+",
+        default=[0.001, 0.01, 0.05, 0.10],
+        metavar="RATE",
+        help=(
+            "Validation FPR budgets as rates, e.g. "
+            "--fpr-budgets 0.001 0.005 0.01 for 0.1%%, 0.5%%, 1%%"
+        ),
+    )
     return parser
 
 
@@ -46,9 +57,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     def progress(name: str) -> None:
         print(f"Training candidate: {name}", flush=True)
 
+    budgets = tuple(args.fpr_budgets)
+    if not budgets or any(not 0 <= budget <= 1 for budget in budgets):
+        raise SystemExit("FPR budgets must be rates between 0 and 1")
+
     try:
         result = run_fpr_budget_comparison(
             snapshot.samples,
+            fpr_budgets=budgets,
             progress_callback=progress,
         )
     except ValueError as error:

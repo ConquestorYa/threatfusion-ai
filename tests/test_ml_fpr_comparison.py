@@ -116,6 +116,19 @@ def test_comparison_uses_shared_split_and_reports_all_budgets() -> None:
             assert 0.0 <= item.test.false_positive_rate <= 1.0
 
 
+def test_comparison_supports_operational_low_fpr_budgets() -> None:
+    result = run_fpr_budget_comparison(
+        make_samples(),
+        fpr_budgets=(0.001, 0.005, 0.01),
+    )
+
+    for candidate in result.candidates:
+        assert [
+            item.max_false_positive_rate
+            for item in candidate.budget_evaluations
+        ] == [0.001, 0.005, 0.01]
+
+
 def test_comparison_is_deterministic() -> None:
     samples = make_samples()
 
