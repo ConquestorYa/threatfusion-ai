@@ -38,7 +38,23 @@ not treated as proof of malware.
 
 ## Architecture overview
 
-ThreatFusion AI has four core layers:
+```mermaid
+flowchart LR
+    A[ThreatFox / URLhaus / SGB] --> B[Normalized CTI + SQLite cache]
+    C[DNS CSV / Zeek / Pi-hole / AdGuard] --> D[Runtime analysis]
+    B --> D
+    E[Frozen TF-IDF + Logistic Regression artifact] --> D
+    D --> F[IOC evidence]
+    D --> G[ML domain score]
+    D --> H[DNS behavior signals]
+    F --> I[Explainable hybrid verdict]
+    G --> I
+    H --> I
+    I --> J[Streamlit dashboard]
+    I --> K[Privacy-safe JSON / CSV reports]
+```
+
+The architecture stays intentionally compact:
 
 - **Collection + normalization:** ThreatFox, URLhaus, and SGB IOC ingestion into a common model.
 - **Runtime analysis:** local DNS telemetry parsing, deterministic IOC matching, ML scoring, and behavior signals.
@@ -147,26 +163,19 @@ least one domain IOC, the demo includes one cached IOC value as inert text so
 the known-threat matching path can be exercised. The generator does not print,
 visit, or resolve that IOC.
 
-### Fast demo path
+### Two-minute local demo
 
-1. Generate demo telemetry:
-   ```powershell
-   python scripts\generate_demo_dns_csv.py
-   ```
-2. Run the detector:
-   ```powershell
-   python scripts\analyze_dns.py data\demo\demo_dns.csv --format dns-csv
-   ```
-3. Open the dashboard:
-   ```powershell
-   streamlit run streamlit_app.py
-   ```
-
-Run the dashboard:
+With dependencies installed and a local CTI/model runtime already prepared:
 
 ```powershell
+python scripts\generate_demo_dns_csv.py
+python scripts\analyze_dns.py data\demo\demo_dns.csv --format dns-csv
 streamlit run streamlit_app.py
 ```
+
+This exercises the same runtime pipeline used by the dashboard without
+requiring a live feed refresh during the demo. Generated demo data is inert and
+does not visit or resolve threat indicators.
 
 Run the same local detector from the CLI:
 
@@ -219,7 +228,7 @@ The selected model family is character 2-6 TF-IDF with sublinear term frequency
 plus balanced Logistic Regression. Its output is an uncalibrated model score,
 not a literal probability that a domain is malware.
 
-Two important evaluation phases have been completed:
+Three evaluation stages now define the ML work:
 
 - The original model was measured on a separately collected fresh/disjoint
   holdout. It remains useful as an auxiliary unknown-domain signal, but its
@@ -229,14 +238,17 @@ Two important evaluation phases have been completed:
   validation FPR budgets. On its frozen fresh holdout, false positives improved
   substantially, but malicious recall fell too far (high 6.06%, medium 12.18%,
   low 18.95%), so v2 was **not** promoted as the runtime default.
+- One bounded regularization sweep kept the same model family and compared only
+  Logistic Regression `C=0.5, 1, 2, 4`. The `C=4` candidate improved the
+  development medium operating-point recall from 20.22% to 25.52% while test
+  FPR moved from 0.52% to 0.60%. It has been frozen separately as
+  `development-v3-c4` for one final untouched post-freeze temporal holdout.
 
-The evaluator now supports preserving malicious IOC `first_seen` /
-`last_seen` metadata and an explicit first-seen-filtered temporal mode. A new
-timing-preserving holdout is still required before making a strict temporal
-performance claim.
+The evaluator preserves malicious IOC `first_seen` / `last_seen` metadata and
+supports an explicit timezone-aware post-freeze cutoff. The remaining ML task
+for v1 is one final untouched temporal holdout. After that measurement, model
+iteration stops for v1 regardless of the outcome.
 
-Current ML direction is intentionally narrow: one bounded Logistic Regression
-regularization comparison is allowed to seek a better recall/FPR tradeoff.
 ThreatFusion is not expanding into neural networks or transformer models for
 v1.
 
@@ -244,9 +256,10 @@ v1.
 
 The v1 scope is frozen around finishing and presenting the existing product:
 
-- run the bounded recall experiment and one timing-preserving temporal
-  evaluation
-- keep the strongest scientifically defensible model as an auxiliary signal
+- complete one timing-preserving post-freeze temporal evaluation for the
+  already-frozen C=4 candidate
+- keep the strongest scientifically defensible frozen model as an auxiliary
+  signal, then stop v1 model iteration
 - align README/architecture/release documentation with measured results
 - complete public-release secret/history checks and licensing
 - capture sanitized screenshots and publish a hosted public-mode demo
@@ -266,21 +279,17 @@ ThreatFusion AI integrates third-party CTI/telemetry sources. Source ownership, 
 
 Where source-license or redistribution terms are not explicitly verified in this repository, they are marked as TODO rather than assumed.
 
-## Screenshot placeholders (for release)
+## Portfolio screenshots
 
-Add sanitized images under `docs/images/` before the public portfolio release:
+The public portfolio release will include three sanitized screenshots under
+`docs/images/`:
 
-- `overview-dashboard.png` (main dashboard with no private telemetry)
-- `domain-investigation.png` (domain detail/evidence view with inert demo data)
-- `model-evaluation.png` (aggregate-only model metrics view)
+- dashboard overview using inert demo telemetry
+- domain investigation/evidence view with no private client data
+- aggregate-only model evaluation view
 
-Placeholder markup:
-
-```markdown
-![ThreatFusion dashboard overview](docs/images/overview-dashboard.png)
-![ThreatFusion domain investigation](docs/images/domain-investigation.png)
-![ThreatFusion model evaluation](docs/images/model-evaluation.png)
-```
+Screenshots are intentionally added only from a real local/public-mode run;
+the repository does not use fabricated UI images as release evidence.
 
 ## License
 
