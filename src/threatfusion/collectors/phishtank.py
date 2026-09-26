@@ -9,7 +9,8 @@ import requests
 
 from ..models import IOCRecord, IOCType
 
-PHISHTANK_FEED_URL = "https://data.phishtank.com/data/{}/online-valid.csv"
+PHISHTANK_FEED_URL = "http://data.phishtank.com/data/online-valid.csv"
+PHISHTANK_USER_AGENT = "ThreatFusionAI/0.1"
 REQUEST_TIMEOUT_SECONDS = 30
 
 
@@ -57,27 +58,25 @@ def parse_phishtank_csv(content: str) -> list[IOCRecord]:
 
 
 class PhishTankCollector:
+    """Download the public verified-online feed at a deliberately low cadence."""
+
     def __init__(
         self,
-        app_key: str,
         session: requests.Session | None = None,
     ) -> None:
-        if not app_key.strip():
-            raise ValueError("PhishTank app key is required")
-        self.app_key = app_key.strip()
         self.session = session if session is not None else requests.Session()
 
     def fetch_verified_online_urls(self) -> list[IOCRecord]:
-        feed_url = PHISHTANK_FEED_URL.format(self.app_key)
         try:
             response = self.session.get(
-                feed_url,
+                PHISHTANK_FEED_URL,
+                headers={"User-Agent": PHISHTANK_USER_AGENT},
                 timeout=REQUEST_TIMEOUT_SECONDS,
                 allow_redirects=False,
             )
         except requests.RequestException:
             raise requests.HTTPError(
-                "PhishTank feed request failed (request error)"
+                "PhishTank public feed request failed (request error)"
             ) from None
 
         try:
@@ -85,16 +84,20 @@ class PhishTankCollector:
         except requests.RequestException:
             status_code = getattr(response, "status_code", "unknown")
             raise requests.HTTPError(
-                f"PhishTank feed request failed (HTTP status {status_code})"
+                "PhishTank public feed request failed "
+                f"(HTTP status {status_code})"
             ) from None
 
         status_code = getattr(response, "status_code", None)
         if isinstance(status_code, int) and not 200 <= status_code < 300:
             raise requests.HTTPError(
-                f"PhishTank feed request failed (HTTP status {status_code})"
+                "PhishTank public feed request failed "
+                f"(HTTP status {status_code})"
             )
 
         records = parse_phishtank_csv(response.text)
         if not records:
-            raise ValueError("PhishTank feed contained no usable verified URLs")
+            raise ValueError(
+                "PhishTank public feed contained no usable verified URLs"
+            )
         return records
