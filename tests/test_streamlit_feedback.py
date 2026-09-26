@@ -106,6 +106,27 @@ def test_public_mode_never_reads_or_writes_history_or_feedback(
     assert db_path.read_bytes() == original_database
 
 
+def test_synthetic_demo_artifact_is_clearly_labeled(feedback_app, monkeypatch):
+    app_module, _, _, _ = feedback_app
+    artifact = SimpleNamespace(
+        metadata=SimpleNamespace(
+            model_name="demo-model",
+            evaluation_status="demo_only_synthetic",
+        )
+    )
+    monkeypatch.setattr(app_module, "_load_artifact", lambda path: artifact)
+
+    app = AppTest.from_string("import streamlit_app\nstreamlit_app.main()")
+    app.run(timeout=15)
+
+    assert not app.exception
+    assert any(
+        "Demo ML artifact active" in item.value
+        and "must not be interpreted as measured model performance" in item.value
+        for item in app.warning
+    )
+
+
 def test_live_analysis_surfaces_previous_review_and_local_suppression(
     feedback_app,
 ) -> None:
