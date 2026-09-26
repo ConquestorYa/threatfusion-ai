@@ -8,9 +8,11 @@ from pathlib import Path
 
 from .ml_holdout import FrozenHoldoutEvaluation, HoldoutSourceMetrics
 
-_SCHEMA_VERSION = 2
-_SUPPORTED_SCHEMA_VERSIONS = {1, 2}
+_SCHEMA_VERSION = 3
+_SUPPORTED_SCHEMA_VERSIONS = {1, 2, 3}
 _PROTOCOL = "fresh_collection_disjoint"
+_TEMPORAL_PROTOCOL = "fresh_collection_disjoint_first_seen_filtered"
+_SUPPORTED_PROTOCOLS = {_PROTOCOL, _TEMPORAL_PROTOCOL}
 _WILSON_Z_95 = 1.959963984540054
 
 
@@ -82,6 +84,9 @@ class FrozenHoldoutReport:
     low: HoldoutMetricReport
     source_recalls: tuple[HoldoutSourceRecallReport, ...]
     source_metrics: tuple[HoldoutSourceMetricReport, ...] = ()
+    malicious_first_seen_after: str | None = None
+    malicious_missing_first_seen_removed: int = 0
+    malicious_not_after_cutoff_removed: int = 0
 
 
 def _wilson_interval(
@@ -214,7 +219,11 @@ def build_frozen_holdout_report(
 
     return FrozenHoldoutReport(
         schema_version=_SCHEMA_VERSION,
-        protocol=_PROTOCOL,
+        protocol=(
+            _TEMPORAL_PROTOCOL
+            if evaluation.malicious_first_seen_after is not None
+            else _PROTOCOL
+        ),
         generated_at=timestamp.astimezone(timezone.utc).isoformat(),
         model_name=model_name,
         development_snapshot_date=development_snapshot_date,
@@ -240,6 +249,13 @@ def build_frozen_holdout_report(
         source_metrics=tuple(
             _source_metric_report(item)
             for item in evaluation.source_metrics
+        ),
+        malicious_first_seen_after=evaluation.malicious_first_seen_after,
+        malicious_missing_first_seen_removed=(
+            evaluation.malicious_missing_first_seen_removed
+        ),
+        malicious_not_after_cutoff_removed=(
+            evaluation.malicious_not_after_cutoff_removed
         ),
     )
 
@@ -360,7 +376,7 @@ def read_frozen_holdout_report(path: Path) -> FrozenHoldoutReport:
     schema_version = raw.get("schema_version")
     if schema_version not in _SUPPORTED_SCHEMA_VERSIONS:
         raise ValueError("unsupported holdout report schema version")
-    if raw.get("protocol") != _PROTOCOL:
+    if raw.get("protocol") not in _SUPPORTED_PROTOCOLS:
         raise ValueError("unexpected holdout evaluation protocol")
 
     source_raw = raw.get("source_recalls")
@@ -395,11 +411,32 @@ def read_frozen_holdout_report(path: Path) -> FrozenHoldoutReport:
                 _source_metric_from_mapping(item)
                 for item in source_metrics_raw
             ),
+            malicious_first_seen_after=(
+                str(raw["malicious_first_seen_after"])
+                if raw.get("malicious_first_seen_after") is not None
+                else None
+            ),
+            malicious_missing_first_seen_removed=int(
+                raw.get("malicious_missing_first_seen_removed", 0)
+            ),
+            malicious_not_after_cutoff_removed=int(
+                raw.get("malicious_not_after_cutoff_removed", 0)
+            ),
         )
     except KeyError as error:
         raise ValueError("holdout report schema is incomplete") from error
 
     if report.retained_count != report.malicious_count + report.benign_count:
         raise ValueError("holdout retained/class counts are inconsistent")
+    if (
+        report.malicious_missing_first_seen_removed < 0
+        or report.malicious_not_after_cutoff_removed < 0
+    ):
+        raise ValueError("holdout temporal removal counts must be non-negative")
+    if (
+        report.protocol == _TEMPORAL_PROTOCOL
+        and report.malicious_first_seen_after is None
+    ):
+        raise ValueError("temporal holdout report requires a first-seen cutoff")
 
     return report
