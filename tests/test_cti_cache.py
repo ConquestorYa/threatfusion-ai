@@ -128,6 +128,67 @@ def test_indexed_lookup_returns_only_matching_domain_and_url_candidates(
     ]
 
 
+def test_indexed_lookup_supports_exact_ipv4_and_ip_hosted_url(tmp_path) -> None:
+    db_path = tmp_path / "threatfusion.sqlite"
+    replace_source_records(
+        db_path,
+        "ThreatFox",
+        [IOCRecord("143.20.185.213", IOCType.IPV4, "ThreatFox")],
+    )
+    replace_source_records(
+        db_path,
+        "URLhaus",
+        [
+            IOCRecord(
+                "http://143.20.185.213/armv7",
+                IOCType.URL,
+                "URLhaus",
+            ),
+        ],
+    )
+
+    matches = lookup_ioc_records(
+        db_path,
+        domain="143.20.185.213",
+        ip_address="143.20.185.213",
+        normalized_url="http://143.20.185.213/armv7",
+    )
+
+    assert {(item.ioc_type, item.value) for item in matches} == {
+        (IOCType.IPV4, "143.20.185.213"),
+        (IOCType.URL, "http://143.20.185.213/armv7"),
+    }
+
+
+def test_indexed_lookup_supports_ipv6_url_normalization(tmp_path) -> None:
+    db_path = tmp_path / "threatfusion.sqlite"
+    replace_source_records(
+        db_path,
+        "ThreatFox",
+        [IOCRecord("2001:4860:4860::8888", IOCType.IPV6, "ThreatFox")],
+    )
+    replace_source_records(
+        db_path,
+        "URLhaus",
+        [
+            IOCRecord(
+                "http://[2001:4860:4860::8888]/payload",
+                IOCType.URL,
+                "URLhaus",
+            ),
+        ],
+    )
+
+    matches = lookup_ioc_records(
+        db_path,
+        domain="2001:4860:4860::8888",
+        ip_address="2001:4860:4860::8888",
+        normalized_url="http://[2001:4860:4860::8888]/payload",
+    )
+
+    assert len(matches) == 2
+
+
 def test_indexed_lookup_excludes_inactive_indicators(tmp_path) -> None:
     db_path = tmp_path / "threatfusion.sqlite"
     replace_source_records(

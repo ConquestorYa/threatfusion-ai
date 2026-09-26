@@ -63,7 +63,7 @@ _LOOKUP_PRESENTATIONS = {
         kicker="Known threat",
         title="Threat intelligence match found",
         summary=(
-            "The submitted domain or exact URL matched known threat intelligence "
+            "The submitted domain, IP, or exact URL matched known threat intelligence "
             "in the local cache."
         ),
         signal_tone="danger",
@@ -88,6 +88,7 @@ def _presentation_for(verdict: str) -> LookupPresentation:
 def _match_type_label(value: str) -> str:
     labels = {
         "exact_url": "Exact URL",
+        "exact_ip": "Exact IP",
         "query_domain": "Exact domain",
         "url_hostname": "URL hostname context",
     }
@@ -112,6 +113,13 @@ def _cti_signal_label(result: QuickLookupResult) -> tuple[str, str]:
 def _reason_text(reason: str) -> str:
     if reason == "exact_url_ioc_match":
         return "The exact submitted URL appears in the local CTI cache."
+    if reason == "exact_ip_ioc_match":
+        return "The submitted IP address appears directly in the local CTI cache."
+    if reason == "public_ip_literal_url":
+        return (
+            "The URL connects directly to a public IP address instead of a domain. "
+            "This is context only and is not proof of maliciousness."
+        )
     if reason == "plaintext_http_transport":
         return (
             "The submitted URL uses HTTP, so traffic is not protected by HTTPS "
@@ -123,9 +131,12 @@ def _reason_text(reason: str) -> str:
 def _render_outcome_banner(result: QuickLookupResult) -> None:
     visual = _presentation_for(result.verdict.value)
     target = result.normalized_url or result.normalized_domain
-    input_label = (
-        f"{result.input_type} · normalized domain {result.normalized_domain}"
+    normalized_label = (
+        f"normalized IP {result.normalized_ip}"
+        if result.normalized_ip is not None
+        else f"normalized domain {result.normalized_domain}"
     )
+    input_label = f"{result.input_type} · {normalized_label}"
 
     st.markdown(
         f'<section class="tf-lookup-result tf-lookup-result--{visual.css_class}" '
@@ -267,13 +278,13 @@ def _render_signal_console(result: QuickLookupResult) -> None:
         '</div>'
         f'<div class="tf-signal-node tf-signal-node--{ml_tone}">'
         '<span class="tf-signal-node-arrow" aria-hidden="true">→</span>'
-        '<div class="tf-signal-node-label">Domain model</div>'
+        '<div class="tf-signal-node-label">Host model</div>'
         f'<div class="tf-signal-node-value">{safe_text(ml_value)}</div>'
         f'<div class="tf-signal-node-sub">{safe_text(ml_sub)}</div>'
         '</div>'
         '<div class="tf-signal-node tf-signal-node--info">'
         '<span class="tf-signal-node-arrow" aria-hidden="true">→</span>'
-        '<div class="tf-signal-node-label">Domain shape context</div>'
+        '<div class="tf-signal-node-label">Host shape context</div>'
         f'<div class="tf-signal-node-value">{safe_text(result.normalized_domain)}</div>'
         f'<div class="tf-signal-node-sub">{safe_text(" · ".join(shape_bits))}</div>'
         '</div>'
@@ -329,7 +340,7 @@ def _render_evidence_state(result: QuickLookupResult) -> None:
             icon = "!"
             heading = "Known threat intelligence matched"
             copy = (
-                "Review the matching source records below. Exact URL/domain "
+                "Review the matching source records below. Exact URL/domain/IP "
                 "evidence is stronger than hostname-only context."
             )
         else:
@@ -365,8 +376,8 @@ def render_quick_lookup_empty_state() -> None:
         '<div class="tf-lookup-empty-visual">'
         '<div class="tf-lookup-empty-step">'
         '<div class="tf-lookup-empty-step-num">01 · Input</div>'
-        '<div class="tf-lookup-empty-step-title">URL or domain</div>'
-        '<div class="tf-lookup-empty-step-copy">Paste one address into the large lookup field above.</div>'
+        '<div class="tf-lookup-empty-step-title">URL, domain or IP</div>'
+        '<div class="tf-lookup-empty-step-copy">Paste one URL, domain or IP into the lookup field above.</div>'
         '</div>'
         '<div class="tf-lookup-empty-arrow" aria-hidden="true">→</div>'
         '<div class="tf-lookup-empty-step">'
@@ -391,6 +402,12 @@ def render_quick_lookup_result(result: QuickLookupResult) -> None:
         st.warning(
             "HTTP link detected. This connection is not protected by HTTPS. "
             "Transport security alone does not determine whether a site is malicious."
+        )
+    if result.uses_public_ip_literal:
+        st.info(
+            "Direct public-IP URL detected. ThreatFusion treats this as contextual "
+            "evidence only; the IP or URL must match CTI or other stronger signals "
+            "to be classified as a known threat."
         )
 
     _render_outcome_banner(result)

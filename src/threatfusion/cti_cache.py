@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ipaddress
 import json
 import sqlite3
 from collections.abc import Iterable, Mapping, Sequence
@@ -189,29 +190,42 @@ def _normalize_url(value: str) -> tuple[str, str] | None:
     scheme = parsed.scheme.casefold()
     if scheme not in {"http", "https"} or not parsed.hostname:
         return None
+
     try:
-        domain = normalize_domain_name(parsed.hostname, strict=True)
+        address = ipaddress.ip_address(parsed.hostname)
+    except ValueError:
+        try:
+            normalized_host = normalize_domain_name(parsed.hostname, strict=True)
+        except (TypeError, ValueError):
+            return None
+        host_for_netloc = normalized_host
+    else:
+        normalized_host = str(address)
+        host_for_netloc = (
+            f"[{normalized_host}]" if address.version == 6 else normalized_host
+        )
+
+    try:
         port = parsed.port
-    except (TypeError, ValueError):
+    except ValueError:
         return None
 
-    host = domain
     default_port = (scheme == "http" and port == 80) or (
         scheme == "https" and port == 443
     )
     if port is not None and not default_port:
-        host = f"{host}:{port}"
+        host_for_netloc = f"{host_for_netloc}:{port}"
 
     normalized = urlunsplit(
         SplitResult(
             scheme=scheme,
-            netloc=host,
+            netloc=host_for_netloc,
             path=parsed.path or "/",
             query=parsed.query,
             fragment="",
         )
     )
-    return normalized, domain
+    return normalized, normalized_host
 
 
 def _lookup_fields(record: IOCRecord) -> tuple[str | None, str | None]:
@@ -490,16 +504,30 @@ def lookup_ioc_records(
     *,
     domain: str,
     normalized_url: str | None = None,
+    ip_address: str | None = None,
 ) -> list[IOCRecord]:
-    """Return only active domain/URL candidates needed by one quick lookup."""
+    """Return only active host/URL candidates needed by one quick lookup."""
     initialize_cti_cache(db_path)
-    normalized_domain = normalize_domain_name(domain, strict=True)
 
-    clauses = [
-        "(ioc_type = 'domain' AND normalized_value = ?)",
-        "(ioc_type = 'url' AND url_hostname = ?)",
-    ]
-    parameters: list[str] = [normalized_domain, normalized_domain]
+    clauses: list[str] = []
+    parameters: list[str] = []
+
+    if ip_address is None:
+        normalized_host = normalize_domain_name(domain, strict=True)
+        clauses.append("(ioc_type = 'domain' AND normalized_value = ?)")
+        parameters.append(normalized_host)
+    else:
+        try:
+            address = ipaddress.ip_address(ip_address)
+        except ValueError as error:
+            raise ValueError("ip_address must be a valid IPv4 or IPv6 address") from error
+        normalized_host = str(address)
+        ip_type = "ipv4" if address.version == 4 else "ipv6"
+        clauses.append("(ioc_type = ? AND normalized_value = ?)")
+        parameters.extend([ip_type, normalized_host])
+
+    clauses.append("(ioc_type = 'url' AND url_hostname = ?)")
+    parameters.append(normalized_host)
 
     if normalized_url is not None:
         normalized_url_data = _normalize_url(normalized_url)

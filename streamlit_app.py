@@ -455,7 +455,7 @@ def _render_primary_workspace_launcher(current_page: str) -> None:
                 '<span class="tf-primary-card-number">01 · QUICK LOOKUP</span>'
                 f'<span class="tf-primary-card-state">{lookup_state}</span>'
                 '</div>'
-                '<div class="tf-primary-card-title">Check a URL or domain</div>'
+                '<div class="tf-primary-card-title">Check a URL, domain or IP</div>'
                 '<div class="tf-primary-card-copy">'
                 'Paste one address for a fast passive CTI + ML check with a clear color-coded result and evidence path.'
                 '</div>'
@@ -633,14 +633,14 @@ def main() -> None:
             )
 
         st.caption(
-            "Paste one address. ThreatFusion checks the local CTI cache and "
-            "domain model without opening the destination."
+            "Paste one URL, domain or IP. ThreatFusion checks the local CTI "
+            "cache and uses the domain model only when the host is a domain."
         )
         lookup_input, lookup_action = st.columns([5, 1.15], vertical_alignment="bottom")
         with lookup_input:
             lookup_value = st.text_input(
-                "URL or domain",
-                placeholder="example.com or https://example.com/path",
+                "URL, domain or IP",
+                placeholder="example.com, 143.20.185.213, or https://example.com/path",
                 key="quick_lookup_input",
                 on_change=_clear_quick_lookup_state,
             )
@@ -658,7 +658,7 @@ def main() -> None:
 
         if analyze_lookup:
             if not lookup_value.strip():
-                st.warning("Enter a URL or domain before checking it.")
+                st.warning("Enter a URL, domain or IP before checking it.")
             else:
                 try:
                     with st.spinner("Checking local threat signals…"):
