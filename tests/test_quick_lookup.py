@@ -94,6 +94,87 @@ def test_url_hostname_context_is_review_not_known_threat(monkeypatch):
     assert [item.match_type for item in result.evidence] == ["url_hostname"]
 
 
+def test_exact_ipv4_ioc_is_known_threat_without_domain_ml(monkeypatch):
+    def fail_ml(*args, **kwargs):
+        raise AssertionError("IP literals must not be scored by the domain model")
+
+    monkeypatch.setattr(quick_lookup, "predict_domain_scores", fail_ml)
+    indicator = IOCRecord(
+        "143.20.185.213",
+        IOCType.IPV4,
+        "ThreatFox",
+        threat_type="botnet_cc",
+    )
+
+    result = analyze_quick_lookup("143.20.185.213", [indicator], fake_artifact())
+
+    assert result.input_type == "IPv4"
+    assert result.normalized_ip == "143.20.185.213"
+    assert result.verdict is HybridVerdict.KNOWN_THREAT
+    assert result.ml_score is None
+    assert [item.match_type for item in result.evidence] == ["exact_ip"]
+    assert "exact_ip_ioc_match" in result.reasons
+
+
+def test_ip_hosted_exact_url_is_known_threat(monkeypatch):
+    def fail_ml(*args, **kwargs):
+        raise AssertionError("IP-hosted URLs must not be scored by the domain model")
+
+    monkeypatch.setattr(quick_lookup, "predict_domain_scores", fail_ml)
+    indicator = IOCRecord(
+        "http://143.20.185.213/armv7",
+        IOCType.URL,
+        "URLhaus",
+        threat_type="malware_download",
+    )
+
+    result = analyze_quick_lookup(
+        "http://143.20.185.213/armv7",
+        [indicator],
+        fake_artifact(),
+    )
+
+    assert result.verdict is HybridVerdict.KNOWN_THREAT
+    assert result.uses_public_ip_literal is True
+    assert [item.match_type for item in result.evidence] == ["exact_url"]
+    assert "public_ip_literal_url" in result.reasons
+
+
+def test_public_ip_literal_url_is_context_only_without_cti(monkeypatch):
+    def fail_ml(*args, **kwargs):
+        raise AssertionError("IP-hosted URLs must not be scored by the domain model")
+
+    monkeypatch.setattr(quick_lookup, "predict_domain_scores", fail_ml)
+
+    result = analyze_quick_lookup(
+        "http://8.8.8.8/example",
+        [],
+        fake_artifact(),
+    )
+
+    assert result.uses_public_ip_literal is True
+    assert "public_ip_literal_url" in result.reasons
+    assert result.verdict is HybridVerdict.LOW
+
+
+def test_private_ip_literal_url_is_not_public_ip_signal(monkeypatch):
+    monkeypatch.setattr(
+        quick_lookup,
+        "predict_domain_scores",
+        lambda artifact, domains: {},
+    )
+
+    result = analyze_quick_lookup(
+        "http://192.168.1.10/admin",
+        [],
+        fake_artifact(),
+    )
+
+    assert result.normalized_ip == "192.168.1.10"
+    assert result.uses_public_ip_literal is False
+    assert "public_ip_literal_url" not in result.reasons
+
+
 def test_plain_http_url_is_flagged_without_changing_verdict(monkeypatch):
     monkeypatch.setattr(
         quick_lookup,
@@ -178,6 +259,46 @@ def test_invalid_or_unsupported_lookup_input_is_rejected(value, monkeypatch):
 
     with pytest.raises(ValueError):
         analyze_quick_lookup(value, [], fake_artifact())
+
+
+def test_quick_lookup_from_cache_matches_exact_ip_and_ip_url(
+    tmp_path,
+    monkeypatch,
+):
+    db_path = tmp_path / "cti.sqlite"
+    replace_source_records(
+        db_path,
+        "ThreatFox",
+        [IOCRecord("143.20.185.213", IOCType.IPV4, "ThreatFox")],
+    )
+    replace_source_records(
+        db_path,
+        "URLhaus",
+        [
+            IOCRecord(
+                "http://143.20.185.213/armv7",
+                IOCType.URL,
+                "URLhaus",
+            )
+        ],
+    )
+
+    def fail_ml(*args, **kwargs):
+        raise AssertionError("IP-hosted URLs must not use domain ML")
+
+    monkeypatch.setattr(quick_lookup, "predict_domain_scores", fail_ml)
+
+    result = analyze_quick_lookup_from_cache(
+        "http://143.20.185.213/armv7",
+        db_path,
+        fake_artifact(),
+    )
+
+    assert result.verdict is HybridVerdict.KNOWN_THREAT
+    assert {item.match_type for item in result.evidence} == {
+        "exact_ip",
+        "exact_url",
+    }
 
 
 def test_quick_lookup_from_cache_uses_indexed_candidates(tmp_path, monkeypatch):
