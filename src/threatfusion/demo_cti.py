@@ -47,11 +47,20 @@ def write_public_demo_cti_cache(
     db_path: Path,
     *,
     refreshed_at: datetime | None = None,
+    overwrite: bool = False,
 ) -> int:
-    """Create/update a CTI cache containing only synthetic public-demo IOCs."""
+    """Create a CTI cache containing only synthetic public-demo IOCs."""
+    path = Path(db_path)
+    if path.exists():
+        if not overwrite:
+            raise FileExistsError(
+                "public demo CTI cache already exists; use overwrite=True"
+            )
+        path.unlink()
+
     timestamp = refreshed_at or datetime.now(timezone.utc)
     return replace_source_records(
-        Path(db_path),
+        path,
         _DEMO_SOURCE,
         build_public_demo_iocs(),
         refreshed_at=timestamp,
