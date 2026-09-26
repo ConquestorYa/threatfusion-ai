@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from urllib.parse import SplitResult, urlsplit, urlunsplit
 
 from .dns import DNSEvent
@@ -22,6 +23,8 @@ class QuickLookupEvidence:
     indicator_value: str
     threat_type: str | None
     confidence: float | None
+    first_seen: datetime | None
+    last_seen: datetime | None
     tags: tuple[str, ...]
 
 
@@ -134,6 +137,8 @@ def _evidence_from_match(match: DNSIOCMatch) -> QuickLookupEvidence:
         indicator_value=indicator.value,
         threat_type=indicator.threat_type,
         confidence=indicator.confidence,
+        first_seen=indicator.first_seen,
+        last_seen=indicator.last_seen,
         tags=tuple(indicator.tags),
     )
 
@@ -175,6 +180,8 @@ def analyze_quick_lookup(
             indicator_value=indicator.value,
             threat_type=indicator.threat_type,
             confidence=indicator.confidence,
+            first_seen=indicator.first_seen,
+            last_seen=indicator.last_seen,
             tags=tuple(indicator.tags),
         )
         for indicator in exact_url_indicators
