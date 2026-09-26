@@ -492,6 +492,23 @@ _COLUMN_TR = {
     "Shared threat types": "Ortak tehdit türleri",
     "Evidence scopes": "Kanıt kapsamları",
     "Noise adjustment": "Gürültü düzeltmesi",
+    "Precision interval": "Precision aralığı",
+    "Recall interval": "Recall aralığı",
+    "FPR interval": "FPR aralığı",
+    "Malicious samples": "Zararlı örnekler",
+    "Benign samples": "Zararsız örnekler",
+    "High recall": "Yüksek recall",
+    "High recall interval": "Yüksek recall aralığı",
+    "High FPR": "Yüksek FPR",
+    "High FPR interval": "Yüksek FPR aralığı",
+    "Medium recall": "Orta recall",
+    "Medium recall interval": "Orta recall aralığı",
+    "Medium FPR": "Orta FPR",
+    "Medium FPR interval": "Orta FPR aralığı",
+    "Low recall": "Düşük recall",
+    "Low recall interval": "Düşük recall aralığı",
+    "Low FPR": "Düşük FPR",
+    "Low FPR interval": "Düşük FPR aralığı",
 }
 
 _VALUE_TR = {
