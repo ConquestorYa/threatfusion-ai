@@ -250,11 +250,11 @@ def test_quick_lookup_check_uses_current_input_value(feedback_app, monkeypatch):
     calls = []
     result = object()
 
-    def analyze(value, indicators, artifact):
+    def analyze(value, db_path, artifact):
         calls.append(value)
         return result
 
-    monkeypatch.setattr(app_module, "analyze_quick_lookup", analyze)
+    monkeypatch.setattr(app_module, "analyze_quick_lookup_from_cache", analyze)
     monkeypatch.setattr(app_module, "render_quick_lookup_result", lambda value: None)
 
     app = AppTest.from_string("import streamlit_app\nstreamlit_app.main()")

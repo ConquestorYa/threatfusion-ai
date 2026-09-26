@@ -6,8 +6,10 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import SplitResult, urlsplit, urlunsplit
 
 from .models import IOCRecord, IOCType
+from .normalization import normalize_domain_name, normalize_ioc_value
 
 
 @dataclass(frozen=True)
@@ -39,7 +41,9 @@ CREATE TABLE IF NOT EXISTS cti_records (
     tags_json TEXT NOT NULL,
     first_seen_in_cache TEXT,
     last_seen_in_refresh TEXT,
-    active INTEGER NOT NULL DEFAULT 1
+    active INTEGER NOT NULL DEFAULT 1,
+    normalized_value TEXT,
+    url_hostname TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_cti_records_source
@@ -51,6 +55,10 @@ CREATE TABLE IF NOT EXISTS cti_refreshes (
     source TEXT PRIMARY KEY,
     refreshed_at TEXT NOT NULL,
     record_count INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS cti_metadata (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
 );
 """
 
@@ -70,6 +78,8 @@ def _migrate_cti_records(connection: sqlite3.Connection) -> None:
         "first_seen_in_cache": "TEXT",
         "last_seen_in_refresh": "TEXT",
         "active": "INTEGER NOT NULL DEFAULT 1",
+        "normalized_value": "TEXT",
+        "url_hostname": "TEXT",
     }
     for name, declaration in additions.items():
         if name not in columns:
@@ -83,6 +93,67 @@ def _migrate_cti_records(connection: sqlite3.Connection) -> None:
         ON cti_records(source, active)
         """
     )
+    connection.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_cti_records_active_normalized
+        ON cti_records(active, ioc_type, normalized_value)
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_cti_records_active_url_hostname
+        ON cti_records(active, url_hostname)
+        """
+    )
+
+    connection.row_factory = sqlite3.Row
+    lookup_version = connection.execute(
+        """
+        SELECT value
+        FROM cti_metadata
+        WHERE key = 'lookup_index_version'
+        """
+    ).fetchone()
+    if lookup_version is None or str(lookup_version["value"]) != "1":
+        rows = connection.execute(
+            """
+            SELECT id, value, ioc_type
+            FROM cti_records
+            WHERE normalized_value IS NULL
+            """
+        ).fetchall()
+        updates: list[tuple[str | None, str | None, int]] = []
+        for row in rows:
+            try:
+                ioc_type = IOCType(str(row["ioc_type"]))
+            except ValueError:
+                ioc_type = IOCType.UNKNOWN
+            normalized_value, url_hostname = _lookup_fields(
+                IOCRecord(
+                    value=str(row["value"]),
+                    ioc_type=ioc_type,
+                    source="migration",
+                )
+            )
+            updates.append(
+                (normalized_value, url_hostname, int(row["id"]))
+            )
+        if updates:
+            connection.executemany(
+                """
+                UPDATE cti_records
+                SET normalized_value = ?, url_hostname = ?
+                WHERE id = ?
+                """,
+                updates,
+            )
+        connection.execute(
+            """
+            INSERT INTO cti_metadata (key, value)
+            VALUES ('lookup_index_version', '1')
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+            """
+        )
 
 
 def initialize_cti_cache(db_path: Path) -> None:
@@ -108,6 +179,52 @@ def _refresh_time_text(value: datetime | None) -> str:
 
 def _tags_json(tags: Sequence[str]) -> str:
     return json.dumps(list(tags), ensure_ascii=True, separators=(",", ":"))
+
+
+def _normalize_url(value: str) -> tuple[str, str] | None:
+    try:
+        parsed = urlsplit(value.strip())
+    except ValueError:
+        return None
+    scheme = parsed.scheme.casefold()
+    if scheme not in {"http", "https"} or not parsed.hostname:
+        return None
+    try:
+        domain = normalize_domain_name(parsed.hostname, strict=True)
+        port = parsed.port
+    except (TypeError, ValueError):
+        return None
+
+    host = domain
+    default_port = (scheme == "http" and port == 80) or (
+        scheme == "https" and port == 443
+    )
+    if port is not None and not default_port:
+        host = f"{host}:{port}"
+
+    normalized = urlunsplit(
+        SplitResult(
+            scheme=scheme,
+            netloc=host,
+            path=parsed.path or "/",
+            query=parsed.query,
+            fragment="",
+        )
+    )
+    return normalized, domain
+
+
+def _lookup_fields(record: IOCRecord) -> tuple[str | None, str | None]:
+    if record.ioc_type is IOCType.URL:
+        normalized = _normalize_url(record.value)
+        if normalized is None:
+            return record.value.strip(), None
+        return normalized
+    try:
+        normalized_value = normalize_ioc_value(record.value, record.ioc_type)
+    except (TypeError, ValueError):
+        normalized_value = record.value.strip()
+    return normalized_value or None, None
 
 
 def validate_nonempty_refresh_batch(
@@ -156,83 +273,106 @@ def replace_source_records(
 
     with _connect(Path(db_path)) as connection:
         connection.row_factory = sqlite3.Row
+        existing_rows = connection.execute(
+            """
+            SELECT id, ioc_type, value
+            FROM cti_records
+            WHERE source = ?
+            ORDER BY id ASC
+            """,
+            (source_name,),
+        ).fetchall()
+        existing_by_identity = {
+            (str(row["ioc_type"]), str(row["value"])): int(row["id"])
+            for row in existing_rows
+        }
+
         connection.execute(
             "UPDATE cti_records SET active = 0 WHERE source = ?",
             (source_name,),
         )
 
+        inserts: list[tuple[object, ...]] = []
+        updates: list[tuple[object, ...]] = []
         for record in unique_records.values():
-            existing = connection.execute(
-                """
-                SELECT id, first_seen_in_cache
-                FROM cti_records
-                WHERE source = ? AND ioc_type = ? AND value = ?
-                ORDER BY id ASC
-                LIMIT 1
-                """,
-                (source_name, record.ioc_type.value, record.value),
-            ).fetchone()
-
+            normalized_value, url_hostname = _lookup_fields(record)
             values = (
                 _datetime_text(record.first_seen),
                 _datetime_text(record.last_seen),
                 record.threat_type,
                 record.confidence,
                 _tags_json(record.tags),
-                refresh_text,
+                normalized_value,
+                url_hostname,
             )
-            if existing is None:
-                connection.execute(
-                    """
-                    INSERT INTO cti_records (
-                        value,
-                        ioc_type,
-                        source,
-                        first_seen,
-                        last_seen,
-                        threat_type,
-                        confidence,
-                        tags_json,
-                        first_seen_in_cache,
-                        last_seen_in_refresh,
-                        active
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-                    """,
+            existing_id = existing_by_identity.get(
+                (record.ioc_type.value, record.value)
+            )
+            if existing_id is None:
+                inserts.append(
                     (
                         record.value,
                         record.ioc_type.value,
                         source_name,
-                        *values[:-1],
+                        *values,
                         refresh_text,
                         refresh_text,
-                    ),
+                    )
                 )
             else:
-                connection.execute(
-                    """
-                    UPDATE cti_records
-                    SET
-                        first_seen = ?,
-                        last_seen = ?,
-                        threat_type = ?,
-                        confidence = ?,
-                        tags_json = ?,
-                        first_seen_in_cache = COALESCE(
-                            first_seen_in_cache,
-                            ?
-                        ),
-                        last_seen_in_refresh = ?,
-                        active = 1
-                    WHERE id = ?
-                    """,
+                updates.append(
                     (
-                        *values[:-1],
+                        *values,
                         refresh_text,
                         refresh_text,
-                        int(existing["id"]),
-                    ),
+                        existing_id,
+                    )
                 )
+
+        if inserts:
+            connection.executemany(
+                """
+                INSERT INTO cti_records (
+                    value,
+                    ioc_type,
+                    source,
+                    first_seen,
+                    last_seen,
+                    threat_type,
+                    confidence,
+                    tags_json,
+                    normalized_value,
+                    url_hostname,
+                    first_seen_in_cache,
+                    last_seen_in_refresh,
+                    active
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                """,
+                inserts,
+            )
+        if updates:
+            connection.executemany(
+                """
+                UPDATE cti_records
+                SET
+                    first_seen = ?,
+                    last_seen = ?,
+                    threat_type = ?,
+                    confidence = ?,
+                    tags_json = ?,
+                    normalized_value = ?,
+                    url_hostname = ?,
+                    first_seen_in_cache = COALESCE(
+                        first_seen_in_cache,
+                        ?
+                    ),
+                    last_seen_in_refresh = ?,
+                    active = 1
+                WHERE id = ?
+                """,
+                updates,
+            )
 
         connection.execute(
             """
@@ -343,6 +483,84 @@ def load_ioc_records(
         ).fetchall()
 
     return [_ioc_from_row(row) for row in rows]
+
+
+def lookup_ioc_records(
+    db_path: Path,
+    *,
+    domain: str,
+    normalized_url: str | None = None,
+) -> list[IOCRecord]:
+    """Return only active domain/URL candidates needed by one quick lookup."""
+    initialize_cti_cache(db_path)
+    normalized_domain = normalize_domain_name(domain, strict=True)
+
+    clauses = [
+        "(ioc_type = 'domain' AND normalized_value = ?)",
+        "(ioc_type = 'url' AND url_hostname = ?)",
+    ]
+    parameters: list[str] = [normalized_domain, normalized_domain]
+
+    if normalized_url is not None:
+        normalized_url_data = _normalize_url(normalized_url)
+        if normalized_url_data is None:
+            raise ValueError("normalized_url must be a valid HTTP(S) URL")
+        clauses.append("(ioc_type = 'url' AND normalized_value = ?)")
+        parameters.append(normalized_url_data[0])
+
+    with _connect(Path(db_path)) as connection:
+        connection.row_factory = sqlite3.Row
+        rows = connection.execute(
+            f"""
+            SELECT *
+            FROM cti_records
+            WHERE active = 1
+              AND ({' OR '.join(clauses)})
+            ORDER BY id ASC
+            """,
+            parameters,
+        ).fetchall()
+
+    return [_ioc_from_row(row) for row in rows]
+
+
+def prune_inactive_records(
+    db_path: Path,
+    *,
+    older_than_days: int = 90,
+    now: datetime | None = None,
+) -> int:
+    """Delete old inactive lifecycle rows to keep public deployments compact."""
+    if older_than_days < 1:
+        raise ValueError("older_than_days must be at least 1")
+    reference = now or datetime.now(timezone.utc)
+    if reference.tzinfo is None or reference.utcoffset() is None:
+        raise ValueError("now must be timezone-aware")
+    cutoff = reference.timestamp() - older_than_days * 86400
+
+    initialize_cti_cache(db_path)
+    with _connect(Path(db_path)) as connection:
+        rows = connection.execute(
+            """
+            SELECT id, last_seen_in_refresh
+            FROM cti_records
+            WHERE active = 0
+              AND last_seen_in_refresh IS NOT NULL
+            """
+        ).fetchall()
+        ids_to_delete: list[int] = []
+        for row_id, last_seen_in_refresh in rows:
+            parsed = _parse_datetime(str(last_seen_in_refresh))
+            if parsed is not None and parsed.timestamp() < cutoff:
+                ids_to_delete.append(int(row_id))
+        if not ids_to_delete:
+            return 0
+        placeholders = ",".join("?" for _ in ids_to_delete)
+        connection.execute(
+            f"DELETE FROM cti_records WHERE id IN ({placeholders})",
+            ids_to_delete,
+        )
+    return len(ids_to_delete)
 
 
 def list_cti_lifecycle_records(

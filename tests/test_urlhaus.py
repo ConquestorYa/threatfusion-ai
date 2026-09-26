@@ -5,6 +5,7 @@ import requests
 
 from threatfusion.collectors.urlhaus import (
     URLHAUS_EXPORT_URL,
+    URLHAUS_FULL_EXPORT_URL,
     URLhausCollector,
     parse_urlhaus_csv,
 )
@@ -195,6 +196,28 @@ def test_only_official_export_is_requested_and_ioc_urls_are_not_requested() -> N
     assert auth_key not in record.value
     assert auth_key not in (record.threat_type or "")
     assert auth_key not in record.tags
+
+
+def test_full_export_uses_official_full_dump_endpoint() -> None:
+    malicious_url = "https://full.example/payload"
+    auth_key = "full-export-key"
+    session = make_session(
+        f"1,2026-08-20 05:17:07 UTC,{malicious_url},online,malware,,link,reporter"
+    )
+
+    records = URLhausCollector(auth_key, session).fetch_full_urls()
+
+    assert [item.value for item in records] == [malicious_url]
+    assert session.get_calls == [
+        (URLHAUS_FULL_EXPORT_URL.format(auth_key), 30, False)
+    ]
+
+
+def test_empty_full_export_is_rejected_without_replacing_cache() -> None:
+    session = FakeSession(FakeResponse("# metadata only"))
+
+    with pytest.raises(ValueError, match="no usable URLs"):
+        URLhausCollector("secret", session).fetch_full_urls()
 
 
 def test_multiple_csv_rows_produce_multiple_records() -> None:
