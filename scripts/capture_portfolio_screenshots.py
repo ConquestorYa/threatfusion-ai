@@ -7,12 +7,13 @@ from playwright.sync_api import Page, sync_playwright
 
 BASE_URL = "http://127.0.0.1:8501"
 OUT_DIR = Path("docs/screenshots")
+APP_SETTLE_MS = 4_000
 
 
 def wait_for_app(page: Page) -> None:
     page.goto(BASE_URL, wait_until="domcontentloaded", timeout=120_000)
     page.wait_for_selector('[data-testid="stAppViewContainer"]', timeout=120_000)
-    page.wait_for_timeout(4_000)
+    page.wait_for_timeout(APP_SETTLE_MS)
 
 
 def save(page: Page, name: str) -> None:
