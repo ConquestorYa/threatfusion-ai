@@ -17,11 +17,17 @@ from .ml_fpr_comparison import (
     evaluate_candidate,
 )
 from .ml_high_recall import split_train_validation_test
+from .ml_recall_iteration import build_recall_iteration_candidates
 
 _ARTIFACT_SCHEMA_VERSION = 1
 _MODEL_FILENAME = "model.joblib"
 _METADATA_FILENAME = "metadata.json"
 SELECTED_DEVELOPMENT_MODEL = "lr_char_2_6_sublinear_balanced"
+C4_DEVELOPMENT_CANDIDATE = "lr_char_2_6_balanced_c4"
+SUPPORTED_DEVELOPMENT_MODELS = (
+    SELECTED_DEVELOPMENT_MODEL,
+    C4_DEVELOPMENT_CANDIDATE,
+)
 
 
 @dataclass(frozen=True)
@@ -48,6 +54,18 @@ class TrainedMLArtifact:
     model: Pipeline
     metadata: MLArtifactMetadata
     thresholds: MLThresholds
+
+
+def _build_development_model(
+    model_name: str,
+    *,
+    random_state: int,
+) -> Pipeline:
+    if model_name == SELECTED_DEVELOPMENT_MODEL:
+        return build_candidate_pipelines(random_state=random_state)[model_name]
+    if model_name == C4_DEVELOPMENT_CANDIDATE:
+        return build_recall_iteration_candidates(random_state=random_state)[model_name]
+    raise ValueError(f"unsupported development model: {model_name}")
 
 
 def _validate_fpr_budgets(
@@ -77,6 +95,7 @@ def train_selected_model_artifact(
     test_size: float = 0.20,
     validation_size: float = 0.20,
     random_state: int = 42,
+    model_name: str = SELECTED_DEVELOPMENT_MODEL,
 ) -> TrainedMLArtifact:
     """Train the selected development model and choose thresholds on validation."""
     _validate_fpr_budgets(
@@ -91,11 +110,12 @@ def train_selected_model_artifact(
         validation_size=validation_size,
         random_state=random_state,
     )
-    model = build_candidate_pipelines(random_state=random_state)[
-        SELECTED_DEVELOPMENT_MODEL
-    ]
+    model = _build_development_model(
+        model_name,
+        random_state=random_state,
+    )
     evaluation = evaluate_candidate(
-        SELECTED_DEVELOPMENT_MODEL,
+        model_name,
         model,
         split,
         fpr_budgets=(
@@ -117,7 +137,7 @@ def train_selected_model_artifact(
 
     metadata = MLArtifactMetadata(
         schema_version=_ARTIFACT_SCHEMA_VERSION,
-        model_name=SELECTED_DEVELOPMENT_MODEL,
+        model_name=model_name,
         random_state=random_state,
         train_count=len(split.train),
         validation_count=len(split.validation),
@@ -195,7 +215,7 @@ def _read_metadata(metadata_path: Path) -> MLArtifactMetadata:
 
     if metadata.schema_version != _ARTIFACT_SCHEMA_VERSION:
         raise ValueError("unsupported ML artifact schema version")
-    if metadata.model_name != SELECTED_DEVELOPMENT_MODEL:
+    if metadata.model_name not in SUPPORTED_DEVELOPMENT_MODELS:
         raise ValueError("unexpected ML artifact model name")
 
     MLThresholds(
