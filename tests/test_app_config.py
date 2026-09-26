@@ -20,7 +20,7 @@ def test_default_config_is_local_mode() -> None:
         "ThreatFox": timedelta(hours=24),
         "URLhaus": timedelta(hours=24),
         "SGB": timedelta(hours=24),
-        "PhishTank": timedelta(hours=6),
+        "PhishTank": timedelta(hours=24),
     }
 
 
