@@ -236,14 +236,34 @@ def test_quick_lookup_is_default_primary_workspace_without_network_activity(
     assert not app.exception
     assert app.button(key="open_quick_lookup_workspace").label == "Open quick lookup"
     assert any(item.label == "URL or domain" for item in app.text_input)
-    assert any(
-        button.label == "Check" and button.disabled
-        for button in app.button
-    )
+    assert app.button(key="quick_lookup_analyze").label == "Check"
+    assert not app.button(key="quick_lookup_analyze").disabled
     assert any(
         "Passive by design" in item.value
         for item in app.caption
     )
+    assert any("ThreatFusion AI" in item.value for item in app.markdown)
+
+
+def test_quick_lookup_check_uses_current_input_value(feedback_app, monkeypatch):
+    app_module, _, _, _ = feedback_app
+    calls = []
+    result = object()
+
+    def analyze(value, indicators, artifact):
+        calls.append(value)
+        return result
+
+    monkeypatch.setattr(app_module, "analyze_quick_lookup", analyze)
+    monkeypatch.setattr(app_module, "render_quick_lookup_result", lambda value: None)
+
+    app = AppTest.from_string("import streamlit_app\nstreamlit_app.main()")
+    app.run(timeout=15)
+    app.text_input(key="quick_lookup_input").input("example.com").run(timeout=15)
+    app.button(key="quick_lookup_analyze").click().run(timeout=15)
+
+    assert not app.exception
+    assert calls == ["example.com"]
 
 
 def test_navigation_preserves_current_analysis_and_format(feedback_app):
