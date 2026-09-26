@@ -31,9 +31,17 @@ _PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ),
     (
         "local-macos-user-path",
-        re.compile(r"(?<![A-Za-z0-9_])/Users/[^/\s]+"),
+        re.compile(
+            r"(?<![A-Za-z0-9_])/"
+            + r"Users/[^/\s]+"
+        ),
     ),
 )
+
+# This file intentionally constructs values that exercise the rules. Historical
+# fixture blobs are excluded so the audit does not permanently fail on its own
+# synthetic examples. Production/source paths are not generally allowlisted.
+_HISTORY_FIXTURE_PATHS = {"tests/test_release_audit.py"}
 
 
 def scan_release_text(
@@ -168,6 +176,8 @@ def audit_git_history(
                 continue
 
             scanned += 1
+            if path in _HISTORY_FIXTURE_PATHS:
+                continue
             text = payload.decode("utf-8", errors="replace")
             findings.extend(
                 scan_release_text(
