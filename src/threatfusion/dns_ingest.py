@@ -409,7 +409,10 @@ def _parse_xlsx_without_engine(
     )
 
 
-def _parse_excel(content: bytes) -> tuple[DNSParseResult, DNSInputDetection]:
+def _parse_excel(
+    content: bytes,
+    filename: str | None = None,
+) -> tuple[DNSParseResult, DNSInputDetection]:
     pandas_error: Exception | None = None
     try:
         return _parse_excel_with_pandas(content)
@@ -424,6 +427,13 @@ def _parse_excel(content: bytes) -> tuple[DNSParseResult, DNSInputDetection]:
                 "Excel DNS telemetry could not be opened: "
                 f"{fallback_error}"
             ) from fallback_error
+
+    suffix = Path(filename or "").suffix.casefold()
+    if suffix in {".xlsx", ".xlsm", ".xltx", ".xltm"}:
+        raise ValueError(
+            "Excel DNS telemetry could not be opened because the uploaded "
+            "file is not a readable XLSX package"
+        ) from pandas_error
 
     error_name = type(pandas_error).__name__ if pandas_error is not None else "Error"
     raise ValueError(
@@ -492,7 +502,7 @@ def parse_dns_upload_with_diagnostics(
         )
 
     if _looks_like_excel(content, filename):
-        return _parse_excel(content)
+        return _parse_excel(content, filename)
 
     text, encoding = _decode_text(content)
 
