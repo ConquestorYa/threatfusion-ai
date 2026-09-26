@@ -20,7 +20,7 @@ def save(page: Page, name: str) -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     page.screenshot(
         path=str(OUT_DIR / name),
-        full_page=True,
+        full_page=False,
         animations="disabled",
     )
 
@@ -30,18 +30,20 @@ def capture_quick_lookup(page: Page) -> None:
     textbox.fill("known-threat.example")
     page.get_by_role("button", name="Check").click()
     page.wait_for_timeout(3_000)
-    page.get_by_text("Known Threat", exact=False).first.wait_for(timeout=30_000)
+    result = page.get_by_text("Known Threat", exact=False).first
+    result.wait_for(timeout=30_000)
+    result.scroll_into_view_if_needed()
+    page.wait_for_timeout(800)
     save(page, "quick-lookup.png")
 
 
 def open_telemetry(page: Page) -> None:
-    buttons = page.get_by_role("button", name="Analyze telemetry")
-    if buttons.count():
-        buttons.first.click()
-    else:
-        page.get_by_text("Analyze telemetry", exact=True).first.click()
-    page.wait_for_timeout(2_000)
-    page.get_by_text("Upload telemetry", exact=False).first.wait_for(timeout=30_000)
+    page.get_by_role("button", name="Open telemetry analysis").click()
+    page.locator('input[type="file"]').first.wait_for(
+        state="attached",
+        timeout=30_000,
+    )
+    page.wait_for_timeout(1_500)
 
 
 def capture_telemetry(page: Page) -> None:
@@ -49,14 +51,20 @@ def capture_telemetry(page: Page) -> None:
     upload = page.locator('input[type="file"]').first
     upload.set_input_files("runtime/portfolio_dns.csv")
     page.wait_for_timeout(1_500)
-    page.get_by_role("button", name="Analyze", exact=True).click()
+    analyze = page.get_by_role("button", name="Analyze", exact=True)
+    analyze.wait_for(timeout=30_000)
+    analyze.click()
     page.wait_for_timeout(5_000)
-    page.get_by_text("Priority findings", exact=True).wait_for(timeout=45_000)
+    findings = page.get_by_text("Priority findings", exact=True)
+    findings.wait_for(timeout=45_000)
+    findings.scroll_into_view_if_needed()
+    page.wait_for_timeout(800)
     save(page, "telemetry-overview.png")
 
 
 def capture_investigation(page: Page) -> None:
-    heading = page.get_by_text("Domain investigation", exact=True)
+    page.get_by_role("tab", name="Domain investigation").click()
+    heading = page.get_by_text("Domain investigation", exact=True).last
     heading.wait_for(timeout=30_000)
     heading.scroll_into_view_if_needed()
     page.wait_for_timeout(1_000)
