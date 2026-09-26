@@ -121,9 +121,9 @@ _TR: dict[str, str] = {
     "Not cached": "Önbellekte yok",
     "Updated just now": "Az önce güncellendi",
     "Update time unavailable": "Güncelleme zamanı bilinmiyor",
-    "{minutes}m ago": "{minutes} dk önce güncellendi",
-    "{hours}h ago": "{hours} sa önce güncellendi",
-    "{days}d ago": "{days} gün önce güncellendi",
+    "Updated {minutes}m ago": "{minutes} dk önce güncellendi",
+    "Updated {hours}h ago": "{hours} sa önce güncellendi",
+    "Updated {days}d ago": "{days} gün önce güncellendi",
     "{count} active indicators": "{count} aktif gösterge",
     "No cached indicators": "Önbellekte gösterge yok",
     "{source} details": "{source} ayrıntıları",
@@ -471,12 +471,11 @@ def translate_dataframe(frame: pd.DataFrame) -> pd.DataFrame:
     translated = frame.copy()
     translated = translated.rename(columns=_COLUMN_TR)
     for column in translated.columns:
-        if translated[column].dtype == object:
-            translated[column] = translated[column].map(
-                lambda value: _VALUE_TR.get(value, value)
-                if isinstance(value, str)
-                else value
-            )
+        translated[column] = translated[column].map(
+            lambda value: _VALUE_TR.get(value, value)
+            if isinstance(value, str)
+            else value
+        )
     return translated
 
 
