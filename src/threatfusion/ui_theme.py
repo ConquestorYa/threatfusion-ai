@@ -294,8 +294,52 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     padding:.4rem 0 1rem; border-bottom:1px solid var(--tf-border); margin-bottom:1rem;
 }
 .tf-domain-name { font-size:1.05rem; font-weight:600; margin-top:.35rem; }
-.tf-steps { display:flex; gap:1.5rem; flex-wrap:wrap; margin:.25rem 0 1.1rem; color:var(--tf-muted); font-size:.8rem; }
-.tf-steps strong { color:var(--tf-text); font-weight:600; margin-right:.4rem; }
+.tf-steps {
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:.8rem;
+    margin:.65rem 0 1.35rem;
+}
+.tf-step {
+    display:flex;
+    gap:.8rem;
+    align-items:flex-start;
+    min-height:92px;
+    padding:.9rem 1rem;
+    border:1px solid var(--tf-border);
+    border-radius:10px;
+    background:var(--tf-bg-alt);
+}
+.tf-step--active {
+    border-color:color-mix(in srgb, var(--tf-cyan) 52%, var(--tf-border));
+    background:color-mix(in srgb, var(--tf-cyan-soft) 72%, var(--tf-bg-alt));
+    box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--tf-cyan) 10%, transparent);
+}
+.tf-step-number {
+    flex:0 0 auto;
+    display:grid;
+    place-items:center;
+    width:2.25rem;
+    height:2.25rem;
+    border-radius:999px;
+    border:1px solid color-mix(in srgb, var(--tf-cyan) 42%, var(--tf-border));
+    background:color-mix(in srgb, var(--tf-cyan) 14%, transparent);
+    color:var(--tf-cyan);
+    font-size:.8rem;
+    font-weight:800;
+}
+.tf-step-title {
+    color:var(--tf-text);
+    font-size:.92rem;
+    font-weight:700;
+    line-height:1.35;
+}
+.tf-step-sub {
+    color:var(--tf-muted);
+    font-size:.75rem;
+    line-height:1.45;
+    margin-top:.22rem;
+}
 .tf-empty { padding:1.25rem 0; color:var(--tf-muted); border-top:1px solid var(--tf-border); }
 .tf-empty strong { display:block; color:var(--tf-text); font-size:.95rem; margin-bottom:.35rem; }
 .tf-empty p { font-size:.85rem; margin:0; line-height:1.6; }
@@ -638,7 +682,8 @@ button:focus-visible,a:focus-visible,input:focus-visible {
     .tf-finding-row { grid-template-columns:minmax(0,1fr) auto; gap:.5rem; padding:.7rem; }
     .tf-finding-evidence { grid-column:1 / -1; }
     .block-container { padding-left:1rem; padding-right:1rem; }
-    .tf-steps { gap:.55rem 1rem; }
+    .tf-steps { grid-template-columns:1fr; gap:.65rem; }
+    .tf-step { min-height:auto; }
     .tf-lookup-result { padding:1rem; }
     .tf-lookup-result-top { align-items:flex-start; flex-direction:column; }
     .tf-lookup-target { flex-basis:auto; min-width:0; width:100%; max-width:none; }
