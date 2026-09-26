@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -143,7 +143,14 @@ def test_prepare_disjoint_holdout_accepts_timezone_aware_timestamp_cutoff() -> N
             "before.example",
             1,
             "URLhaus",
-            first_seen=datetime(2026, 9, 26, 12, 29, tzinfo=timezone.utc),
+            first_seen=datetime(
+                2026,
+                9,
+                26,
+                12,
+                29,
+                tzinfo=timezone(timedelta(hours=3)),
+            ),
         ),
         DomainSample(
             "naive.example",
