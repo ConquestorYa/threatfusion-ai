@@ -7,6 +7,12 @@ on:
     paths:
       - ".github/workflows/capture-portfolio-screenshots.yml"
       - "scripts/capture_portfolio_screenshots.py"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/capture-portfolio-screenshots.yml"
+      - "scripts/capture_portfolio_screenshots.py"
 
 permissions:
   contents: write
