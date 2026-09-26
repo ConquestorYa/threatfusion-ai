@@ -397,6 +397,7 @@ def test_analyze_keeps_parser_dispatch_and_collapses_intake(
     monkeypatch.setattr(app_module, analyzer_name, analyze)
     monkeypatch.setattr(app_module, "capture_analysis_audit_metadata", lambda *a, **kw: "audit")
     app = AppTest.from_string("import streamlit_app\nstreamlit_app.main()")
+    app.session_state["workspace_nav"] = "Analyze telemetry"
     app.session_state["telemetry_format"] = telemetry_format
     app.run(timeout=15)
     next(button for button in app.button if button.label == "Analyze").click()
