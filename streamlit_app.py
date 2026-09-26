@@ -54,6 +54,7 @@ from threatfusion.ui_quick_lookup import (
     render_quick_lookup_result,
 )
 from threatfusion.ui_theme import (
+    THEME_OPTIONS,
     inject_theme_css,
     metric_card,
     render_app_header,
@@ -512,7 +513,10 @@ def main() -> None:
         layout="wide",
     )
 
-    inject_theme_css()
+    if st.session_state.get("visual_theme") not in THEME_OPTIONS:
+        st.session_state["visual_theme"] = "Dark"
+
+    inject_theme_css(st.session_state["visual_theme"])
     render_sidebar_brand()
     render_main_brand()
     if "telemetry_format" in st.session_state:
