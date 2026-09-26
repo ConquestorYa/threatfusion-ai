@@ -251,7 +251,7 @@ at the hosting/reverse-proxy layer:
 
 - HTTPS only
 - per-IP request/rate limiting
-- request/body limits consistent with the app's 10 MB upload cap
+- request/body limits consistent with the app's 100 MB upload cap
 - public mode enabled with shared history disabled
 - read-only runtime mount for the web process
 - no ThreatFox/URLhaus feed credentials in the web process
