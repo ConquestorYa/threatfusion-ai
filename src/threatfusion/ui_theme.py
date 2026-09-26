@@ -851,6 +851,9 @@ def source_status_card(row: dict[str, object]) -> None:
                     inactive history
                 </div>
             </div>
+            <div class="tf-source-refresh">
+                Last refresh · {safe_text(row.get("Refreshed at", "Unknown"))}
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
