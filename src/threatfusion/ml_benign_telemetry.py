@@ -165,12 +165,24 @@ def _operating_point(
     )
 
 
-def evaluate_benign_telemetry(
+def evaluate_benign_thresholds(
     artifact: TrainedMLArtifact,
     development_samples: Sequence[DomainSample],
     events: Sequence[DNSEvent],
-) -> BenignTelemetryEvaluation:
-    """Measure frozen-threshold false positives on confirmed-benign telemetry."""
+    *,
+    thresholds: Sequence[float],
+) -> tuple[BenignTelemetryPreparation, tuple[BenignOperatingPoint, ...]]:
+    """Measure arbitrary diagnostic thresholds on confirmed-benign telemetry."""
+    if not thresholds:
+        raise ValueError("at least one diagnostic threshold is required")
+
+    normalized_thresholds: list[float] = []
+    for threshold in thresholds:
+        value = float(threshold)
+        if not math.isfinite(value) or not 0.0 <= value <= 1.0:
+            raise ValueError("diagnostic thresholds must be finite values between 0 and 1")
+        normalized_thresholds.append(value)
+
     preparation = prepare_benign_telemetry(events, development_samples)
     score_by_domain = predict_domain_scores(
         artifact,
@@ -180,20 +192,35 @@ def evaluate_benign_telemetry(
         raise ValueError("ML scoring did not return every retained benign domain")
 
     scores = [score_by_domain[domain] for domain in preparation.retained_domains]
+    points = tuple(
+        _operating_point(scores, threshold=threshold)
+        for threshold in normalized_thresholds
+    )
+    return preparation, points
+
+
+def evaluate_benign_telemetry(
+    artifact: TrainedMLArtifact,
+    development_samples: Sequence[DomainSample],
+    events: Sequence[DNSEvent],
+) -> BenignTelemetryEvaluation:
+    """Measure frozen-threshold false positives on confirmed-benign telemetry."""
+    preparation, points = evaluate_benign_thresholds(
+        artifact,
+        development_samples,
+        events,
+        thresholds=(
+            artifact.thresholds.high_confidence,
+            artifact.thresholds.medium_confidence,
+            artifact.thresholds.low_confidence,
+        ),
+    )
+    high, medium, low = points
     return BenignTelemetryEvaluation(
         preparation=preparation,
-        high=_operating_point(
-            scores,
-            threshold=artifact.thresholds.high_confidence,
-        ),
-        medium=_operating_point(
-            scores,
-            threshold=artifact.thresholds.medium_confidence,
-        ),
-        low=_operating_point(
-            scores,
-            threshold=artifact.thresholds.low_confidence,
-        ),
+        high=high,
+        medium=medium,
+        low=low,
     )
 
 
