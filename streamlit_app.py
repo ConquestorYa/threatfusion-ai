@@ -678,7 +678,7 @@ def main() -> None:
         with lookup_input:
             lookup_value = st.text_input(
                 tr("URL, domain or IP"),
-                placeholder="example.com, 143.20.185.213, or https://example.com/path",
+                placeholder=tr("example.com, 143.20.185.213, or https://example.com/path"),
                 key="quick_lookup_input",
                 on_change=_clear_quick_lookup_state,
             )
