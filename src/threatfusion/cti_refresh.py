@@ -28,6 +28,7 @@ class CTIRefreshOutcome:
     status: str
     record_count: int = 0
     error_type: str | None = None
+    detail: str | None = None
 
 
 def _source_is_stale(
@@ -71,7 +72,8 @@ def _fetch_complete_sgb(max_pages: int) -> list[IOCRecord]:
     result = SGBCollector().fetch_bounded_addresses(max_pages=max_pages)
     if not result.reached_source_end:
         raise ValueError(
-            "SGB page bound reached before the source end; old cache preserved"
+            "SGB page bound reached before the source end "
+            f"after {result.pages_fetched} pages; increase --sgb-max-pages"
         )
     return list(result.records)
 
@@ -81,7 +83,7 @@ def refresh_configured_sources(
     *,
     threatfox_key: str | None,
     urlhaus_key: str | None,
-    sgb_max_pages: int = 100,
+    sgb_max_pages: int = 1000,
     stale_after: timedelta = timedelta(hours=6),
     force: bool = False,
     now: datetime | None = None,
@@ -159,6 +161,7 @@ def refresh_configured_sources(
                     source=source,
                     status="failed",
                     error_type=type(error).__name__,
+                    detail=str(error),
                 )
             )
             continue
@@ -200,7 +203,7 @@ def start_background_refresh_if_enabled(db_path: Path) -> bool:
 
     interval_hours = float(os.environ.get("THREATFUSION_CTI_REFRESH_HOURS", "6"))
     interval_seconds = max(3600.0, interval_hours * 3600.0)
-    sgb_pages = int(os.environ.get("THREATFUSION_SGB_MAX_PAGES", "100"))
+    sgb_pages = int(os.environ.get("THREATFUSION_SGB_MAX_PAGES", "1000"))
 
     def worker() -> None:
         while True:

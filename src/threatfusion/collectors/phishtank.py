@@ -72,7 +72,7 @@ class PhishTankCollector:
                 PHISHTANK_FEED_URL,
                 headers={"User-Agent": PHISHTANK_USER_AGENT},
                 timeout=REQUEST_TIMEOUT_SECONDS,
-                allow_redirects=False,
+                allow_redirects=True,
             )
         except requests.RequestException:
             raise requests.HTTPError(

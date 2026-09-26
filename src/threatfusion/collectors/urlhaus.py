@@ -146,5 +146,8 @@ class URLhausCollector:
         return self._fetch_export(URLHAUS_EXPORT_URL)
 
     def fetch_full_urls(self) -> list[IOCRecord]:
-        """Fetch the full URLhaus malware URL dump."""
-        return self._fetch_export(URLHAUS_FULL_EXPORT_URL)
+        """Fetch the full dump, falling back to the documented recent export."""
+        try:
+            return self._fetch_export(URLHAUS_FULL_EXPORT_URL)
+        except requests.HTTPError:
+            return self._fetch_export(URLHAUS_EXPORT_URL)

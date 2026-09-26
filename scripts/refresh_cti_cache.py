@@ -30,7 +30,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--sgb-pages",
         dest="sgb_max_pages",
         type=int,
-        default=100,
+        default=1000,
         help="maximum SGB pages to fetch; stops earlier when the source ends",
     )
     parser.add_argument(
@@ -105,9 +105,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         elif outcome.status == "fresh":
             print(f"  {outcome.source}: skipped (cache still fresh)")
         else:
+            detail = f": {outcome.detail}" if outcome.detail else ""
             print(
                 f"  {outcome.source}: failed "
-                f"({outcome.error_type or 'unknown error'}); old cache preserved"
+                f"({outcome.error_type or 'unknown error'}{detail}); "
+                "old cache preserved"
             )
 
     print("  IOC values and API keys were not printed.")
