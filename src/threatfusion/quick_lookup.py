@@ -4,15 +4,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from urllib.parse import SplitResult, urlsplit, urlunsplit
 
+from .cti_cache import lookup_ioc_records
 from .dns import DNSEvent
 from .dns_behavior import DomainBehavior, aggregate_dns_behavior
 from .hybrid_assessment import HybridVerdict
 from .matching import DNSIOCMatch, match_dns_events
 from .ml_artifact import TrainedMLArtifact, predict_domain_scores
 from .models import IOCRecord, IOCType
-from .normalization import normalize_domain_name
+from .normalization import normalize_domain_name, normalize_url_for_lookup
 
 
 @dataclass(frozen=True)
@@ -43,53 +43,6 @@ class QuickLookupResult:
     reasons: tuple[str, ...]
 
 
-def _normalized_url_parts(value: str) -> tuple[str, str]:
-    candidate = value.strip()
-    if not candidate:
-        raise ValueError("URL or domain is required")
-
-    if "://" not in candidate:
-        candidate = "https://" + candidate
-
-    try:
-        parsed = urlsplit(candidate)
-    except ValueError as error:
-        raise ValueError("URL could not be parsed") from error
-
-    scheme = parsed.scheme.casefold()
-    if scheme not in {"http", "https"}:
-        raise ValueError("only http and https URLs are supported")
-    if parsed.username is not None or parsed.password is not None:
-        raise ValueError("URLs containing credentials are not supported")
-    if not parsed.hostname:
-        raise ValueError("URL must include a hostname")
-
-    domain = normalize_domain_name(parsed.hostname, strict=True)
-
-    try:
-        port = parsed.port
-    except ValueError as error:
-        raise ValueError("URL contains an invalid port") from error
-
-    host = domain
-    default_port = (scheme == "http" and port == 80) or (
-        scheme == "https" and port == 443
-    )
-    if port is not None and not default_port:
-        host = f"{host}:{port}"
-
-    normalized = urlunsplit(
-        SplitResult(
-            scheme=scheme,
-            netloc=host,
-            path=parsed.path or "/",
-            query=parsed.query,
-            fragment="",
-        )
-    )
-    return normalized, domain
-
-
 def _parse_lookup_input(value: str) -> tuple[str, str, str | None]:
     candidate = value.strip()
     if not candidate:
@@ -102,7 +55,7 @@ def _parse_lookup_input(value: str) -> tuple[str, str, str | None]:
         or "#" in candidate
     )
     if looks_like_url:
-        normalized_url, domain = _normalized_url_parts(candidate)
+        normalized_url, domain = normalize_url_for_lookup(candidate)
         return "URL", domain, normalized_url
 
     domain = normalize_domain_name(candidate, strict=True)
@@ -111,7 +64,7 @@ def _parse_lookup_input(value: str) -> tuple[str, str, str | None]:
 
 def _normalize_indicator_url(value: str) -> str | None:
     try:
-        normalized, _ = _normalized_url_parts(value)
+        normalized, _ = normalize_url_for_lookup(value)
     except (TypeError, ValueError):
         return None
     return normalized
@@ -240,3 +193,18 @@ def analyze_quick_lookup(
         lexical_context=lexical,
         reasons=tuple(reasons),
     )
+
+
+def analyze_quick_lookup_from_cache(
+    value: str,
+    db_path,
+    artifact: TrainedMLArtifact,
+) -> QuickLookupResult:
+    """Query only relevant indexed CTI rows, then run the normal lookup logic."""
+    _, domain, normalized_url = _parse_lookup_input(value)
+    indicators = lookup_ioc_records(
+        db_path,
+        domain=domain,
+        normalized_url=normalized_url,
+    )
+    return analyze_quick_lookup(value, indicators, artifact)
