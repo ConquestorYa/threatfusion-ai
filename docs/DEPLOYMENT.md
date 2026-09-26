@@ -33,12 +33,12 @@ THREATFUSION_MODEL_DIR=/app/runtime/models/development-001
 THREATFUSION_CTI_STALE_HOURS_THREATFOX=24
 THREATFUSION_CTI_STALE_HOURS_URLHAUS=24
 THREATFUSION_CTI_STALE_HOURS_SGB=24
-THREATFUSION_CTI_STALE_HOURS_PHISHTANK=6
 ```
 
-ThreatFox, URLhaus, and SGB default to 24-hour stale thresholds. PhishTank
-defaults to 6 hours. Each value can be tuned independently to match the
-maintenance cadence used for the source.
+ThreatFox, URLhaus, and SGB default to 24-hour stale thresholds and can be
+tuned independently. PhishTank uses the public keyless feed and is fixed at a
+24-hour refresh/freshness interval so the application stays comfortably within
+the public-feed download allowance.
 
 The SQLite database must already contain the CTI cache, and the model directory
 must contain the trusted local `model.joblib` and `metadata.json` artifact.
@@ -207,15 +207,18 @@ python scripts/refresh_cti_cache.py
 ```
 
 The refresh now uses the current/full ThreatFox and URLhaus exports, completes
-the bounded SGB pagination before replacing its snapshot, and optionally adds
-PhishTank when `PHISHTANK_APP_KEY` is present. Feed credentials belong in the
-hosting platform's secret manager:
+the bounded SGB pagination before replacing its snapshot, and always includes
+the low-frequency public PhishTank feed. Only the abuse.ch feeds need
+credentials:
 
 ```text
 THREATFOX_AUTH_KEY=...
 URLHAUS_AUTH_KEY=...
-PHISHTANK_APP_KEY=...   # optional
 ```
+
+PhishTank uses no application key. Its public feed is never refreshed more than
+once every 24 hours, even when `--force` is supplied or the background refresh
+loop wakes more frequently.
 
 Failed or unexpectedly empty source refreshes preserve the previous healthy
 snapshot. Old inactive lifecycle rows are pruned after 90 days so a long-running
