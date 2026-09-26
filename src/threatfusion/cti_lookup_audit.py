@@ -54,7 +54,7 @@ def audit_exact_url_lookup_coverage(
     source: str = "URLhaus",
     limit: int | None = None,
 ) -> CTILookupCoverage:
-    """Audit exact-URL lookup coverage with one local SQLite scan.
+    """Audit exact-URL and hostname-index lookup coverage with one SQLite scan.
 
     The old audit executed one indexed lookup per URL record. With a large live
     URLhaus cache that meant thousands of repeated SQLite opens/migrations and
@@ -113,6 +113,7 @@ def audit_exact_url_lookup_coverage(
 
         if expected is None:
             exact_misses += 1
+            hostname_misses += 1
             continue
 
         expected_url, expected_host = expected
