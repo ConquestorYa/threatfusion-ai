@@ -5,11 +5,13 @@ from urllib.parse import urlsplit
 
 import requests
 
+from ..http_safety import decode_utf8_response
 from ..models import IOCRecord, IOCType
 
 URLHAUS_EXPORT_URL = "https://urlhaus-api.abuse.ch/v2/files/exports/{}/recent.csv"
 URLHAUS_FULL_EXPORT_URL = "https://urlhaus-api.abuse.ch/v2/files/exports/{}/full.csv"
 REQUEST_TIMEOUT_SECONDS = 30
+MAX_URLHAUS_FEED_BYTES = 256 * 1024 * 1024
 
 
 def _sanitized_http_error(status_code: object) -> requests.HTTPError:
@@ -121,6 +123,7 @@ class URLhausCollector:
                 export_url,
                 timeout=REQUEST_TIMEOUT_SECONDS,
                 allow_redirects=False,
+                stream=True,
             )
         except requests.RequestException:
             raise requests.HTTPError(
@@ -137,7 +140,12 @@ class URLhausCollector:
         if isinstance(status_code, int) and not 200 <= status_code < 300:
             raise _sanitized_http_error(status_code)
 
-        records = parse_urlhaus_csv(response.text)
+        content = decode_utf8_response(
+            response,
+            max_bytes=MAX_URLHAUS_FEED_BYTES,
+            label="URLhaus export",
+        )
+        records = parse_urlhaus_csv(content)
         if not records:
             raise ValueError("URLhaus export contained no usable URLs")
         return records
