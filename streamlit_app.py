@@ -31,7 +31,7 @@ from threatfusion.persistence import (
     get_latest_analyst_feedback_for_domains,
     save_runtime_analysis,
 )
-from threatfusion.quick_lookup import analyze_quick_lookup
+from threatfusion.quick_lookup import analyze_quick_lookup_from_cache
 from threatfusion.reporting import build_analysis_report
 from threatfusion.runtime_analysis import (
     analyze_adguard_query_log_with_diagnostics,
@@ -611,8 +611,7 @@ def main() -> None:
                 "measured model performance."
             )
 
-        indicators = load_ioc_records(db_path)
-        if not indicators:
+        if not list_cti_cache_status(db_path):
             st.warning(
                 "CTI cache is empty. Quick lookup can still use the ML model, "
                 "but known-indicator matching is unavailable."
@@ -648,10 +647,12 @@ def main() -> None:
             else:
                 try:
                     with st.spinner("Checking local threat signals…"):
-                        st.session_state["quick_lookup_result"] = analyze_quick_lookup(
-                            lookup_value,
-                            indicators,
-                            artifact,
+                        st.session_state["quick_lookup_result"] = (
+                            analyze_quick_lookup_from_cache(
+                                lookup_value,
+                                db_path,
+                                artifact,
+                            )
                         )
                 except (TypeError, ValueError) as error:
                     st.session_state.pop("quick_lookup_result", None)
