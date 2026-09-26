@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -89,6 +89,65 @@ def test_prepare_disjoint_holdout_preserves_timing_metadata() -> None:
     assert malicious.last_seen == last_seen
 
 
+def test_prepare_disjoint_holdout_filters_malicious_by_first_seen_cutoff() -> None:
+    cutoff = date(2026, 9, 23)
+    holdout = [
+        DomainSample("new-good.example", 0, "Tranco"),
+        DomainSample(
+            "new-after.example",
+            1,
+            "ThreatFox",
+            first_seen=datetime(2026, 9, 24, 1, 0, tzinfo=timezone.utc),
+        ),
+        DomainSample(
+            "same-day.example",
+            1,
+            "SGB",
+            first_seen=datetime(2026, 9, 23, 23, 59, tzinfo=timezone.utc),
+        ),
+        DomainSample(
+            "older.example",
+            1,
+            "URLhaus",
+            first_seen=datetime(2026, 9, 22, 12, 0, tzinfo=timezone.utc),
+        ),
+        DomainSample("missing-time.example", 1, "ThreatFox"),
+    ]
+
+    prepared = prepare_disjoint_holdout(
+        [],
+        holdout,
+        malicious_first_seen_after=cutoff,
+    )
+
+    assert [sample.domain for sample in prepared.samples] == [
+        "new-good.example",
+        "new-after.example",
+    ]
+    assert prepared.malicious_first_seen_after == "2026-09-23"
+    assert prepared.malicious_missing_first_seen_removed == 1
+    assert prepared.malicious_not_after_cutoff_removed == 2
+
+
+def test_temporal_holdout_still_requires_both_classes() -> None:
+    with pytest.raises(ValueError, match="both malicious and benign"):
+        prepare_disjoint_holdout(
+            [],
+            [
+                DomainSample("new-good.example", 0, "Tranco"),
+                DomainSample(
+                    "old-bad.example",
+                    1,
+                    "ThreatFox",
+                    first_seen=datetime(
+                        2026, 9, 22, 12, 0, tzinfo=timezone.utc
+                    ),
+                ),
+            ],
+            malicious_first_seen_after=date(2026, 9, 23),
+        )
+
+
 def test_prepare_disjoint_holdout_accepts_legacy_ineligible_development_rows() -> None:
     development = [
         DomainSample("legacy-single-label", 1, "ThreatFox"),
@@ -129,6 +188,39 @@ def test_holdout_must_retain_both_classes() -> None:
                 DomainSample("new-bad.example", 1, "ThreatFox"),
             ],
         )
+
+
+def test_frozen_evaluation_reports_temporal_filter_counts() -> None:
+    holdout = [
+        DomainSample("good.example", 0, "Tranco"),
+        DomainSample(
+            "new-bad.example",
+            1,
+            "ThreatFox",
+            first_seen=datetime(2026, 9, 24, 1, 0, tzinfo=timezone.utc),
+        ),
+        DomainSample("missing.example", 1, "ThreatFox"),
+    ]
+    model = artifact(
+        {
+            "good.example": 0.10,
+            "new-bad.example": 0.90,
+        }
+    )
+
+    result = evaluate_frozen_artifact_on_holdout(
+        model,
+        [],
+        holdout,
+        malicious_first_seen_after=date(2026, 9, 23),
+    )
+
+    assert result.retained_count == 2
+    assert result.malicious_count == 1
+    assert result.benign_count == 1
+    assert result.malicious_first_seen_after == "2026-09-23"
+    assert result.malicious_missing_first_seen_removed == 1
+    assert result.malicious_not_after_cutoff_removed == 0
 
 
 def test_frozen_holdout_uses_exact_artifact_thresholds() -> None:

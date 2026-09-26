@@ -128,7 +128,7 @@ def test_report_roundtrip_is_deterministic_and_aggregate_only(tmp_path) -> None:
     text = path.read_text(encoding="utf-8")
 
     assert loaded == report
-    assert loaded.schema_version == 2
+    assert loaded.schema_version == 3
     assert loaded.protocol == "fresh_collection_disjoint"
     assert loaded.retained_count == 100
     assert loaded.high.threshold == pytest.approx(0.80)
@@ -146,6 +146,35 @@ def test_report_roundtrip_is_deterministic_and_aggregate_only(tmp_path) -> None:
     assert loaded.source_metrics[2].high.false_positive_rate_ci is not None
     assert "evil.example" not in text
     assert '"generated_at": "2026-09-25T12:00:00+00:00"' in text
+
+
+def test_temporal_report_records_filter_protocol_and_counts(tmp_path) -> None:
+    temporal = evaluation()
+    temporal = FrozenHoldoutEvaluation(
+        **{
+            **temporal.__dict__,
+            "malicious_first_seen_after": "2026-09-23",
+            "malicious_missing_first_seen_removed": 7,
+            "malicious_not_after_cutoff_removed": 11,
+        }
+    )
+
+    report = build_frozen_holdout_report(
+        temporal,
+        model_name="model-a",
+        development_snapshot_date="2026-09-23",
+        holdout_snapshot_date="2026-09-26",
+        generated_at=datetime(
+            2026, 9, 26, 12, 0, tzinfo=timezone.utc
+        ),
+    )
+    path = write_frozen_holdout_report(report, tmp_path / "temporal.json")
+    loaded = read_frozen_holdout_report(path)
+
+    assert loaded.protocol == "fresh_collection_disjoint_first_seen_filtered"
+    assert loaded.malicious_first_seen_after == "2026-09-23"
+    assert loaded.malicious_missing_first_seen_removed == 7
+    assert loaded.malicious_not_after_cutoff_removed == 11
 
 
 def test_report_refuses_overwrite_by_default(tmp_path) -> None:

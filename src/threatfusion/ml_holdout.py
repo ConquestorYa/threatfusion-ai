@@ -15,6 +15,9 @@ class HoldoutPreparation:
     samples: tuple[DomainSample, ...]
     input_count: int
     overlap_removed: int
+    malicious_first_seen_after: str | None = None
+    malicious_missing_first_seen_removed: int = 0
+    malicious_not_after_cutoff_removed: int = 0
 
 
 @dataclass(frozen=True)
@@ -54,6 +57,9 @@ class FrozenHoldoutEvaluation:
     low: ThresholdMetrics
     source_recalls: tuple[HoldoutSourceRecall, ...]
     source_metrics: tuple[HoldoutSourceMetrics, ...] = ()
+    malicious_first_seen_after: str | None = None
+    malicious_missing_first_seen_removed: int = 0
+    malicious_not_after_cutoff_removed: int = 0
 
 
 def validate_fresh_snapshot_dates(
@@ -90,6 +96,8 @@ def _development_overlap_key(value: str) -> str | None:
 def prepare_disjoint_holdout(
     development_samples: Sequence[DomainSample],
     holdout_samples: Sequence[DomainSample],
+    *,
+    malicious_first_seen_after: date | None = None,
 ) -> HoldoutPreparation:
     """Remove every canonical domain seen in development from the holdout.
 
@@ -107,6 +115,8 @@ def prepare_disjoint_holdout(
 
     retained: dict[str, DomainSample] = {}
     overlap_removed = 0
+    malicious_missing_first_seen_removed = 0
+    malicious_not_after_cutoff_removed = 0
 
     for sample in holdout_samples:
         normalized = normalize_domain_candidate(sample.domain)
@@ -118,6 +128,14 @@ def prepare_disjoint_holdout(
         if normalized in development_domains:
             overlap_removed += 1
             continue
+
+        if sample.label == 1 and malicious_first_seen_after is not None:
+            if sample.first_seen is None:
+                malicious_missing_first_seen_removed += 1
+                continue
+            if sample.first_seen.date() <= malicious_first_seen_after:
+                malicious_not_after_cutoff_removed += 1
+                continue
 
         existing = retained.get(normalized)
         if existing is not None:
@@ -144,6 +162,17 @@ def prepare_disjoint_holdout(
         samples=samples,
         input_count=len(holdout_samples),
         overlap_removed=overlap_removed,
+        malicious_first_seen_after=(
+            malicious_first_seen_after.isoformat()
+            if malicious_first_seen_after is not None
+            else None
+        ),
+        malicious_missing_first_seen_removed=(
+            malicious_missing_first_seen_removed
+        ),
+        malicious_not_after_cutoff_removed=(
+            malicious_not_after_cutoff_removed
+        ),
     )
 
 
@@ -254,11 +283,14 @@ def evaluate_frozen_artifact_on_holdout(
     artifact: TrainedMLArtifact,
     development_samples: Sequence[DomainSample],
     holdout_samples: Sequence[DomainSample],
+    *,
+    malicious_first_seen_after: date | None = None,
 ) -> FrozenHoldoutEvaluation:
     """Evaluate a frozen artifact and frozen thresholds on a disjoint holdout."""
     prepared = prepare_disjoint_holdout(
         development_samples,
         holdout_samples,
+        malicious_first_seen_after=malicious_first_seen_after,
     )
     labels = [sample.label for sample in prepared.samples]
     probabilities = _positive_probabilities(artifact, prepared.samples)
@@ -304,5 +336,12 @@ def evaluate_frozen_artifact_on_holdout(
             high_threshold=artifact.thresholds.high_confidence,
             medium_threshold=artifact.thresholds.medium_confidence,
             low_threshold=artifact.thresholds.low_confidence,
+        ),
+        malicious_first_seen_after=prepared.malicious_first_seen_after,
+        malicious_missing_first_seen_removed=(
+            prepared.malicious_missing_first_seen_removed
+        ),
+        malicious_not_after_cutoff_removed=(
+            prepared.malicious_not_after_cutoff_removed
         ),
     )

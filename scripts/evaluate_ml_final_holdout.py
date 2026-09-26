@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from datetime import date
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -28,6 +29,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--development-snapshot-dir", type=Path, required=True)
     parser.add_argument("--holdout-snapshot-dir", type=Path, required=True)
     parser.add_argument("--json-output", type=Path, default=None)
+    parser.add_argument(
+        "--strict-temporal-malicious",
+        action="store_true",
+        help=(
+            "Retain malicious holdout samples only when first_seen is present "
+            "and strictly later than the development snapshot date"
+        ),
+    )
     parser.add_argument("--overwrite", action="store_true")
     return parser
 
@@ -55,10 +64,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             development.metadata.benign_snapshot_date,
             holdout.metadata.benign_snapshot_date,
         )
+        malicious_first_seen_after = None
+        if args.strict_temporal_malicious:
+            development_date = development.metadata.benign_snapshot_date
+            if development_date is None:
+                raise ValueError(
+                    "strict temporal malicious evaluation requires a "
+                    "development snapshot date"
+                )
+            malicious_first_seen_after = date.fromisoformat(development_date)
+
         evaluation = evaluate_frozen_artifact_on_holdout(
             artifact,
             development.samples,
             holdout.samples,
+            malicious_first_seen_after=malicious_first_seen_after,
         )
         report_path = None
         if args.json_output is not None:
@@ -97,6 +117,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"  Retained samples: {evaluation.retained_count}")
     print(f"  Retained malicious: {evaluation.malicious_count}")
     print(f"  Retained benign: {evaluation.benign_count}")
+    if evaluation.malicious_first_seen_after is not None:
+        print("Temporal malicious filtering:")
+        print(
+            "  Require first_seen after: "
+            f"{evaluation.malicious_first_seen_after}"
+        )
+        print(
+            "  Removed malicious with missing first_seen: "
+            f"{evaluation.malicious_missing_first_seen_removed}"
+        )
+        print(
+            "  Removed malicious not after cutoff: "
+            f"{evaluation.malicious_not_after_cutoff_removed}"
+        )
     print("Frozen operating points:")
     _print_metrics("high", evaluation.high)
     _print_metrics("medium", evaluation.medium)
@@ -115,10 +149,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         "Interpretation: thresholds were frozen before this holdout. "
         "No retraining or threshold tuning was performed."
     )
-    print(
-        "This is a fresh-collection disjoint holdout, not a strict IOC "
-        "first-seen time split."
-    )
+    if evaluation.malicious_first_seen_after is not None:
+        print(
+            "Malicious samples are first-seen filtered relative to the "
+            "development snapshot date; records without timing are excluded."
+        )
+        print(
+            "This improves temporal separation but does not by itself remove "
+            "campaign/source-family leakage."
+        )
+    else:
+        print(
+            "This is a fresh-collection disjoint holdout, not an IOC "
+            "first-seen filtered evaluation."
+        )
     if report_path is not None:
         print(f"Aggregate JSON report: {report_path}")
     return 0
