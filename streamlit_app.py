@@ -519,7 +519,7 @@ def main() -> None:
     if isinstance(selected_theme, str):
         selected_theme = canonical_theme_name(selected_theme)
     if selected_theme not in THEME_OPTIONS:
-        selected_theme = "Obsidian"
+        selected_theme = "Midnight"
     st.session_state["visual_theme"] = selected_theme
 
     inject_theme_css(selected_theme)
