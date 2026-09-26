@@ -1,0 +1,333 @@
+"""Small, deterministic UI translation layer for English and Turkish."""
+
+from __future__ import annotations
+
+from collections.abc import Mapping
+
+import pandas as pd
+import streamlit as st
+
+LANGUAGE_OPTIONS = ("🇹🇷 Türkçe", "🇬🇧 English")
+_LANGUAGE_BY_OPTION = {
+    "🇹🇷 Türkçe": "tr",
+    "🇬🇧 English": "en",
+}
+
+_TR: dict[str, str] = {
+    "Language": "Dil",
+    "Theme": "Tema",
+    "Analyst workspace": "Analist çalışma alanı",
+    "Threat intelligence, DNS analysis and AI-assisted triage in one analyst workspace.": "Tehdit istihbaratı, DNS analizi ve yapay zekâ destekli triyaj tek bir analist çalışma alanında.",
+    "DNS intelligence workspace": "DNS istihbarat çalışma alanı",
+    "Workspace health": "Çalışma alanı durumu",
+    "ML artifact": "ML modeli",
+    "Present": "Hazır",
+    "Missing": "Eksik",
+    "CTI cache": "CTI önbelleği",
+    "Empty": "Boş",
+    "{count} need review": "{count} kaynak kontrol edilmeli",
+    "{count} cached": "{count} kaynak önbellekte",
+    "Final evaluation": "Nihai değerlendirme",
+    "Available": "Hazır",
+    "Pending holdout": "Holdout bekleniyor",
+    "CTI sources": "CTI kaynakları",
+    "Workspace details": "Çalışma alanı ayrıntıları",
+    "Artifact status checks for local model and metadata files. The model is validated when analysis opens.": "Yerel model ve metadata dosyalarının durumunu kontrol eder. Model analiz açıldığında doğrulanır.",
+    "Theme and language controls are available in the top bar.": "Tema ve dil seçenekleri üst çubukta bulunur.",
+    "CTI status describes the local cache, not a live feed connection.": "CTI durumu canlı bağlantıyı değil yerel önbelleği gösterir.",
+    "CTI auto-refresh · enabled": "CTI otomatik yenileme · açık",
+    "Automatic CTI refresh configuration is invalid.": "Otomatik CTI yenileme yapılandırması geçersiz.",
+    "Secondary views": "İkincil görünümler",
+    "Analysis history": "Analiz geçmişi",
+    "Model evaluation": "Model değerlendirmesi",
+    "Primary tools are available in the main workspace.": "Ana araçlar ana çalışma alanında bulunur.",
+    "Primary workspace": "Ana çalışma alanı",
+    "Choose how you want to investigate": "Nasıl incelemek istediğini seç",
+    "Quick lookup is the default entry point; telemetry analysis is one click away for deeper batch investigation.": "Hızlı sorgu varsayılan başlangıç noktasıdır; daha derin toplu inceleme için telemetri analizi tek tık uzaktadır.",
+    "Current workspace": "Mevcut çalışma alanı",
+    "Instant investigation": "Hızlı inceleme",
+    "Batch investigation": "Toplu inceleme",
+    "QUICK LOOKUP": "HIZLI SORGU",
+    "TELEMETRY": "TELEMETRİ",
+    "Check a URL, domain or IP": "URL, domain veya IP kontrol et",
+    "Paste one address for a fast passive CTI + ML check with a clear color-coded result and evidence path.": "Bir adres yapıştır; pasif CTI + ML kontrolüyle renk kodlu sonuç ve kanıt yolunu gör.",
+    "Single target": "Tek hedef",
+    "Passive": "Pasif",
+    "Fast verdict": "Hızlı sonuç",
+    "Open quick lookup": "Hızlı sorguyu aç",
+    "Analyze telemetry": "Telemetriyi analiz et",
+    "Upload DNS CSV, Zeek, Pi-hole or AdGuard data and correlate CTI, ML and DNS behavior at scale.": "DNS CSV, Zeek, Pi-hole veya AdGuard verisi yükle; CTI, ML ve DNS davranışını toplu olarak ilişkilendir.",
+    "Multi-domain": "Çoklu domain",
+    "Behavior signals": "Davranış sinyalleri",
+    "Investigation queue": "İnceleme kuyruğu",
+    "Open telemetry analysis": "Telemetri analizini aç",
+    "Quick lookup": "Hızlı sorgu",
+    "Check one URL or domain against local threat intelligence and the domain ML model without visiting the destination.": "Bir URL, domain veya IP'yi hedefe bağlanmadan yerel tehdit istihbaratı ve uygun olduğunda domain ML modeliyle kontrol et.",
+    "The local ML artifact is not ready. Set up a trusted artifact to run quick lookup.": "Yerel ML modeli hazır değil. Hızlı sorgu için güvenilir bir model çıktısı hazırlayın.",
+    "Setup details": "Kurulum ayrıntıları",
+    "Demo ML artifact active. It uses synthetic training data only to exercise the interface and must not be interpreted as measured model performance.": "Demo ML modeli etkin. Yalnızca arayüzü çalıştırmak için sentetik eğitim verisi kullanır; ölçülmüş model performansı olarak yorumlanmamalıdır.",
+    "CTI cache is empty. Quick lookup can still use the ML model, but known-indicator matching is unavailable.": "CTI önbelleği boş. Hızlı sorgu ML modelini kullanabilir ancak bilinen IOC eşleştirmesi yapılamaz.",
+    "Paste one URL, domain or IP. ThreatFusion checks the local CTI cache and uses the domain model only when the host is a domain.": "Bir URL, domain veya IP yapıştır. ThreatFusion yerel CTI önbelleğini kontrol eder; domain modelini yalnızca hedef bir domain olduğunda kullanır.",
+    "URL, domain or IP": "URL, domain veya IP",
+    "Check": "Kontrol et",
+    "Passive by design · no page visit · no DNS resolution · no download": "Tasarım gereği pasif · sayfa ziyareti yok · DNS çözümleme yok · indirme yok",
+    "Enter a URL, domain or IP before checking it.": "Kontrol etmeden önce bir URL, domain veya IP gir.",
+    "Checking local threat signals…": "Yerel tehdit sinyalleri kontrol ediliyor…",
+    "Lookup input could not be analyzed: {error}": "Girdi analiz edilemedi: {error}",
+    "Turn DNS activity into a prioritized investigation queue.": "DNS etkinliğini önceliklendirilmiş bir inceleme kuyruğuna dönüştür.",
+    "Public workspace · Shared analysis history is disabled.": "Herkese açık çalışma alanı · Paylaşılan analiz geçmişi kapalı.",
+    "Telemetry intake": "Telemetri girişi",
+    "New analysis": "Yeni analiz",
+    "Telemetry format": "Telemetri formatı",
+    "Priority findings": "Öncelikli bulgular",
+    "Start with the highest-priority domains, then open Domain investigation for the evidence.": "En yüksek öncelikli domainlerden başla, ardından kanıtlar için domain incelemesini aç.",
+    "Verdict distribution": "Sonuç dağılımı",
+    "Analysis overview": "Analiz özeti",
+    "DNS events": "DNS olayları",
+    "Unique domains": "Benzersiz domainler",
+    "Known Threat": "Bilinen Tehdit",
+    "High Risk": "Yüksek Risk",
+    "Review": "İncele",
+    "Low": "Düşük",
+    "Verdicts are assigned per unique domain; DNS events count individual telemetry rows.": "Sonuçlar benzersiz domain başına verilir; DNS olayları tekil telemetri satırlarını sayar.",
+    "Domain findings": "Domain bulguları",
+    "Domain investigation": "Domain incelemesi",
+    "IOC evidence": "IOC kanıtı",
+    "Related activity": "İlişkili etkinlik",
+    "Export & save": "Dışa aktar ve kaydet",
+    "Inspect a domain": "Bir domain incele",
+    "No domains to investigate": "İncelenecek domain yok",
+    "Upload telemetry to begin.": "Başlamak için telemetri yükle.",
+    "Source corroboration": "Kaynak doğrulaması",
+    "Multiple cached CTI sources strengthen analyst context. Corroboration does not override evidence-scope rules.": "Birden fazla CTI kaynağının aynı bulguyu desteklemesi analist bağlamını güçlendirir. Bu durum kanıt kapsamı kurallarını geçersiz kılmaz.",
+    "No cached IOC matches were found.": "Önbellekte eşleşen IOC bulunamadı.",
+    "Possible related-activity groups": "Olası ilişkili etkinlik grupları",
+    "Relationship evidence and noise adjustments": "İlişki kanıtı ve gürültü düzeltmeleri",
+    "Relationship evidence": "İlişki kanıtı",
+    "Download JSON report": "JSON raporunu indir",
+    "Download CSV findings": "CSV bulgularını indir",
+    "Save aggregate analysis history": "Toplu analiz geçmişini kaydet",
+    "Analysis history": "Analiz geçmişi",
+    "Revisit saved runs, compare changes and record analyst decisions.": "Kaydedilen çalışmaları yeniden incele, değişiklikleri karşılaştır ve analist kararlarını kaydet.",
+    "Model evaluation": "Model değerlendirmesi",
+    "Inspect the frozen model's measured performance and its limits.": "Dondurulmuş modelin ölçülen performansını ve sınırlarını incele.",
+    "Choose source": "Kaynak seç",
+    "Select the telemetry format you want to analyze.": "Analiz etmek istediğin telemetri formatını seç.",
+    "Upload telemetry": "Telemetri yükle",
+    "Provide DNS CSV, Zeek, Pi-hole or AdGuard data.": "DNS CSV, Zeek, Pi-hole veya AdGuard verisi sağla.",
+    "Analyze & triage": "Analiz et ve triyaj yap",
+    "Correlate CTI, ML and DNS behavior, then prioritize findings.": "CTI, ML ve DNS davranışını ilişkilendir, ardından bulguları önceliklendir.",
+    "Fresh": "Güncel",
+    "Stale": "Eski",
+    "Unknown": "Bilinmiyor",
+    "Not cached": "Önbellekte yok",
+    "Updated just now": "Az önce güncellendi",
+    "Update time unavailable": "Güncelleme zamanı bilinmiyor",
+    "{minutes}m ago": "{minutes} dk önce güncellendi",
+    "{hours}h ago": "{hours} sa önce güncellendi",
+    "{days}d ago": "{days} gün önce güncellendi",
+    "{count} active indicators": "{count} aktif gösterge",
+    "No cached indicators": "Önbellekte gösterge yok",
+    "{source} details": "{source} ayrıntıları",
+    "Last refresh (UTC)": "Son yenileme (UTC)",
+    "Unavailable": "Kullanılamıyor",
+    "Freshness threshold: {value}": "Güncellik eşiği: {value}",
+    "Inactive history: {count}": "Pasif geçmiş: {count}",
+    "Refresh this source to enable its known-IOC matching.": "Bilinen IOC eşleştirmesini etkinleştirmek için bu kaynağı yenile.",
+    "No domain findings": "Domain bulgusu yok",
+    "This analysis did not produce any domain assessments.": "Bu analiz herhangi bir domain değerlendirmesi üretmedi.",
+    "Search domains": "Domainlerde ara",
+    "Domain or part of a hostname": "Domain veya hostname'in bir bölümü",
+    "Verdict": "Sonuç",
+    "All": "Tümü",
+    "CTI source": "CTI kaynağı",
+    "{shown} of {total} domains · ordered by verdict priority": "{total} domainin {shown} tanesi · sonuç önceliğine göre sıralı",
+    "No domains match these filters. Clear the search or choose All.": "Bu filtrelerle eşleşen domain yok. Aramayı temizle veya Tümü'nü seç.",
+    "All aggregate fields": "Tüm toplu alanlar",
+    "ML scores are uncalibrated decision scores, not malware probabilities.": "ML skorları kalibre edilmiş olasılıklar değil, karar skorlarıdır.",
+    "Low risk": "Düşük risk",
+    "No threat signal found": "Tehdit sinyali bulunamadı",
+    "Nothing in the available local CTI cache or ML thresholds currently raises this domain or URL for review.": "Mevcut yerel CTI önbelleği veya ML eşikleri bu hedef için şu anda inceleme gerektiren bir sinyal üretmedi.",
+    "Review recommended": "İnceleme önerilir",
+    "Some signals need a closer look": "Bazı sinyaller daha yakından incelenmeli",
+    "ThreatFusion found contextual CTI or an ML signal that is worth reviewing before you trust this destination.": "ThreatFusion, bu hedefe güvenmeden önce incelenmesi gereken bağlamsal CTI veya ML sinyali buldu.",
+    "High risk": "Yüksek risk",
+    "Elevated risk detected": "Yüksek risk tespit edildi",
+    "The domain crossed the high ML threshold. Treat the result as a strong warning and review the evidence before proceeding.": "Domain yüksek ML eşiğini geçti. Sonucu güçlü bir uyarı olarak değerlendir ve ilerlemeden önce kanıtları incele.",
+    "Known threat": "Bilinen tehdit",
+    "Threat intelligence match found": "Tehdit istihbaratı eşleşmesi bulundu",
+    "The submitted domain, IP, or exact URL matched known threat intelligence in the local cache.": "Gönderilen domain, IP veya tam URL yerel önbellekteki bilinen tehdit istihbaratıyla eşleşti.",
+    "Result needs review": "Sonuç incelenmeli",
+    "ThreatFusion could not map this lookup to a known result state.": "ThreatFusion bu sorguyu bilinen bir sonuç durumuna eşleyemedi.",
+    "Exact URL": "Tam URL",
+    "Exact IP": "Tam IP",
+    "Exact domain": "Tam domain",
+    "URL hostname context": "URL hostname bağlamı",
+    "Not scored": "Skorlanmadı",
+    "No ML score was available": "ML skoru mevcut değil",
+    "Below threshold": "Eşik altında",
+    "Score {score}": "Skor {score}",
+    "No matches": "Eşleşme yok",
+    "Local CTI cache": "Yerel CTI önbelleği",
+    "{count} match": "{count} eşleşme",
+    "{count} matches": "{count} eşleşme",
+    "The exact submitted URL appears in the local CTI cache.": "Gönderilen tam URL yerel CTI önbelleğinde bulunuyor.",
+    "The submitted IP address appears directly in the local CTI cache.": "Gönderilen IP adresi yerel CTI önbelleğinde doğrudan bulunuyor.",
+    "The URL connects directly to a public IP address instead of a domain. This is context only and is not proof of maliciousness.": "URL bir domain yerine doğrudan herkese açık bir IP adresine bağlanıyor. Bu yalnızca bağlamdır ve tek başına zararlı olduğunun kanıtı değildir.",
+    "The submitted URL uses HTTP, so traffic is not protected by HTTPS transport encryption.": "Gönderilen URL HTTP kullanıyor; trafik HTTPS taşıma şifrelemesiyle korunmuyor.",
+    "Input": "Girdi",
+    "Method": "Yöntem",
+    "passive lookup only": "yalnızca pasif sorgu",
+    "Network requests": "Ağ istekleri",
+    "none": "yok",
+    "Overall result": "Genel sonuç",
+    "Threat intelligence": "Tehdit istihbaratı",
+    "ML signal": "ML sinyali",
+    "Why this result?": "Neden bu sonuç?",
+    "Threat intelligence evidence": "Tehdit istihbaratı kanıtı",
+    "Known threat intelligence matched": "Bilinen tehdit istihbaratı eşleşti",
+    "Threat intelligence context found": "Tehdit istihbaratı bağlamı bulundu",
+    "No CTI match found": "CTI eşleşmesi bulunamadı",
+    "HTTP link detected. This connection is not protected by HTTPS. Transport security alone does not determine whether a site is malicious.": "HTTP bağlantısı tespit edildi. Bu bağlantı HTTPS ile korunmuyor. Taşıma güvenliği tek başına bir sitenin zararlı olup olmadığını belirlemez.",
+    "Direct public-IP URL detected. ThreatFusion treats this as contextual evidence only; the IP or URL must match CTI or other stronger signals to be classified as a known threat.": "Doğrudan herkese açık IP kullanan URL tespit edildi. ThreatFusion bunu yalnızca bağlamsal kanıt olarak değerlendirir; bilinen tehdit sayılması için IP veya URL'nin CTI ya da daha güçlü sinyallerle eşleşmesi gerekir.",
+    "Technical domain details": "Teknik domain ayrıntıları",
+    "These are descriptive hostname-shape features. They are context, not proof that a domain is malicious.": "Bunlar hostname yapısını açıklayan özelliklerdir. Bağlam sağlarlar; bir domainin zararlı olduğunun kanıtı değildir.",
+    "Labels": "Etiketler",
+    "Subdomain depth": "Alt domain derinliği",
+    "Numeric ratio": "Sayısal oran",
+    "Hostname entropy": "Hostname entropisi",
+    "Final holdout not evaluated": "Nihai holdout değerlendirilmedi",
+    "The frozen development model has not yet been measured on the separately collected fresh disjoint holdout.": "Dondurulmuş geliştirme modeli henüz ayrı toplanmış yeni ve ayrık holdout üzerinde ölçülmedi.",
+    "Until that report exists, ThreatFusion intentionally keeps the model in development status.": "Bu rapor oluşana kadar ThreatFusion modeli bilinçli olarak geliştirme durumunda tutar.",
+    "Show final-evaluation command": "Nihai değerlendirme komutunu göster",
+    "The final holdout report could not be loaded.": "Nihai holdout raporu yüklenemedi.",
+    "Frozen-model holdout report loaded. No retraining or threshold tuning was performed on this holdout.": "Dondurulmuş model holdout raporu yüklendi. Bu holdout üzerinde yeniden eğitim veya eşik ayarı yapılmadı.",
+    "Model": "Model",
+    "Snapshot dates": "Snapshot tarihleri",
+    "Input samples": "Girdi örnekleri",
+    "Overlap removed": "Çakışma çıkarıldı",
+    "Retained": "Korunan",
+    "Malicious": "Zararlı",
+    "Benign": "Zararsız",
+    "Frozen operating points": "Dondurulmuş çalışma noktaları",
+    "Final holdout recall vs false-positive rate": "Nihai holdout recall ve yanlış pozitif oranı",
+    "Source-aware holdout diagnostics": "Kaynak duyarlı holdout tanılaması",
+    "Analysis workflow": "Analiz akışı",
+    "Yes": "Evet",
+    "No": "Hayır",
+    "Reviewed": "İncelendi",
+    "Unreviewed": "İncelenmedi",
+    "Confirmed Threat": "Doğrulanmış Tehdit",
+    "Uncertain": "Belirsiz",
+    "Not reviewed": "İncelenmedi",
+    "Analyst feedback": "Analist geri bildirimi",
+    "Analyst note": "Analist notu",
+}
+
+_COLUMN_TR = {
+    "Domain": "Domain",
+    "Verdict": "Sonuç",
+    "ML score": "ML skoru",
+    "ML tier": "ML seviyesi",
+    "DNS events": "DNS olayları",
+    "Known CTI sources": "Bilinen CTI kaynakları",
+    "Clients": "İstemciler",
+    "Response IPs": "Yanıt IP'leri",
+    "Query types": "Sorgu türleri",
+    "Evidence": "Kanıt",
+    "Source": "Kaynak",
+    "Match": "Eşleşme",
+    "Match type": "Eşleşme türü",
+    "Evidence scope": "Kanıt kapsamı",
+    "IOC type": "IOC türü",
+    "Indicator": "Gösterge",
+    "Threat type": "Tehdit türü",
+    "Confidence": "Güven",
+    "First seen": "İlk görülme",
+    "Last seen": "Son görülme",
+    "Tags": "Etiketler",
+    "Status": "Durum",
+    "Records": "Kayıtlar",
+    "Refreshed at": "Yenilenme zamanı",
+    "Age": "Yaş",
+    "Inactive history": "Pasif geçmiş",
+    "Analyst feedback": "Analist geri bildirimi",
+    "Analyst note": "Analist notu",
+    "Updated at": "Güncellenme zamanı",
+    "Run ID": "Çalışma ID",
+    "Created at": "Oluşturulma zamanı",
+    "Domains": "Domainler",
+    "Matches": "Eşleşmeler",
+    "Operating point": "Çalışma noktası",
+    "Threshold": "Eşik",
+    "Precision": "Precision",
+    "Recall": "Recall",
+    "F1": "F1",
+    "False-positive rate": "Yanlış pozitif oranı",
+}
+
+_VALUE_TR = {
+    "Known Threat": "Bilinen Tehdit",
+    "High Risk": "Yüksek Risk",
+    "Review": "İncele",
+    "Low": "Düşük",
+    "Fresh": "Güncel",
+    "Stale": "Eski",
+    "Unknown": "Bilinmiyor",
+    "Not cached": "Önbellekte yok",
+    "Not scored": "Skorlanmadı",
+    "Below threshold": "Eşik altında",
+    "High": "Yüksek",
+    "Medium": "Orta",
+    "Low": "Düşük",
+    "Yes": "Evet",
+    "No": "Hayır",
+    "Not reviewed": "İncelenmedi",
+    "Confirmed Threat": "Doğrulanmış Tehdit",
+    "Benign": "Zararsız",
+    "Uncertain": "Belirsiz",
+}
+
+
+def current_language() -> str:
+    """Return the current UI language without changing application state."""
+    try:
+        selected = st.session_state.get("language_selector")
+    except Exception:
+        return "en"
+    if isinstance(selected, str):
+        return _LANGUAGE_BY_OPTION.get(selected, "en")
+    return "en"
+
+
+def language_option_for(code: str) -> str:
+    return "🇹🇷 Türkçe" if code == "tr" else "🇬🇧 English"
+
+
+def tr(text: str, **values: object) -> str:
+    """Translate one UI string, formatting placeholders after translation."""
+    translated = _TR.get(text, text) if current_language() == "tr" else text
+    if values:
+        return translated.format(**values)
+    return translated
+
+
+def translate_dataframe(frame: pd.DataFrame) -> pd.DataFrame:
+    """Translate presentation-only dataframe labels and common categorical values."""
+    if current_language() != "tr":
+        return frame
+    translated = frame.copy()
+    translated = translated.rename(columns=_COLUMN_TR)
+    for column in translated.columns:
+        if translated[column].dtype == object:
+            translated[column] = translated[column].map(
+                lambda value: _VALUE_TR.get(value, value)
+                if isinstance(value, str)
+                else value
+            )
+    return translated
+
+
+def translated_options(values: list[str] | tuple[str, ...]) -> Mapping[str, str]:
+    """Return display labels while preserving stable internal option values."""
+    return {value: tr(value) for value in values}
