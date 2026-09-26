@@ -1,111 +1,192 @@
-# ThreatFusion AI
+# ThreatFusion AI — Project Context
 
 ## Problem
 
-Simply displaying public USOM or threat-feed data would provide limited value because users can already access those sources directly. ThreatFusion AI is intended to combine multiple threat-intelligence sources with organization or user DNS telemetry so an analyst can ask:
+Public threat feeds answer **what is known to be malicious**, but they do not directly answer **what appeared in a user's environment** or **what should be reviewed first**.
 
-- Which known threats appeared in my network?
-- Which domains are not in known threat feeds but look suspicious?
-- Which indicators may belong to the same emerging campaign?
+ThreatFusion AI connects external intelligence with local telemetry so an analyst can ask:
 
-## Core Goal
+- Which known indicators appeared in my telemetry?
+- Which unseen domains deserve review?
+- What evidence produced this verdict?
+- Are multiple suspicious observations related by local infrastructure?
+- Is the threat-intelligence cache fresh enough to trust for triage?
 
-ThreatFusion AI is an AI-assisted multi-source cyber threat intelligence and early-warning platform. It is an educational prototype, not a production security product. Its value is intended to come from combining external intelligence with local observations and producing understandable, measurable findings.
+## Core goal
 
-## Intended Users
+ThreatFusion AI is an AI-assisted, multi-source cyber threat-intelligence and telemetry-triage platform.
 
-Potential users include:
+Its portfolio value comes from combining:
 
-- Small SOC or security teams.
-- Cybersecurity students and researchers.
-- Small organizations without a full SIEM or CTI platform.
+- CTI engineering;
+- safe local telemetry ingestion;
+- deterministic IOC matching;
+- measured ML experimentation;
+- explainable hybrid decisions;
+- privacy-conscious persistence;
+- analyst workflow design;
+- deployment and CI practices.
 
-These users are a realistic target for an educational prototype that demonstrates data integration, detection, and explainability without claiming production-grade coverage or response capability.
+It is an educational prototype, not a production security product.
 
-## Implemented So Far
+## Intended users
 
-The repository currently implements:
+The prototype is most relevant to:
 
-- `IOCType`, an enum for domains, URLs, IPv4, IPv6, common hashes, and unknown values.
-- `IOCRecord`, the common dataclass used to represent an indicator.
-- IOC value normalization for domains, hashes, IP addresses, URLs, and unknown values.
-- IOC correlation through `IOCGroup` and `correlate_iocs()`, which groups equivalent IOCs while preserving all original source records.
-- A ThreatFox collector for recent API IOC data, including conservative type mapping and timestamp/tag parsing.
-- A URLhaus collector for the recent CSV export, including named-column discovery and malformed-row handling.
-- An SGB collector using the official T.C. Siber Guvenlik Baskanligi malicious-address API, with domain, URL, IPv4, IPv6 host, and typed IPv6 network/CIDR mapping into `IOCRecord`, with safe bounded page-based retrieval.
-- DNS telemetry ingestion via `DNSEvent`, generic CSV parsing, Zeek
-  `dns.log` parsing, and in-memory Pi-hole FTL SQLite query-database parsing,
-  with evidence-preserving local-only handling.
-- Known IOC matching through `DNSIOCMatch` and `match_dns_events()`, which compares DNS queries and responses against IOC records while preserving the original evidence objects.
-- Reproducible malicious-domain ML dataset preparation, stratified development splitting, local snapshot persistence, and pinned Tranco acquisition.
-- A baseline malicious-domain classifier using character n-gram TF-IDF with Logistic Regression, evaluated with precision, recall, F1, false-positive rate, and confusion-matrix counts.
-- A high-recall development evaluation using balanced Logistic Regression plus validation-only threshold selection.
-- A small classical-model comparison that selects thresholds under explicit validation false-positive-rate budgets before measuring the shared development test split.
-- Source-wise malicious recall diagnostics that show how ThreatFox, URLhaus, SGB, or other retained malicious sources behave under the same validation-selected thresholds.
-- A frozen-model fresh holdout evaluator that removes all development-snapshot domain overlap, measures the unchanged artifact thresholds on a separately collected later snapshot, and can persist an aggregate JSON evaluation report.
-- DNS behavior aggregation for query volume, client spread, response-IP diversity, query-type diversity, and observation span.
-- An explainable hybrid domain assessment that reserves `known_threat` for
-  exact known-domain IOC evidence, treats URL-hostname/response-IP matches as
-  contextual CTI evidence, and combines that evidence with ML score tiers and
-  local DNS behavior.
-- Local persistence and trusted loading of the selected development ML pipeline together with validation-selected high / medium / low thresholds, plus normalized runtime probability inference.
-- A reusable runtime analysis pipeline that connects generic DNS CSV, Zeek
-  `dns.log`, or already-parsed `DNSEvent` input with IOC matching, persisted
-  ML inference, DNS behavior aggregation, and explainable hybrid verdicts in
-  one local workflow.
-- Privacy-conscious SQLite analysis history that stores run summaries and
-  per-domain findings without retaining raw uploaded DNS rows or client IP
-  values by default, plus local analyst feedback, cross-run prior-review
-  context, and local suppression policy with optional expiry.
-- A local SQLite CTI cache plus explicit refresh CLI, allowing ThreatFox, URLhaus, and SGB data to be refreshed separately from user analysis and then loaded locally by the runtime pipeline.
-- An analyst-focused Streamlit MVP with generic DNS CSV / Zeek upload,
-  priority triage, prior-review/suppression context in local mode, separate
-  event/domain metrics, evidence-first domain inspection, known IOC evidence,
-  possible related-activity groups, a privacy-preserving relationship graph,
-  model-evaluation reporting, CTI cache status, and opt-in aggregate history.
-- Explainable related-activity clustering that groups suspicious domains only when local DNS telemetry shows a shared client or shared response IP; time proximity is supporting context rather than proof.
-- Public-deployment preparation with environment-configurable runtime paths, a public mode that disables shared analysis history, non-root Docker packaging, and a sanitized deployment-bundle builder that copies only the CTI cache plus trusted ML artifact.
-- Privacy-safe JSON and CSV report export for the current in-memory analysis, containing aggregate/per-domain findings without raw DNS rows or client/response IP values.
-- Automated pytest tests for the model, normalization, correlation, collectors, DNS ingestion, matching, ML dataset, snapshot, split, and baseline evaluation behavior.
-- Ruff checks for code quality.
-- Analyst-feedback regression tests covering saved-run/domain isolation,
-  legacy SQLite history migration, bounded notes, unchanged detector output,
-  and the local/public Streamlit workflow.
-- Real live-data validation for the ThreatFox, URLhaus, and SGB collectors in addition to network-free automated tests.
+- cybersecurity students and researchers;
+- small SOC/security teams evaluating a lightweight workflow;
+- small organizations learning how CTI and local telemetry can be combined.
 
-DNS telemetry ingestion includes:
+## v0.1.0 implemented scope
 
-- `DNSEvent` model
-- CSV parsing for `timestamp`, `client_ip`, `query_name`, `query_type`, and `response_ip`
-- Zeek `dns.log` parsing for standard `#fields` exports
-- `query_name` evidence preserved verbatim from the CSV input
-- optional timestamp/client IP/query type/response IP handling
-- local-only parsing with no DNS or network requests performed
+### Threat intelligence
 
-Known IOC matching includes:
+Implemented sources:
 
-- `DNSEvent` matched against `IOCRecord`
-- DOMAIN IOC matching by normalized DNS query
-- URL IOC hostname matching using local `urllib.parse` logic only
-- IPv4 / IPv6 host IOC matching against `response_ip`
-- IPv6 network/CIDR containment matching against IPv6 `response_ip`
-- multiple CTI source records preserved as separate evidence matches
-- malformed IOC values ignored safely without breaking the batch
+- ThreatFox;
+- URLhaus;
+- PhishTank verified-online public feed;
+- T.C. Siber Güvenlik Başkanlığı (SGB).
 
-Threat URLs, domains, IP addresses, and hashes are treated strictly as data. The collectors and DNS parser do not visit, resolve, open, or follow IOC URLs returned by feeds or query values from telemetry. Authenticated feed requests are limited to their official collection endpoints, and collector tests use injected fake sessions.
+The local SQLite CTI cache supports:
 
-## Planned Core Features
+- normalized values;
+- active/inactive lifecycle state;
+- refresh metadata;
+- indexed Quick Lookup keys;
+- URL hostname indexing;
+- stale-source visibility;
+- independent source refresh with previous-snapshot preservation on failure.
 
-The following capabilities are planned and are not implemented in the current repository:
+### Passive Quick Lookup
 
-- Broader multi-source correlation workflows.
-- Collection and one-time measurement of a fresh final holdout snapshot using the implemented frozen-model evaluator.
-- Optional LLM-generated analyst reports.
+A user can submit one:
 
-## ML / LLM Principle
+- URL;
+- domain;
+- IPv4/IPv6 address.
 
-Machine Learning is intended to perform detection and classification, including malicious-domain classification and clustering or campaign discovery. These capabilities should be measurable with precision, recall, F1 score, and false-positive rate.
+ThreatFusion checks the local CTI cache without visiting the destination. Domain ML is only used for eligible domain targets.
 
-An LLM may be used later as an optional explanation and analyst-reporting layer. It must not act as the primary malicious-domain detector.
+### Telemetry ingestion
 
-**ML detects.  LLM explains.**
+Auto-detect currently supports:
+
+- CSV / TSV / TXT;
+- XLSX / XLS;
+- Zeek <code>dns.log</code>;
+- Zeek <code>conn.log</code>;
+- PCAP / PCAPNG / CAP classic UDP DNS;
+- Suricata EVE JSON / JSONL;
+- Pi-hole FTL SQLite;
+- AdGuard Home query logs;
+- dnstop-style domain rows.
+
+<code>.capinfos</code> is recognized as metadata and is not analyzed as packet telemetry.
+
+### Analysis
+
+Runtime analysis combines:
+
+- known IOC matching;
+- domain ML scoring;
+- DNS behavior aggregation;
+- explainable hybrid assessment;
+- related-activity context.
+
+The hybrid model distinguishes exact known-domain evidence from weaker hostname/infrastructure context.
+
+### Machine learning
+
+The ML component uses character n-gram TF-IDF + balanced Logistic Regression.
+
+The development workflow includes:
+
+- reproducible snapshots;
+- train/validation/test separation;
+- validation-selected thresholds;
+- explicit FPR budgets;
+- source-aware diagnostics;
+- frozen artifacts;
+- fresh/disjoint holdout evaluation support;
+- temporal first-seen filtering support.
+
+ML scores are uncalibrated and are not presented as malware probabilities.
+
+The current C=4 candidate is frozen for one final post-freeze temporal measurement before the v0.1.0 release is finalized.
+
+### Analyst workflow
+
+The Streamlit application includes:
+
+- system health and CTI freshness;
+- Quick Lookup;
+- telemetry analysis;
+- priority triage;
+- evidence-first investigation;
+- source corroboration;
+- related-activity graph/context;
+- optional local analyst feedback;
+- optional local suppression;
+- aggregate analysis history in local mode;
+- privacy-safe JSON/CSV export;
+- model-evaluation views.
+
+### Privacy / release engineering
+
+Implemented safeguards include:
+
+- raw uploaded telemetry not persisted by default;
+- raw client/response IPs excluded from portable reports;
+- public mode disabling shared history;
+- sanitized public-demo/runtime generation;
+- non-root Docker packaging;
+- secret/local-path release auditing;
+- Linux + Windows CI;
+- Docker build/health validation;
+- dependency auditing.
+
+## Resource boundaries
+
+The Streamlit upload limit is 100 MB.
+
+Runtime analysis is separately bounded to:
+
+- 100,000 events;
+- 25,000 unique analysis targets.
+
+The system is intentionally bounded rather than attempting unlimited packet-processing workloads in the browser-driven Streamlit application.
+
+## Release position
+
+Feature development for v0.1.0 is considered complete.
+
+Remaining release tasks are:
+
+- final post-freeze temporal ML evaluation;
+- sanitized portfolio screenshots;
+- hosted public-mode demo;
+- final release checklist;
+- GitHub tag/release.
+
+These are release/presentation tasks rather than new core product features.
+
+## Explicit non-goals for v0.1.0
+
+ThreatFusion AI is not intended to be:
+
+- a production SIEM;
+- an EDR;
+- a full IDS/IPS replacement;
+- a packet-forensics suite;
+- an automatic incident-response platform;
+- a guarantee of maliciousness/benignness;
+- an autonomous analyst.
+
+## ML / LLM principle
+
+The current v0.1.0 project does not depend on an LLM for detection.
+
+If an LLM is added in a future version, its role should be explanation/reporting rather than primary detection.
+
+> **ML assists detection. Deterministic CTI remains stronger evidence. An LLM, if added later, explains rather than decides.**
