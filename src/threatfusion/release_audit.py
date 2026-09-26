@@ -40,8 +40,13 @@ _PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
 
 # This file intentionally constructs values that exercise the rules. Historical
 # fixture blobs are excluded so the audit does not permanently fail on its own
-# synthetic examples. Production/source paths are not generally allowlisted.
-_HISTORY_FIXTURE_PATHS = {"tests/test_release_audit.py"}
+# synthetic examples or earlier self-matching rule definitions. The current
+# tracked tree still scans these files; only their intentionally noisy history
+# is excluded. Production/source paths are not generally allowlisted.
+_HISTORY_FIXTURE_PATHS = {
+    "src/threatfusion/release_audit.py",
+    "tests/test_release_audit.py",
+}
 
 
 def scan_release_text(
