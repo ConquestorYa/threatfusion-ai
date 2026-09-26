@@ -127,7 +127,7 @@ def test_contextual_ioc_plus_high_ml_can_be_high_risk() -> None:
         "ml_high_confidence",
     )
 
-def test_high_confidence_ml_signal_is_high_risk() -> None:
+def test_high_confidence_ml_signal_without_corroboration_is_review() -> None:
     event = DNSEvent(query_name="unknown.example")
 
     assessment = assess_dns_domains(
@@ -137,9 +137,10 @@ def test_high_confidence_ml_signal_is_high_risk() -> None:
         ml_thresholds=thresholds(),
     )[0]
 
-    assert assessment.verdict is HybridVerdict.HIGH_RISK
+    assert assessment.verdict is HybridVerdict.REVIEW
     assert assessment.ml_tier == "high"
     assert assessment.ml_score == pytest.approx(0.85)
+    assert "ml_high_uncorroborated" in assessment.reasons
 
 
 def test_legacy_ml_probabilities_keyword_maps_to_ml_score() -> None:
@@ -341,4 +342,5 @@ def test_hybrid_assessment_does_not_perform_networking(
         ml_thresholds=thresholds(),
     )[0]
 
-    assert assessment.verdict is HybridVerdict.HIGH_RISK
+    assert assessment.verdict is HybridVerdict.REVIEW
+    assert "ml_high_uncorroborated" in assessment.reasons
