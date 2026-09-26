@@ -69,8 +69,6 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     threatfox_key = _secret("THREATFOX_AUTH_KEY")
     urlhaus_key = _secret("URLHAUS_AUTH_KEY")
-    phishtank_key = _secret("PHISHTANK_APP_KEY")
-
     missing = [
         name
         for name, value in (
@@ -88,7 +86,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.db,
         threatfox_key=threatfox_key,
         urlhaus_key=urlhaus_key,
-        phishtank_key=phishtank_key,
         sgb_max_pages=args.sgb_max_pages,
         stale_after=timedelta(hours=args.stale_hours),
         force=args.force,
@@ -108,6 +105,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
 
     print("  IOC values and API keys were not printed.")
+    print("  PhishTank uses the public feed and requires no application key.")
     return 1 if any(item.status == "failed" for item in outcomes) else 0
 
 
