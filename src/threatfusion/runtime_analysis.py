@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from .dns import DNSEvent, DNSParseDiagnostics, parse_dns_csv_with_diagnostics
+from .dns_ingest import DNSInputDetection, parse_dns_upload_with_diagnostics
 from .dns_adguard import parse_adguard_query_log_with_diagnostics
 from .dns_pihole import parse_pihole_query_db_with_diagnostics
 from .dns_zeek import parse_zeek_dns_log_with_diagnostics
@@ -111,6 +112,25 @@ def analyze_dns_events(
         ml_scores=ml_scores,
         assessments=tuple(assessments),
     )
+
+
+def analyze_dns_upload_with_diagnostics(
+    content: bytes,
+    filename: str | None,
+    indicators: Iterable[IOCRecord],
+    artifact: TrainedMLArtifact,
+    *,
+    behavior_config: BehaviorHeuristicConfig | None = None,
+) -> tuple[RuntimeAnalysisResult, DNSParseDiagnostics, DNSInputDetection]:
+    """Auto-detect uploaded DNS telemetry and run the local analysis pipeline."""
+    parsed, detection = parse_dns_upload_with_diagnostics(content, filename)
+    result = analyze_dns_events(
+        parsed.events,
+        indicators,
+        artifact,
+        behavior_config=behavior_config,
+    )
+    return result, parsed.diagnostics, detection
 
 
 def analyze_adguard_query_log_with_diagnostics(
