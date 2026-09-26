@@ -210,7 +210,7 @@ def test_https_url_is_not_flagged_as_plain_http(monkeypatch):
     assert "plaintext_http_transport" not in result.reasons
 
 
-def test_high_ml_score_can_raise_high_risk_without_cti(monkeypatch):
+def test_high_ml_score_without_corroboration_is_review(monkeypatch):
     monkeypatch.setattr(
         quick_lookup,
         "predict_domain_scores",
@@ -219,9 +219,25 @@ def test_high_ml_score_can_raise_high_risk_without_cti(monkeypatch):
 
     result = analyze_quick_lookup("unknown.example", [], fake_artifact())
 
-    assert result.verdict is HybridVerdict.HIGH_RISK
+    assert result.verdict is HybridVerdict.REVIEW
     assert result.ml_tier == "high"
     assert result.ml_score == pytest.approx(0.91)
+    assert "ml_high_uncorroborated" in result.reasons
+
+
+def test_high_ml_score_with_random_like_hostname_can_raise_high_risk(monkeypatch):
+    domain = "a1b2c3d4e5f6.example"
+    monkeypatch.setattr(
+        quick_lookup,
+        "predict_domain_scores",
+        lambda artifact, domains: {domain: 0.91},
+    )
+
+    result = analyze_quick_lookup(domain, [], fake_artifact())
+
+    assert result.lexical_context.random_like_hostname is True
+    assert result.verdict is HybridVerdict.HIGH_RISK
+    assert "ml_high_uncorroborated" not in result.reasons
 
 
 def test_domain_shape_is_context_only_when_ml_and_cti_are_low(monkeypatch):
