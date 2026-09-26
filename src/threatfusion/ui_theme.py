@@ -1053,14 +1053,15 @@ def section_label(text: str) -> None:
 
 def verdict_badge(verdict: str) -> str:
     badge_class = _VERDICT_CLASSES.get(verdict, "neutral")
-    return f'<span class="tf-badge tf-badge-{badge_class}">{safe_text(verdict)}</span>'
+    return f'<span class="tf-badge tf-badge-{badge_class}">{safe_text(tr(verdict))}</span>'
 
 
 def render_priority_finding(row: dict[str, object]) -> None:
     verdict = str(row["Verdict"])
     accent = f"var(--tf-{_VERDICT_TOKENS.get(verdict, 'muted')})"
-    sources = str(row.get("Known CTI sources") or "No cached CTI match")
-    evidence = str(row.get("Evidence") or "No strong signal summary")
+    sources = str(row.get("Known CTI sources") or tr("No cached CTI match"))
+    raw_evidence = str(row.get("Evidence") or tr("No strong signal summary"))
+    evidence = "; ".join(tr(item) for item in raw_evidence.split("; "))
     st.markdown(
         f'<div class="tf-finding-row" style="--tf-row-accent:{accent}"><div>'
         f'<div class="tf-finding-domain">{safe_text(row["Domain"])}</div>'
