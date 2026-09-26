@@ -129,6 +129,8 @@ def prepare_disjoint_holdout(
             domain=normalized,
             label=sample.label,
             source=sample.source,
+            first_seen=sample.first_seen,
+            last_seen=sample.last_seen,
         )
 
     samples = tuple(retained.values())
