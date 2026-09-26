@@ -213,6 +213,47 @@ def test_full_export_uses_official_full_dump_endpoint() -> None:
     ]
 
 
+def test_full_export_falls_back_to_documented_recent_export_on_http_error() -> None:
+    auth_key = "fallback-key"
+    malicious_url = "https://fallback.example/payload"
+
+    class SequentialSession:
+        def __init__(self) -> None:
+            self.get_calls: list[tuple[str, int, bool]] = []
+            self.responses = [
+                FakeResponse(
+                    "",
+                    error=requests.HTTPError("full export unavailable"),
+                    status_code=404,
+                ),
+                FakeResponse(
+                    f"{CSV_HEADER}\n"
+                    f"1,2026-08-20 05:17:07 UTC,{malicious_url},online,"
+                    "malware,,link,reporter"
+                ),
+            ]
+
+        def get(
+            self,
+            url: str,
+            *,
+            timeout: int,
+            allow_redirects: bool,
+        ) -> FakeResponse:
+            self.get_calls.append((url, timeout, allow_redirects))
+            return self.responses.pop(0)
+
+    session = SequentialSession()
+
+    records = URLhausCollector(auth_key, session).fetch_full_urls()
+
+    assert [item.value for item in records] == [malicious_url]
+    assert session.get_calls == [
+        (URLHAUS_FULL_EXPORT_URL.format(auth_key), 30, False),
+        (URLHAUS_EXPORT_URL.format(auth_key), 30, False),
+    ]
+
+
 def test_empty_full_export_is_rejected_without_replacing_cache() -> None:
     session = FakeSession(FakeResponse("# metadata only"))
 
