@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 import ipaddress
+import io
 import json
 from datetime import datetime
 
 from .dns import DNSEvent, DNSParseDiagnostics, DNSParseResult
+
+
+_MAX_ADGUARD_ENTRIES = 100_000
+_MAX_ADGUARD_ANSWERS = 1_024
 
 
 def _optional_text(value: object) -> str | None:
@@ -29,6 +34,8 @@ def _timestamp(value: object) -> datetime | None:
 def _first_answer_ip(answer: object) -> str | None:
     if not isinstance(answer, list):
         return None
+    if len(answer) > _MAX_ADGUARD_ANSWERS:
+        raise ValueError("AdGuard answer list exceeds the safe import limit")
 
     for item in answer:
         if not isinstance(item, dict):
@@ -60,9 +67,11 @@ def _entries_from_content(content: str) -> list[dict[str, object]]:
         parsed = json.loads(stripped)
     except json.JSONDecodeError:
         entries: list[dict[str, object]] = []
-        for line_number, raw_line in enumerate(content.splitlines(), start=1):
+        for line_number, raw_line in enumerate(io.StringIO(content), start=1):
             if not raw_line.strip():
                 continue
+            if len(entries) >= _MAX_ADGUARD_ENTRIES:
+                raise ValueError("AdGuard query log exceeds the safe entry import limit")
             try:
                 item = json.loads(raw_line)
             except json.JSONDecodeError as error:
@@ -83,6 +92,8 @@ def _entries_from_content(content: str) -> list[dict[str, object]]:
     else:
         raise TypeError("AdGuard query log must contain JSON objects")
 
+    if len(raw_entries) > _MAX_ADGUARD_ENTRIES:
+        raise ValueError("AdGuard query log exceeds the safe entry import limit")
     if any(not isinstance(item, dict) for item in raw_entries):
         raise ValueError("AdGuard query-log entries must be JSON objects")
 
