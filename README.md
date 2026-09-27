@@ -5,9 +5,9 @@
 ### Local-first cyber threat intelligence, network telemetry triage, and explainable ML
 
 <p>
-  <strong>English</strong>
+  <strong>English README</strong>
   &nbsp;•&nbsp;
-  <a href="README.tr.md"><strong>Türkçe</strong></a>
+  <a href="README.tr.md"><strong>🇹🇷 Türkçe README — Buraya tıkla</strong></a>
 </p>
 
 <p>
@@ -23,6 +23,7 @@
   <img alt="CI" src="https://github.com/ConquestorYa/threatfusion-ai/actions/workflows/ci.yml/badge.svg">
   <img alt="Status" src="https://img.shields.io/badge/Status-v0.1.0%20Release%20Candidate-blueviolet">
   <img alt="Privacy" src="https://img.shields.io/badge/Telemetry-local%20%2F%20in--memory-2ea44f">
+  <img alt="Development style" src="https://img.shields.io/badge/Development-AI--assisted%20Vibe%20Coding-6f42c1">
 </p>
 
 <strong>ThreatFusion AI turns public threat intelligence and local telemetry into an analyst-focused investigation queue without visiting suspicious destinations.</strong>
@@ -48,7 +49,9 @@ ThreatFusion combines four evidence layers in one local workflow:
 
 The project is intentionally built as an **educational / portfolio security-analysis prototype**. It is not presented as a production SIEM, EDR, or guaranteed malware detector.
 
-Development also made practical use of an AI-assisted **“vibe coding”** workflow for rapid iteration, with generated changes reviewed, tested, and refined before merging.
+### 🤖 Development approach: AI-assisted vibe coding
+
+> **This project was developed with an AI-assisted “vibe coding” workflow.** AI tools were used extensively for rapid prototyping, implementation, refactoring, debugging, testing, and documentation. Generated changes were reviewed, tested, and refined before being merged.
 
 ---
 
