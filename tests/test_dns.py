@@ -1,3 +1,4 @@
+import csv
 import socket
 from datetime import datetime, timezone
 
@@ -214,3 +215,14 @@ def test_response_code_column_is_parsed_when_present() -> None:
     event = parse_dns_csv(content)[0]
 
     assert event.response_code == "NXDOMAIN"
+
+
+def test_oversized_csv_field_is_reported_as_safe_value_error() -> None:
+    previous_limit = csv.field_size_limit()
+    csv.field_size_limit(32)
+    try:
+        content = "query_name\n" + ("a" * 64) + ".example\n"
+        with pytest.raises(ValueError, match="invalid CSV data"):
+            parse_dns_csv_with_diagnostics(content)
+    finally:
+        csv.field_size_limit(previous_limit)

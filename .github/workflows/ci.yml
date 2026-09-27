@@ -106,6 +106,10 @@ jobs:
         run: |
           docker exec threatfusion-ci sh -c 'test "$THREATFUSION_PUBLIC_MODE" = "1"'
           docker exec threatfusion-ci sh -c 'test -n "$THREATFUSION_MODEL_SHA256"'
+          docker exec threatfusion-ci sh -c 'test ! -w /app/streamlit_app.py'
+          docker exec threatfusion-ci sh -c 'test ! -w /app/src/threatfusion'
+          docker exec threatfusion-ci sh -c 'test -w /app/runtime'
+          docker exec threatfusion-ci sh -c 'test -w /app/data'
           docker exec threatfusion-ci python -c "import importlib.util; assert importlib.util.find_spec('pytest') is None; assert importlib.util.find_spec('ruff') is None"
 
       - name: Wait for Streamlit health endpoint

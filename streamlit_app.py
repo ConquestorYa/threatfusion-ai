@@ -33,7 +33,10 @@ from threatfusion.persistence import (
     get_latest_analyst_feedback_for_domains,
     save_runtime_analysis,
 )
-from threatfusion.quick_lookup import analyze_quick_lookup_from_cache
+from threatfusion.quick_lookup import (
+    MAX_LOOKUP_INPUT_CHARS,
+    analyze_quick_lookup_from_cache,
+)
 from threatfusion.reporting import build_analysis_report
 from threatfusion.runtime_analysis import (
     analyze_adguard_query_log_with_diagnostics,
@@ -684,6 +687,7 @@ def main() -> None:
             lookup_value = st.text_input(
                 tr("URL, domain or IP"),
                 placeholder=tr("example.com, 143.20.185.213, or https://example.com/path"),
+                max_chars=MAX_LOOKUP_INPUT_CHARS,
                 key="quick_lookup_input",
                 on_change=_clear_quick_lookup_state,
             )

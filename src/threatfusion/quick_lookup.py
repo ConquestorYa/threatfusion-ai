@@ -18,6 +18,22 @@ from .models import IOCRecord, IOCType
 from .normalization import normalize_domain_name
 
 
+MAX_LOOKUP_INPUT_CHARS = 4096
+
+
+def _bounded_lookup_text(value: str) -> str:
+    if not isinstance(value, str):
+        raise TypeError("URL or domain must be a string")
+    if len(value) > MAX_LOOKUP_INPUT_CHARS:
+        raise ValueError(
+            f"URL or domain exceeds the {MAX_LOOKUP_INPUT_CHARS}-character lookup limit"
+        )
+    candidate = value.strip()
+    if not candidate:
+        raise ValueError("URL or domain is required")
+    return candidate
+
+
 @dataclass(frozen=True)
 class QuickLookupEvidence:
     source: str
@@ -57,9 +73,7 @@ def _normalize_host(value: str) -> tuple[str, str | None]:
 
 
 def _normalized_url_parts(value: str) -> tuple[str, str, str | None]:
-    candidate = value.strip()
-    if not candidate:
-        raise ValueError("URL or domain is required")
+    candidate = _bounded_lookup_text(value)
 
     if "://" not in candidate:
         candidate = "https://" + candidate
@@ -110,9 +124,7 @@ def _normalized_url_parts(value: str) -> tuple[str, str, str | None]:
 def _parse_lookup_input(
     value: str,
 ) -> tuple[str, str, str | None, str | None]:
-    candidate = value.strip()
-    if not candidate:
-        raise ValueError("URL or domain is required")
+    candidate = _bounded_lookup_text(value)
 
     looks_like_url = (
         "://" in candidate
