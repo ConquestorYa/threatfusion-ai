@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import sys
 from datetime import timedelta
 from pathlib import Path
@@ -74,13 +73,7 @@ MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 
 
 @st.cache_resource
-def _load_artifact(path_text: str):
-    raw_checksum = os.environ.get("THREATFUSION_MODEL_SHA256")
-    expected_checksum = (
-        raw_checksum.strip()
-        if raw_checksum is not None and raw_checksum.strip()
-        else None
-    )
+def _load_artifact(path_text: str, expected_checksum: str | None):
     return load_trusted_ml_artifact(
         Path(path_text),
         expected_checksum=expected_checksum,
@@ -647,7 +640,7 @@ def main() -> None:
         )
 
         try:
-            artifact = _load_artifact(str(model_dir))
+            artifact = _load_artifact(str(model_dir), config.model_sha256)
         except (OSError, TypeError, ValueError) as error:
             st.error(
                 tr(
@@ -797,7 +790,7 @@ def main() -> None:
             )
 
         try:
-            artifact = _load_artifact(str(model_dir))
+            artifact = _load_artifact(str(model_dir), config.model_sha256)
         except (OSError, TypeError, ValueError) as error:
             st.error(
                 tr("The local ML artifact is not ready. Set up a trusted artifact to analyze telemetry.")
