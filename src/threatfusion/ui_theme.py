@@ -1008,6 +1008,9 @@ button:focus-visible,a:focus-visible,input:focus-visible {
     .tf-product-brand-badge { display:none; }
     .tf-product-brand-title { font-size:1.35rem; }
     .tf-theme-picker-label { text-align:left; }
+    .st-key-visual_theme [role="radiogroup"] {
+        grid-template-columns:repeat(2,minmax(0,1fr));
+    }
     .st-key-language_selector,
     .st-key-language_selector [role="radiogroup"] { justify-content:flex-start; }
     .st-key-quick_lookup_input [data-baseweb="input"],
