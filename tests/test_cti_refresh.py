@@ -298,6 +298,7 @@ def test_incomplete_sgb_snapshot_is_rejected_and_old_cache_is_preserved(
 
 def test_auto_refresh_defaults_on_when_feed_credentials_exist(monkeypatch) -> None:
     monkeypatch.delenv("THREATFUSION_AUTO_REFRESH_CTI", raising=False)
+    monkeypatch.delenv("THREATFUSION_PUBLIC_MODE", raising=False)
     monkeypatch.setenv("THREATFOX_AUTH_KEY", "configured-key")
     monkeypatch.delenv("URLHAUS_AUTH_KEY", raising=False)
 
@@ -312,9 +313,62 @@ def test_explicit_auto_refresh_off_overrides_feed_credentials(monkeypatch) -> No
     assert cti_refresh._auto_refresh_enabled() is False
 
 
-def test_auto_refresh_stays_off_without_flag_or_credentials(monkeypatch) -> None:
+def test_local_auto_refresh_defaults_on_without_feed_credentials(monkeypatch) -> None:
     monkeypatch.delenv("THREATFUSION_AUTO_REFRESH_CTI", raising=False)
+    monkeypatch.delenv("THREATFUSION_PUBLIC_MODE", raising=False)
+    monkeypatch.delenv("THREATFOX_AUTH_KEY", raising=False)
+    monkeypatch.delenv("URLHAUS_AUTH_KEY", raising=False)
+
+    assert cti_refresh._auto_refresh_enabled() is True
+
+
+def test_public_mode_stays_network_safe_without_feed_credentials(monkeypatch) -> None:
+    monkeypatch.delenv("THREATFUSION_AUTO_REFRESH_CTI", raising=False)
+    monkeypatch.setenv("THREATFUSION_PUBLIC_MODE", "1")
     monkeypatch.delenv("THREATFOX_AUTH_KEY", raising=False)
     monkeypatch.delenv("URLHAUS_AUTH_KEY", raising=False)
 
     assert cti_refresh._auto_refresh_enabled() is False
+
+
+def test_public_mode_can_auto_refresh_when_feed_credentials_exist(monkeypatch) -> None:
+    monkeypatch.delenv("THREATFUSION_AUTO_REFRESH_CTI", raising=False)
+    monkeypatch.setenv("THREATFUSION_PUBLIC_MODE", "1")
+    monkeypatch.setenv("THREATFOX_AUTH_KEY", "configured-key")
+    monkeypatch.delenv("URLHAUS_AUTH_KEY", raising=False)
+
+    assert cti_refresh._auto_refresh_enabled() is True
+
+
+def test_background_refresh_forces_first_startup_cycle(tmp_path, monkeypatch) -> None:
+    calls: list[bool] = []
+
+    def fake_refresh(*args, **kwargs):
+        calls.append(bool(kwargs["force"]))
+        return ()
+
+    class FakeThread:
+        def __init__(self, *, target, name, daemon):
+            self.target = target
+            assert name == "threatfusion-cti-refresh"
+            assert daemon is True
+
+        def start(self):
+            try:
+                self.target()
+            except RuntimeError as error:
+                assert str(error) == "stop-test-loop"
+
+    monkeypatch.setattr(cti_refresh, "_AUTO_REFRESH_STARTED", False)
+    monkeypatch.delenv("THREATFUSION_AUTO_REFRESH_CTI", raising=False)
+    monkeypatch.delenv("THREATFUSION_PUBLIC_MODE", raising=False)
+    monkeypatch.setattr(cti_refresh, "refresh_configured_sources", fake_refresh)
+    monkeypatch.setattr(cti_refresh.threading, "Thread", FakeThread)
+    monkeypatch.setattr(
+        cti_refresh.time,
+        "sleep",
+        lambda seconds: (_ for _ in ()).throw(RuntimeError("stop-test-loop")),
+    )
+
+    assert cti_refresh.start_background_refresh_if_enabled(tmp_path / "cti.sqlite")
+    assert calls == [True]

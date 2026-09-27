@@ -242,10 +242,22 @@ Failed or unexpectedly empty source refreshes preserve the previous healthy
 snapshot. Old inactive lifecycle rows are pruned after 90 days so a long-running
 demo does not grow without bound.
 
+### Automatic local startup refresh
+
+In local/private mode (`THREATFUSION_PUBLIC_MODE` unset or `0`), the web
+process starts one background CTI refresh loop automatically. Its first cycle
+runs immediately with a forced refresh for configured sources, so restarting
+the application also refreshes the local CTI database. Later cycles use the
+configured freshness interval. PhishTank still enforces its fixed 24-hour
+minimum even during a forced startup cycle.
+
+Set `THREATFUSION_AUTO_REFRESH_CTI=0` to explicitly disable this local
+startup behavior.
+
 ### Low-cost hosting fallback
 
-If the hosting tier has no separate cron/worker, the web process can start one
-background refresh loop by setting:
+Public mode remains network-safe by default. If a hosting tier has no separate
+cron/worker, the web process can opt in to one background refresh loop by setting:
 
 ```text
 THREATFUSION_AUTO_REFRESH_CTI=1
