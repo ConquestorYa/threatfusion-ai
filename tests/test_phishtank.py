@@ -142,7 +142,7 @@ def test_connection_error_is_sanitized() -> None:
 
     with pytest.raises(
         requests.HTTPError,
-        match="PhishTank public feed request failed",
+        match="PhishTank feed request failed",
     ) as exc:
         PhishTankCollector(session).fetch_verified_online_urls()
 
