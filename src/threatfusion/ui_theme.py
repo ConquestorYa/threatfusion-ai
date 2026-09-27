@@ -337,6 +337,11 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
 .st-key-language_selector button span {
     color:inherit!important;
 }
+.st-key-visual_theme button[aria-pressed="true"] *,
+.st-key-visual_theme button[data-selected="true"] * {
+    color:var(--tf-on-accent)!important;
+    fill:var(--tf-on-accent)!important;
+}
 [data-testid="stAppViewContainer"] [data-testid="stWidgetLabel"] p,
 [data-testid="stAppViewContainer"] [data-testid="stCaptionContainer"] p,
 [data-testid="stAppViewContainer"] [data-testid="stMarkdownContainer"] > p {
@@ -969,10 +974,25 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     color:var(--tf-text);
     border-color:var(--tf-border);
 }
+.stButton > button:not([data-testid="stBaseButton-primary"]) *,
+.stDownloadButton > button:not([data-testid="stBaseButton-primary"]) * {
+    color:var(--tf-text)!important;
+}
 [data-testid="stBaseButton-primary"] {
     background:var(--tf-cyan)!important;
     border-color:var(--tf-cyan)!important;
     color:var(--tf-on-accent)!important;
+}
+[data-testid="stBaseButton-primary"] *,
+.st-key-open_telemetry_workspace [data-testid="stBaseButton-primary"] *,
+.st-key-open_quick_lookup_workspace [data-testid="stBaseButton-primary"] * {
+    color:var(--tf-on-accent)!important;
+    fill:var(--tf-on-accent)!important;
+}
+[data-testid="stBaseButton-primary"] svg,
+.st-key-open_telemetry_workspace [data-testid="stBaseButton-primary"] svg,
+.st-key-open_quick_lookup_workspace [data-testid="stBaseButton-primary"] svg {
+    stroke:var(--tf-on-accent)!important;
 }
 [data-testid="stDataFrame"] { border:1px solid var(--tf-border); border-radius:6px; }
 [data-testid="stExpander"] { border-color:var(--tf-border); border-radius:6px; }
