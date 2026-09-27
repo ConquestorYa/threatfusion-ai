@@ -345,9 +345,15 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     color:inherit!important;
 }
 .st-key-visual_theme button[aria-pressed="true"] *,
-.st-key-visual_theme button[data-selected="true"] * {
+.st-key-visual_theme button[data-selected="true"] *,
+.st-key-visual_theme button[aria-pressed="true"] p,
+.st-key-visual_theme button[data-selected="true"] p,
+.st-key-visual_theme button[aria-pressed="true"] span,
+.st-key-visual_theme button[data-selected="true"] span {
     color:var(--tf-on-accent)!important;
+    -webkit-text-fill-color:var(--tf-on-accent)!important;
     fill:var(--tf-on-accent)!important;
+    opacity:1!important;
 }
 [data-testid="stAppViewContainer"] [data-testid="stWidgetLabel"] p,
 [data-testid="stAppViewContainer"] [data-testid="stCaptionContainer"] p,
@@ -989,17 +995,41 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     background:var(--tf-cyan)!important;
     border-color:var(--tf-cyan)!important;
     color:var(--tf-on-accent)!important;
+    -webkit-text-fill-color:var(--tf-on-accent)!important;
 }
 [data-testid="stBaseButton-primary"] *,
+[data-testid="stBaseButton-primary"] p,
+[data-testid="stBaseButton-primary"] span,
+[data-testid="stBaseButton-primary"] [data-testid="stMarkdownContainer"],
 .st-key-open_telemetry_workspace [data-testid="stBaseButton-primary"] *,
-.st-key-open_quick_lookup_workspace [data-testid="stBaseButton-primary"] * {
+.st-key-open_quick_lookup_workspace [data-testid="stBaseButton-primary"] *,
+.st-key-quick_lookup_analyze [data-testid="stBaseButton-primary"] * {
     color:var(--tf-on-accent)!important;
+    -webkit-text-fill-color:var(--tf-on-accent)!important;
     fill:var(--tf-on-accent)!important;
+    opacity:1!important;
 }
 [data-testid="stBaseButton-primary"] svg,
 .st-key-open_telemetry_workspace [data-testid="stBaseButton-primary"] svg,
-.st-key-open_quick_lookup_workspace [data-testid="stBaseButton-primary"] svg {
+.st-key-open_quick_lookup_workspace [data-testid="stBaseButton-primary"] svg,
+.st-key-quick_lookup_analyze [data-testid="stBaseButton-primary"] svg {
     stroke:var(--tf-on-accent)!important;
+    fill:var(--tf-on-accent)!important;
+}
+[data-testid="stBaseButton-primary"]:disabled,
+[data-testid="stBaseButton-primary"][disabled] {
+    background:var(--tf-surface)!important;
+    border-color:var(--tf-border)!important;
+    color:var(--tf-muted)!important;
+    -webkit-text-fill-color:var(--tf-muted)!important;
+    opacity:1!important;
+}
+[data-testid="stBaseButton-primary"]:disabled *,
+[data-testid="stBaseButton-primary"][disabled] * {
+    color:var(--tf-muted)!important;
+    -webkit-text-fill-color:var(--tf-muted)!important;
+    fill:var(--tf-muted)!important;
+    opacity:1!important;
 }
 [data-testid="stDataFrame"] { border:1px solid var(--tf-border); border-radius:6px; }
 [data-testid="stExpander"] { border-color:var(--tf-border); border-radius:6px; }
