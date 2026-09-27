@@ -294,3 +294,46 @@ def test_incomplete_sgb_snapshot_is_rejected_and_old_cache_is_preserved(
     assert [item.value for item in load_ioc_records(db_path, sources=["SGB"])] == [
         "old-sgb.example"
     ]
+
+
+def test_sgb_refresh_emits_per_page_progress(tmp_path, monkeypatch) -> None:
+    class ProgressSGB:
+        def fetch_bounded_addresses(self, *, max_pages: int, progress=None):
+            assert max_pages == 250
+            if progress is not None:
+                progress(1, 9000, 12000)
+                progress(2, 12000, 12000)
+            return SimpleNamespace(
+                records=(IOCRecord("sgb.example", IOCType.DOMAIN, "SGB"),),
+                pages_fetched=2,
+                reached_source_end=True,
+            )
+
+    monkeypatch.setattr(cti_refresh, "PhishTankCollector", FakePhishTankCollector)
+    monkeypatch.setattr(cti_refresh, "SGBCollector", ProgressSGB)
+    progress_events: list[tuple[str, str, str | None]] = []
+
+    outcomes = cti_refresh.refresh_configured_sources(
+        tmp_path / "cti.sqlite",
+        threatfox_key=None,
+        urlhaus_key=None,
+        sgb_max_pages=250,
+        force=True,
+        now=datetime(2026, 9, 26, tzinfo=timezone.utc),
+        progress=lambda source, stage, detail: progress_events.append(
+            (source, stage, detail)
+        ),
+    )
+
+    sgb = next(item for item in outcomes if item.source == "SGB")
+    assert sgb.status == "refreshed"
+    assert (
+        "SGB",
+        "fetching",
+        "page 1 · 9,000/12,000 records received",
+    ) in progress_events
+    assert (
+        "SGB",
+        "fetching",
+        "page 2 · 12,000/12,000 records received",
+    ) in progress_events
