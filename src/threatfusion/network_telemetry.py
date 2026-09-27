@@ -22,6 +22,10 @@ _MAX_PCAP_DNS_EVENTS = 100_000
 _MAX_DNSTOP_ROWS = 100_000
 
 
+class _TelemetryResourceLimitError(ValueError):
+    """Raised when untrusted telemetry exceeds a parser work budget."""
+
+
 def _empty_result() -> DNSParseResult:
     return DNSParseResult(
         events=(),
@@ -367,10 +371,16 @@ def parse_pcap_dns_with_diagnostics(content: bytes) -> DNSParseResult:
         for timestamp, packet in reader:
             packet_count += 1
             if packet_count > _MAX_PCAP_PACKETS:
-                raise ValueError("packet capture exceeds the safe packet import limit")
+                raise _TelemetryResourceLimitError(
+                    "packet capture exceeds the safe packet import limit"
+                )
             events.extend(_dns_events_from_packet(float(timestamp), packet))
             if len(events) > _MAX_PCAP_DNS_EVENTS:
-                raise ValueError("packet capture exceeds the safe DNS event import limit")
+                raise _TelemetryResourceLimitError(
+                    "packet capture exceeds the safe DNS event import limit"
+                )
+    except _TelemetryResourceLimitError:
+        raise
     except (ValueError, dpkt.UnpackError) as error:
         raise ValueError("packet capture contains malformed packet data") from error
 
