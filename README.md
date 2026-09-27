@@ -390,9 +390,11 @@ If you intentionally want to regenerate the synthetic runtime, use:
 .\.venv\Scripts\python.exe scripts\generate_public_demo_runtime.py --output-dir runtime --overwrite
 ~~~
 
-### 6. Optional: refresh real local CTI feeds
+### 6. Automatic CTI refresh on local startup
 
-ThreatFox and URLhaus refreshes require their own API/auth keys. Keep those keys only in environment variables and never commit them to Git:
+In normal local mode, ThreatFusion now starts a background CTI refresh automatically every time the application process starts. The first startup cycle forces a refresh of configured sources; later cycles use the normal freshness interval. PhishTank still keeps its fixed 24-hour minimum refresh interval.
+
+ThreatFox and URLhaus require their own API/auth keys. Keep those keys only in environment variables and never commit them to Git:
 
 ~~~powershell
 $env:THREATFOX_AUTH_KEY="YOUR_THREATFOX_KEY"
@@ -401,7 +403,11 @@ $env:URLHAUS_AUTH_KEY="YOUR_URLHAUS_KEY"
 .\.venv\Scripts\python.exe scripts\refresh_cti_cache.py --force
 ~~~
 
-This refreshes the local CTI cache. The synthetic demo ML artifact is still a **demo-only model** unless you separately build a trusted trained artifact.
+After setting the keys, starting Streamlit is enough for the automatic startup refresh. The manual command above remains useful when you want to refresh immediately without opening the UI.
+
+Set `THREATFUSION_AUTO_REFRESH_CTI=0` if you explicitly want to disable local automatic refresh. Public/synthetic demo mode remains network-safe by default.
+
+The synthetic demo ML artifact is still a **demo-only model** unless you separately build a trusted trained artifact.
 
 ### Windows troubleshooting
 
