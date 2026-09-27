@@ -4,6 +4,7 @@ import pytest
 import requests
 
 from threatfusion.collectors.phishtank import (
+    PHISHTANK_AUTHENTICATED_FEED_TEMPLATE,
     PHISHTANK_FEED_URL,
     PHISHTANK_USER_AGENT,
     PhishTankCollector,
@@ -114,7 +115,10 @@ def test_public_feed_uses_https_and_disables_redirects() -> None:
 def test_redirect_response_is_rejected_without_following_it() -> None:
     session = FakeSession(FakeResponse("", status_code=302))
 
-    with pytest.raises(requests.HTTPError, match="HTTP status 302"):
+    with pytest.raises(
+        requests.HTTPError,
+        match="set PHISHTANK_APP_KEY.*HTTP status 302",
+    ):
         PhishTankCollector(session).fetch_verified_online_urls()
 
     assert len(session.get_calls) == 1
@@ -152,3 +156,36 @@ def test_oversized_public_feed_is_rejected() -> None:
 
     with pytest.raises(ValueError, match="safe download limit"):
         PhishTankCollector(session).fetch_verified_online_urls()
+
+
+def test_authenticated_feed_url_uses_app_key_without_logging_it() -> None:
+    content = (
+        HEADER
+        + "\n1,https://bad.example/login,detail,"
+        "2026-09-25T10:00:00+00:00,yes,2026-09-25T10:10:00+00:00,yes,Example"
+    )
+    session = FakeSession(FakeResponse(content))
+    app_key = "example-key-123"
+
+    records = PhishTankCollector(
+        session,
+        app_key=app_key,
+    ).fetch_verified_online_urls()
+
+    assert len(records) == 1
+    assert session.get_calls[0][0] == PHISHTANK_AUTHENTICATED_FEED_TEMPLATE.format(
+        app_key=app_key
+    )
+
+
+def test_authenticated_redirect_error_does_not_expose_app_key() -> None:
+    app_key = "very-secret-phishtank-key"
+    session = FakeSession(FakeResponse("", status_code=302))
+
+    with pytest.raises(
+        requests.HTTPError,
+        match="verify PHISHTANK_APP_KEY",
+    ) as exc:
+        PhishTankCollector(session, app_key=app_key).fetch_verified_online_urls()
+
+    assert app_key not in str(exc.value)
