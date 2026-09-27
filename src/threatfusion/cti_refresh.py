@@ -237,10 +237,12 @@ def _refresh_credentials_configured() -> bool:
 
 
 def _auto_refresh_enabled() -> bool:
-    """Honor an explicit flag, otherwise enable refresh when credentials exist."""
+    """Refresh automatically in local mode while keeping public mode network-safe."""
     if "THREATFUSION_AUTO_REFRESH_CTI" in os.environ:
         return _truthy_environment("THREATFUSION_AUTO_REFRESH_CTI")
-    return _refresh_credentials_configured()
+    if _truthy_environment("THREATFUSION_PUBLIC_MODE"):
+        return _refresh_credentials_configured()
+    return True
 
 
 def start_background_refresh_if_enabled(db_path: Path) -> bool:
@@ -260,6 +262,7 @@ def start_background_refresh_if_enabled(db_path: Path) -> bool:
     sgb_pages = int(os.environ.get("THREATFUSION_SGB_MAX_PAGES", "1000"))
 
     def worker() -> None:
+        force_refresh = True
         while True:
             refresh_configured_sources(
                 db_path,
@@ -267,7 +270,9 @@ def start_background_refresh_if_enabled(db_path: Path) -> bool:
                 urlhaus_key=os.environ.get("URLHAUS_AUTH_KEY"),
                 sgb_max_pages=sgb_pages,
                 stale_after=timedelta(seconds=interval_seconds),
+                force=force_refresh,
             )
+            force_refresh = False
             time.sleep(interval_seconds)
 
     threading.Thread(
