@@ -32,6 +32,7 @@ _XLSX_PACKAGE_REL_NS = (
 )
 _MAX_XLSX_ROWS = 100_001
 _MAX_XLSX_CELLS = 1_000_000
+_MAX_XLSX_COLUMNS = 16_384
 _MAX_XLSX_XML_BYTES = 128 * 1024 * 1024
 
 
@@ -264,13 +265,15 @@ def _xlsx_shared_strings(
 
 
 def _xlsx_column_index(cell_reference: str) -> int:
-    match = re.match(r"([A-Za-z]+)", cell_reference)
+    match = re.fullmatch(r"([A-Za-z]{1,3})[1-9][0-9]*", cell_reference)
     if match is None:
         raise ValueError("XLSX cell reference is invalid")
 
     index = 0
     for character in match.group(1).upper():
         index = index * 26 + (ord(character) - ord("A") + 1)
+    if index > _MAX_XLSX_COLUMNS:
+        raise ValueError("XLSX column exceeds the safe import limit")
     return index - 1
 
 
@@ -313,6 +316,7 @@ def _xlsx_sheet_csv(
 
     rows: list[list[str]] = []
     cell_count = 0
+    expanded_cells = 0
 
     with archive.open(info) as stream:
         try:
@@ -338,6 +342,11 @@ def _xlsx_sheet_csv(
                         )
 
                 if max_column >= 0:
+                    expanded_cells += max_column + 1
+                    if expanded_cells > _MAX_XLSX_CELLS:
+                        raise ValueError(
+                            "XLSX input exceeds the safe cell import limit"
+                        )
                     row = [""] * (max_column + 1)
                     for column_index, value in row_values.items():
                         row[column_index] = value

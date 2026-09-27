@@ -6,6 +6,9 @@ from datetime import datetime, timezone
 from .dns import DNSEvent, DNSParseDiagnostics, DNSParseResult
 
 MAX_PIHOLE_EVENTS = 100_000
+_MAX_PIHOLE_QUERY_STEPS = 10_000_000
+_PIHOLE_PROGRESS_INTERVAL = 1_000
+_MAX_PIHOLE_VALUE_BYTES = 1024 * 1024
 
 _QUERY_TYPE_NAMES = {
     1: "A",
@@ -52,8 +55,21 @@ def _open_uploaded_database(content: bytes) -> sqlite3.Connection:
         raise ValueError("Pi-hole database upload is empty")
 
     connection = sqlite3.connect(":memory:")
+    steps = 0
+
+    def query_budget_exhausted() -> int:
+        nonlocal steps
+        steps += _PIHOLE_PROGRESS_INTERVAL
+        return int(steps >= _MAX_PIHOLE_QUERY_STEPS)
+
     try:
         connection.deserialize(content)
+        # Uploaded views are executable SQL; LIMIT only bounds result rows.
+        connection.setlimit(sqlite3.SQLITE_LIMIT_LENGTH, _MAX_PIHOLE_VALUE_BYTES)
+        connection.set_progress_handler(
+            query_budget_exhausted, _PIHOLE_PROGRESS_INTERVAL
+        )
+        connection.execute("PRAGMA query_only = ON")
     except (AttributeError, sqlite3.DatabaseError) as error:
         connection.close()
         raise ValueError("uploaded file is not a readable SQLite database") from error
