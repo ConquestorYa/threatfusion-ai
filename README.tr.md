@@ -48,6 +48,8 @@ ThreatFusion dört farklı kanıt katmanını tek bir yerel akışta birleştiri
 
 Proje bilinçli olarak **eğitim / portföy amaçlı bir güvenlik analiz prototipi** olarak konumlandırılır. Production SIEM, EDR veya garantili zararlı yazılım tespit ürünü olarak sunulmaz.
 
+Geliştirme sürecinde hızlı iterasyon için yapay zekâ destekli **“vibe coding”** yaklaşımından da yararlanıldı; üretilen değişiklikler birleştirilmeden önce gözden geçirildi, test edildi ve iyileştirildi.
+
 ---
 
 ## 🚀 Kısaca neler yapıyor?
