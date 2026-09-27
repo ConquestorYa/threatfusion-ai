@@ -144,3 +144,23 @@ def test_compact_theme_labels_are_short_and_unique() -> None:
     assert THEME_OPTION_LABELS["Crimson"] == "🟥 Red"
     assert THEME_OPTION_LABELS["Violet Noir"] == "🟪 Violet"
     assert THEME_OPTION_LABELS["Monochrome"] == "◻ Mono"
+
+
+def test_monochrome_primary_button_text_fill_is_forced(monkeypatch) -> None:
+    from threatfusion import ui_theme
+
+    rendered: list[str] = []
+    monkeypatch.setattr(
+        ui_theme.st,
+        "markdown",
+        lambda body, **kwargs: rendered.append(body),
+    )
+
+    ui_theme.inject_theme_css("Monochrome")
+    css = "\n".join(rendered)
+
+    assert '[data-testid="stBaseButton-primary"] p' in css
+    assert '-webkit-text-fill-color:var(--tf-on-accent)!important' in css
+    assert '.st-key-quick_lookup_analyze [data-testid="stBaseButton-primary"] *' in css
+    assert '[data-testid="stBaseButton-primary"]:disabled' in css
+    assert '-webkit-text-fill-color:var(--tf-muted)!important' in css
