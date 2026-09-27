@@ -232,11 +232,14 @@ credentials:
 ```text
 THREATFOX_AUTH_KEY=...
 URLHAUS_AUTH_KEY=...
+PHISHTANK_APP_KEY=...  # optional, recommended for automated PhishTank downloads
 ```
 
-PhishTank uses no application key. Its public feed is never refreshed more than
-once every 24 hours, even when `--force` is supplied or the background refresh
-loop wakes more frequently.
+PhishTank can use the keyless public feed, but its official developer guidance
+recommends an application key for automated downloads. Set
+`PHISHTANK_APP_KEY` to use the authenticated feed path. Without it, redirects
+to access/security checks are reported clearly and the previous healthy cache is
+preserved. PhishTank is still never refreshed more than once every 24 hours.
 
 Failed or unexpectedly empty source refreshes preserve the previous healthy
 snapshot. Old inactive lifecycle rows are pruned after 90 days so a long-running

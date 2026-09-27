@@ -58,6 +58,7 @@ def test_release_audit_allows_documented_placeholders() -> None:
     text = '''
 $env:THREATFOX_AUTH_KEY="..."
 $env:URLHAUS_AUTH_KEY="..."
+$env:PHISHTANK_APP_KEY="YOUR_PHISHTANK_APP_KEY"
 OPENAI_API_KEY="<set-in-secret-manager>"
 '''
 
@@ -80,6 +81,7 @@ def test_release_audit_allows_service_secret_placeholders() -> None:
     text = '''
 THREATFOX_AUTH_KEY="..."
 URLHAUS_AUTH_KEY="<set-in-secret-manager>"
+PHISHTANK_APP_KEY="YOUR_PHISHTANK_APP_KEY"
 RENDER_API_KEY="..."
 '''
 

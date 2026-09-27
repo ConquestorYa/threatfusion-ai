@@ -391,6 +391,7 @@ ThreatFox ve URLhaus API/auth anahtarlarını environment variable olarak kullan
 ~~~powershell
 $env:THREATFOX_AUTH_KEY="YOUR_THREATFOX_KEY"
 $env:URLHAUS_AUTH_KEY="YOUR_URLHAUS_KEY"
+$env:PHISHTANK_APP_KEY="..."  # isteğe bağlı, otomatik indirmeler için önerilir
 ~~~
 
 Sitenin kullandığı CTI veritabanını tek komutla güncelle:

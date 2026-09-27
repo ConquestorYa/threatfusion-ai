@@ -28,8 +28,8 @@ _PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
         "threatfusion-service-secret",
         re.compile(
-            r"(?i)\b(?:THREATFOX_AUTH_KEY|URLHAUS_AUTH_KEY|RENDER_API_KEY)"
-            r"\s*[:=]\s*[\"']?(?!\.\.\.|<)[A-Za-z0-9._-]{20,}"
+            r"(?i)\b(?:THREATFOX_AUTH_KEY|URLHAUS_AUTH_KEY|PHISHTANK_APP_KEY|RENDER_API_KEY)"
+            r"\s*[:=]\s*[\"']?(?!\.\.\.|<|YOUR_)[A-Za-z0-9._-]{20,}"
         ),
     ),
     (
