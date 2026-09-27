@@ -294,42 +294,122 @@ Hosted kullanımda ayrı scheduler / maintenance job tercih edilir.
 
 ---
 
-## 🖥️ Hızlı başlangıç
+## 🖥️ Windows'ta sıfırdan kurulum
 
-### 1. Kurulum
+Bu adımlar, hiçbir geliştirme aracı kurulu olmayan **Windows 10/11** bilgisayarda **PowerShell** ve **Python 3.12** kullanılarak projeyi çalıştırmak için hazırlanmıştır.
+
+### 1. Git ve Python 3.12'yi kur
+
+PowerShell'i aç ve gerekli araçları yükle:
+
+~~~powershell
+winget install --id Git.Git -e --source winget
+winget install --id Python.Python.3.12 -e --source winget
+~~~
+
+Kurulum bittikten sonra PowerShell'i kapatıp tekrar aç. Ardından kurulumları kontrol et:
+
+~~~powershell
+git --version
+py -3.12 --version
+~~~
+
+> Bilgisayarda `winget` yoksa **Git for Windows** ve **Python 3.12 (64-bit)** sürümünü resmi sitelerinden manuel olarak kur. Python kurulumunda Python Launcher seçeneğini açık bırak. Kurulumdan sonra PowerShell'i yeniden aç.
+
+### 2. ThreatFusion AI projesini indir
+
+~~~powershell
+cd $HOME
+git clone https://github.com/ConquestorYa/threatfusion-ai.git
+cd threatfusion-ai
+~~~
+
+### 3. Sanal ortamı oluştur ve bağımlılıkları kur
+
+Aşağıdaki yöntem özellikle `Activate.ps1` kullanmaz. Böylece temiz bir Windows kurulumundaki PowerShell execution policy ayarları kurulumu engellemez.
 
 ~~~powershell
 py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
 
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-python -m pip install --no-deps -e .
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install --no-deps -e .
 ~~~
 
-### 2. Güvenli sentetik demo runtime'ı oluştur
+İstersen kurulumu kontrol et:
 
 ~~~powershell
-python scripts\generate_public_demo_runtime.py --output-dir runtime
+.\.venv\Scripts\python.exe -c "import threatfusion, streamlit; print('ThreatFusion install OK')"
+~~~
+
+### 4. İlk çalıştırma — güvenli sentetik demo
+
+Önce yerel demo veritabanını ve demo ML artifact'ını oluştur:
+
+~~~powershell
+.\.venv\Scripts\python.exe scripts\generate_public_demo_runtime.py --output-dir runtime
+~~~
+
+Ardından mevcut PowerShell oturumu için gerekli ayarları yap. SHA-256 değeri oluşturulan artifact dosyasından otomatik okunur:
+
+~~~powershell
+$env:THREATFUSION_PUBLIC_MODE="1"
+$env:THREATFUSION_DB_PATH="runtime\threatfusion.sqlite"
+$env:THREATFUSION_MODEL_DIR="runtime\models\development-001"
+$env:THREATFUSION_MODEL_SHA256=(Get-Content "runtime\models\development-001\artifact.sha256" -Raw).Trim()
+~~~
+
+Web arayüzünü başlat:
+
+~~~powershell
+.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+~~~
+
+Streamlit normalde tarayıcıyı otomatik açar. Açılmazsa tarayıcıdan **http://localhost:8501** adresine git. Sunucuyu kapatmak için terminalde **Ctrl+C** kullan.
+
+Oluşturulan runtime yalnızca **sentetik dokümantasyon CTI verileri ve demo-only ML artifact** içerir. Arayüzü güvenli şekilde göstermek içindir; model performansı iddiası için kullanılmamalıdır.
+
+### 5. Daha sonra tekrar çalıştırmak
+
+Bağımlılıkları yeniden kurmana gerek yok. PowerShell'i aç, proje klasörüne gir, runtime değişkenlerini yeniden ayarla ve Streamlit'i başlat:
+
+~~~powershell
+cd $HOME\threatfusion-ai
 
 $env:THREATFUSION_PUBLIC_MODE="1"
-$env:THREATFUSION_DB_PATH="runtime/threatfusion.sqlite"
-$env:THREATFUSION_MODEL_DIR="runtime/models/development-001"
+$env:THREATFUSION_DB_PATH="runtime\threatfusion.sqlite"
+$env:THREATFUSION_MODEL_DIR="runtime\models\development-001"
+$env:THREATFUSION_MODEL_SHA256=(Get-Content "runtime\models\development-001\artifact.sha256" -Raw).Trim()
 
-streamlit run streamlit_app.py
+.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
 ~~~
 
-Bu demo runtime'ı yalnız **sentetik dokümantasyon CTI değerleri ve demo-only ML artifact** içerir. Arayüz akışını göstermek içindir; model performans iddiası için kullanılamaz.
-
-### 3. Gerçek yerel CTI runtime
+Sentetik runtime'ı bilerek baştan oluşturmak istersen:
 
 ~~~powershell
-$env:THREATFOX_AUTH_KEY="..."
-$env:URLHAUS_AUTH_KEY="..."
-
-python scripts\refresh_cti_cache.py --force
-streamlit run streamlit_app.py
+.\.venv\Scripts\python.exe scripts\generate_public_demo_runtime.py --output-dir runtime --overwrite
 ~~~
+
+### 6. İsteğe bağlı: gerçek yerel CTI kaynaklarını yenilemek
+
+ThreatFox ve URLhaus yenilemeleri kendi API/auth anahtarlarını gerektirir. Bu anahtarları yalnızca environment variable olarak tut; Git'e kesinlikle ekleme:
+
+~~~powershell
+$env:THREATFOX_AUTH_KEY="YOUR_THREATFOX_KEY"
+$env:URLHAUS_AUTH_KEY="YOUR_URLHAUS_KEY"
+
+.\.venv\Scripts\python.exe scripts\refresh_cti_cache.py --force
+~~~
+
+Bu işlem yerel CTI önbelleğini yeniler. Ayrı bir güvenilir eğitim artifact'ı oluşturmadığın sürece sentetik demo ML artifact'ı **demo-only model** olarak kalır.
+
+### Windows sorun giderme
+
+- **`py` komutu bulunamıyor:** Python kurulumundan sonra PowerShell'i kapatıp yeniden aç. Sorun devam ederse Python 3.12'yi Python Launcher açık olacak şekilde yeniden kur.
+- **`git` komutu bulunamıyor:** Git kurulumundan sonra PowerShell'i kapatıp yeniden aç.
+- **`runtime` zaten var hatası:** mevcut runtime'ı kullan veya baştan üretmek için `--overwrite` seçeneğini kullan.
+- **8501 portu kullanımda:** son Streamlit komutuna `--server.port 8502` ekle.
+
 
 ---
 
