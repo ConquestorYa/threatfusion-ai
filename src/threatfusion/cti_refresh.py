@@ -66,8 +66,22 @@ def _replace_nonempty(
     )
 
 
-def _fetch_complete_sgb(max_pages: int) -> list[IOCRecord]:
-    result = SGBCollector().fetch_bounded_addresses(max_pages=max_pages)
+def _fetch_complete_sgb(
+    max_pages: int,
+    *,
+    progress: ProgressCallback | None = None,
+) -> list[IOCRecord]:
+    def show_page(page: int, seen: int, total: int | None) -> None:
+        if total is None:
+            detail = f"page {page} · {seen:,} records received"
+        else:
+            detail = f"page {page} · {seen:,}/{total:,} records received"
+        _emit_progress(progress, "SGB", "fetching", detail)
+
+    result = SGBCollector().fetch_bounded_addresses(
+        max_pages=max_pages,
+        progress=show_page,
+    )
     if not result.reached_source_end:
         raise ValueError(
             "SGB page bound reached before the source end "
@@ -91,7 +105,7 @@ def refresh_configured_sources(
     *,
     threatfox_key: str | None,
     urlhaus_key: str | None,
-    sgb_max_pages: int = 1000,
+    sgb_max_pages: int = 250,
     stale_after: timedelta = timedelta(hours=6),
     force: bool = False,
     now: datetime | None = None,
@@ -129,7 +143,10 @@ def refresh_configured_sources(
     jobs.append(
         (
             "SGB",
-            lambda: _fetch_complete_sgb(sgb_max_pages),
+            lambda: _fetch_complete_sgb(
+                sgb_max_pages,
+                progress=progress,
+            ),
         )
     )
 

@@ -1,6 +1,6 @@
 import ipaddress
 import json
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -14,6 +14,9 @@ from ..models import IOCRecord, IOCType
 SGB_API_URL = "https://siberguvenlik.gov.tr/api/address/index"
 REQUEST_TIMEOUT_SECONDS = 30
 MAX_SGB_PAGE_BYTES = 8 * 1024 * 1024
+SGB_PAGE_SIZE = 9000
+MAX_SGB_PAGE_SIZE = 9999
+SGBPageProgress = Callable[[int, int, int | None], None]
 
 
 @dataclass(frozen=True)
@@ -136,13 +139,24 @@ class SGBCollector:
     def _fetch_page(
         self,
         page: int,
+        *,
+        page_size: int = SGB_PAGE_SIZE,
     ) -> tuple[list[IOCRecord], int, int | None]:
         if isinstance(page, bool) or not isinstance(page, int) or page < 1:
             raise ValueError("page must be a positive integer")
+        if (
+            isinstance(page_size, bool)
+            or not isinstance(page_size, int)
+            or page_size < 1
+            or page_size > MAX_SGB_PAGE_SIZE
+        ):
+            raise ValueError(
+                f"page_size must be between 1 and {MAX_SGB_PAGE_SIZE}"
+            )
 
         response = self.session.get(
             SGB_API_URL,
-            params={"page": page},
+            params={"page": page, "per-page": page_size},
             timeout=REQUEST_TIMEOUT_SECONDS,
             allow_redirects=False,
             stream=True,
@@ -159,14 +173,21 @@ class SGBCollector:
             raise ValueError("SGB response is invalid JSON") from error
         return _response_page(payload)
 
-    def fetch_addresses(self, page: int = 1) -> list[IOCRecord]:
-        records, _, _ = self._fetch_page(page)
+    def fetch_addresses(
+        self,
+        page: int = 1,
+        *,
+        page_size: int = SGB_PAGE_SIZE,
+    ) -> list[IOCRecord]:
+        records, _, _ = self._fetch_page(page, page_size=page_size)
         return records
 
     def fetch_bounded_addresses(
         self,
         *,
-        max_pages: int = 10,
+        max_pages: int = 250,
+        page_size: int = SGB_PAGE_SIZE,
+        progress: SGBPageProgress | None = None,
     ) -> SGBCollectionResult:
         """Fetch until the source ends, bounded by a caller-controlled cap."""
         if (
@@ -176,16 +197,31 @@ class SGBCollector:
         ):
             raise ValueError("max_pages must be a positive integer")
 
+        if (
+            isinstance(page_size, bool)
+            or not isinstance(page_size, int)
+            or page_size < 1
+            or page_size > MAX_SGB_PAGE_SIZE
+        ):
+            raise ValueError(
+                f"page_size must be between 1 and {MAX_SGB_PAGE_SIZE}"
+            )
+
         records: list[IOCRecord] = []
         raw_items_seen = 0
         pages_fetched = 0
         reached_source_end = False
 
         for page in range(1, max_pages + 1):
-            page_records, raw_item_count, total_count = self._fetch_page(page)
+            page_records, raw_item_count, total_count = self._fetch_page(
+                page,
+                page_size=page_size,
+            )
             pages_fetched += 1
             records.extend(page_records)
             raw_items_seen += raw_item_count
+            if progress is not None:
+                progress(page, raw_items_seen, total_count)
 
             if raw_item_count == 0:
                 reached_source_end = True

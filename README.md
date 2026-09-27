@@ -399,7 +399,7 @@ Update the same CTI database used by the app with one command:
 .\.venv\Scripts\python.exe update_cti_database.py
 ~~~
 
-The updater forces the configured ThreatFox, URLhaus, and SGB sources to refresh. PhishTank still respects its fixed 24-hour public-feed minimum. Missing ThreatFox/URLhaus keys are skipped instead of preventing SGB/PhishTank updates, and a failed source keeps its previous healthy cache.
+The updater forces the configured ThreatFox, URLhaus, and SGB sources to refresh. The SGB collector requests large pages and prints page-by-page progress so long downloads do not look frozen. PhishTank still respects its fixed 24-hour public-feed minimum. Missing ThreatFox/URLhaus keys are skipped instead of preventing SGB/PhishTank updates, and a failed source keeps its previous healthy cache.
 
 Then start the site separately:
 

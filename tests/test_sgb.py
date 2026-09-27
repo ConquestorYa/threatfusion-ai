@@ -188,7 +188,9 @@ def test_pagination_parameters_and_official_endpoint() -> None:
 
     SGBCollector(session).fetch_addresses(page=3)
 
-    assert session.get_calls == [(SGB_API_URL, {"page": 3}, 30, False)]
+    assert session.get_calls == [
+        (SGB_API_URL, {"page": 3, "per-page": 9000}, 30, False)
+    ]
 
 
 @pytest.mark.parametrize("page", [0, -1, True])
@@ -323,3 +325,55 @@ def test_sgb_rejects_invalid_json_response() -> None:
 
     with pytest.raises(ValueError, match="invalid JSON"):
         SGBCollector(session).fetch_addresses()
+
+
+def test_large_page_size_is_used_for_bounded_fetches() -> None:
+    session = SequenceSession(
+        [
+            {
+                "totalCount": 1,
+                "models": [{"url": "one.example", "type": "domain"}],
+            }
+        ]
+    )
+
+    result = SGBCollector(session).fetch_bounded_addresses(max_pages=10)
+
+    assert result.reached_source_end is True
+    assert session.get_calls[0][1] == {"page": 1, "per-page": 9000}
+
+
+def test_bounded_fetch_reports_page_progress() -> None:
+    session = SequenceSession(
+        [
+            {
+                "totalCount": 2,
+                "models": [{"url": "one.example", "type": "domain"}],
+            },
+            {
+                "totalCount": 2,
+                "models": [{"url": "two.example", "type": "domain"}],
+            },
+        ]
+    )
+    progress: list[tuple[int, int, int | None]] = []
+
+    SGBCollector(session).fetch_bounded_addresses(
+        max_pages=10,
+        progress=lambda page, seen, total: progress.append((page, seen, total)),
+    )
+
+    assert progress == [(1, 1, 2), (2, 2, 2)]
+
+
+@pytest.mark.parametrize("page_size", [0, -1, 10000, True])
+def test_invalid_page_size_is_rejected(page_size: int) -> None:
+    session = SequenceSession([])
+
+    with pytest.raises(ValueError, match="page_size"):
+        SGBCollector(session).fetch_bounded_addresses(
+            max_pages=1,
+            page_size=page_size,
+        )
+
+    assert session.get_calls == []
