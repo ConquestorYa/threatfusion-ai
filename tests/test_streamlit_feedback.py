@@ -28,8 +28,13 @@ def feedback_app(tmp_path, monkeypatch):
     monkeypatch.setenv("THREATFUSION_MODEL_DIR", str(tmp_path / "model"))
     monkeypatch.setenv("THREATFUSION_EVALUATION_REPORT", str(tmp_path / "holdout.json"))
     monkeypatch.setenv("THREATFUSION_PUBLIC_MODE", "0")
+    monkeypatch.setenv("THREATFUSION_MODEL_SHA256", "a" * 64)
     artifact = SimpleNamespace(metadata=SimpleNamespace(model_name="test-model"))
-    monkeypatch.setattr(app_module, "_load_artifact", lambda path: artifact)
+    monkeypatch.setattr(
+        app_module,
+        "_load_artifact",
+        lambda path, expected_checksum=None: artifact,
+    )
     monkeypatch.setattr(app_module, "list_cti_cache_status", lambda path: [])
     monkeypatch.setattr(app_module, "load_ioc_records", lambda path: [])
 
