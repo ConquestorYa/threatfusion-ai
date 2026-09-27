@@ -304,14 +304,17 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     color:var(--tf-cyan)!important;
     border-color:color-mix(in srgb, var(--tf-cyan) 56%, var(--tf-border))!important;
 }
-.st-key-visual_theme [data-baseweb="select"] > div {
+.st-key-theme_picker [data-testid="stPopover"] > button {
+    width:100%;
+    min-height:38px;
+    justify-content:space-between;
     background:var(--tf-panel)!important;
     color:var(--tf-text)!important;
-    border-color:var(--tf-border)!important;
-    min-height:38px;
+    border:1px solid var(--tf-border)!important;
+    border-radius:8px!important;
 }
-.st-key-visual_theme [data-baseweb="select"] svg {
-    fill:var(--tf-muted)!important;
+.st-key-theme_picker [data-testid="stPopover"] > button:hover {
+    border-color:color-mix(in srgb, var(--tf-cyan) 42%, var(--tf-border))!important;
 }
 .tf-product-brand-title {
     color:var(--tf-text);
@@ -957,8 +960,6 @@ button:focus-visible,a:focus-visible,input:focus-visible {
     .tf-product-brand-badge { display:none; }
     .tf-product-brand-title { font-size:1.35rem; }
     .tf-theme-picker-label { text-align:left; }
-    .st-key-visual_theme,
-    .st-key-visual_theme [role="radiogroup"],
     .st-key-language_selector,
     .st-key-language_selector [role="radiogroup"] { justify-content:flex-start; }
     .st-key-quick_lookup_input [data-baseweb="input"],
@@ -1033,13 +1034,16 @@ def render_main_brand() -> None:
                     f'<div class="tf-theme-picker-label tf-theme-select-label">{safe_text(tr("Theme"))}</div>',
                     unsafe_allow_html=True,
                 )
-                st.selectbox(
-                    tr("Theme"),
-                    list(THEME_OPTIONS),
-                    key="visual_theme",
-                    label_visibility="collapsed",
-                    width="stretch",
-                )
+                with st.popover(
+                    active_theme(),
+                    use_container_width=True,
+                ):
+                    st.radio(
+                        tr("Theme"),
+                        list(THEME_OPTIONS),
+                        key="visual_theme",
+                        label_visibility="collapsed",
+                    )
 
 
 def render_sidebar_brand() -> None:
