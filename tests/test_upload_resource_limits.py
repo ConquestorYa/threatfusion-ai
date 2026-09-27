@@ -4,9 +4,17 @@ import io
 import sqlite3
 import zipfile
 
+import dpkt
 import pytest
 
-from threatfusion import dns, dns_ingest, dns_pihole, dns_zeek, network_telemetry
+from threatfusion import (
+    dns,
+    dns_adguard,
+    dns_ingest,
+    dns_pihole,
+    dns_zeek,
+    network_telemetry,
+)
 
 
 @pytest.mark.parametrize("reference", ["ZZZZZZ1", "XFE1", "A0", "A1junk"])
@@ -262,3 +270,94 @@ def test_zeek_conn_rejects_excessive_fields(monkeypatch) -> None:
     )
     with pytest.raises(ValueError, match="field import limit"):
         network_telemetry.parse_zeek_conn_log_with_diagnostics(content)
+
+
+def test_adguard_rejects_excessive_jsonl_entries(monkeypatch) -> None:
+    monkeypatch.setattr(dns_adguard, "_MAX_ADGUARD_ENTRIES", 1)
+    content = (
+        '{"QH":"one.example","QT":"A"}\n'
+        '{"QH":"two.example","QT":"A"}\n'
+    )
+    with pytest.raises(ValueError, match="entry import limit"):
+        dns_adguard.parse_adguard_query_log_with_diagnostics(content)
+
+
+def test_adguard_rejects_excessive_answer_expansion(monkeypatch) -> None:
+    monkeypatch.setattr(dns_adguard, "_MAX_ADGUARD_ANSWERS", 1)
+    content = (
+        '{"question":{"host":"one.example","type":"A"},'
+        '"answer":[{"value":"alias.example"},{"value":"203.0.113.5"}]}'
+    )
+    with pytest.raises(ValueError, match="answer list"):
+        dns_adguard.parse_adguard_query_log_with_diagnostics(content)
+
+
+def test_adguard_detection_uses_bounded_probe_for_generic_json() -> None:
+    content = '{"QH":"one.example"' + ("x" * 200_000)
+    assert dns_ingest._looks_like_adguard(content, "upload.txt")
+
+
+def test_suricata_rejects_excessive_jsonl_records(monkeypatch) -> None:
+    monkeypatch.setattr(network_telemetry, "_MAX_SURICATA_RECORDS", 1)
+    content = (
+        '{"event_type":"dns","dns":{"rrname":"one.example"}}\n'
+        '{"event_type":"dns","dns":{"rrname":"two.example"}}\n'
+    )
+    with pytest.raises(ValueError, match="record import limit"):
+        network_telemetry.parse_suricata_eve_with_diagnostics(content)
+
+
+def test_dnstop_rejects_excessive_rows(monkeypatch) -> None:
+    monkeypatch.setattr(network_telemetry, "_MAX_DNSTOP_ROWS", 1)
+    content = "one.example 1\ntwo.example 1\n"
+    with pytest.raises(ValueError, match="row import limit"):
+        network_telemetry.parse_dnstop_with_diagnostics(content)
+
+
+def _pcap_with_packets(packets: list[bytes]) -> bytes:
+    payload = io.BytesIO()
+    writer = dpkt.pcap.Writer(payload)
+    for index, packet in enumerate(packets):
+        writer.writepkt(packet, ts=1700000000.0 + index)
+    result = payload.getvalue()
+    writer.close()
+    return result
+
+
+def test_pcap_rejects_excessive_packet_count(monkeypatch) -> None:
+    monkeypatch.setattr(network_telemetry, "_MAX_PCAP_PACKETS", 1)
+    content = _pcap_with_packets([b"\x00" * 60, b"\x00" * 60])
+    with pytest.raises(ValueError, match="packet import limit"):
+        network_telemetry.parse_pcap_dns_with_diagnostics(content)
+
+
+def test_pcap_rejects_excessive_dns_events(monkeypatch) -> None:
+    monkeypatch.setattr(network_telemetry, "_MAX_PCAP_DNS_EVENTS", 1)
+
+    dns_packet = dpkt.dns.DNS(
+        id=1,
+        qd=[
+            dpkt.dns.DNS.Q(name="one.example", type=dpkt.dns.DNS_A),
+            dpkt.dns.DNS.Q(name="two.example", type=dpkt.dns.DNS_A),
+        ],
+    )
+    udp = dpkt.udp.UDP(sport=53000, dport=53, data=bytes(dns_packet))
+    udp.ulen = len(udp)
+    ip = dpkt.ip.IP(
+        src=b"\x0a\x00\x00\x05",
+        dst=b"\x08\x08\x08\x08",
+        p=dpkt.ip.IP_PROTO_UDP,
+        data=udp,
+    )
+    ip.len = len(ip)
+    ethernet = dpkt.ethernet.Ethernet(
+        src=b"\x00\x01\x02\x03\x04\x05",
+        dst=b"\x06\x07\x08\x09\x0a\x0b",
+        type=dpkt.ethernet.ETH_TYPE_IP,
+        data=ip,
+    )
+
+    with pytest.raises(ValueError, match="DNS event import limit"):
+        network_telemetry.parse_pcap_dns_with_diagnostics(
+            _pcap_with_packets([bytes(ethernet)])
+        )
