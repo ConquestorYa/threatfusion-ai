@@ -20,6 +20,8 @@ from .models import IOCRecord
 
 MAX_DNS_EVENTS = 100_000
 MAX_UNIQUE_QUERY_NAMES = 25_000
+MAX_QUERY_NAME_CHARS = 1_024
+MAX_EVENT_METADATA_CHARS = 4_096
 
 _ML_EXCLUDED_SUFFIXES = (
     ".in-addr.arpa",
@@ -60,10 +62,33 @@ def _validate_runtime_bounds(events: list[DNSEvent]) -> None:
             f"DNS input exceeds the {MAX_DNS_EVENTS} event analysis limit"
         )
 
+    for event in events:
+        if not isinstance(event.query_name, str):
+            raise ValueError("DNS query name must be text")
+        if len(event.query_name) > MAX_QUERY_NAME_CHARS:
+            raise ValueError(
+                "DNS query name exceeds the safe analysis length limit"
+            )
+
+        for field_name, value in (
+            ("client_ip", event.client_ip),
+            ("query_type", event.query_type),
+            ("response_ip", event.response_ip),
+            ("response_code", event.response_code),
+        ):
+            if value is None:
+                continue
+            if not isinstance(value, str):
+                raise ValueError(f"DNS {field_name} value must be text")
+            if len(value) > MAX_EVENT_METADATA_CHARS:
+                raise ValueError(
+                    f"DNS {field_name} exceeds the safe analysis length limit"
+                )
+
     unique_names = {
         event.query_name.strip().casefold().removesuffix(".")
         for event in events
-        if isinstance(event.query_name, str) and event.query_name.strip()
+        if event.query_name.strip()
     }
     if len(unique_names) > MAX_UNIQUE_QUERY_NAMES:
         raise ValueError(
