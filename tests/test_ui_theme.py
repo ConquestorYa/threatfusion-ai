@@ -4,6 +4,7 @@ from streamlit.testing.v1 import AppTest
 
 from threatfusion.brand_assets import THREATFUSION_LOGO_DATA_URI
 from threatfusion.ui_theme import (
+    THEME_OPTIONS,
     THEME_PALETTES,
     VERDICT_COLORS,
     palette,
@@ -83,7 +84,7 @@ def test_theme_picker_is_non_editable_prominent_and_updates_state() -> None:
         item for item in app.segmented_control if item.key == "visual_theme"
     )
     assert theme.value == "Midnight"
-    assert list(theme.options) == list(THEME_PALETTES)
+    assert list(theme.options) == list(THEME_OPTIONS)
     theme.set_value("Monochrome").run(timeout=15)
 
     assert not app.exception
