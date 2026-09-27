@@ -111,6 +111,7 @@ def refresh_configured_sources(
     *,
     threatfox_key: str | None,
     urlhaus_key: str | None,
+    phishtank_key: str | None = None,
     sgb_max_pages: int = 100,
     stale_after: timedelta = timedelta(hours=6),
     force: bool = False,
@@ -139,10 +140,19 @@ def refresh_configured_sources(
                 lambda: URLhausCollector(urlhaus_key.strip()).fetch_full_urls(),
             )
         )
+    phishtank_app_key = (
+        phishtank_key.strip()
+        if phishtank_key and phishtank_key.strip()
+        else None
+    )
     jobs.append(
         (
             "PhishTank",
-            lambda: PhishTankCollector().fetch_verified_online_urls(),
+            lambda: (
+                PhishTankCollector(app_key=phishtank_app_key)
+                if phishtank_app_key is not None
+                else PhishTankCollector()
+            ).fetch_verified_online_urls(),
         )
     )
 
@@ -180,7 +190,11 @@ def refresh_configured_sources(
         fetch_detail = {
             "ThreatFox": "downloading full current export",
             "URLhaus": "downloading full export with recent-feed fallback",
-            "PhishTank": "downloading public phishing feed",
+            "PhishTank": (
+                "downloading authenticated phishing feed"
+                if phishtank_app_key is not None
+                else "downloading public phishing feed"
+            ),
             "SGB": f"fetching paginated feed (up to {sgb_max_pages} pages)",
         }.get(source)
         _emit_progress(progress, source, "fetching", fetch_detail)
