@@ -124,11 +124,10 @@ def test_monochrome_theme_uses_black_white_product_palette():
     assert colors["logo"] == "#FFFFFF"
 
 
-def test_distribution_keeps_semantic_colors_with_native_theme_text():
+def test_distribution_uses_active_product_theme_verdict_colors():
     from types import SimpleNamespace
 
     from threatfusion.ui_charts import _verdict_distribution_figure
-    from threatfusion.ui_theme import VERDICT_COLORS
 
     figure = _verdict_distribution_figure(
         SimpleNamespace(
@@ -141,7 +140,7 @@ def test_distribution_keeps_semantic_colors_with_native_theme_text():
     )
     pie = figure.data[0]
     assert list(pie.values) == [1, 2, 3, 4]
-    assert dict(zip(pie.labels, pie.marker.colors)) == VERDICT_COLORS
+    assert list(pie.marker.colors) == list(verdict_colors().values())
     assert figure.layout.font.color is not None
 
 
