@@ -119,7 +119,11 @@ def test_synthetic_demo_artifact_is_clearly_labeled(feedback_app, monkeypatch):
             evaluation_status="demo_only_synthetic",
         )
     )
-    monkeypatch.setattr(app_module, "_load_artifact", lambda path: artifact)
+    monkeypatch.setattr(
+        app_module,
+        "_load_artifact",
+        lambda path, expected_checksum=None: artifact,
+    )
 
     app = AppTest.from_string("import streamlit_app\nstreamlit_app.main()")
     app.run(timeout=15)
@@ -326,7 +330,7 @@ def test_changing_source_clears_stale_analysis(feedback_app):
 def test_history_and_evaluation_work_without_model(feedback_app, monkeypatch):
     app_module, _, _, _ = feedback_app
 
-    def unavailable(path):
+    def unavailable(path, expected_checksum=None):
         raise OSError("Missing artifact")
 
     monkeypatch.setattr(app_module, "_load_artifact", unavailable)
