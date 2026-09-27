@@ -399,7 +399,7 @@ Sitenin kullandığı CTI veritabanını tek komutla güncelle:
 .\.venv\Scripts\python.exe update_cti_database.py
 ~~~
 
-Bu güncelleyici yapılandırılmış ThreatFox, URLhaus ve SGB kaynaklarını zorunlu yeniler. PhishTank, public feed için sabit 24 saatlik minimum yenileme aralığını korur. ThreatFox/URLhaus anahtarı eksikse o kaynak atlanır; SGB ve PhishTank güncellenmeye devam eder. Bir kaynak hata verirse önceki sağlam cache korunur.
+Bu güncelleyici yapılandırılmış ThreatFox, URLhaus ve SGB kaynaklarını zorunlu yeniler. SGB collector artık büyük sayfalar ister ve her sayfada ilerleme bilgisini terminale yazar; böylece uzun indirme donmuş gibi görünmez. PhishTank, public feed için sabit 24 saatlik minimum yenileme aralığını korur. ThreatFox/URLhaus anahtarı eksikse o kaynak atlanır; SGB ve PhishTank güncellenmeye devam eder. Bir kaynak hata verirse önceki sağlam cache korunur.
 
 Ardından siteyi ayrı olarak başlat:
 
