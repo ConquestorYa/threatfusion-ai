@@ -992,6 +992,7 @@ def render_main_brand() -> None:
                         "Language",
                         list(LANGUAGE_OPTIONS),
                         key="language_selector",
+                        required=True,
                         label_visibility="collapsed",
                         width="stretch",
                     )
