@@ -37,6 +37,16 @@ def feedback_app(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(app_module, "list_cti_cache_status", lambda path: [])
     monkeypatch.setattr(app_module, "load_ioc_records", lambda path: [])
+    monkeypatch.setattr(
+        app_module,
+        "run_startup_refresh_if_enabled",
+        lambda *args, **kwargs: (),
+    )
+    monkeypatch.setattr(
+        app_module,
+        "start_background_refresh_if_enabled",
+        lambda path: False,
+    )
 
     events = (DNSEvent(query_name="a.example"), DNSEvent(query_name="b.example"))
     scores = {"a.example": 0.9, "b.example": 0.55}
