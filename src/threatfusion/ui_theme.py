@@ -256,26 +256,26 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     line-height:1;
     white-space:nowrap;
 }
-.st-key-visual_theme,
+.st-key-theme_choice,
 .st-key-language_selector {
     display:flex;
     justify-content:flex-end;
     align-items:center;
     margin:0;
 }
-.st-key-visual_theme [role="radiogroup"],
+.st-key-theme_choice [role="radiogroup"],
 .st-key-language_selector [role="radiogroup"] {
     justify-content:flex-end;
 }
-.st-key-visual_theme button,
+.st-key-theme_choice button,
 .st-key-language_selector button {
     background:var(--tf-panel)!important;
     color:var(--tf-text)!important;
     border-color:var(--tf-border)!important;
     min-height:38px!important;
 }
-.st-key-visual_theme button[aria-pressed="true"],
-.st-key-visual_theme button[data-selected="true"],
+.st-key-theme_choice button[aria-pressed="true"],
+.st-key-theme_choice button[data-selected="true"],
 .st-key-language_selector button[aria-pressed="true"],
 .st-key-language_selector button[data-selected="true"] {
     background:var(--tf-cyan-soft)!important;
@@ -926,8 +926,8 @@ button:focus-visible,a:focus-visible,input:focus-visible {
     .tf-product-brand-badge { display:none; }
     .tf-product-brand-title { font-size:1.35rem; }
     .tf-theme-picker-label { text-align:left; }
-    .st-key-visual_theme,
-    .st-key-visual_theme [role="radiogroup"],
+    .st-key-theme_choice,
+    .st-key-theme_choice [role="radiogroup"],
     .st-key-language_selector,
     .st-key-language_selector [role="radiogroup"] { justify-content:flex-start; }
     .st-key-quick_lookup_input [data-baseweb="input"],
@@ -957,9 +957,24 @@ def _logo_markup(css_class: str) -> str:
     )
 
 
+def _apply_theme_choice() -> None:
+    """Commit the staged theme only when the user explicitly applies it."""
+    selected = st.session_state.get("theme_choice")
+    if not isinstance(selected, str):
+        return
+    canonical = canonical_theme_name(selected)
+    if canonical in THEME_OPTIONS:
+        st.session_state["visual_theme"] = canonical
+        st.session_state["theme_choice"] = canonical
+
+
 def render_main_brand() -> None:
     if st.session_state.get("language_selector") not in LANGUAGE_OPTIONS:
         st.session_state["language_selector"] = language_option_for(current_language())
+
+    staged_theme = st.session_state.get("theme_choice")
+    if not isinstance(staged_theme, str) or canonical_theme_name(staged_theme) not in THEME_OPTIONS:
+        st.session_state["theme_choice"] = active_theme()
 
     with st.container(key="product_topbar"):
         brand_col, language_col, theme_col = st.columns(
@@ -998,24 +1013,32 @@ def render_main_brand() -> None:
                     )
         with theme_col:
             with st.container(key="theme_picker"):
-                label_col, options_col = st.columns(
-                    [0.22, 0.78],
-                    vertical_alignment="center",
-                    gap="small",
-                )
-                with label_col:
-                    st.markdown(
-                        f'<div class="tf-theme-picker-label">{safe_text(tr("Theme"))}</div>',
-                        unsafe_allow_html=True,
+                with st.form("theme_picker_form", border=False):
+                    label_col, options_col, apply_col = st.columns(
+                        [0.18, 0.62, 0.20],
+                        vertical_alignment="center",
+                        gap="small",
                     )
-                with options_col:
-                    st.segmented_control(
-                        "Theme",
-                        list(THEME_OPTIONS),
-                        key="visual_theme",
-                        label_visibility="collapsed",
-                        width="stretch",
-                    )
+                    with label_col:
+                        st.markdown(
+                            f'<div class="tf-theme-picker-label">{safe_text(tr("Theme"))}</div>',
+                            unsafe_allow_html=True,
+                        )
+                    with options_col:
+                        st.segmented_control(
+                            "Theme",
+                            list(THEME_OPTIONS),
+                            key="theme_choice",
+                            required=True,
+                            label_visibility="collapsed",
+                            width="stretch",
+                        )
+                    with apply_col:
+                        st.form_submit_button(
+                            tr("Apply"),
+                            on_click=_apply_theme_choice,
+                            width="stretch",
+                        )
 
 
 def render_sidebar_brand() -> None:
