@@ -13,7 +13,7 @@ def _translation_app() -> AppTest:
         "if st.session_state.get('language_selector') not in LANGUAGE_OPTIONS:\n"
         "    st.session_state['language_selector'] = '🇬🇧 English'\n"
         "st.segmented_control('Language', list(LANGUAGE_OPTIONS), "
-        "key='language_selector')\n"
+        "key='language_selector', required=True)\n"
         "st.write(tr('Quick lookup'))\n"
         "st.dataframe(translate_dataframe(__import__('pandas').DataFrame("
         "{'Verdict':['Known Threat'], 'ML score':[0.9]})))\n"

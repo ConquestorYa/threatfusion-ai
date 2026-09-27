@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from streamlit.testing.v1 import AppTest
+
 from threatfusion.brand_assets import THREATFUSION_LOGO_DATA_URI
 from threatfusion.ui_theme import (
     THEME_PALETTES,
@@ -41,3 +43,24 @@ def test_brand_logo_is_vector_and_theme_tinted() -> None:
     assert THREATFUSION_LOGO_DATA_URI.startswith("data:image/svg+xml")
     assert "base64" not in THREATFUSION_LOGO_DATA_URI
     assert len({palette(theme)["logo"] for theme in THEME_PALETTES}) == 3
+
+
+def test_language_segmented_control_is_required() -> None:
+    app = AppTest.from_string(
+        "import streamlit as st\n"
+        "from threatfusion.ui_theme import render_main_brand\n"
+        "render_main_brand()\n"
+    ).run(timeout=15)
+
+    assert not app.exception
+    language = next(
+        item for item in app.segmented_control if item.key == "language_selector"
+    )
+    language.set_value("🇹🇷 Türkçe").run(timeout=15)
+    assert app.session_state["language_selector"] == "🇹🇷 Türkçe"
+
+    language = next(
+        item for item in app.segmented_control if item.key == "language_selector"
+    )
+    language.set_value("🇹🇷 Türkçe").run(timeout=15)
+    assert app.session_state["language_selector"] == "🇹🇷 Türkçe"

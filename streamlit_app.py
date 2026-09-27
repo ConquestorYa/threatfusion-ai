@@ -83,6 +83,7 @@ def _load_artifact(path_text: str, expected_checksum: str | None):
     )
 
 
+@st.fragment(run_every="10s")
 def _show_system_status(
     db_path: Path,
     model_dir: Path,
@@ -133,7 +134,9 @@ def _show_system_status(
 
     st.sidebar.markdown(f"### {tr('CTI sources')}")
     cached = {str(row["Source"]): row for row in status_rows}
-    source_names = list(dict.fromkeys(["ThreatFox", "URLhaus", "SGB", *cached]))
+    source_names = list(
+        dict.fromkeys(["ThreatFox", "URLhaus", "PhishTank", "SGB", *cached])
+    )
     for source in source_names:
         row = cached.get(
             source,
