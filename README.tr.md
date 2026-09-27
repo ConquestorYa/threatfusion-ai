@@ -282,15 +282,7 @@ $env:URLHAUS_AUTH_KEY="..."
 python scripts\refresh_cti_cache.py --force
 ~~~
 
-Düşük maliyetli hosting için isteğe bağlı background refresh:
-
-~~~text
-THREATFUSION_AUTO_REFRESH_CTI=1
-THREATFUSION_CTI_REFRESH_HOURS=6
-THREATFUSION_SGB_MAX_PAGES=100
-~~~
-
-Hosted kullanımda ayrı scheduler / maintenance job tercih edilir.
+Hosted kullanımda periyodik CTI yenilemesi gerekiyorsa ayrı scheduler / maintenance job kullan. Streamlit web process'i kendi başına feed yenilemez.
 
 ---
 
@@ -390,30 +382,32 @@ Sentetik runtime'ı bilerek baştan oluşturmak istersen:
 .\.venv\Scripts\python.exe scripts\generate_public_demo_runtime.py --output-dir runtime --overwrite
 ~~~
 
-### 6. Yerel açılışta otomatik CTI yenileme
+### 6. CTI veritabanını manuel güncelleme
 
-Normal yerel modda artık aynı Streamlit başlatma komutu, **arayüz kullanılabilir hale gelmeden önce CTI veritabanını senkron olarak yeniler**. Önce yapılandırılmış kaynaklar güncellenir, ardından site güncellenmiş SQLite cache ile açılır. Sonraki arka plan turları normal güncellik aralığını kullanır. PhishTank için sabit 24 saatlik minimum yenileme aralığı korunur.
+Streamlit web uygulaması artık açılış sırasında internete bağlanıp CTI yenilemesi yapmaz. Böylece site doğrudan ve basit şekilde açılır.
 
-ThreatFox ve URLhaus kendi API/auth anahtarlarını gerektirir. Bu anahtarları yalnızca environment variable olarak tut; Git'e kesinlikle ekleme:
+ThreatFox ve URLhaus API/auth anahtarlarını environment variable olarak kullanır. Anahtarları Git'e ekleme:
 
 ~~~powershell
 $env:THREATFOX_AUTH_KEY="YOUR_THREATFOX_KEY"
 $env:URLHAUS_AUTH_KEY="YOUR_URLHAUS_KEY"
-
-.\.venv\Scripts\python.exe scripts\refresh_cti_cache.py --force
 ~~~
 
-Anahtarları ayarladıktan sonra tek yapman gereken şu komuttur:
+Sitenin kullandığı CTI veritabanını tek komutla güncelle:
+
+~~~powershell
+.\.venv\Scripts\python.exe update_cti_database.py
+~~~
+
+Bu güncelleyici yapılandırılmış ThreatFox, URLhaus ve SGB kaynaklarını zorunlu yeniler. PhishTank, public feed için sabit 24 saatlik minimum yenileme aralığını korur. ThreatFox/URLhaus anahtarı eksikse o kaynak atlanır; SGB ve PhishTank güncellenmeye devam eder. Bir kaynak hata verirse önceki sağlam cache korunur.
+
+Ardından siteyi ayrı olarak başlat:
 
 ~~~powershell
 .\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
 ~~~
 
-Terminalde güvenli CTI başlangıç ilerlemesi görünür; program önce yenilemeyi tamamlar, sonra arayüzü sunar. Yukarıdaki manuel refresh komutu ise siteyi açmadan yalnızca cache'i güncellemek istediğinde kullanılabilir.
-
-Yerel otomatik yenilemeyi özellikle kapatmak istersen `THREATFUSION_AUTO_REFRESH_CTI=0` ayarla. Public/sentetik demo modu varsayılan olarak ağsız ve güvenli kalır.
-
-Ayrı bir güvenilir eğitim artifact'ı oluşturmadığın sürece sentetik demo ML artifact'ı **demo-only model** olarak kalır.
+Streamlit'i başlatmak **veritabanını güncellemez ve dış CTI servislerini beklemez**. Güncel veri istediğinde `update_cti_database.py` dosyasını çalıştırman yeterlidir.
 
 ### Windows sorun giderme
 

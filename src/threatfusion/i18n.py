@@ -35,8 +35,6 @@ _TR: dict[str, str] = {
     "Artifact status checks for local model and metadata files. The model is validated when analysis opens.": "Yerel model ve metadata dosyalarının durumunu kontrol eder. Model analiz açıldığında doğrulanır.",
     "Theme and language controls are available in the top bar.": "Tema ve dil seçenekleri üst çubukta bulunur.",
     "CTI status describes the local cache, not a live feed connection.": "CTI durumu canlı bağlantıyı değil yerel önbelleği gösterir.",
-    "CTI auto-refresh · enabled": "CTI otomatik yenileme · açık",
-    "Automatic CTI refresh configuration is invalid.": "Otomatik CTI yenileme yapılandırması geçersiz.",
     "Secondary views": "İkincil görünümler",
     "Analysis history": "Analiz geçmişi",
     "Model evaluation": "Model değerlendirmesi",

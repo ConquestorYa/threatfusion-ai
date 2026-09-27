@@ -242,40 +242,34 @@ Failed or unexpectedly empty source refreshes preserve the previous healthy
 snapshot. Old inactive lifecycle rows are pruned after 90 days so a long-running
 demo does not grow without bound.
 
-### Automatic local startup refresh
+### Manual local CTI update
 
-In local/private mode (`THREATFUSION_PUBLIC_MODE` unset or `0`), Streamlit
-performs one synchronous CTI refresh before the interactive UI becomes usable.
-The startup refresh forces configured ThreatFox, URLhaus, and SGB sources to
-update, while PhishTank still enforces its fixed 24-hour minimum. The existing
-cache is preserved independently for any source whose refresh fails.
+The Streamlit process does not refresh external CTI feeds on startup and does
+not run a process-local background refresh thread. Web startup therefore does
+not depend on ThreatFox, URLhaus, PhishTank, or SGB availability.
 
-After that startup refresh finishes, the process starts the normal background
-loop. Later cycles wait for the configured interval and use freshness checks
-instead of forcing another immediate download.
-
-Set `THREATFUSION_AUTO_REFRESH_CTI=0` to explicitly disable both the startup
-refresh and the process-local background loop.
-
-### Low-cost hosting fallback
-
-Public mode remains network-safe by default. If a hosting tier has no separate
-cron/worker, the web process can opt in to one background refresh loop by setting:
+For a local/private workspace, refresh the database explicitly before starting
+the web app when fresh CTI is needed:
 
 ```text
-THREATFUSION_AUTO_REFRESH_CTI=1
-THREATFUSION_CTI_REFRESH_HOURS=6
-THREATFUSION_SGB_MAX_PAGES=100
+python update_cti_database.py
 ```
 
-This loop runs outside the Streamlit request path and only refreshes stale
-sources. It is process-local: a service restart also restarts the timer. The
-runtime SQLite path must be writable, and feed credentials are then necessarily
-available to the web process. A separate maintenance job is preferable when the
-hosting platform provides one.
+The convenience updater uses `THREATFUSION_DB_PATH` when it is set, otherwise
+it updates `data/threatfusion.sqlite`. It forces configured ThreatFox,
+URLhaus, and SGB sources, while the PhishTank public feed keeps its fixed
+24-hour minimum. Missing keyed-feed credentials are skipped. Existing healthy
+source snapshots are preserved independently when a refresh fails.
 
-For Windows local demos, Task Scheduler can invoke the refresh command. For
-Linux/container hosting, cron/systemd or a platform scheduler is preferred.
+The lower-level command remains available for advanced options:
+
+```text
+python scripts/refresh_cti_cache.py --force --allow-missing-keys
+```
+
+Hosted deployments should continue to use a separate scheduled maintenance job
+when periodic refresh is desired. Keep feed credentials out of the public web
+process whenever possible.
 
 ## Hosted-demo hardening boundary
 

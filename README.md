@@ -282,15 +282,7 @@ $env:URLHAUS_AUTH_KEY="..."
 python scripts\refresh_cti_cache.py --force
 ~~~
 
-Optional low-cost background refresh:
-
-~~~text
-THREATFUSION_AUTO_REFRESH_CTI=1
-THREATFUSION_CTI_REFRESH_HOURS=6
-THREATFUSION_SGB_MAX_PAGES=100
-~~~
-
-A separate scheduler / maintenance job is preferred for hosted deployments.
+For hosted deployments, use a separate scheduler / maintenance job if periodic CTI refresh is required. The Streamlit web process itself does not refresh feeds.
 
 ---
 
@@ -390,30 +382,32 @@ If you intentionally want to regenerate the synthetic runtime, use:
 .\.venv\Scripts\python.exe scripts\generate_public_demo_runtime.py --output-dir runtime --overwrite
 ~~~
 
-### 6. Automatic CTI refresh on local startup
+### 6. Update the CTI database manually
 
-In normal local mode, the same Streamlit launch command now performs a **synchronous CTI refresh before the interface becomes usable**. Configured sources are refreshed first, then the site opens with the updated SQLite cache. Later background cycles use the normal freshness interval. PhishTank still keeps its fixed 24-hour minimum refresh interval.
+The Streamlit web app no longer performs network refreshes during startup. This keeps startup simple and immediate.
 
-ThreatFox and URLhaus require their own API/auth keys. Keep those keys only in environment variables and never commit them to Git:
+ThreatFox and URLhaus use their API/auth keys from environment variables. Keep those keys outside Git:
 
 ~~~powershell
 $env:THREATFOX_AUTH_KEY="YOUR_THREATFOX_KEY"
 $env:URLHAUS_AUTH_KEY="YOUR_URLHAUS_KEY"
-
-.\.venv\Scripts\python.exe scripts\refresh_cti_cache.py --force
 ~~~
 
-After setting the keys, this single command is enough:
+Update the same CTI database used by the app with one command:
+
+~~~powershell
+.\.venv\Scripts\python.exe update_cti_database.py
+~~~
+
+The updater forces the configured ThreatFox, URLhaus, and SGB sources to refresh. PhishTank still respects its fixed 24-hour public-feed minimum. Missing ThreatFox/URLhaus keys are skipped instead of preventing SGB/PhishTank updates, and a failed source keeps its previous healthy cache.
+
+Then start the site separately:
 
 ~~~powershell
 .\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
 ~~~
 
-The terminal prints secret-safe CTI startup progress, waits for the startup refresh to finish, and then serves the interface. The manual refresh command above remains useful when you want to update the cache without opening the UI.
-
-Set `THREATFUSION_AUTO_REFRESH_CTI=0` if you explicitly want to disable local automatic refresh. Public/synthetic demo mode remains network-safe by default.
-
-The synthetic demo ML artifact is still a **demo-only model** unless you separately build a trusted trained artifact.
+Starting Streamlit does **not** update the database or wait for external CTI services. Run `update_cti_database.py` whenever you want fresh CTI data.
 
 ### Windows troubleshooting
 
