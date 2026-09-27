@@ -34,13 +34,15 @@ Verified from current official source documentation:
   - https://abuse.ch/terms-of-use/
   - https://threatfox.abuse.ch/api/
   - https://urlhaus.abuse.ch/api/
-- PhishTank provides a public downloadable database containing verified,
-  online phishing URLs. ThreatFusion deliberately uses the keyless public CSV
-  feed only, sends a descriptive User-Agent, and limits refreshes to at most
-  once every 24 hours because PhishTank states that keyless downloads are
-  limited to a few per day. The documented public feed URL is HTTP, so
-  ThreatFusion treats its contents as untrusted CTI input and never visits the
-  listed URLs. The feed is not committed to this repository. See:
+- PhishTank provides a downloadable database containing verified, online
+  phishing URLs. ThreatFusion supports both the keyless public CSV feed and
+  the application-key feed path, sends a descriptive User-Agent, and limits
+  refreshes to at most once every 24 hours. PhishTank recommends an application
+  key for automated downloads; without one, the service can limit downloads or
+  redirect requests to additional access/security checks. ThreatFusion never
+  follows arbitrary redirects, treats feed contents as untrusted CTI input,
+  and never visits the listed URLs. The feed is not committed to this
+  repository. See:
   - https://phishtank.org/developer_info.php
 - The SGB API documentation explicitly describes automated integration of its
   malicious-address intelligence into security products/systems, but this
