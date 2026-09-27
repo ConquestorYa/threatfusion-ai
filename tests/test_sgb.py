@@ -1,6 +1,9 @@
+import json
+
 import pytest
 import requests
 
+from threatfusion.collectors import sgb
 from threatfusion.collectors.sgb import SGB_API_URL, SGBCollector
 from threatfusion.models import IOCType
 
@@ -9,6 +12,8 @@ class FakeResponse:
     def __init__(self, payload: object, error: Exception | None = None) -> None:
         self.payload = payload
         self.error = error
+        self.content = json.dumps(payload).encode("utf-8")
+        self.headers: dict[str, str] = {}
 
     def raise_for_status(self) -> None:
         if self.error is not None:
@@ -16,6 +21,10 @@ class FakeResponse:
 
     def json(self) -> object:
         return self.payload
+
+    def iter_content(self, chunk_size: int):
+        for offset in range(0, len(self.content), chunk_size):
+            yield self.content[offset : offset + chunk_size]
 
 
 class FakeSession:
@@ -30,6 +39,7 @@ class FakeSession:
         params: dict[str, int],
         timeout: int,
         allow_redirects: bool,
+        stream: bool = False,
     ) -> FakeResponse:
         self.get_calls.append((url, params, timeout, allow_redirects))
         return self.response
@@ -47,6 +57,7 @@ class SequenceSession:
         params: dict[str, int],
         timeout: int,
         allow_redirects: bool,
+        stream: bool = False,
     ) -> FakeResponse:
         self.get_calls.append((url, params, timeout, allow_redirects))
         if not self.responses:
@@ -292,3 +303,23 @@ def test_invalid_bounded_page_limit_is_rejected(max_pages: int) -> None:
 
     assert session.get_calls == []
 
+
+
+def test_sgb_rejects_oversized_api_response(monkeypatch) -> None:
+    monkeypatch.setattr(sgb, "MAX_SGB_PAGE_BYTES", 16)
+    response = FakeResponse(
+        {"models": [{"url": "example.com", "type": "domain"}]}
+    )
+    session = FakeSession(response)
+
+    with pytest.raises(ValueError, match="safe download limit"):
+        SGBCollector(session).fetch_addresses()
+
+
+def test_sgb_rejects_invalid_json_response() -> None:
+    response = FakeResponse({})
+    response.content = b"{not-json"
+    session = FakeSession(response)
+
+    with pytest.raises(ValueError, match="invalid JSON"):
+        SGBCollector(session).fetch_addresses()
