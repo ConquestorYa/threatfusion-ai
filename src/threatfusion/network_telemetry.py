@@ -16,6 +16,10 @@ from .normalization import normalize_domain_name
 _MAX_ZEEK_FIELDS = 512
 _MAX_ZEEK_ROWS = 100_000
 _MAX_ZEEK_CELLS = 5_000_000
+_MAX_SURICATA_RECORDS = 100_000
+_MAX_PCAP_PACKETS = 500_000
+_MAX_PCAP_DNS_EVENTS = 100_000
+_MAX_DNSTOP_ROWS = 100_000
 
 
 def _empty_result() -> DNSParseResult:
@@ -233,11 +237,15 @@ def parse_suricata_eve_with_diagnostics(content: str) -> DNSParseResult:
             raise ValueError("Suricata EVE JSON is malformed") from error
         if not isinstance(parsed, list):
             raise ValueError("Suricata EVE JSON array is invalid")
+        if len(parsed) > _MAX_SURICATA_RECORDS:
+            raise ValueError("Suricata EVE exceeds the safe record import limit")
         records = [item for item in parsed if isinstance(item, dict)]
     else:
-        for line in content.splitlines():
+        for line in io.StringIO(content):
             if not line.strip():
                 continue
+            if len(records) >= _MAX_SURICATA_RECORDS:
+                raise ValueError("Suricata EVE exceeds the safe record import limit")
             try:
                 item = json.loads(line)
             except json.JSONDecodeError as error:
@@ -358,7 +366,11 @@ def parse_pcap_dns_with_diagnostics(content: bytes) -> DNSParseResult:
     try:
         for timestamp, packet in reader:
             packet_count += 1
+            if packet_count > _MAX_PCAP_PACKETS:
+                raise ValueError("packet capture exceeds the safe packet import limit")
             events.extend(_dns_events_from_packet(float(timestamp), packet))
+            if len(events) > _MAX_PCAP_DNS_EVENTS:
+                raise ValueError("packet capture exceeds the safe DNS event import limit")
     except (ValueError, dpkt.UnpackError) as error:
         raise ValueError("packet capture contains malformed packet data") from error
 
@@ -387,10 +399,12 @@ def parse_dnstop_with_diagnostics(content: str) -> DNSParseResult:
 
     events: list[DNSEvent] = []
     total = 0
-    for raw_line in content.splitlines():
+    for raw_line in io.StringIO(content):
         line = raw_line.strip()
         if not line or line.startswith(("#", ";")):
             continue
+        if total >= _MAX_DNSTOP_ROWS:
+            raise ValueError("dnstop text exceeds the safe row import limit")
         total += 1
         parts = re.split(r"\s+", line)
         candidates = parts[:2]
