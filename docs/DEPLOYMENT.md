@@ -35,8 +35,8 @@ variables:
 ```text
 THREATFUSION_DB_PATH=/app/runtime/threatfusion.sqlite
 THREATFUSION_MODEL_DIR=/app/runtime/models/development-001
-# Optional external trust pin for fixed production artifacts:
-# THREATFUSION_MODEL_SHA256=<64-character SHA-256 digest>
+# Required whenever THREATFUSION_PUBLIC_MODE=1:
+THREATFUSION_MODEL_SHA256=<64-character SHA-256 digest>
 THREATFUSION_CTI_STALE_HOURS_THREATFOX=24
 THREATFUSION_CTI_STALE_HOURS_URLHAUS=24
 THREATFUSION_CTI_STALE_HOURS_SGB=24
@@ -50,9 +50,11 @@ the public-feed download allowance.
 The SQLite database must already contain the CTI cache, and the model directory
 must contain the trusted local `model.joblib` and `metadata.json` artifact.
 Newly generated artifacts also include `artifact.sha256`; ThreatFusion verifies
-that manifest before calling the pickle-compatible joblib loader. A fixed
-deployment can additionally set `THREATFUSION_MODEL_SHA256` so the expected
-digest is held outside the artifact directory.
+that manifest before calling the pickle-compatible joblib loader. The manifest
+protects against accidental corruption, but it is not a trust root because it
+travels with the model. Public mode therefore fails closed unless
+`THREATFUSION_MODEL_SHA256` is supplied from the hosting environment, keeping
+the expected digest outside the artifact directory.
 
 The interactive dashboard does not need feed credentials when a prepared CTI
 cache is supplied. A separate maintenance workflow remains the preferred
@@ -155,6 +157,7 @@ Environment variables:
 THREATFUSION_PUBLIC_MODE=1
 THREATFUSION_DB_PATH=runtime/threatfusion.sqlite
 THREATFUSION_MODEL_DIR=runtime/models/development-001
+THREATFUSION_MODEL_SHA256=<trusted digest computed outside the deployed model directory>
 ```
 
 No ThreatFox or URLhaus credential is required by this public-demo service.
@@ -172,6 +175,7 @@ docker run --rm -p 8501:8501 \
   -e THREATFUSION_PUBLIC_MODE=1 \
   -e THREATFUSION_DB_PATH=/app/runtime/threatfusion.sqlite \
   -e THREATFUSION_MODEL_DIR=/app/runtime/models/development-001 \
+  -e THREATFUSION_MODEL_SHA256=<trusted-digest> \
   -v ./data/deployment/runtime:/app/runtime:ro \
   threatfusion-ai
 ```
