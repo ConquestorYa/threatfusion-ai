@@ -1,9 +1,15 @@
 from __future__ import annotations
 
 import ipaddress
+import io
 from datetime import datetime, timezone
 
 from .dns import DNSEvent, DNSParseDiagnostics, DNSParseResult
+
+
+_MAX_ZEEK_FIELDS = 512
+_MAX_ZEEK_ROWS = 100_000
+_MAX_ZEEK_CELLS = 5_000_000
 
 
 def _optional_zeek_text(value: str | None) -> str | None:
@@ -76,8 +82,10 @@ def parse_zeek_dns_log_with_diagnostics(content: str) -> DNSParseResult:
     total_rows = 0
     skipped_missing_query_name = 0
     invalid_timestamps = 0
+    cell_count = 0
 
-    for raw_line in content.splitlines():
+    for raw_line in io.StringIO(content):
+        raw_line = raw_line.rstrip("\r\n")
         if not raw_line:
             continue
 
@@ -95,7 +103,9 @@ def parse_zeek_dns_log_with_diagnostics(content: str) -> DNSParseResult:
                 remainder = remainder[len(separator) :]
             else:
                 remainder = remainder.lstrip()
-            fields = remainder.split(separator)
+            fields = remainder.split(separator, _MAX_ZEEK_FIELDS)
+            if len(fields) > _MAX_ZEEK_FIELDS:
+                raise ValueError("Zeek dns.log exceeds the safe field import limit")
             continue
         if raw_line.startswith("#"):
             continue
@@ -103,7 +113,16 @@ def parse_zeek_dns_log_with_diagnostics(content: str) -> DNSParseResult:
         if fields is None:
             raise ValueError("Zeek dns.log is missing a #fields header")
 
-        values = raw_line.split(separator)
+        values = raw_line.split(separator, _MAX_ZEEK_FIELDS)
+        if len(values) > _MAX_ZEEK_FIELDS:
+            raise ValueError("Zeek dns.log exceeds the safe field import limit")
+        if total_rows >= _MAX_ZEEK_ROWS:
+            raise ValueError("Zeek dns.log exceeds the safe row import limit")
+
+        cell_count += max(len(fields), len(values))
+        if cell_count > _MAX_ZEEK_CELLS:
+            raise ValueError("Zeek dns.log exceeds the safe cell import limit")
+
         if len(values) < len(fields):
             values.extend([""] * (len(fields) - len(values)))
         row = dict(zip(fields, values, strict=False))
