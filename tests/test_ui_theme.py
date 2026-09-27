@@ -66,7 +66,7 @@ def test_language_segmented_control_is_required() -> None:
     assert app.session_state["language_selector"] == "🇹🇷 Türkçe"
 
 
-def test_theme_picker_is_non_editable_and_updates_state() -> None:
+def test_theme_picker_is_non_editable_prominent_and_updates_state() -> None:
     app = AppTest.from_string(
         "import streamlit as st\n"
         "from threatfusion.ui_theme import render_main_brand\n"
@@ -76,10 +76,14 @@ def test_theme_picker_is_non_editable_and_updates_state() -> None:
 
     assert not app.exception
     assert not any(item.key == "visual_theme" for item in app.selectbox)
+    assert not any(item.key == "visual_theme" for item in app.radio)
     assert not any(button.label == "Apply" for button in app.button)
 
-    theme = next(item for item in app.radio if item.key == "visual_theme")
+    theme = next(
+        item for item in app.segmented_control if item.key == "visual_theme"
+    )
     assert theme.value == "Midnight"
+    assert list(theme.options) == list(THEME_PALETTES)
     theme.set_value("Monochrome").run(timeout=15)
 
     assert not app.exception
