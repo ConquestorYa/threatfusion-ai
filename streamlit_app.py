@@ -13,7 +13,7 @@ sys.path.insert(0, str(_PROJECT_ROOT / "src"))
 from threatfusion.app_config import load_app_config
 from threatfusion.audit import capture_analysis_audit_metadata
 from threatfusion.campaign import find_related_activity
-from threatfusion.cti_cache import list_cti_cache_status, load_ioc_records
+from threatfusion.cti_cache import CTICacheStatus, list_cti_cache_status, load_ioc_records
 from threatfusion.cti_refresh import start_background_refresh_if_enabled
 from threatfusion.dashboard import (
     assessment_rows,
@@ -81,6 +81,33 @@ def _load_artifact(path_text: str, expected_checksum: str | None):
         Path(path_text),
         expected_checksum=expected_checksum,
     )
+
+
+def _cti_snapshot_signature(
+    statuses: list[CTICacheStatus],
+) -> tuple[tuple[str, str, int, int], ...]:
+    return tuple(
+        sorted(
+            (
+                status.source,
+                status.refreshed_at,
+                status.record_count,
+                status.inactive_record_count,
+            )
+            for status in statuses
+        )
+    )
+
+
+@st.cache_resource(max_entries=2)
+def _load_shared_cti_snapshot(
+    db_path_text: str,
+    snapshot_signature: tuple[tuple[str, str, int, int], ...],
+):
+    # The signature is part of the cache key so a completed CTI refresh produces
+    # a fresh shared snapshot. User telemetry is never stored in this cache.
+    _ = snapshot_signature
+    return tuple(load_ioc_records(Path(db_path_text)))
 
 
 def _show_system_status(
@@ -816,7 +843,11 @@ def main() -> None:
                 )
             )
 
-        indicators = load_ioc_records(db_path)
+        cti_statuses = list_cti_cache_status(db_path)
+        indicators = _load_shared_cti_snapshot(
+            str(db_path),
+            _cti_snapshot_signature(cti_statuses),
+        )
         if not indicators:
             st.warning(
                 tr(
