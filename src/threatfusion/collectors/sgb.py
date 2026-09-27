@@ -1,6 +1,6 @@
 import ipaddress
 import json
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -14,6 +14,8 @@ from ..models import IOCRecord, IOCType
 SGB_API_URL = "https://siberguvenlik.gov.tr/api/address/index"
 REQUEST_TIMEOUT_SECONDS = 30
 MAX_SGB_PAGE_BYTES = 8 * 1024 * 1024
+SGB_PAGE_SIZE = 9999
+PageProgressCallback = Callable[[int, int, int | None], None]
 
 
 @dataclass(frozen=True)
@@ -142,7 +144,7 @@ class SGBCollector:
 
         response = self.session.get(
             SGB_API_URL,
-            params={"page": page},
+            params={"page": page, "per-page": SGB_PAGE_SIZE},
             timeout=REQUEST_TIMEOUT_SECONDS,
             allow_redirects=False,
             stream=True,
@@ -167,6 +169,7 @@ class SGBCollector:
         self,
         *,
         max_pages: int = 10,
+        progress: PageProgressCallback | None = None,
     ) -> SGBCollectionResult:
         """Fetch until the source ends, bounded by a caller-controlled cap."""
         if (
@@ -186,6 +189,9 @@ class SGBCollector:
             pages_fetched += 1
             records.extend(page_records)
             raw_items_seen += raw_item_count
+
+            if progress is not None:
+                progress(page, raw_items_seen, total_count)
 
             if raw_item_count == 0:
                 reached_source_end = True
