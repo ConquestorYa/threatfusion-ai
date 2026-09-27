@@ -340,11 +340,33 @@ def test_public_mode_can_auto_refresh_when_feed_credentials_exist(monkeypatch) -
     assert cti_refresh._auto_refresh_enabled() is True
 
 
-def test_background_refresh_forces_first_startup_cycle(tmp_path, monkeypatch) -> None:
-    calls: list[bool] = []
+def test_startup_refresh_runs_synchronously_once(tmp_path, monkeypatch) -> None:
+    calls: list[dict[str, object]] = []
 
     def fake_refresh(*args, **kwargs):
-        calls.append(bool(kwargs["force"]))
+        calls.append(kwargs)
+        return ()
+
+    monkeypatch.setattr(cti_refresh, "_STARTUP_REFRESH_DONE", False)
+    monkeypatch.delenv("THREATFUSION_AUTO_REFRESH_CTI", raising=False)
+    monkeypatch.delenv("THREATFUSION_PUBLIC_MODE", raising=False)
+    monkeypatch.setattr(cti_refresh, "refresh_configured_sources", fake_refresh)
+
+    db_path = tmp_path / "cti.sqlite"
+    assert cti_refresh.run_startup_refresh_if_enabled(db_path) == ()
+    assert cti_refresh.run_startup_refresh_if_enabled(db_path) == ()
+
+    assert len(calls) == 1
+    assert calls[0]["force"] is True
+    assert calls[0]["sgb_max_pages"] == 1000
+
+
+def test_background_refresh_waits_before_next_cycle(tmp_path, monkeypatch) -> None:
+    refresh_calls: list[bool] = []
+    sleep_calls: list[float] = []
+
+    def fake_refresh(*args, **kwargs):
+        refresh_calls.append(bool(kwargs["force"]))
         return ()
 
     class FakeThread:
@@ -359,16 +381,17 @@ def test_background_refresh_forces_first_startup_cycle(tmp_path, monkeypatch) ->
             except RuntimeError as error:
                 assert str(error) == "stop-test-loop"
 
+    def fake_sleep(seconds: float) -> None:
+        sleep_calls.append(seconds)
+        raise RuntimeError("stop-test-loop")
+
     monkeypatch.setattr(cti_refresh, "_AUTO_REFRESH_STARTED", False)
     monkeypatch.delenv("THREATFUSION_AUTO_REFRESH_CTI", raising=False)
     monkeypatch.delenv("THREATFUSION_PUBLIC_MODE", raising=False)
     monkeypatch.setattr(cti_refresh, "refresh_configured_sources", fake_refresh)
     monkeypatch.setattr(cti_refresh.threading, "Thread", FakeThread)
-    monkeypatch.setattr(
-        cti_refresh.time,
-        "sleep",
-        lambda seconds: (_ for _ in ()).throw(RuntimeError("stop-test-loop")),
-    )
+    monkeypatch.setattr(cti_refresh.time, "sleep", fake_sleep)
 
     assert cti_refresh.start_background_refresh_if_enabled(tmp_path / "cti.sqlite")
-    assert calls == [True]
+    assert sleep_calls == [6 * 3600]
+    assert refresh_calls == []
