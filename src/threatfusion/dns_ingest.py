@@ -34,6 +34,8 @@ _MAX_XLSX_ROWS = 100_001
 _MAX_XLSX_CELLS = 1_000_000
 _MAX_XLSX_COLUMNS = 16_384
 _MAX_XLSX_XML_BYTES = 128 * 1024 * 1024
+_MAX_XLSX_ARCHIVE_BYTES = 128 * 1024 * 1024
+_MAX_XLSX_COMPRESSION_RATIO = 200
 
 
 @dataclass(frozen=True)
@@ -424,10 +426,32 @@ def _parse_xlsx_without_engine(
     )
 
 
+def _validate_xlsx_archive(content: bytes) -> None:
+    """Bound ZIP expansion before either Excel reader touches XML content."""
+    with zipfile.ZipFile(io.BytesIO(content)) as archive:
+        total_bytes = 0
+        for info in archive.infolist():
+            if info.file_size > _MAX_XLSX_XML_BYTES:
+                raise ValueError("XLSX member exceeds the safe import limit")
+            total_bytes += info.file_size
+            if total_bytes > _MAX_XLSX_ARCHIVE_BYTES:
+                raise ValueError("XLSX archive exceeds the safe import limit")
+            if (
+                info.file_size
+                > max(info.compress_size, 1) * _MAX_XLSX_COMPRESSION_RATIO
+            ):
+                raise ValueError("XLSX archive compression ratio is unsafe")
+
+
 def _parse_excel(
     content: bytes,
     filename: str | None = None,
 ) -> tuple[DNSParseResult, DNSInputDetection]:
+    # Check all ZIP containers, including renamed files and prefixed ZIPs.
+    # Keep this outside the fallback try: safety failures must be terminal.
+    if zipfile.is_zipfile(io.BytesIO(content)):
+        _validate_xlsx_archive(content)
+
     pandas_error: Exception | None = None
     try:
         return _parse_excel_with_pandas(content)
