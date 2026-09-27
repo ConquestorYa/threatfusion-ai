@@ -4,8 +4,8 @@ from streamlit.testing.v1 import AppTest
 
 from threatfusion.brand_assets import THREATFUSION_LOGO_DATA_URI
 from threatfusion.ui_theme import (
-    THEME_OPTIONS,
     THEME_OPTION_LABELS,
+    THEME_OPTIONS,
     THEME_PALETTES,
     VERDICT_COLORS,
     palette,
