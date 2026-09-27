@@ -112,3 +112,26 @@ def test_monochrome_verdict_palette_is_grayscale() -> None:
         "Review": "#CFCFCF",
         "Low": "#B8B8B8",
     }
+
+
+def test_monochrome_button_contrast_css_targets_nested_streamlit_text(monkeypatch) -> None:
+    from threatfusion import ui_theme
+
+    rendered: list[str] = []
+
+    monkeypatch.setattr(
+        ui_theme.st,
+        "markdown",
+        lambda body, **kwargs: rendered.append(body),
+    )
+
+    ui_theme.inject_theme_css("Monochrome")
+
+    css = "\n".join(rendered)
+    assert (
+        '.st-key-visual_theme button[aria-pressed="true"] *' in css
+    )
+    assert 'color:var(--tf-on-accent)!important' in css
+    assert '[data-testid="stBaseButton-primary"] *' in css
+    assert 'fill:var(--tf-on-accent)!important' in css
+    assert 'stroke:var(--tf-on-accent)!important' in css
