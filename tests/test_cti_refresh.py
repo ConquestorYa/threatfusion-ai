@@ -294,3 +294,27 @@ def test_incomplete_sgb_snapshot_is_rejected_and_old_cache_is_preserved(
     assert [item.value for item in load_ioc_records(db_path, sources=["SGB"])] == [
         "old-sgb.example"
     ]
+
+
+def test_auto_refresh_defaults_on_when_feed_credentials_exist(monkeypatch) -> None:
+    monkeypatch.delenv("THREATFUSION_AUTO_REFRESH_CTI", raising=False)
+    monkeypatch.setenv("THREATFOX_AUTH_KEY", "configured-key")
+    monkeypatch.delenv("URLHAUS_AUTH_KEY", raising=False)
+
+    assert cti_refresh._auto_refresh_enabled() is True
+
+
+def test_explicit_auto_refresh_off_overrides_feed_credentials(monkeypatch) -> None:
+    monkeypatch.setenv("THREATFUSION_AUTO_REFRESH_CTI", "0")
+    monkeypatch.setenv("THREATFOX_AUTH_KEY", "configured-key")
+    monkeypatch.setenv("URLHAUS_AUTH_KEY", "configured-key")
+
+    assert cti_refresh._auto_refresh_enabled() is False
+
+
+def test_auto_refresh_stays_off_without_flag_or_credentials(monkeypatch) -> None:
+    monkeypatch.delenv("THREATFUSION_AUTO_REFRESH_CTI", raising=False)
+    monkeypatch.delenv("THREATFOX_AUTH_KEY", raising=False)
+    monkeypatch.delenv("URLHAUS_AUTH_KEY", raising=False)
+
+    assert cti_refresh._auto_refresh_enabled() is False
