@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import csv
 import io
-import json
 import posixpath
 import re
 import zipfile
@@ -36,6 +35,7 @@ _MAX_XLSX_COLUMNS = 16_384
 _MAX_XLSX_XML_BYTES = 128 * 1024 * 1024
 _MAX_XLSX_ARCHIVE_BYTES = 128 * 1024 * 1024
 _MAX_XLSX_COMPRESSION_RATIO = 200
+_DETECTION_PROBE_CHARS = 64 * 1024
 
 
 @dataclass(frozen=True)
@@ -481,8 +481,14 @@ def _parse_excel(
     ) from pandas_error
 
 
+def _detection_probe(text: str, *, max_lines: int = 40) -> str:
+    """Return a bounded prefix for format detection without copying the file."""
+    prefix = text[:_DETECTION_PROBE_CHARS]
+    return "\n".join(prefix.splitlines()[:max_lines])
+
+
 def _looks_like_zeek_conn(text: str) -> bool:
-    header = "\n".join(text.splitlines()[:40])
+    header = _detection_probe(text)
     return (
         "#fields" in header
         and "id.orig_h" in header
@@ -496,7 +502,10 @@ def _looks_like_suricata_eve(text: str, filename: str | None) -> bool:
     name = Path(filename or "").name.casefold()
     if name in {"eve.json", "eve.jsonl"} or "suricata" in name:
         return True
-    sample = next((line.strip() for line in text.splitlines() if line.strip()), "")
+    sample = next(
+        (line.strip() for line in _detection_probe(text).splitlines() if line.strip()),
+        "",
+    )
     if not sample.startswith(("{", "[")):
         return False
     return '"event_type"' in sample and (
@@ -507,7 +516,7 @@ def _looks_like_suricata_eve(text: str, filename: str | None) -> bool:
 
 
 def _looks_like_zeek(text: str) -> bool:
-    header = "\n".join(text.splitlines()[:40])
+    header = _detection_probe(text)
     return (
         "#fields" in header
         and "query" in header
@@ -521,33 +530,16 @@ def _looks_like_zeek(text: str) -> bool:
 
 def _looks_like_adguard(text: str, filename: str | None) -> bool:
     suffix = Path(filename or "").suffix.casefold()
-    stripped = text.lstrip()
-    if suffix == ".json" and stripped.startswith(("{", "[")):
+    probe = _detection_probe(text).lstrip()
+    if suffix == ".json" and probe.startswith(("{", "[")):
         return True
-    if not stripped.startswith(("{", "[")):
+    if not probe.startswith(("{", "[")):
         return False
 
-    try:
-        parsed = json.loads(stripped)
-    except json.JSONDecodeError:
-        first_line = next(
-            (line for line in text.splitlines() if line.strip()),
-            "",
-        )
-        try:
-            parsed = json.loads(first_line)
-        except json.JSONDecodeError:
-            return False
-
-    if isinstance(parsed, dict):
-        keys = {str(key) for key in parsed}
-        return bool({"QH", "question", "data", "T", "IP"} & keys)
-    if isinstance(parsed, list) and parsed:
-        first = parsed[0]
-        return isinstance(first, dict) and bool(
-            {"QH", "question", "T", "IP"} & {str(key) for key in first}
-        )
-    return False
+    # Detection must stay bounded: parsing an entire attacker-controlled JSON
+    # document here would duplicate the work and memory of the real parser.
+    markers = ('"QH"', '"question"', '"data"', '"T"', '"IP"')
+    return any(marker in probe for marker in markers)
 
 
 def parse_dns_upload_with_diagnostics(
