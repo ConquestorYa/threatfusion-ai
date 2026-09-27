@@ -4,6 +4,7 @@ from streamlit.testing.v1 import AppTest
 
 from threatfusion.brand_assets import THREATFUSION_LOGO_DATA_URI
 from threatfusion.ui_theme import (
+    THEME_OPTION_LABELS,
     THEME_OPTIONS,
     THEME_PALETTES,
     VERDICT_COLORS,
@@ -67,7 +68,7 @@ def test_language_segmented_control_is_required() -> None:
     assert app.session_state["language_selector"] == "🇹🇷 Türkçe"
 
 
-def test_theme_picker_is_non_editable_prominent_and_updates_state() -> None:
+def test_theme_picker_is_compact_non_editable_and_updates_state() -> None:
     app = AppTest.from_string(
         "import streamlit as st\n"
         "from threatfusion.ui_theme import render_main_brand\n"
@@ -84,7 +85,6 @@ def test_theme_picker_is_non_editable_prominent_and_updates_state() -> None:
         item for item in app.segmented_control if item.key == "visual_theme"
     )
     assert theme.value == "Midnight"
-    assert list(theme.options) == list(THEME_OPTIONS)
     theme.set_value("Monochrome").run(timeout=15)
 
     assert not app.exception
@@ -135,3 +135,12 @@ def test_monochrome_button_contrast_css_targets_nested_streamlit_text(monkeypatc
     assert '[data-testid="stBaseButton-primary"] *' in css
     assert 'fill:var(--tf-on-accent)!important' in css
     assert 'stroke:var(--tf-on-accent)!important' in css
+
+
+def test_compact_theme_labels_are_short_and_unique() -> None:
+    assert set(THEME_OPTION_LABELS) == set(THEME_OPTIONS)
+    assert len(set(THEME_OPTION_LABELS.values())) == len(THEME_OPTIONS)
+    assert THEME_OPTION_LABELS["Midnight"] == "🌙 Mid"
+    assert THEME_OPTION_LABELS["Crimson"] == "🟥 Red"
+    assert THEME_OPTION_LABELS["Violet Noir"] == "🟪 Violet"
+    assert THEME_OPTION_LABELS["Monochrome"] == "◻ Mono"

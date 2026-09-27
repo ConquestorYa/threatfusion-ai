@@ -11,6 +11,12 @@ from .brand_assets import THREATFUSION_LOGO_DATA_URI
 from .i18n import LANGUAGE_OPTIONS, current_language, language_option_for, tr
 
 THEME_OPTIONS = ("Midnight", "Crimson", "Violet Noir", "Monochrome")
+THEME_OPTION_LABELS = {
+    "Midnight": "🌙 Mid",
+    "Crimson": "🟥 Red",
+    "Violet Noir": "🟪 Violet",
+    "Monochrome": "◻ Mono",
+}
 
 _LEGACY_THEME_NAMES = {
     "Dark": "Midnight",
@@ -265,28 +271,36 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
         drop-shadow(0 8px 20px rgba(0,0,0,.18));
     transition:background-color .18s ease, filter .18s ease;
 }
-.st-key-theme_picker {
-    margin-top:.75rem;
-    padding:.72rem .82rem .78rem;
+.st-key-utility_dock {
+    margin-top:.15rem;
+    padding:.55rem .70rem;
     border:1px solid var(--tf-border);
-    border-radius:10px;
-    background:color-mix(in srgb, var(--tf-panel) 92%, var(--tf-bg));
+    border-radius:12px;
+    background:color-mix(in srgb, var(--tf-panel) 94%, var(--tf-bg));
+}
+.tf-mini-controls-kicker {
+    color:var(--tf-muted);
+    font-size:.64rem;
+    font-weight:750;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    margin:0 0 .42rem;
 }
 .tf-theme-picker-label {
     color:var(--tf-muted);
-    font-size:.72rem;
+    font-size:.68rem;
     font-weight:750;
-    letter-spacing:.08em;
+    letter-spacing:.07em;
     text-transform:uppercase;
     text-align:right;
     margin:0;
     line-height:1;
     white-space:nowrap;
 }
-.tf-theme-bar-label {
+.tf-mini-label {
     text-align:left;
-    margin:0 0 .48rem;
-    color:var(--tf-text);
+    margin:0;
+    font-size:.66rem;
 }
 .st-key-language_selector,
 .st-key-visual_theme {
@@ -294,32 +308,25 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     align-items:center;
     margin:0;
 }
-.st-key-language_selector {
-    justify-content:flex-end;
-}
-.st-key-language_selector [role="radiogroup"] {
-    justify-content:flex-end;
-}
-.st-key-visual_theme,
+.st-key-language_selector [role="radiogroup"],
 .st-key-visual_theme [role="radiogroup"] {
-    width:100%;
-}
-.st-key-visual_theme [role="radiogroup"] {
-    display:grid!important;
-    grid-template-columns:repeat(4,minmax(0,1fr));
-    gap:.4rem;
+    display:flex!important;
+    flex-wrap:wrap;
+    gap:.28rem;
+    justify-content:flex-start;
 }
 .st-key-language_selector button,
 .st-key-visual_theme button {
+    min-height:30px!important;
+    width:auto!important;
+    padding:.18rem .58rem!important;
+    border-radius:999px!important;
+    font-size:.74rem!important;
+    font-weight:650!important;
     background:var(--tf-panel)!important;
     color:var(--tf-text)!important;
     border-color:var(--tf-border)!important;
-    min-height:38px!important;
-}
-.st-key-visual_theme button {
-    width:100%!important;
     justify-content:center!important;
-    font-weight:650!important;
 }
 .st-key-language_selector button[aria-pressed="true"],
 .st-key-language_selector button[data-selected="true"] {
@@ -1028,11 +1035,20 @@ button:focus-visible,a:focus-visible,input:focus-visible {
     .tf-product-brand-badge { display:none; }
     .tf-product-brand-title { font-size:1.35rem; }
     .tf-theme-picker-label { text-align:left; }
-    .st-key-visual_theme [role="radiogroup"] {
-        grid-template-columns:repeat(2,minmax(0,1fr));
+    .st-key-utility_dock {
+        margin-top:.6rem;
+        padding:.5rem .6rem;
     }
-    .st-key-language_selector,
-    .st-key-language_selector [role="radiogroup"] { justify-content:flex-start; }
+    .st-key-language_selector [role="radiogroup"],
+    .st-key-visual_theme [role="radiogroup"] {
+        gap:.24rem;
+    }
+    .st-key-language_selector button,
+    .st-key-visual_theme button {
+        min-height:28px!important;
+        font-size:.71rem!important;
+        padding:.14rem .5rem!important;
+    }
     .st-key-quick_lookup_input [data-baseweb="input"],
     .st-key-quick_lookup_analyze button { min-height:60px!important; }
     .st-key-quick_lookup_input input { min-height:58px; font-size:1rem!important; }
@@ -1065,8 +1081,8 @@ def render_main_brand() -> None:
         st.session_state["language_selector"] = language_option_for(current_language())
 
     with st.container(key="product_topbar"):
-        brand_col, language_col = st.columns(
-            [2.15, 1.00],
+        brand_col, controls_col = st.columns(
+            [2.20, 1.10],
             vertical_alignment="center",
         )
         with brand_col:
@@ -1078,19 +1094,24 @@ def render_main_brand() -> None:
                 '</div></div></div>',
                 unsafe_allow_html=True,
             )
-        with language_col:
-            with st.container(key="language_picker"):
-                label_col, options_col = st.columns(
-                    [0.22, 0.78],
-                    vertical_alignment="center",
-                    gap="small",
+        with controls_col:
+            with st.container(key="utility_dock"):
+                st.markdown(
+                    f'<div class="tf-mini-controls-kicker">{safe_text(tr("Controls"))}</div>',
+                    unsafe_allow_html=True,
                 )
-                with label_col:
+
+                lang_label_col, lang_ui_col = st.columns(
+                    [0.28, 0.72],
+                    gap="small",
+                    vertical_alignment="center",
+                )
+                with lang_label_col:
                     st.markdown(
-                        f'<div class="tf-theme-picker-label">{safe_text(tr("Language"))}</div>',
+                        f'<div class="tf-theme-picker-label tf-mini-label">{safe_text(tr("Language"))}</div>',
                         unsafe_allow_html=True,
                     )
-                with options_col:
+                with lang_ui_col:
                     st.segmented_control(
                         "Language",
                         list(LANGUAGE_OPTIONS),
@@ -1100,19 +1121,26 @@ def render_main_brand() -> None:
                         width="stretch",
                     )
 
-        with st.container(key="theme_picker"):
-            st.markdown(
-                f'<div class="tf-theme-picker-label tf-theme-bar-label">{safe_text(tr("Theme"))}</div>',
-                unsafe_allow_html=True,
-            )
-            st.segmented_control(
-                tr("Theme"),
-                list(THEME_OPTIONS),
-                key="visual_theme",
-                required=True,
-                label_visibility="collapsed",
-                width="stretch",
-            )
+                theme_label_col, theme_ui_col = st.columns(
+                    [0.28, 0.72],
+                    gap="small",
+                    vertical_alignment="center",
+                )
+                with theme_label_col:
+                    st.markdown(
+                        f'<div class="tf-theme-picker-label tf-mini-label">{safe_text(tr("Theme"))}</div>',
+                        unsafe_allow_html=True,
+                    )
+                with theme_ui_col:
+                    st.segmented_control(
+                        tr("Theme"),
+                        list(THEME_OPTIONS),
+                        key="visual_theme",
+                        required=True,
+                        label_visibility="collapsed",
+                        width="stretch",
+                        format_func=lambda option: THEME_OPTION_LABELS.get(option, option),
+                    )
 
 
 def render_sidebar_brand() -> None:

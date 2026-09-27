@@ -16,6 +16,7 @@ _LANGUAGE_BY_OPTION = {
 _TR: dict[str, str] = {
     "Language": "Dil",
     "Theme": "Tema",
+    "Controls": "Kontroller",
     "Analyst workspace": "Analist çalışma alanı",
     "Threat intelligence, DNS analysis and AI-assisted triage in one analyst workspace.": "Tehdit istihbaratı, DNS analizi ve yapay zekâ destekli triyaj tek bir analist çalışma alanında.",
     "DNS intelligence workspace": "DNS istihbarat çalışma alanı",
