@@ -6,7 +6,7 @@ import zipfile
 
 import pytest
 
-from threatfusion import dns_ingest, dns_pihole
+from threatfusion import dns, dns_ingest, dns_pihole, dns_zeek, network_telemetry
 
 
 @pytest.mark.parametrize("reference", ["ZZZZZZ1", "XFE1", "A0", "A1junk"])
@@ -185,3 +185,80 @@ def test_excel_keeps_non_zip_legacy_reader_path(monkeypatch) -> None:
         dns_ingest, "_parse_excel_with_pandas", lambda content: expected
     )
     assert dns_ingest._parse_excel(b"legacy binary data", "upload.xls") is expected
+
+
+def test_delimited_dns_rejects_excessive_columns(monkeypatch) -> None:
+    monkeypatch.setattr(dns, "_MAX_TABLE_COLUMNS", 3)
+    content = "query_name,a,b,c\nexample.com,1,2,3\n"
+    with pytest.raises(ValueError, match="column import limit"):
+        dns.parse_dns_csv_with_diagnostics(content)
+
+
+def test_delimited_dns_rejects_excessive_rows(monkeypatch) -> None:
+    monkeypatch.setattr(dns, "_MAX_TABLE_ROWS", 2)
+    content = (
+        "query_name\n"
+        "one.example\n"
+        "two.example\n"
+        "three.example\n"
+    )
+    with pytest.raises(ValueError, match="row import limit"):
+        dns.parse_dns_csv_with_diagnostics(content)
+
+
+def test_delimited_dns_rejects_total_cell_expansion(monkeypatch) -> None:
+    monkeypatch.setattr(dns, "_MAX_TABLE_CELLS", 4)
+    content = (
+        "query_name,client_ip\n"
+        "one.example,10.0.0.1\n"
+        "two.example,10.0.0.2\n"
+        "three.example,10.0.0.3\n"
+    )
+    with pytest.raises(ValueError, match="cell import limit"):
+        dns.parse_dns_csv_with_diagnostics(content)
+
+
+def test_zeek_dns_rejects_excessive_fields(monkeypatch) -> None:
+    monkeypatch.setattr(dns_zeek, "_MAX_ZEEK_FIELDS", 3)
+    content = (
+        "#separator \\x09\n"
+        "#fields\tts\tid.orig_h\tquery\tqtype_name\n"
+        "1700000000\t10.0.0.5\texample.com\tA\n"
+    )
+    with pytest.raises(ValueError, match="field import limit"):
+        dns_zeek.parse_zeek_dns_log_with_diagnostics(content)
+
+
+def test_zeek_dns_rejects_total_cell_expansion(monkeypatch) -> None:
+    monkeypatch.setattr(dns_zeek, "_MAX_ZEEK_CELLS", 5)
+    content = (
+        "#separator \\x09\n"
+        "#fields\tts\tquery\tqtype_name\n"
+        "1700000000\tone.example\tA\n"
+        "1700000001\ttwo.example\tA\n"
+    )
+    with pytest.raises(ValueError, match="cell import limit"):
+        dns_zeek.parse_zeek_dns_log_with_diagnostics(content)
+
+
+def test_zeek_conn_rejects_excessive_rows(monkeypatch) -> None:
+    monkeypatch.setattr(network_telemetry, "_MAX_ZEEK_ROWS", 1)
+    content = (
+        "#separator \\x09\n"
+        "#fields\tts\tid.orig_h\tid.resp_h\n"
+        "1700000000\t10.0.0.5\t203.0.113.10\n"
+        "1700000001\t10.0.0.6\t203.0.113.11\n"
+    )
+    with pytest.raises(ValueError, match="row import limit"):
+        network_telemetry.parse_zeek_conn_log_with_diagnostics(content)
+
+
+def test_zeek_conn_rejects_excessive_fields(monkeypatch) -> None:
+    monkeypatch.setattr(network_telemetry, "_MAX_ZEEK_FIELDS", 3)
+    content = (
+        "#separator \\x09\n"
+        "#fields\tts\tid.orig_h\tid.resp_h\tproto\n"
+        "1700000000\t10.0.0.5\t203.0.113.10\ttcp\n"
+    )
+    with pytest.raises(ValueError, match="field import limit"):
+        network_telemetry.parse_zeek_conn_log_with_diagnostics(content)

@@ -59,6 +59,12 @@ _DNS_QUERY_TYPES = {
     "TXT",
 }
 
+_MAX_TABLE_COLUMNS = 512
+_MAX_TABLE_ROWS = 100_000
+_MAX_TABLE_CELLS = 5_000_000
+_MAX_DELIMITER_SAMPLE_CHARS = 64 * 1024
+
+
 _RESPONSE_CODES = {
     "NOERROR",
     "FORMERR",
@@ -365,7 +371,7 @@ def _infer_field_mapping(
 
 
 def _detect_delimiter(content: str) -> str:
-    sample = "\n".join(content.splitlines()[:50])
+    sample = content[:_MAX_DELIMITER_SAMPLE_CHARS]
     try:
         dialect = csv.Sniffer().sniff(sample, delimiters=",;\t|")
     except csv.Error:
@@ -379,22 +385,42 @@ def _read_dns_table(
     delimiter = _detect_delimiter(content)
     reader = csv.DictReader(io.StringIO(content), delimiter=delimiter)
     fieldnames = [field for field in (reader.fieldnames or []) if field is not None]
-    rows = [dict(row) for row in reader if row is not None]
 
     if not fieldnames:
         return [], [], {}
+    if len(fieldnames) > _MAX_TABLE_COLUMNS:
+        raise ValueError("DNS table exceeds the safe column import limit")
+
+    rows: list[dict[str, object]] = []
+    cell_count = 0
+    for row in reader:
+        if row is None:
+            continue
+        if len(rows) >= _MAX_TABLE_ROWS:
+            raise ValueError("DNS table exceeds the safe row import limit")
+
+        extra_values = row.get(None)
+        extra_count = (
+            len(extra_values)
+            if isinstance(extra_values, list)
+            else int(extra_values is not None)
+        )
+        cell_count += len(fieldnames) + extra_count
+        if cell_count > _MAX_TABLE_CELLS:
+            raise ValueError("DNS table exceeds the safe cell import limit")
+        rows.append(dict(row))
 
     mapping = _infer_field_mapping(fieldnames, rows)
     if "query_name" in mapping:
         return fieldnames, rows, mapping
 
     if len(fieldnames) == 1 and _looks_like_query_column_value(fieldnames[0]):
-        raw_reader = csv.reader(io.StringIO(content), delimiter=delimiter)
-        values = [
-            row[0]
-            for row in raw_reader
-            if row and _as_optional_text(row[0]) is not None
-        ]
+        values = [fieldnames[0]]
+        values.extend(
+            str(row.get(fieldnames[0]))
+            for row in rows
+            if _as_optional_text(row.get(fieldnames[0])) is not None
+        )
         rows = [{"query_name": value} for value in values]
         return ["query_name"], rows, {"query_name": "query_name"}
 
