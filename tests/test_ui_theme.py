@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from streamlit.testing.v1 import AppTest
+
 from threatfusion.brand_assets import THREATFUSION_LOGO_DATA_URI
 from threatfusion.ui_theme import (
     THEME_PALETTES,
@@ -51,6 +53,12 @@ def test_language_segmented_control_is_required() -> None:
     ).run(timeout=15)
 
     assert not app.exception
+    language = next(
+        item for item in app.segmented_control if item.key == "language_selector"
+    )
+    language.set_value("🇹🇷 Türkçe").run(timeout=15)
+    assert app.session_state["language_selector"] == "🇹🇷 Türkçe"
+
     language = next(
         item for item in app.segmented_control if item.key == "language_selector"
     )
