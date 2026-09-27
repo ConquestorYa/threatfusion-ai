@@ -30,8 +30,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--sgb-pages",
         dest="sgb_max_pages",
         type=int,
-        default=1000,
-        help="maximum SGB pages to fetch; stops earlier when the source ends",
+        default=100,
+        help=(
+            "maximum SGB pages to fetch; each page requests up to 9,999 records "
+            "and stops earlier when the source ends"
+        ),
     )
     parser.add_argument(
         "--stale-hours",

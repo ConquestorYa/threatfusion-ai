@@ -47,8 +47,10 @@ class FakePhishTankCollector:
 
 
 class FakeSGBCollector:
-    def fetch_bounded_addresses(self, *, max_pages: int):
-        assert max_pages == 1000
+    def fetch_bounded_addresses(self, *, max_pages: int, progress=None):
+        assert max_pages == 100
+        if progress is not None:
+            progress(1, 1, 1)
         return SimpleNamespace(
             records=(
                 IOCRecord(
@@ -123,7 +125,7 @@ def test_refresh_emits_source_progress(tmp_path, monkeypatch):
         source == "SGB"
         and stage == "fetching"
         and detail is not None
-        and "1000 pages" in detail
+        and "100 pages" in detail
         for source, stage, detail in events
     )
     assert any(
@@ -270,7 +272,9 @@ def test_incomplete_sgb_snapshot_is_rejected_and_old_cache_is_preserved(
     )
 
     class IncompleteSGB:
-        def fetch_bounded_addresses(self, *, max_pages: int):
+        def fetch_bounded_addresses(self, *, max_pages: int, progress=None):
+            if progress is not None:
+                progress(1, 1, 1000)
             return SimpleNamespace(
                 records=(IOCRecord("partial.example", IOCType.DOMAIN, "SGB"),),
                 pages_fetched=max_pages,
@@ -294,3 +298,35 @@ def test_incomplete_sgb_snapshot_is_rejected_and_old_cache_is_preserved(
     assert [item.value for item in load_ioc_records(db_path, sources=["SGB"])] == [
         "old-sgb.example"
     ]
+
+
+def test_sgb_page_progress_is_forwarded(tmp_path, monkeypatch) -> None:
+    events: list[tuple[str, str, str | None]] = []
+
+    class FakeSGB:
+        def fetch_bounded_addresses(self, *, max_pages: int, progress=None):
+            if progress is not None:
+                progress(1, 9999, 15000)
+                progress(2, 15000, 15000)
+            return SimpleNamespace(
+                records=(IOCRecord("sgb.example", IOCType.DOMAIN, "SGB"),),
+                pages_fetched=2,
+                reached_source_end=True,
+            )
+
+    monkeypatch.setattr(cti_refresh, "PhishTankCollector", FakePhishTankCollector)
+    monkeypatch.setattr(cti_refresh, "SGBCollector", FakeSGB)
+
+    cti_refresh.refresh_configured_sources(
+        tmp_path / "cti.sqlite",
+        threatfox_key=None,
+        urlhaus_key=None,
+        force=True,
+        progress=lambda source, stage, detail: events.append(
+            (source, stage, detail)
+        ),
+        now=datetime(2026, 9, 26, tzinfo=timezone.utc),
+    )
+
+    assert ("SGB", "fetching", "page 1 · 9,999 / 15,000 raw records") in events
+    assert ("SGB", "fetching", "page 2 · 15,000 / 15,000 raw records") in events

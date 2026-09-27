@@ -4,7 +4,7 @@ import pytest
 import requests
 
 from threatfusion.collectors import sgb
-from threatfusion.collectors.sgb import SGB_API_URL, SGBCollector
+from threatfusion.collectors.sgb import SGB_API_URL, SGB_PAGE_SIZE, SGBCollector
 from threatfusion.models import IOCType
 
 
@@ -188,7 +188,14 @@ def test_pagination_parameters_and_official_endpoint() -> None:
 
     SGBCollector(session).fetch_addresses(page=3)
 
-    assert session.get_calls == [(SGB_API_URL, {"page": 3}, 30, False)]
+    assert session.get_calls == [
+        (
+            SGB_API_URL,
+            {"page": 3, "per-page": SGB_PAGE_SIZE},
+            30,
+            False,
+        )
+    ]
 
 
 @pytest.mark.parametrize("page", [0, -1, True])
@@ -323,3 +330,30 @@ def test_sgb_rejects_invalid_json_response() -> None:
 
     with pytest.raises(ValueError, match="invalid JSON"):
         SGBCollector(session).fetch_addresses()
+
+
+def test_bounded_pagination_reports_progress() -> None:
+    session = SequenceSession(
+        [
+            {
+                "totalCount": 3,
+                "models": [
+                    {"url": "one.example", "type": "domain"},
+                    {"url": "two.example", "type": "domain"},
+                ],
+            },
+            {
+                "totalCount": 3,
+                "models": [{"url": "three.example", "type": "domain"}],
+            },
+        ]
+    )
+    progress: list[tuple[int, int, int | None]] = []
+
+    result = SGBCollector(session).fetch_bounded_addresses(
+        max_pages=10,
+        progress=lambda page, seen, total: progress.append((page, seen, total)),
+    )
+
+    assert result.reached_source_end is True
+    assert progress == [(1, 2, 3), (2, 3, 3)]
