@@ -64,3 +64,25 @@ def test_language_segmented_control_is_required() -> None:
     )
     language.set_value("🇹🇷 Türkçe").run(timeout=15)
     assert app.session_state["language_selector"] == "🇹🇷 Türkçe"
+
+
+def test_theme_selection_is_staged_until_apply() -> None:
+    app = AppTest.from_string(
+        "import streamlit as st\n"
+        "from threatfusion.ui_theme import render_main_brand\n"
+        "st.session_state.setdefault('visual_theme', 'Midnight')\n"
+        "render_main_brand()\n"
+    )
+    app.session_state["theme_choice"] = "Crimson"
+    app.run(timeout=15)
+
+    assert not app.exception
+    assert app.session_state["visual_theme"] == "Midnight"
+    assert app.session_state["theme_choice"] == "Crimson"
+
+    apply_button = next(button for button in app.button if button.label == "Apply")
+    apply_button.click().run(timeout=15)
+
+    assert not app.exception
+    assert app.session_state["visual_theme"] == "Crimson"
+    assert app.session_state["theme_choice"] == "Crimson"
