@@ -228,11 +228,26 @@ def _truthy_environment(name: str, default: bool = False) -> bool:
     return raw.strip().casefold() in {"1", "true", "yes", "on"}
 
 
+def _refresh_credentials_configured() -> bool:
+    """Return whether at least one keyed CTI source can be refreshed."""
+    return any(
+        (os.environ.get(name) or "").strip()
+        for name in ("THREATFOX_AUTH_KEY", "URLHAUS_AUTH_KEY")
+    )
+
+
+def _auto_refresh_enabled() -> bool:
+    """Honor an explicit flag, otherwise enable refresh when credentials exist."""
+    if "THREATFUSION_AUTO_REFRESH_CTI" in os.environ:
+        return _truthy_environment("THREATFUSION_AUTO_REFRESH_CTI")
+    return _refresh_credentials_configured()
+
+
 def start_background_refresh_if_enabled(db_path: Path) -> bool:
-    """Start one process-local CTI refresh loop when explicitly enabled."""
+    """Start one process-local CTI refresh loop when configured or credentialed."""
     global _AUTO_REFRESH_STARTED
 
-    if not _truthy_environment("THREATFUSION_AUTO_REFRESH_CTI"):
+    if not _auto_refresh_enabled():
         return False
 
     with _AUTO_REFRESH_LOCK:
