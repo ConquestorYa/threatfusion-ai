@@ -15,7 +15,7 @@ RUN python -m pip install --no-cache-dir -r requirements-runtime.txt
 COPY . .
 
 RUN mkdir -p /app/data /app/runtime \
-    && chown -R threatfusion:threatfusion /app
+    && chown -R threatfusion:threatfusion /app/data /app/runtime
 
 USER threatfusion
 
