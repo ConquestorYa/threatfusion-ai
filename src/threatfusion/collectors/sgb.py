@@ -1,4 +1,5 @@
 import ipaddress
+import json
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
@@ -7,10 +8,12 @@ from urllib.parse import urlsplit
 
 import requests
 
+from ..http_safety import read_bounded_response_bytes
 from ..models import IOCRecord, IOCType
 
 SGB_API_URL = "https://siberguvenlik.gov.tr/api/address/index"
 REQUEST_TIMEOUT_SECONDS = 30
+MAX_SGB_PAGE_BYTES = 8 * 1024 * 1024
 
 
 @dataclass(frozen=True)
@@ -142,9 +145,19 @@ class SGBCollector:
             params={"page": page},
             timeout=REQUEST_TIMEOUT_SECONDS,
             allow_redirects=False,
+            stream=True,
         )
         response.raise_for_status()
-        return _response_page(response.json())
+        payload_bytes = read_bounded_response_bytes(
+            response,
+            max_bytes=MAX_SGB_PAGE_BYTES,
+            label="SGB API response",
+        )
+        try:
+            payload = json.loads(payload_bytes)
+        except (json.JSONDecodeError, UnicodeDecodeError) as error:
+            raise ValueError("SGB response is invalid JSON") from error
+        return _response_page(payload)
 
     def fetch_addresses(self, page: int = 1) -> list[IOCRecord]:
         records, _, _ = self._fetch_page(page)
