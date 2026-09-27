@@ -48,6 +48,8 @@ ThreatFusion combines four evidence layers in one local workflow:
 
 The project is intentionally built as an **educational / portfolio security-analysis prototype**. It is not presented as a production SIEM, EDR, or guaranteed malware detector.
 
+Development also made practical use of an AI-assisted **“vibe coding”** workflow for rapid iteration, with generated changes reviewed, tested, and refined before merging.
+
 ---
 
 ## 🚀 At a glance
