@@ -282,15 +282,7 @@ $env:URLHAUS_AUTH_KEY="..."
 python scripts\refresh_cti_cache.py --force
 ~~~
 
-Düşük maliyetli hosting için isteğe bağlı background refresh:
-
-~~~text
-THREATFUSION_AUTO_REFRESH_CTI=1
-THREATFUSION_CTI_REFRESH_HOURS=6
-THREATFUSION_SGB_MAX_PAGES=100
-~~~
-
-Hosted kullanımda ayrı scheduler / maintenance job tercih edilir.
+Hosted kullanımda periyodik CTI yenilemesi gerekiyorsa ayrı scheduler / maintenance job kullan. Streamlit web process'i kendi başına feed yenilemez.
 
 ---
 
