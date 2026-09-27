@@ -5,9 +5,9 @@
 ### Yerel odaklı siber tehdit istihbaratı, ağ telemetrisi triyajı ve açıklanabilir ML
 
 <p>
-  <a href="README.md"><strong>English</strong></a>
+  <a href="README.md"><strong>🇬🇧 English README</strong></a>
   &nbsp;•&nbsp;
-  <strong>Türkçe</strong>
+  <strong>🇹🇷 Türkçe README</strong>
 </p>
 
 <p>
@@ -23,6 +23,7 @@
   <img alt="CI" src="https://github.com/ConquestorYa/threatfusion-ai/actions/workflows/ci.yml/badge.svg">
   <img alt="Status" src="https://img.shields.io/badge/Status-v0.1.0%20Release%20Candidate-blueviolet">
   <img alt="Privacy" src="https://img.shields.io/badge/Telemetry-local%20%2F%20in--memory-2ea44f">
+  <img alt="Geliştirme yaklaşımı" src="https://img.shields.io/badge/Geliştirme-AI%20destekli%20Vibe%20Coding-6f42c1">
 </p>
 
 <strong>ThreatFusion AI, herkese açık tehdit istihbaratını ve yerel telemetriyi bir araya getirerek şüpheli hedeflere bağlanmadan analist odaklı bir inceleme kuyruğu üretir.</strong>
@@ -48,7 +49,9 @@ ThreatFusion dört farklı kanıt katmanını tek bir yerel akışta birleştiri
 
 Proje bilinçli olarak **eğitim / portföy amaçlı bir güvenlik analiz prototipi** olarak konumlandırılır. Production SIEM, EDR veya garantili zararlı yazılım tespit ürünü olarak sunulmaz.
 
-Geliştirme sürecinde hızlı iterasyon için yapay zekâ destekli **“vibe coding”** yaklaşımından da yararlanıldı; üretilen değişiklikler birleştirilmeden önce gözden geçirildi, test edildi ve iyileştirildi.
+### 🤖 Geliştirme yaklaşımı: AI destekli vibe coding
+
+> **Bu proje, yapay zekâ destekli “vibe coding” yaklaşımıyla geliştirildi.** Yapay zekâ araçları hızlı prototipleme, kod geliştirme, refactoring, hata ayıklama, test ve dokümantasyon süreçlerinde yoğun şekilde kullanıldı. Üretilen değişiklikler birleştirilmeden önce gözden geçirildi, test edildi ve iyileştirildi.
 
 ---
 
