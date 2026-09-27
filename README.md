@@ -282,15 +282,7 @@ $env:URLHAUS_AUTH_KEY="..."
 python scripts\refresh_cti_cache.py --force
 ~~~
 
-Optional low-cost background refresh:
-
-~~~text
-THREATFUSION_AUTO_REFRESH_CTI=1
-THREATFUSION_CTI_REFRESH_HOURS=6
-THREATFUSION_SGB_MAX_PAGES=100
-~~~
-
-A separate scheduler / maintenance job is preferred for hosted deployments.
+For hosted deployments, use a separate scheduler / maintenance job if periodic CTI refresh is required. The Streamlit web process itself does not refresh feeds.
 
 ---
 
