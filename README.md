@@ -392,7 +392,7 @@ If you intentionally want to regenerate the synthetic runtime, use:
 
 ### 6. Automatic CTI refresh on local startup
 
-In normal local mode, ThreatFusion now starts a background CTI refresh automatically every time the application process starts. The first startup cycle forces a refresh of configured sources; later cycles use the normal freshness interval. PhishTank still keeps its fixed 24-hour minimum refresh interval.
+In normal local mode, the same Streamlit launch command now performs a **synchronous CTI refresh before the interface becomes usable**. Configured sources are refreshed first, then the site opens with the updated SQLite cache. Later background cycles use the normal freshness interval. PhishTank still keeps its fixed 24-hour minimum refresh interval.
 
 ThreatFox and URLhaus require their own API/auth keys. Keep those keys only in environment variables and never commit them to Git:
 
@@ -403,7 +403,13 @@ $env:URLHAUS_AUTH_KEY="YOUR_URLHAUS_KEY"
 .\.venv\Scripts\python.exe scripts\refresh_cti_cache.py --force
 ~~~
 
-After setting the keys, starting Streamlit is enough for the automatic startup refresh. The manual command above remains useful when you want to refresh immediately without opening the UI.
+After setting the keys, this single command is enough:
+
+~~~powershell
+.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+~~~
+
+The terminal prints secret-safe CTI startup progress, waits for the startup refresh to finish, and then serves the interface. The manual refresh command above remains useful when you want to update the cache without opening the UI.
 
 Set `THREATFUSION_AUTO_REFRESH_CTI=0` if you explicitly want to disable local automatic refresh. Public/synthetic demo mode remains network-safe by default.
 

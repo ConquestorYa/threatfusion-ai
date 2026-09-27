@@ -244,15 +244,18 @@ demo does not grow without bound.
 
 ### Automatic local startup refresh
 
-In local/private mode (`THREATFUSION_PUBLIC_MODE` unset or `0`), the web
-process starts one background CTI refresh loop automatically. Its first cycle
-runs immediately with a forced refresh for configured sources, so restarting
-the application also refreshes the local CTI database. Later cycles use the
-configured freshness interval. PhishTank still enforces its fixed 24-hour
-minimum even during a forced startup cycle.
+In local/private mode (`THREATFUSION_PUBLIC_MODE` unset or `0`), Streamlit
+performs one synchronous CTI refresh before the interactive UI becomes usable.
+The startup refresh forces configured ThreatFox, URLhaus, and SGB sources to
+update, while PhishTank still enforces its fixed 24-hour minimum. The existing
+cache is preserved independently for any source whose refresh fails.
 
-Set `THREATFUSION_AUTO_REFRESH_CTI=0` to explicitly disable this local
-startup behavior.
+After that startup refresh finishes, the process starts the normal background
+loop. Later cycles wait for the configured interval and use freshness checks
+instead of forcing another immediate download.
+
+Set `THREATFUSION_AUTO_REFRESH_CTI=0` to explicitly disable both the startup
+refresh and the process-local background loop.
 
 ### Low-cost hosting fallback
 

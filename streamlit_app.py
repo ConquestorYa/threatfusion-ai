@@ -14,7 +14,10 @@ from threatfusion.app_config import load_app_config
 from threatfusion.audit import capture_analysis_audit_metadata
 from threatfusion.campaign import find_related_activity
 from threatfusion.cti_cache import list_cti_cache_status, load_ioc_records
-from threatfusion.cti_refresh import start_background_refresh_if_enabled
+from threatfusion.cti_refresh import (
+    run_startup_refresh_if_enabled,
+    start_background_refresh_if_enabled,
+)
 from threatfusion.dashboard import (
     assessment_rows,
     cluster_rows,
@@ -549,12 +552,64 @@ def _render_primary_workspace_launcher(current_page: str) -> None:
                 st.rerun()
 
 
+def _startup_refresh_progress(
+    source: str,
+    stage: str,
+    detail: str | None,
+) -> None:
+    """Write secret-safe startup refresh progress to the launch terminal."""
+    del detail
+    print(f"[CTI startup] {source}: {stage}", flush=True)
+
+
 def main() -> None:
     st.set_page_config(
         page_title="ThreatFusion AI",
         page_icon=":material/shield:",
         layout="wide",
     )
+
+    try:
+        config = load_app_config()
+    except ValueError as error:
+        st.error(tr("Application configuration is invalid: {error}", error=error))
+        return
+
+    db_path = config.db_path
+    model_dir = config.model_dir
+
+    try:
+        startup_outcomes = run_startup_refresh_if_enabled(
+            db_path,
+            progress=_startup_refresh_progress,
+        )
+    except (TypeError, ValueError) as error:
+        startup_outcomes = ()
+        print(
+            f"[CTI startup] refresh configuration error: {type(error).__name__}",
+            flush=True,
+        )
+
+    if startup_outcomes:
+        print("[CTI startup] summary", flush=True)
+        for outcome in startup_outcomes:
+            if outcome.status == "refreshed":
+                print(
+                    f"[CTI startup] {outcome.source}: refreshed "
+                    f"({outcome.record_count} records)",
+                    flush=True,
+                )
+            elif outcome.status == "fresh":
+                print(
+                    f"[CTI startup] {outcome.source}: cache still fresh",
+                    flush=True,
+                )
+            else:
+                print(
+                    f"[CTI startup] {outcome.source}: failed "
+                    f"({outcome.error_type or 'unknown error'}); old cache preserved",
+                    flush=True,
+                )
 
     selected_theme = st.session_state.get("visual_theme")
     if isinstance(selected_theme, str):
@@ -568,15 +623,6 @@ def main() -> None:
     render_main_brand()
     if "telemetry_format" in st.session_state:
         st.session_state["telemetry_format"] = st.session_state["telemetry_format"]
-
-    try:
-        config = load_app_config()
-    except ValueError as error:
-        st.error(tr("Application configuration is invalid: {error}", error=error))
-        return
-
-    db_path = config.db_path
-    model_dir = config.model_dir
 
     try:
         auto_refresh_started = start_background_refresh_if_enabled(db_path)
