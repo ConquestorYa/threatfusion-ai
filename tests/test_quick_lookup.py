@@ -381,3 +381,38 @@ def test_quick_lookup_never_performs_networking(monkeypatch):
     )
 
     assert result.verdict is HybridVerdict.KNOWN_THREAT
+
+
+def test_quick_lookup_rejects_oversized_input(monkeypatch) -> None:
+    monkeypatch.setattr(
+        quick_lookup,
+        "predict_domain_scores",
+        lambda artifact, domains: {},
+    )
+    oversized = "https://example.com/" + (
+        "a" * quick_lookup.MAX_LOOKUP_INPUT_CHARS
+    )
+
+    with pytest.raises(ValueError, match="lookup limit"):
+        analyze_quick_lookup(oversized, [], fake_artifact())
+
+
+def test_oversized_cti_url_is_ignored_during_exact_url_matching(monkeypatch) -> None:
+    monkeypatch.setattr(
+        quick_lookup,
+        "predict_domain_scores",
+        lambda artifact, domains: {"example.com": 0.10},
+    )
+    indicator = IOCRecord(
+        "https://example.com/" + ("x" * quick_lookup.MAX_LOOKUP_INPUT_CHARS),
+        IOCType.URL,
+        "URLhaus",
+    )
+
+    result = analyze_quick_lookup(
+        "https://example.com/safe",
+        [indicator],
+        fake_artifact(),
+    )
+
+    assert all(item.match_type != "exact_url" for item in result.evidence)
