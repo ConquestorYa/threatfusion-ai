@@ -125,7 +125,7 @@ def test_refresh_emits_source_progress(tmp_path, monkeypatch):
         source == "SGB"
         and stage == "fetching"
         and detail is not None
-        and "1000 pages" in detail
+        and "100 pages" in detail
         for source, stage, detail in events
     )
     assert any(
