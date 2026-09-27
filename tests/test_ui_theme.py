@@ -94,3 +94,15 @@ def test_monochrome_theme_is_black_white_and_grayscale() -> None:
     assert colors["cyan"] == "#FFFFFF"
     assert colors["panel"] == "#0A0A0A"
     assert colors["border"] == "#343434"
+
+
+def test_monochrome_verdict_palette_is_grayscale() -> None:
+    from threatfusion.ui_theme import verdict_colors
+
+    colors = verdict_colors("Monochrome")
+    assert colors == {
+        "Known Threat": "#FFFFFF",
+        "High Risk": "#E2E2E2",
+        "Review": "#CFCFCF",
+        "Low": "#B8B8B8",
+    }
