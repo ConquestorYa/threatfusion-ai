@@ -384,31 +384,37 @@ def _read_dns_table(
 ) -> tuple[list[str], list[dict[str, object]], dict[str, str]]:
     delimiter = _detect_delimiter(content)
     reader = csv.DictReader(io.StringIO(content), delimiter=delimiter)
-    fieldnames = [field for field in (reader.fieldnames or []) if field is not None]
 
-    if not fieldnames:
-        return [], [], {}
-    if len(fieldnames) > _MAX_TABLE_COLUMNS:
-        raise ValueError("DNS table exceeds the safe column import limit")
+    try:
+        fieldnames = [
+            field for field in (reader.fieldnames or []) if field is not None
+        ]
 
-    rows: list[dict[str, object]] = []
-    cell_count = 0
-    for row in reader:
-        if row is None:
-            continue
-        if len(rows) >= _MAX_TABLE_ROWS:
-            raise ValueError("DNS table exceeds the safe row import limit")
+        if not fieldnames:
+            return [], [], {}
+        if len(fieldnames) > _MAX_TABLE_COLUMNS:
+            raise ValueError("DNS table exceeds the safe column import limit")
 
-        extra_values = row.get(None)
-        extra_count = (
-            len(extra_values)
-            if isinstance(extra_values, list)
-            else int(extra_values is not None)
-        )
-        cell_count += len(fieldnames) + extra_count
-        if cell_count > _MAX_TABLE_CELLS:
-            raise ValueError("DNS table exceeds the safe cell import limit")
-        rows.append(dict(row))
+        rows: list[dict[str, object]] = []
+        cell_count = 0
+        for row in reader:
+            if row is None:
+                continue
+            if len(rows) >= _MAX_TABLE_ROWS:
+                raise ValueError("DNS table exceeds the safe row import limit")
+
+            extra_values = row.get(None)
+            extra_count = (
+                len(extra_values)
+                if isinstance(extra_values, list)
+                else int(extra_values is not None)
+            )
+            cell_count += len(fieldnames) + extra_count
+            if cell_count > _MAX_TABLE_CELLS:
+                raise ValueError("DNS table exceeds the safe cell import limit")
+            rows.append(dict(row))
+    except csv.Error as error:
+        raise ValueError("DNS table contains invalid CSV data") from error
 
     mapping = _infer_field_mapping(fieldnames, rows)
     if "query_name" in mapping:
