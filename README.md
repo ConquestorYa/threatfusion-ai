@@ -391,6 +391,7 @@ ThreatFox and URLhaus use their API/auth keys from environment variables. Keep t
 ~~~powershell
 $env:THREATFOX_AUTH_KEY="YOUR_THREATFOX_KEY"
 $env:URLHAUS_AUTH_KEY="YOUR_URLHAUS_KEY"
+$env:PHISHTANK_APP_KEY="YOUR_PHISHTANK_APP_KEY"  # optional; recommended for automated downloads
 ~~~
 
 Update the same CTI database used by the app with one command:
