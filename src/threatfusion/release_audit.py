@@ -26,6 +26,13 @@ _PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("google-api-key", re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b")),
     ("slack-token", re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}\b")),
     (
+        "threatfusion-service-secret",
+        re.compile(
+            r"(?i)\b(?:THREATFOX_AUTH_KEY|URLHAUS_AUTH_KEY|RENDER_API_KEY)"
+            r"\s*[:=]\s*[\"']?(?!\.\.\.|<)[A-Za-z0-9._-]{20,}"
+        ),
+    ),
+    (
         "local-windows-user-path",
         re.compile(r"(?i)\b[A-Z]:\\Users\\[^\\\s]+"),
     ),

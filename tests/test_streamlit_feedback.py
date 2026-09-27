@@ -28,8 +28,13 @@ def feedback_app(tmp_path, monkeypatch):
     monkeypatch.setenv("THREATFUSION_MODEL_DIR", str(tmp_path / "model"))
     monkeypatch.setenv("THREATFUSION_EVALUATION_REPORT", str(tmp_path / "holdout.json"))
     monkeypatch.setenv("THREATFUSION_PUBLIC_MODE", "0")
+    monkeypatch.setenv("THREATFUSION_MODEL_SHA256", "a" * 64)
     artifact = SimpleNamespace(metadata=SimpleNamespace(model_name="test-model"))
-    monkeypatch.setattr(app_module, "_load_artifact", lambda path: artifact)
+    monkeypatch.setattr(
+        app_module,
+        "_load_artifact",
+        lambda path, expected_checksum=None: artifact,
+    )
     monkeypatch.setattr(app_module, "list_cti_cache_status", lambda path: [])
     monkeypatch.setattr(app_module, "load_ioc_records", lambda path: [])
 
@@ -114,7 +119,11 @@ def test_synthetic_demo_artifact_is_clearly_labeled(feedback_app, monkeypatch):
             evaluation_status="demo_only_synthetic",
         )
     )
-    monkeypatch.setattr(app_module, "_load_artifact", lambda path: artifact)
+    monkeypatch.setattr(
+        app_module,
+        "_load_artifact",
+        lambda path, expected_checksum=None: artifact,
+    )
 
     app = AppTest.from_string("import streamlit_app\nstreamlit_app.main()")
     app.run(timeout=15)
@@ -321,7 +330,7 @@ def test_changing_source_clears_stale_analysis(feedback_app):
 def test_history_and_evaluation_work_without_model(feedback_app, monkeypatch):
     app_module, _, _, _ = feedback_app
 
-    def unavailable(path):
+    def unavailable(path, expected_checksum=None):
         raise OSError("Missing artifact")
 
     monkeypatch.setattr(app_module, "_load_artifact", unavailable)

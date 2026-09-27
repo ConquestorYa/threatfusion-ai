@@ -6,6 +6,9 @@ import pytest
 from threatfusion.app_config import load_app_config
 
 
+TRUSTED_MODEL_SHA256 = "a" * 64
+
+
 def test_default_config_is_local_mode() -> None:
     config = load_app_config({})
 
@@ -15,6 +18,7 @@ def test_default_config_is_local_mode() -> None:
         "data/evaluation/final_holdout.json"
     )
     assert config.public_mode is False
+    assert config.model_sha256 is None
     assert config.history_enabled is True
     assert config.cti_stale_after_by_source == {
         "ThreatFox": timedelta(hours=24),
@@ -28,6 +32,7 @@ def test_public_mode_disables_history_and_supports_custom_paths() -> None:
     config = load_app_config(
         {
             "THREATFUSION_PUBLIC_MODE": "true",
+            "THREATFUSION_MODEL_SHA256": TRUSTED_MODEL_SHA256,
             "THREATFUSION_DB_PATH": "/runtime/threatfusion.sqlite",
             "THREATFUSION_MODEL_DIR": "/runtime/model",
             "THREATFUSION_EVALUATION_REPORT": "/runtime/evaluation/final_holdout.json",
@@ -35,6 +40,7 @@ def test_public_mode_disables_history_and_supports_custom_paths() -> None:
     )
 
     assert config.public_mode is True
+    assert config.model_sha256 == TRUSTED_MODEL_SHA256
     assert config.history_enabled is False
     assert config.db_path == Path("/runtime/threatfusion.sqlite")
     assert config.model_dir == Path("/runtime/model")
@@ -45,7 +51,12 @@ def test_public_mode_disables_history_and_supports_custom_paths() -> None:
 
 @pytest.mark.parametrize("value", ["1", "TRUE", "yes", "On"])
 def test_truthy_public_mode_values(value: str) -> None:
-    assert load_app_config({"THREATFUSION_PUBLIC_MODE": value}).public_mode
+    assert load_app_config(
+        {
+            "THREATFUSION_PUBLIC_MODE": value,
+            "THREATFUSION_MODEL_SHA256": TRUSTED_MODEL_SHA256,
+        }
+    ).public_mode
 
 
 @pytest.mark.parametrize("value", ["0", "FALSE", "no", "Off"])
@@ -92,3 +103,13 @@ def test_invalid_cti_freshness_threshold_is_rejected(value: str) -> None:
             {"THREATFUSION_CTI_STALE_HOURS_THREATFOX": value}
         )
 
+
+def test_public_mode_requires_external_model_checksum() -> None:
+    with pytest.raises(ValueError, match="THREATFUSION_MODEL_SHA256 is required"):
+        load_app_config({"THREATFUSION_PUBLIC_MODE": "1"})
+
+
+@pytest.mark.parametrize("value", ["short", "g" * 64, "a" * 63, "a" * 65])
+def test_invalid_model_checksum_is_rejected(value: str) -> None:
+    with pytest.raises(ValueError, match="SHA-256"):
+        load_app_config({"THREATFUSION_MODEL_SHA256": value})

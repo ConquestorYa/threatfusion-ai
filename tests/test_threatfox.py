@@ -18,6 +18,7 @@ class FakeResponse:
     def __init__(self, payload: object, error: Exception | None = None) -> None:
         self.payload = payload
         self.error = error
+        self.headers: dict[str, str] = {}
 
     def raise_for_status(self) -> None:
         if self.error is not None:
@@ -68,7 +69,7 @@ class FakeExportResponse:
 class FakeExportSession:
     def __init__(self, response: FakeExportResponse) -> None:
         self.response = response
-        self.get_calls: list[tuple[str, int, bool]] = []
+        self.get_calls: list[tuple[str, int, bool, bool]] = []
 
     def get(
         self,
@@ -76,8 +77,9 @@ class FakeExportSession:
         *,
         timeout: int,
         allow_redirects: bool,
+        stream: bool,
     ) -> FakeExportResponse:
-        self.get_calls.append((url, timeout, allow_redirects))
+        self.get_calls.append((url, timeout, allow_redirects, stream))
         return self.response
 
 
@@ -265,7 +267,7 @@ def test_full_export_is_fetched_as_zip_without_requesting_ioc_urls() -> None:
 
     assert [item.value for item in records] == ["bad.example"]
     assert session.get_calls == [
-        (THREATFOX_EXPORT_URL.format(auth_key), 30, False)
+        (THREATFOX_EXPORT_URL.format(auth_key), 30, False, True)
     ]
 
 
@@ -279,3 +281,11 @@ def test_malicious_url_is_sent_as_data_only() -> None:
     assert len(session.post_calls) == 1
     assert session.post_calls[0][0] == THREATFOX_API_URL
     assert session.post_calls[0][2] == {"query": "get_iocs", "days": 1}
+
+def test_oversized_full_export_is_rejected() -> None:
+    response = FakeExportResponse(_zipped_csv("bad.example,domain"))
+    response.headers = {"Content-Length": str(129 * 1024 * 1024)}
+    session = FakeExportSession(response)
+
+    with pytest.raises(ValueError, match="safe download limit"):
+        ThreatFoxCollector("secret", session).fetch_full_iocs()

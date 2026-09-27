@@ -7,11 +7,13 @@ from typing import Any
 
 import requests
 
+from ..http_safety import decode_utf8_response
 from ..models import IOCRecord, IOCType
 
-PHISHTANK_FEED_URL = "http://data.phishtank.com/data/online-valid.csv"
+PHISHTANK_FEED_URL = "https://data.phishtank.com/data/online-valid.csv"
 PHISHTANK_USER_AGENT = "ThreatFusionAI/0.1"
 REQUEST_TIMEOUT_SECONDS = 30
+MAX_PHISHTANK_FEED_BYTES = 64 * 1024 * 1024
 
 
 def _parse_timestamp(value: Any) -> datetime | None:
@@ -72,7 +74,8 @@ class PhishTankCollector:
                 PHISHTANK_FEED_URL,
                 headers={"User-Agent": PHISHTANK_USER_AGENT},
                 timeout=REQUEST_TIMEOUT_SECONDS,
-                allow_redirects=True,
+                allow_redirects=False,
+                stream=True,
             )
         except requests.RequestException:
             raise requests.HTTPError(
@@ -95,7 +98,12 @@ class PhishTankCollector:
                 f"(HTTP status {status_code})"
             )
 
-        records = parse_phishtank_csv(response.text)
+        content = decode_utf8_response(
+            response,
+            max_bytes=MAX_PHISHTANK_FEED_BYTES,
+            label="PhishTank public feed",
+        )
+        records = parse_phishtank_csv(content)
         if not records:
             raise ValueError(
                 "PhishTank public feed contained no usable verified URLs"

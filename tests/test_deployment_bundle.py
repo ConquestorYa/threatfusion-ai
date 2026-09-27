@@ -155,6 +155,7 @@ def test_bundle_contains_cti_and_model_but_not_analysis_history(tmp_path) -> Non
     assert bundle.db_path.exists()
     assert (bundle.model_dir / "model.joblib").exists()
     assert (bundle.model_dir / "metadata.json").exists()
+    assert (bundle.model_dir / "artifact.sha256").exists()
     assert len(load_ioc_records(bundle.db_path)) == 2
     assert bundle.evaluation_report_path is None
     assert [status.source for status in bundle.cti_status] == [

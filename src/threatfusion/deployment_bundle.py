@@ -11,7 +11,7 @@ from .cti_cache import (
     load_ioc_records,
     replace_source_records,
 )
-from .ml_artifact import load_trusted_ml_artifact
+from .ml_artifact import compute_ml_artifact_checksum, load_trusted_ml_artifact
 from .ml_evaluation_report import read_frozen_holdout_report
 from .models import IOCRecord
 
@@ -131,6 +131,10 @@ def create_deployment_bundle(
     shutil.copy2(
         source_model_dir / "metadata.json",
         target_model_dir / "metadata.json",
+    )
+    (target_model_dir / "artifact.sha256").write_text(
+        compute_ml_artifact_checksum(target_model_dir) + "\n",
+        encoding="ascii",
     )
 
     target_evaluation_report: Path | None = None

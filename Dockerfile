@@ -1,15 +1,16 @@
-FROM python:3.12-slim
+FROM python:3.12-slim@sha256:f77ac9e44ae96ef2c90b8053ea08c31f8be030f824196b0ae4db6d462c84e51f
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    THREATFUSION_PUBLIC_MODE=1
 
 WORKDIR /app
 
 RUN useradd --create-home --uid 10001 threatfusion
 
-COPY requirements.txt ./
-RUN python -m pip install --no-cache-dir -r requirements.txt
+COPY requirements-runtime.txt ./
+RUN python -m pip install --no-cache-dir -r requirements-runtime.txt
 
 COPY . .
 

@@ -73,8 +73,11 @@ MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 
 
 @st.cache_resource
-def _load_artifact(path_text: str):
-    return load_trusted_ml_artifact(Path(path_text))
+def _load_artifact(path_text: str, expected_checksum: str | None):
+    return load_trusted_ml_artifact(
+        Path(path_text),
+        expected_checksum=expected_checksum,
+    )
 
 
 def _show_system_status(
@@ -637,7 +640,7 @@ def main() -> None:
         )
 
         try:
-            artifact = _load_artifact(str(model_dir))
+            artifact = _load_artifact(str(model_dir), config.model_sha256)
         except (OSError, TypeError, ValueError) as error:
             st.error(
                 tr(
@@ -787,7 +790,7 @@ def main() -> None:
             )
 
         try:
-            artifact = _load_artifact(str(model_dir))
+            artifact = _load_artifact(str(model_dir), config.model_sha256)
         except (OSError, TypeError, ValueError) as error:
             st.error(
                 tr("The local ML artifact is not ready. Set up a trusted artifact to analyze telemetry.")

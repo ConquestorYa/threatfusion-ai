@@ -13,6 +13,7 @@ class AppConfig:
     model_dir: Path
     evaluation_report_path: Path
     public_mode: bool
+    model_sha256: str | None
     cti_stale_hours_by_source: tuple[tuple[str, float], ...]
 
     @property
@@ -54,6 +55,21 @@ def _path_value(
     return Path(raw)
 
 
+def _optional_sha256(
+    environment: Mapping[str, str],
+    name: str,
+) -> str | None:
+    raw = environment.get(name)
+    if raw is None or not raw.strip():
+        return None
+    normalized = raw.strip().casefold()
+    if len(normalized) != 64 or any(
+        character not in "0123456789abcdef" for character in normalized
+    ):
+        raise ValueError(f"{name} must be a 64-character SHA-256 hex digest")
+    return normalized
+
+
 def _positive_float(
     environment: Mapping[str, str],
     name: str,
@@ -76,6 +92,17 @@ def load_app_config(
 ) -> AppConfig:
     """Load non-secret dashboard/runtime configuration from environment."""
     values = os.environ if environment is None else environment
+    public_mode = _parse_bool(
+        values.get("THREATFUSION_PUBLIC_MODE"),
+        default=False,
+    )
+    model_sha256 = _optional_sha256(values, "THREATFUSION_MODEL_SHA256")
+    if public_mode and model_sha256 is None:
+        raise ValueError(
+            "THREATFUSION_MODEL_SHA256 is required when "
+            "THREATFUSION_PUBLIC_MODE=1"
+        )
+
     return AppConfig(
         db_path=_path_value(
             values,
@@ -92,10 +119,8 @@ def load_app_config(
             "THREATFUSION_EVALUATION_REPORT",
             "data/evaluation/final_holdout.json",
         ),
-        public_mode=_parse_bool(
-            values.get("THREATFUSION_PUBLIC_MODE"),
-            default=False,
-        ),
+        public_mode=public_mode,
+        model_sha256=model_sha256,
         cti_stale_hours_by_source=(
             (
                 "ThreatFox",

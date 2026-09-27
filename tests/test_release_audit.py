@@ -62,3 +62,25 @@ OPENAI_API_KEY="<set-in-secret-manager>"
 '''
 
     assert scan_release_text(text, path="README.md") == ()
+
+
+def test_release_audit_detects_threatfusion_service_secret_assignments() -> None:
+    secret = "abcdefghijkl" + "mnopqrstuvwx"
+    findings = scan_release_text(
+        'THREATFOX_AUTH_KEY="' + secret + '"',
+        path=".env.example.bad",
+    )
+
+    assert [finding.rule for finding in findings] == [
+        "threatfusion-service-secret"
+    ]
+
+
+def test_release_audit_allows_service_secret_placeholders() -> None:
+    text = '''
+THREATFOX_AUTH_KEY="..."
+URLHAUS_AUTH_KEY="<set-in-secret-manager>"
+RENDER_API_KEY="..."
+'''
+
+    assert scan_release_text(text, path="README.md") == ()
