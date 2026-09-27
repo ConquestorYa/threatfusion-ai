@@ -392,7 +392,7 @@ Sentetik runtime'ı bilerek baştan oluşturmak istersen:
 
 ### 6. Yerel açılışta otomatik CTI yenileme
 
-Normal yerel modda ThreatFusion artık uygulama process'i her başladığında CTI yenilemeyi arka planda otomatik başlatır. İlk açılış turunda yapılandırılmış kaynaklar zorunlu olarak yenilenir; sonraki turlar normal güncellik aralığını kullanır. PhishTank için sabit 24 saatlik minimum yenileme aralığı korunur.
+Normal yerel modda artık aynı Streamlit başlatma komutu, **arayüz kullanılabilir hale gelmeden önce CTI veritabanını senkron olarak yeniler**. Önce yapılandırılmış kaynaklar güncellenir, ardından site güncellenmiş SQLite cache ile açılır. Sonraki arka plan turları normal güncellik aralığını kullanır. PhishTank için sabit 24 saatlik minimum yenileme aralığı korunur.
 
 ThreatFox ve URLhaus kendi API/auth anahtarlarını gerektirir. Bu anahtarları yalnızca environment variable olarak tut; Git'e kesinlikle ekleme:
 
@@ -403,7 +403,13 @@ $env:URLHAUS_AUTH_KEY="YOUR_URLHAUS_KEY"
 .\.venv\Scripts\python.exe scripts\refresh_cti_cache.py --force
 ~~~
 
-Anahtarları ayarladıktan sonra Streamlit'i başlatman otomatik açılış yenilemesi için yeterlidir. Yukarıdaki manuel komut, arayüzü açmadan hemen yenileme yapmak istediğinde kullanılabilir.
+Anahtarları ayarladıktan sonra tek yapman gereken şu komuttur:
+
+~~~powershell
+.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+~~~
+
+Terminalde güvenli CTI başlangıç ilerlemesi görünür; program önce yenilemeyi tamamlar, sonra arayüzü sunar. Yukarıdaki manuel refresh komutu ise siteyi açmadan yalnızca cache'i güncellemek istediğinde kullanılabilir.
 
 Yerel otomatik yenilemeyi özellikle kapatmak istersen `THREATFUSION_AUTO_REFRESH_CTI=0` ayarla. Public/sentetik demo modu varsayılan olarak ağsız ve güvenli kalır.
 
