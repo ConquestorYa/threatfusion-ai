@@ -12,7 +12,7 @@ from threatfusion.ui_theme import (
 
 
 def test_theme_palettes_define_product_modes() -> None:
-    assert {"Midnight", "Crimson", "Violet Noir"} == set(THEME_PALETTES)
+    assert {"Midnight", "Crimson", "Violet Noir", "Monochrome"} == set(THEME_PALETTES)
     assert palette("Light") == palette("Midnight")
     assert palette("White") == palette("Midnight")
     assert palette("Dark") == palette("Midnight")
@@ -42,7 +42,7 @@ def test_safe_text_escapes_dynamic_html() -> None:
 def test_brand_logo_is_vector_and_theme_tinted() -> None:
     assert THREATFUSION_LOGO_DATA_URI.startswith("data:image/svg+xml")
     assert "base64" not in THREATFUSION_LOGO_DATA_URI
-    assert len({palette(theme)["logo"] for theme in THEME_PALETTES}) == 3
+    assert len({palette(theme)["logo"] for theme in THEME_PALETTES}) == 4
 
 
 def test_language_segmented_control_is_required() -> None:
@@ -66,23 +66,43 @@ def test_language_segmented_control_is_required() -> None:
     assert app.session_state["language_selector"] == "🇹🇷 Türkçe"
 
 
-def test_theme_selection_is_staged_until_apply() -> None:
+def test_theme_selectbox_updates_state_without_apply_button() -> None:
     app = AppTest.from_string(
         "import streamlit as st\n"
         "from threatfusion.ui_theme import render_main_brand\n"
         "st.session_state.setdefault('visual_theme', 'Midnight')\n"
         "render_main_brand()\n"
-    )
-    app.session_state["theme_choice"] = "Crimson"
-    app.run(timeout=15)
+    ).run(timeout=15)
 
     assert not app.exception
-    assert app.session_state["visual_theme"] == "Midnight"
-    assert app.session_state["theme_choice"] == "Crimson"
+    assert not any(button.label == "Apply" for button in app.button)
 
-    apply_button = next(button for button in app.button if button.label == "Apply")
-    apply_button.click().run(timeout=15)
+    theme = next(item for item in app.selectbox if item.key == "visual_theme")
+    assert theme.value == "Midnight"
+    theme.select("Monochrome").run(timeout=15)
 
     assert not app.exception
-    assert app.session_state["visual_theme"] == "Crimson"
-    assert app.session_state["theme_choice"] == "Crimson"
+    assert app.session_state["visual_theme"] == "Monochrome"
+
+
+def test_monochrome_theme_is_black_white_and_grayscale() -> None:
+    colors = palette("Monochrome")
+
+    assert colors["bg"] == "#000000"
+    assert colors["text"] == "#F8F8F8"
+    assert colors["logo"] == "#FFFFFF"
+    assert colors["cyan"] == "#FFFFFF"
+    assert colors["panel"] == "#0A0A0A"
+    assert colors["border"] == "#343434"
+
+
+def test_monochrome_verdict_palette_is_grayscale() -> None:
+    from threatfusion.ui_theme import verdict_colors
+
+    colors = verdict_colors("Monochrome")
+    assert colors == {
+        "Known Threat": "#FFFFFF",
+        "High Risk": "#E2E2E2",
+        "Review": "#CFCFCF",
+        "Low": "#B8B8B8",
+    }

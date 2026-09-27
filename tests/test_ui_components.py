@@ -91,7 +91,7 @@ def test_text_and_verdict_tokens_meet_normal_text_contrast(theme):
 
 
 def test_visual_theme_choices_match_product_ui():
-    assert THEME_OPTIONS == ("Midnight", "Crimson", "Violet Noir")
+    assert THEME_OPTIONS == ("Midnight", "Crimson", "Violet Noir", "Monochrome")
     assert canonical_theme_name("Dark") == "Midnight"
     assert canonical_theme_name("White") == "Midnight"
     assert canonical_theme_name("Arctic") == "Midnight"
@@ -116,11 +116,18 @@ def test_violet_noir_theme_is_distinctly_purple_black():
     assert colors["logo"] == "#B98CFF"
 
 
-def test_distribution_keeps_semantic_colors_with_native_theme_text():
+def test_monochrome_theme_uses_black_white_product_palette():
+    colors = palette("Monochrome")
+    assert colors["bg"] == "#000000"
+    assert colors["panel"] == "#0A0A0A"
+    assert colors["cyan"] == "#FFFFFF"
+    assert colors["logo"] == "#FFFFFF"
+
+
+def test_distribution_uses_active_product_theme_verdict_colors():
     from types import SimpleNamespace
 
     from threatfusion.ui_charts import _verdict_distribution_figure
-    from threatfusion.ui_theme import VERDICT_COLORS
 
     figure = _verdict_distribution_figure(
         SimpleNamespace(
@@ -133,7 +140,7 @@ def test_distribution_keeps_semantic_colors_with_native_theme_text():
     )
     pie = figure.data[0]
     assert list(pie.values) == [1, 2, 3, 4]
-    assert dict(zip(pie.labels, pie.marker.colors)) == VERDICT_COLORS
+    assert list(pie.marker.colors) == list(verdict_colors().values())
     assert figure.layout.font.color is not None
 
 

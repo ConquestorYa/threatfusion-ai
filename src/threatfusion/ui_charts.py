@@ -5,7 +5,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from .dashboard import build_relationship_graph
 from .i18n import tr
-from .ui_theme import VERDICT_COLORS, apply_plotly_theme, palette
+from .ui_theme import apply_plotly_theme, palette, verdict_colors
 
 _RELATION_HOVER_TERMS = (
     "Strength",
@@ -61,6 +61,7 @@ def _verdict_chart(summary) -> pd.DataFrame:
 def _verdict_distribution_figure(summary) -> go.Figure:
     frame = _verdict_chart(summary)
     display_labels = [tr(label) for label in frame["verdict"]]
+    colors = verdict_colors()
     figure = go.Figure(
         data=[
             go.Pie(
@@ -68,9 +69,7 @@ def _verdict_distribution_figure(summary) -> go.Figure:
                 values=frame["count"],
                 hole=0.70,
                 sort=False,
-                marker={
-                    "colors": [VERDICT_COLORS[label] for label in frame["verdict"]]
-                },
+                marker={"colors": [colors[label] for label in frame["verdict"]]},
                 textinfo="none",
                 hovertemplate=(f"<b>%{{label}}</b><br>{tr('Domains')}: %{{value}}<extra></extra>"),
             )
@@ -116,8 +115,9 @@ def _relationship_figure(report, result) -> go.Figure:
         )
 
     if graph.nodes:
+        verdict_palette = verdict_colors()
         node_colors = [
-            VERDICT_COLORS.get(node.verdict, colors["cyan"]) for node in graph.nodes
+            verdict_palette.get(node.verdict, colors["cyan"]) for node in graph.nodes
         ]
         figure.add_trace(
             go.Scatter(
