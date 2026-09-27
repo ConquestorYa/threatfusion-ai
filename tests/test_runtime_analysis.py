@@ -414,3 +414,45 @@ def test_runtime_analysis_does_not_perform_networking(
     )
 
     assert result.assessments[0].verdict is HybridVerdict.KNOWN_THREAT
+
+
+def test_runtime_rejects_oversized_query_name(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(runtime_analysis, "MAX_QUERY_NAME_CHARS", 16)
+
+    with pytest.raises(ValueError, match="query name exceeds"):
+        analyze_dns_events(
+            [DNSEvent(query_name="a" * 17)],
+            [],
+            fake_artifact(),
+        )
+
+
+@pytest.mark.parametrize(
+    ("field_name", "field_value"),
+    [
+        ("client_ip", "c" * 17),
+        ("query_type", "q" * 17),
+        ("response_ip", "r" * 17),
+        ("response_code", "s" * 17),
+    ],
+)
+def test_runtime_rejects_oversized_event_metadata(
+    field_name: str,
+    field_value: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(runtime_analysis, "MAX_EVENT_METADATA_CHARS", 16)
+    event = DNSEvent(query_name="example.com")
+    setattr(event, field_name, field_value)
+
+    with pytest.raises(ValueError, match="safe analysis length limit"):
+        analyze_dns_events([event], [], fake_artifact())
+
+
+def test_runtime_rejects_non_text_query_before_matching() -> None:
+    event = DNSEvent(query_name=123)  # type: ignore[arg-type]
+
+    with pytest.raises(ValueError, match="query name must be text"):
+        analyze_dns_events([event], [], fake_artifact())
