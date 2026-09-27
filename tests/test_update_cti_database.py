@@ -17,7 +17,7 @@ def test_update_database_uses_default_database(monkeypatch) -> None:
     assert calls == [
         [
             "--db",
-            "data/threatfusion.sqlite",
+            str(update_cti_database.DEFAULT_DB_PATH),
             "--force",
             "--allow-missing-keys",
         ]
