@@ -219,6 +219,8 @@ def refresh_configured_sources(
 
 _AUTO_REFRESH_LOCK = threading.Lock()
 _AUTO_REFRESH_STARTED = False
+_STARTUP_REFRESH_LOCK = threading.Lock()
+_STARTUP_REFRESH_DONE = False
 
 
 def _truthy_environment(name: str, default: bool = False) -> bool:
@@ -245,6 +247,34 @@ def _auto_refresh_enabled() -> bool:
     return True
 
 
+def run_startup_refresh_if_enabled(
+    db_path: Path,
+    *,
+    progress: ProgressCallback | None = None,
+) -> tuple[CTIRefreshOutcome, ...]:
+    """Synchronously refresh CTI once before the Streamlit UI starts."""
+    global _STARTUP_REFRESH_DONE
+
+    if not _auto_refresh_enabled():
+        return ()
+
+    with _STARTUP_REFRESH_LOCK:
+        if _STARTUP_REFRESH_DONE:
+            return ()
+
+        sgb_pages = int(os.environ.get("THREATFUSION_SGB_MAX_PAGES", "1000"))
+        outcomes = refresh_configured_sources(
+            db_path,
+            threatfox_key=os.environ.get("THREATFOX_AUTH_KEY"),
+            urlhaus_key=os.environ.get("URLHAUS_AUTH_KEY"),
+            sgb_max_pages=sgb_pages,
+            force=True,
+            progress=progress,
+        )
+        _STARTUP_REFRESH_DONE = True
+        return outcomes
+
+
 def start_background_refresh_if_enabled(db_path: Path) -> bool:
     """Start one process-local CTI refresh loop when configured or credentialed."""
     global _AUTO_REFRESH_STARTED
@@ -262,18 +292,16 @@ def start_background_refresh_if_enabled(db_path: Path) -> bool:
     sgb_pages = int(os.environ.get("THREATFUSION_SGB_MAX_PAGES", "1000"))
 
     def worker() -> None:
-        force_refresh = True
         while True:
+            time.sleep(interval_seconds)
             refresh_configured_sources(
                 db_path,
                 threatfox_key=os.environ.get("THREATFOX_AUTH_KEY"),
                 urlhaus_key=os.environ.get("URLHAUS_AUTH_KEY"),
                 sgb_max_pages=sgb_pages,
                 stale_after=timedelta(seconds=interval_seconds),
-                force=force_refresh,
+                force=False,
             )
-            force_refresh = False
-            time.sleep(interval_seconds)
 
     threading.Thread(
         target=worker,
