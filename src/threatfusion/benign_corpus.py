@@ -33,6 +33,7 @@ class BenignCorpusSampleMetadata:
     duplicate_domains: int
     downloaded_bytes: int
     output_sha256: str
+    unique_domain_offset: int = 0
 
 
 def iter_json_array_objects(chunks: Iterable[bytes]) -> Iterator[dict[str, object]]:
@@ -111,15 +112,23 @@ def sample_cesnet_domain_names(
     records: Iterable[dict[str, object]],
     *,
     limit: int,
+    skip_unique: int = 0,
 ) -> tuple[tuple[str, ...], int, int]:
-    """Return normalized unique CESNET domains plus skip counters."""
-    if limit < 1:
+    """Return one deterministic window of normalized unique CESNET domains."""
+    if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
         raise ValueError("sample limit must be positive")
+    if (
+        isinstance(skip_unique, bool)
+        or not isinstance(skip_unique, int)
+        or skip_unique < 0
+    ):
+        raise ValueError("skip_unique must be a non-negative integer")
 
     retained: list[str] = []
     seen: set[str] = set()
     invalid_or_missing = 0
     duplicates = 0
+    unique_seen = 0
 
     for record in records:
         raw_domain = record.get("domain_name")
@@ -136,6 +145,11 @@ def sample_cesnet_domain_names(
             continue
 
         seen.add(normalized)
+        if unique_seen < skip_unique:
+            unique_seen += 1
+            continue
+
+        unique_seen += 1
         retained.append(normalized)
         if len(retained) >= limit:
             break

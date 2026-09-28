@@ -52,6 +52,14 @@ def build_parser() -> argparse.ArgumentParser:
         description="Evaluate the frozen ThreatFusion ML artifact on a fresh holdout"
     )
     parser.add_argument("--artifact-dir", type=Path, required=True)
+    parser.add_argument(
+        "--expected-artifact-sha256",
+        default=None,
+        help=(
+            "Optional trusted artifact checksum; recommended for the final "
+            "post-freeze evaluation"
+        ),
+    )
     parser.add_argument("--development-snapshot-dir", type=Path, required=True)
     parser.add_argument("--holdout-snapshot-dir", type=Path, required=True)
     parser.add_argument("--json-output", type=Path, default=None)
@@ -95,7 +103,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
 
     try:
-        artifact = load_trusted_ml_artifact(args.artifact_dir)
+        artifact = load_trusted_ml_artifact(
+            args.artifact_dir,
+            expected_checksum=args.expected_artifact_sha256,
+        )
         development = read_domain_snapshot(args.development_snapshot_dir)
         holdout = read_domain_snapshot(args.holdout_snapshot_dir)
         validate_fresh_snapshot_dates(
@@ -186,6 +197,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(
         "Interpretation: thresholds were frozen before this holdout. "
         "No retraining or threshold tuning was performed."
+    )
+    print(
+        "Precision reflects the retained holdout class mix and must not be "
+        "interpreted as deployed-world PPV without a representative base rate."
     )
     if evaluation.malicious_first_seen_after is not None:
         print(

@@ -113,6 +113,13 @@ The C=4 candidate improved the development medium operating-point recall from 20
 
 The C=4 artifact is frozen for one final untouched post-freeze temporal holdout.
 
+The final protocol now requires post-freeze ThreatFox / URLhaus / SGB cache
+refreshes and a separate untouched confirmed-benign CESNET sampling window.
+Exact development-domain overlap is removed again before scoring. This keeps
+the malicious temporal-recall question and real-traffic benign-FPR question
+inside one frozen-threshold evaluation without reusing the CESNET development
+sample.
+
 **Final temporal measurement: pending before release.**
 
 No additional v1 model family or threshold tuning is planned after that measurement.

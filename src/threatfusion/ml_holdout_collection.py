@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
+from .cti_cache import CTICacheStatus
 from .ml_artifact import MLArtifactMetadata
 from .ml_holdout import validate_fresh_snapshot_dates
 from .ml_snapshot import DatasetSnapshotMetadata
@@ -92,3 +95,64 @@ def final_holdout_experiment_metadata(
         "frozen_model_name": context.model_name,
         "frozen_artifact_sha256": context.artifact_sha256,
     }
+
+
+def validate_final_cti_refreshes(
+    statuses: Sequence[CTICacheStatus],
+    *,
+    required_sources: Sequence[str],
+    malicious_first_seen_after: datetime,
+) -> tuple[CTICacheStatus, ...]:
+    """Require every final-holdout CTI source to have a post-freeze refresh."""
+    if (
+        malicious_first_seen_after.tzinfo is None
+        or malicious_first_seen_after.utcoffset() is None
+    ):
+        raise ValueError("malicious_first_seen_after must be timezone-aware")
+
+    required = tuple(
+        source.strip()
+        for source in required_sources
+        if isinstance(source, str) and source.strip()
+    )
+    if not required:
+        raise ValueError("at least one required CTI source is needed")
+
+    by_source = {status.source: status for status in statuses}
+    missing = [source for source in required if source not in by_source]
+    if missing:
+        raise ValueError(
+            "CTI cache is missing required final-holdout sources: "
+            + ", ".join(missing)
+        )
+
+    cutoff = malicious_first_seen_after.astimezone(timezone.utc)
+    selected: list[CTICacheStatus] = []
+    stale: list[str] = []
+    for source in required:
+        status = by_source[source]
+        try:
+            refreshed = datetime.fromisoformat(
+                status.refreshed_at.replace("Z", "+00:00")
+            )
+        except ValueError:
+            stale.append(source)
+            continue
+        if refreshed.tzinfo is None or refreshed.utcoffset() is None:
+            stale.append(source)
+            continue
+        if refreshed.astimezone(timezone.utc) <= cutoff:
+            stale.append(source)
+            continue
+        if status.record_count < 1:
+            stale.append(source)
+            continue
+        selected.append(status)
+
+    if stale:
+        raise ValueError(
+            "required CTI sources must be refreshed after the artifact-freeze "
+            "cutoff before final evaluation: "
+            + ", ".join(stale)
+        )
+    return tuple(selected)
