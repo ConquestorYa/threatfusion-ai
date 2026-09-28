@@ -38,6 +38,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Number of unique valid domains to retain (default: 20000)",
     )
     parser.add_argument(
+        "--skip-unique",
+        type=int,
+        default=0,
+        help=(
+            "Skip this many valid unique domains before retaining the sample; "
+            "use this to create a deterministic untouched CESNET window"
+        ),
+    )
+    parser.add_argument(
         "--output-csv",
         type=Path,
         default=Path("data/evaluation/cesnet-benign-20k.csv"),
@@ -60,6 +69,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.limit < 1:
         raise SystemExit("--limit must be positive")
+    if args.skip_unique < 0:
+        raise SystemExit("--skip-unique must be non-negative")
     if args.chunk_size < 4096:
         raise SystemExit("--chunk-size must be at least 4096 bytes")
     if args.output_csv.exists() or args.metadata_output.exists():
@@ -92,6 +103,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         f"  Target unique domains: {args.limit}",
         flush=True,
     )
+    print(
+        f"  Unique-domain offset: {args.skip_unique}",
+        flush=True,
+    )
     print("  Connecting to Zenodo source...", flush=True)
 
     try:
@@ -117,6 +132,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             domains, invalid_or_missing, duplicates = sample_cesnet_domain_names(
                 records,
                 limit=args.limit,
+                skip_unique=args.skip_unique,
             )
 
         output_path, output_sha256 = write_dns_csv(domains, args.output_csv)
@@ -133,6 +149,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             duplicate_domains=duplicates,
             downloaded_bytes=downloaded_bytes,
             output_sha256=output_sha256,
+            unique_domain_offset=args.skip_unique,
         )
         metadata_path = write_sample_metadata(metadata, args.metadata_output)
     except requests.RequestException as error:
@@ -146,6 +163,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     print("Sample complete.")
     print(f"  Source license: {CESNET_DATASET_LICENSE}")
+    print(f"  Unique-domain offset: {args.skip_unique}")
     print(f"  Requested unique domains: {args.limit}")
     print(f"  Retained unique domains: {len(domains)}")
     print(f"  Invalid/missing domains skipped: {invalid_or_missing}")
