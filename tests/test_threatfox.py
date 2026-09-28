@@ -247,6 +247,12 @@ def test_full_export_parser_supports_documented_positional_rows() -> None:
     ]
     assert records[0].confidence == pytest.approx(0.9)
     assert records[1].confidence == pytest.approx(0.75)
+    assert records[0].first_seen == datetime(
+        2026, 9, 20, 10, 0, tzinfo=timezone.utc
+    )
+    assert records[1].first_seen == datetime(
+        2026, 9, 20, 10, 1, tzinfo=timezone.utc
+    )
 
 
 def test_full_export_is_fetched_as_zip_without_requesting_ioc_urls() -> None:
