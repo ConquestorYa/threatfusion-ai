@@ -14,7 +14,7 @@ from .ml_lexical_features import DomainLexicalFeatures
 from .ml_recall_iteration import build_recall_iteration_candidates
 
 
-def _enhanced_pipeline(
+def build_lexical_feature_pipeline(
     *,
     c_value: float,
     random_state: int,
@@ -69,7 +69,7 @@ def build_feature_iteration_candidates(
     candidates = {"lr_char_2_6_balanced_c4": baseline}
     for c_value in (1.0, 2.0, 4.0):
         candidates[f"lr_char_2_6_plus_lexical_c{c_value:g}"] = (
-            _enhanced_pipeline(
+            build_lexical_feature_pipeline(
                 c_value=c_value,
                 random_state=random_state,
             )
