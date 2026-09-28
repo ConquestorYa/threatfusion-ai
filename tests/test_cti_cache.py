@@ -63,6 +63,34 @@ def test_replace_and_load_source_records_roundtrip(tmp_path) -> None:
     assert loaded[0].tags == ["tag-a", "tag-b"]
 
 
+def test_load_normalizes_legacy_naive_cache_timestamp_to_utc(tmp_path) -> None:
+    db_path = tmp_path / "threatfusion.sqlite"
+    replace_source_records(
+        db_path,
+        "SGB",
+        [
+            IOCRecord(
+                "legacy.example",
+                IOCType.DOMAIN,
+                "SGB",
+                first_seen=datetime(2026, 9, 28, 19, 22, 20, tzinfo=timezone.utc),
+            )
+        ],
+    )
+
+    with sqlite3.connect(db_path) as connection:
+        connection.execute(
+            "UPDATE cti_records SET first_seen = ? WHERE source = ?",
+            ("2026-09-28T19:22:20", "SGB"),
+        )
+
+    loaded = load_ioc_records(db_path, sources=["SGB"])
+
+    assert loaded[0].first_seen == datetime(
+        2026, 9, 28, 19, 22, 20, tzinfo=timezone.utc
+    )
+
+
 def test_replace_is_atomic_per_source_and_does_not_touch_other_sources(
     tmp_path,
 ) -> None:
