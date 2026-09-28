@@ -410,9 +410,13 @@ def _parse_datetime(value: str | None) -> datetime | None:
     if value is None:
         return None
     try:
-        return datetime.fromisoformat(value)
+        parsed = datetime.fromisoformat(value)
     except ValueError:
         return None
+
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed
 
 
 def _parse_tags(value: str) -> list[str]:
