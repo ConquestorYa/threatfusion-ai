@@ -78,27 +78,26 @@ def _count_malicious_by_source(samples: Iterable[DomainSample]) -> dict[str, int
     return counts
 
 
-def build_domain_snapshot(
-    indicators: Iterable[IOCRecord],
+def build_domain_snapshot_from_samples(
+    malicious_samples: Iterable[DomainSample],
     benign_domains: Iterable[str],
     *,
     benign_source: str = "Tranco",
     benign_snapshot_id: str | None = None,
     benign_snapshot_date: str | None = None,
 ) -> DomainDatasetSnapshot:
-    """Assemble an in-memory, reproducible labeled domain snapshot."""
-    indicator_values = list(indicators)
+    """Assemble a snapshot from already-prepared malicious domain samples."""
+    malicious_values = list(malicious_samples)
     benign_values = list(benign_domains)
 
-    malicious_candidates = extract_malicious_domains(indicator_values)
     benign_samples = build_benign_samples(benign_values, source=benign_source)
-    unique_malicious_samples = build_domain_dataset(malicious_candidates, [])
-    final_samples = build_domain_dataset(malicious_candidates, benign_samples)
+    unique_malicious_samples = build_domain_dataset(malicious_values, [])
+    final_samples = build_domain_dataset(malicious_values, benign_samples)
 
     final_malicious_count = sum(sample.label == 1 for sample in final_samples)
     final_benign_count = sum(sample.label == 0 for sample in final_samples)
     statistics = DatasetSnapshotStatistics(
-        malicious_input_count=len(malicious_candidates),
+        malicious_input_count=len(malicious_values),
         benign_input_count=len(benign_values),
         malicious_unique_count=len(unique_malicious_samples),
         benign_unique_count=len(benign_samples),
@@ -117,4 +116,23 @@ def build_domain_snapshot(
             benign_snapshot_date=benign_snapshot_date,
         ),
         statistics=statistics,
+    )
+
+
+def build_domain_snapshot(
+    indicators: Iterable[IOCRecord],
+    benign_domains: Iterable[str],
+    *,
+    benign_source: str = "Tranco",
+    benign_snapshot_id: str | None = None,
+    benign_snapshot_date: str | None = None,
+) -> DomainDatasetSnapshot:
+    """Assemble an in-memory, reproducible labeled domain snapshot."""
+    malicious_candidates = extract_malicious_domains(list(indicators))
+    return build_domain_snapshot_from_samples(
+        malicious_candidates,
+        benign_domains,
+        benign_source=benign_source,
+        benign_snapshot_id=benign_snapshot_id,
+        benign_snapshot_date=benign_snapshot_date,
     )

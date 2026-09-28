@@ -10,9 +10,11 @@ from threatfusion.ml_artifact import MLArtifactMetadata
 from threatfusion.ml_holdout_collection import (
     final_holdout_experiment_metadata,
     prepare_final_holdout_collection,
+    select_final_temporal_malicious_samples,
     validate_final_cti_refreshes,
 )
 from threatfusion.ml_snapshot import DatasetSnapshotMetadata
+from threatfusion.models import IOCRecord, IOCType
 
 
 def artifact_metadata() -> MLArtifactMetadata:
@@ -212,3 +214,71 @@ def test_final_cti_refreshes_reject_stale_or_missing_sources() -> None:
                 2026, 9, 26, 10, 0, tzinfo=timezone.utc
             ),
         )
+
+def test_temporal_selection_uses_earliest_first_seen_across_sources() -> None:
+    cutoff = datetime(2026, 9, 26, 10, 0, tzinfo=timezone.utc)
+    indicators = [
+        IOCRecord(
+            "shared.example",
+            IOCType.DOMAIN,
+            "SGB",
+            first_seen=datetime(2026, 9, 26, 9, 30),
+        ),
+        IOCRecord(
+            "https://shared.example/payload",
+            IOCType.URL,
+            "URLhaus",
+            first_seen=datetime(2026, 9, 26, 10, 30),
+        ),
+        IOCRecord(
+            "https://new.example/payload",
+            IOCType.URL,
+            "URLhaus",
+            first_seen=datetime(2026, 9, 26, 11, 0),
+        ),
+    ]
+
+    selected = select_final_temporal_malicious_samples(
+        indicators,
+        malicious_first_seen_after=cutoff,
+    )
+
+    assert [sample.domain for sample in selected.samples] == ["new.example"]
+    assert selected.samples[0].first_seen == datetime(
+        2026, 9, 26, 11, 0, tzinfo=timezone.utc
+    )
+    assert selected.not_after_cutoff_domains == 1
+    assert selected.missing_first_seen_domains == 0
+    assert selected.retained_by_source == {"URLhaus": 1}
+
+
+def test_temporal_selection_excludes_domains_without_first_seen() -> None:
+    cutoff = datetime(2026, 9, 26, 10, 0, tzinfo=timezone.utc)
+    indicators = [
+        IOCRecord("missing.example", IOCType.DOMAIN, "SGB"),
+        IOCRecord(
+            "timed.example",
+            IOCType.DOMAIN,
+            "SGB",
+            first_seen=datetime(2026, 9, 26, 10, 1, tzinfo=timezone.utc),
+        ),
+    ]
+
+    selected = select_final_temporal_malicious_samples(
+        indicators,
+        malicious_first_seen_after=cutoff,
+    )
+
+    assert [sample.domain for sample in selected.samples] == ["timed.example"]
+    assert selected.unique_domain_count == 2
+    assert selected.missing_first_seen_domains == 1
+    assert selected.not_after_cutoff_domains == 0
+
+
+def test_temporal_selection_rejects_naive_cutoff() -> None:
+    with pytest.raises(ValueError, match="timezone-aware"):
+        select_final_temporal_malicious_samples(
+            [],
+            malicious_first_seen_after=datetime(2026, 9, 26, 10, 0),
+        )
+

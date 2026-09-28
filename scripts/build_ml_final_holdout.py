@@ -21,9 +21,10 @@ from threatfusion.ml_benign_telemetry import prepare_benign_telemetry
 from threatfusion.ml_holdout_collection import (
     final_holdout_experiment_metadata,
     prepare_final_holdout_collection,
+    select_final_temporal_malicious_samples,
     validate_final_cti_refreshes,
 )
-from threatfusion.ml_snapshot import build_domain_snapshot
+from threatfusion.ml_snapshot import build_domain_snapshot_from_samples
 from threatfusion.ml_snapshot_io import read_domain_snapshot, write_domain_snapshot
 
 _DEFAULT_SOURCES = ("ThreatFox", "URLhaus", "SGB")
@@ -152,8 +153,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             development.samples,
         )
 
-        snapshot = build_domain_snapshot(
+        malicious_selection = select_final_temporal_malicious_samples(
             indicators,
+            malicious_first_seen_after=args.malicious_first_seen_after,
+        )
+        if not malicious_selection.samples:
+            raise ValueError(
+                "no malicious domains remain after post-freeze first_seen selection"
+            )
+
+        snapshot = build_domain_snapshot_from_samples(
+            malicious_selection.samples,
             benign_preparation.retained_domains,
             benign_source=args.benign_source,
             benign_snapshot_id=args.benign_source_id,
@@ -175,6 +185,24 @@ def main(argv: Sequence[str] | None = None) -> int:
                     for status in final_statuses
                 },
                 "active_ioc_records_loaded": len(indicators),
+                "malicious_domain_candidates": (
+                    malicious_selection.candidate_count
+                ),
+                "malicious_unique_domains_before_temporal_filter": (
+                    malicious_selection.unique_domain_count
+                ),
+                "malicious_missing_first_seen_domains": (
+                    malicious_selection.missing_first_seen_domains
+                ),
+                "malicious_not_after_cutoff_domains": (
+                    malicious_selection.not_after_cutoff_domains
+                ),
+                "malicious_retained_domains": len(
+                    malicious_selection.samples
+                ),
+                "malicious_retained_by_source": (
+                    malicious_selection.retained_by_source
+                ),
                 "benign_source": args.benign_source,
                 "benign_source_id": args.benign_source_id,
                 "benign_input_sha256": _sha256(args.benign_dns_csv),
@@ -217,6 +245,28 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     print(f"  Active IOC records loaded: {len(indicators):,}")
     print(
+        "  Unique malicious domains before temporal filter: "
+        f"{malicious_selection.unique_domain_count:,}"
+    )
+    print(
+        "  Malicious domains missing usable first_seen: "
+        f"{malicious_selection.missing_first_seen_domains:,}"
+    )
+    print(
+        "  Malicious domains not after cutoff: "
+        f"{malicious_selection.not_after_cutoff_domains:,}"
+    )
+    print(
+        "  Retained post-freeze malicious domains: "
+        f"{len(malicious_selection.samples):,}"
+    )
+    if malicious_selection.retained_by_source:
+        print("  Retained malicious domains by earliest reporting source:")
+        for source, count in sorted(
+            malicious_selection.retained_by_source.items()
+        ):
+            print(f"    {source}: {count:,}")
+    print(
         "  Benign development overlap removed: "
         f"{benign_preparation.development_overlap_removed:,}"
     )
@@ -225,7 +275,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         f"{len(benign_preparation.retained_domains):,}"
     )
     print(
-        "  Snapshot malicious domains before temporal evaluation filter: "
+        "  Snapshot malicious domains after temporal selection: "
         f"{snapshot.statistics.final_malicious_count:,}"
     )
     print(

@@ -7,8 +7,20 @@ from pathlib import Path
 
 from .cti_cache import CTICacheStatus
 from .ml_artifact import MLArtifactMetadata
+from .ml_dataset import DomainSample, extract_malicious_domains
 from .ml_holdout import validate_fresh_snapshot_dates
 from .ml_snapshot import DatasetSnapshotMetadata
+from .models import IOCRecord
+
+
+@dataclass(frozen=True)
+class FinalTemporalMaliciousSelection:
+    samples: tuple[DomainSample, ...]
+    candidate_count: int
+    unique_domain_count: int
+    missing_first_seen_domains: int
+    not_after_cutoff_domains: int
+    retained_by_source: dict[str, int]
 
 
 @dataclass(frozen=True)
@@ -95,6 +107,84 @@ def final_holdout_experiment_metadata(
         "frozen_model_name": context.model_name,
         "frozen_artifact_sha256": context.artifact_sha256,
     }
+
+
+def _utc_timestamp(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None or value.utcoffset() is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def select_final_temporal_malicious_samples(
+    indicators: Sequence[IOCRecord],
+    *,
+    malicious_first_seen_after: datetime,
+) -> FinalTemporalMaliciousSelection:
+    """Select domain samples using the earliest usable first_seen per domain.
+
+    Temporal filtering happens before final dataset deduplication so a later
+    observation cannot hide an earlier pre-freeze observation from another
+    source. Legacy timezone-less CTI timestamps are interpreted as UTC, matching
+    the collectors' documented normalization of upstream timestamps.
+    """
+    cutoff = _utc_timestamp(malicious_first_seen_after)
+    if cutoff is None:
+        raise ValueError("malicious_first_seen_after is required")
+    if (
+        malicious_first_seen_after.tzinfo is None
+        or malicious_first_seen_after.utcoffset() is None
+    ):
+        raise ValueError("malicious_first_seen_after must be timezone-aware")
+
+    candidates = extract_malicious_domains(indicators)
+    by_domain: dict[str, list[DomainSample]] = {}
+    for sample in candidates:
+        by_domain.setdefault(sample.domain, []).append(sample)
+
+    retained: list[DomainSample] = []
+    missing_first_seen_domains = 0
+    not_after_cutoff_domains = 0
+    retained_by_source: dict[str, int] = {}
+
+    for domain in sorted(by_domain):
+        timed: list[tuple[datetime, str, DomainSample]] = []
+        for sample in by_domain[domain]:
+            first_seen = _utc_timestamp(sample.first_seen)
+            if first_seen is not None:
+                timed.append((first_seen, sample.source, sample))
+
+        if not timed:
+            missing_first_seen_domains += 1
+            continue
+
+        timed.sort(key=lambda item: (item[0], item[1]))
+        earliest_first_seen, _, earliest_sample = timed[0]
+        if earliest_first_seen <= cutoff:
+            not_after_cutoff_domains += 1
+            continue
+
+        retained_sample = DomainSample(
+            domain=domain,
+            label=1,
+            source=earliest_sample.source,
+            first_seen=earliest_first_seen,
+            last_seen=_utc_timestamp(earliest_sample.last_seen),
+        )
+        retained.append(retained_sample)
+        retained_by_source[retained_sample.source] = (
+            retained_by_source.get(retained_sample.source, 0) + 1
+        )
+
+    return FinalTemporalMaliciousSelection(
+        samples=tuple(retained),
+        candidate_count=len(candidates),
+        unique_domain_count=len(by_domain),
+        missing_first_seen_domains=missing_first_seen_domains,
+        not_after_cutoff_domains=not_after_cutoff_domains,
+        retained_by_source=retained_by_source,
+    )
 
 
 def validate_final_cti_refreshes(

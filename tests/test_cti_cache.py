@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import socket
+import sqlite3
 from datetime import datetime, timezone
 
 import pytest
@@ -61,6 +62,38 @@ def test_replace_and_load_source_records_roundtrip(tmp_path) -> None:
     assert loaded[0].threat_type == "botnet_cc"
     assert loaded[0].confidence == pytest.approx(0.9)
     assert loaded[0].tags == ["tag-a", "tag-b"]
+
+
+def test_cache_normalizes_legacy_naive_timestamps_to_utc(tmp_path) -> None:
+    db_path = tmp_path / "threatfusion.sqlite"
+    replace_source_records(
+        db_path,
+        "URLhaus",
+        [
+            IOCRecord(
+                "https://timed.example/payload",
+                IOCType.URL,
+                "URLhaus",
+                first_seen=datetime(2026, 9, 28, 12, 30),
+            )
+        ],
+        refreshed_at=datetime(2026, 9, 28, 13, 0, tzinfo=timezone.utc),
+    )
+
+    with sqlite3.connect(db_path) as connection:
+        connection.execute(
+            """
+            UPDATE cti_records
+            SET first_seen = '2026-09-28T12:30:00'
+            WHERE source = 'URLhaus'
+            """
+        )
+
+    loaded = load_ioc_records(db_path, sources=["URLhaus"])
+
+    assert loaded[0].first_seen == datetime(
+        2026, 9, 28, 12, 30, tzinfo=timezone.utc
+    )
 
 
 def test_replace_is_atomic_per_source_and_does_not_touch_other_sources(
