@@ -2,7 +2,7 @@ import ipaddress
 import json
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -30,9 +30,13 @@ def _parse_date(value: Any) -> datetime | None:
         return None
 
     try:
-        return datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
     except ValueError:
         return None
+
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed
 
 
 def _is_valid_url(value: str) -> bool:
