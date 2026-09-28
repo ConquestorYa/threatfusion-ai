@@ -786,11 +786,20 @@ The final protocol now separates the two evidence needs:
 
 - malicious candidates come from ThreatFox, URLhaus and SGB cache snapshots
   refreshed after the post-freeze cutoff;
+- malicious observations are normalized to domains and grouped **before**
+  final dataset deduplication; the earliest usable `first_seen` across all
+  retained source observations determines temporal eligibility;
+- any domain whose earliest usable `first_seen` is on or before the cutoff is
+  excluded, so a later observation from another source cannot hide known
+  pre-freeze evidence;
+- legacy cache timestamps without an explicit offset are interpreted as UTC,
+  matching the collectors' UTC normalization for upstream timestamps;
 - benign false-positive measurement uses an untouched deterministic window
   from the confirmed-benign CESNET real-traffic corpus;
 - every domain already present in `development-v2` is removed again before
   scoring;
-- malicious rows must have a usable `first_seen` strictly after the cutoff;
+- malicious domains must have a usable earliest `first_seen` strictly after
+  the cutoff;
 - the C=4 model bytes and thresholds remain frozen.
 
 Do not reuse `cesnet-benign-20k.csv`: it is development evidence. Create a
@@ -860,4 +869,8 @@ The explicit offset and overlap removal prevent exact-domain reuse; they do
 not prove independence of organization, domain family, or traffic-generating
 process. Likewise, post-freeze malicious `first_seen` filtering improves
 temporal separation but does not by itself eliminate campaign/source-family
-leakage. These limitations remain part of the final interpretation.
+leakage. Source-specific recall is only defined for sources that contribute
+eligible domain/URL samples to the retained temporal holdout; a source with no
+eligible domain-level samples must be reported as unavailable rather than
+assigned a synthetic recall value. These limitations remain part of the final
+interpretation.
