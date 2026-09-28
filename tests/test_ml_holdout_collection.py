@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
 
+from threatfusion.cti_cache import CTICacheStatus
 from threatfusion.ml_artifact import MLArtifactMetadata
 from threatfusion.ml_holdout_collection import (
     final_holdout_experiment_metadata,
     prepare_final_holdout_collection,
+    validate_final_cti_refreshes,
 )
 from threatfusion.ml_snapshot import DatasetSnapshotMetadata
 
@@ -142,3 +145,70 @@ def test_final_holdout_metadata_records_protocol_identity(
         "lr_char_2_6_sublinear_balanced"
     )
     assert metadata["frozen_artifact_sha256"] == "f" * 64
+
+
+def test_final_cti_refreshes_require_every_source_after_freeze() -> None:
+    statuses = [
+        CTICacheStatus(
+            source="ThreatFox",
+            refreshed_at="2026-09-26T10:30:00+00:00",
+            record_count=100,
+        ),
+        CTICacheStatus(
+            source="URLhaus",
+            refreshed_at="2026-09-26T10:31:00+00:00",
+            record_count=200,
+        ),
+        CTICacheStatus(
+            source="SGB",
+            refreshed_at="2026-09-26T10:32:00+00:00",
+            record_count=300,
+        ),
+    ]
+
+    selected = validate_final_cti_refreshes(
+        statuses,
+        required_sources=["ThreatFox", "URLhaus", "SGB"],
+        malicious_first_seen_after=datetime(
+            2026, 9, 26, 10, 0, tzinfo=timezone.utc
+        ),
+    )
+
+    assert [status.source for status in selected] == [
+        "ThreatFox",
+        "URLhaus",
+        "SGB",
+    ]
+
+
+def test_final_cti_refreshes_reject_stale_or_missing_sources() -> None:
+    statuses = [
+        CTICacheStatus(
+            source="ThreatFox",
+            refreshed_at="2026-09-26T09:59:59+00:00",
+            record_count=100,
+        ),
+        CTICacheStatus(
+            source="URLhaus",
+            refreshed_at="2026-09-26T10:30:00+00:00",
+            record_count=200,
+        ),
+    ]
+
+    with pytest.raises(ValueError, match="missing required"):
+        validate_final_cti_refreshes(
+            statuses,
+            required_sources=["ThreatFox", "URLhaus", "SGB"],
+            malicious_first_seen_after=datetime(
+                2026, 9, 26, 10, 0, tzinfo=timezone.utc
+            ),
+        )
+
+    with pytest.raises(ValueError, match="refreshed after"):
+        validate_final_cti_refreshes(
+            statuses,
+            required_sources=["ThreatFox", "URLhaus"],
+            malicious_first_seen_after=datetime(
+                2026, 9, 26, 10, 0, tzinfo=timezone.utc
+            ),
+        )
