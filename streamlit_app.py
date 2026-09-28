@@ -635,6 +635,157 @@ def main() -> None:
             "domain ML model without visiting the destination.",
         )
 
+        try:
+            artifact = _load_artifact(str(model_dir), config.model_sha256)
+        except (OSError, TypeError, ValueError) as error:
+            st.error(
+                tr(
+                    "The local ML artifact is not ready. Set up a trusted artifact "
+                    "to run quick lookup."
+                )
+            )
+            with st.expander(tr("Setup details"), expanded=False):
+                st.code("python scripts/train_ml_artifact.py", language="shell")
+                st.caption(type(error).__name__)
+            return
+
+        if (
+            getattr(artifact.metadata, "evaluation_status", None)
+            == "demo_only_synthetic"
+        ):
+            st.warning(
+                tr(
+                    "Demo ML artifact active. It uses synthetic training data only "
+                    "to exercise the interface and must not be interpreted as "
+                    "measured model performance."
+                )
+            )
+
+        if not list_cti_cache_status(db_path):
+            st.warning(
+                tr(
+                    "CTI cache is empty. Quick lookup can still use the ML model, "
+                    "but known-indicator matching is unavailable."
+                )
+            )
+
+        st.caption(
+            tr(
+                "Paste one URL, domain or IP. ThreatFusion checks the local CTI "
+                "cache and uses the domain model only when the host is a domain."
+            )
+        )
+        lookup_input, lookup_action = st.columns([5, 1.15], vertical_alignment="bottom")
+        with lookup_input:
+            lookup_value = st.text_input(
+                tr("URL, domain or IP"),
+                placeholder=tr("example.com, 143.20.185.213, or https://example.com/path"),
+                max_chars=MAX_LOOKUP_INPUT_CHARS,
+                key="quick_lookup_input",
+                on_change=_clear_quick_lookup_state,
+            )
+        with lookup_action:
+            analyze_lookup = st.button(
+                tr("Check"),
+                type="primary",
+                width="stretch",
+                key="quick_lookup_analyze",
+            )
+
+        st.caption(
+            tr("Passive by design · no page visit · no DNS resolution · no download")
+        )
+
+        if analyze_lookup:
+            if not lookup_value.strip():
+                st.warning(tr("Enter a URL, domain or IP before checking it."))
+            else:
+                try:
+                    with st.spinner(tr("Checking local threat signals…")):
+                        st.session_state["quick_lookup_result"] = (
+                            analyze_quick_lookup_from_cache(
+                                lookup_value,
+                                db_path,
+                                artifact,
+                            )
+                        )
+                except (TypeError, ValueError) as error:
+                    st.session_state.pop("quick_lookup_result", None)
+                    st.error(tr("Lookup input could not be analyzed: {error}", error=error))
+
+        lookup_result = st.session_state.get("quick_lookup_result")
+        if lookup_result is not None:
+            render_quick_lookup_result(lookup_result)
+        else:
+            render_quick_lookup_empty_state()
+        return
+
+    if page == "Analysis history":
+        render_app_header(
+            "Analysis history",
+            "Revisit saved runs, compare changes and record analyst decisions.",
+        )
+        _show_history(db_path)
+        return
+    if page == "Model evaluation":
+        render_app_header(
+            "Model evaluation",
+            "Inspect the frozen model's measured performance and its limits.",
+        )
+        _show_model_evaluation(config.evaluation_report_path)
+        return
+
+    render_app_header()
+    if config.public_mode:
+        st.caption(tr("Public workspace · Shared analysis history is disabled."))
+    with st.expander(
+        tr("New analysis")
+        if st.session_state.get("analysis_result") is not None
+        else tr("Telemetry intake"),
+        expanded=st.session_state.get("analysis_result") is None,
+    ):
+        intake_steps()
+        telemetry_format = st.selectbox(
+            tr("Telemetry format"),
+            [
+                "Auto-detect",
+                "Generic DNS CSV",
+                "Zeek dns.log",
+                "Pi-hole FTL database",
+                "AdGuard Home query log",
+            ],
+            key="telemetry_format",
+            on_change=_clear_analysis_state,
+            format_func=tr,
+        )
+
+        format_caption = {
+            "Auto-detect": (
+                "Auto-detect · CSV/TSV/TXT/XLSX/XLS/PCAP/Zeek/Suricata/Pi-hole/AdGuard · max 100 MB"
+            ),
+            "Generic DNS CSV": "Generic DNS CSV · UTF-8 · max 100 MB",
+            "Zeek dns.log": "Zeek dns.log text export · max 100 MB",
+            "Pi-hole FTL database": "Pi-hole FTL SQLite database · max 100 MB",
+            "AdGuard Home query log": "AdGuard Home JSON query log · max 100 MB",
+        }
+        required_caption = {
+            "Auto-detect": (
+                "No manual mapping required. ThreatFusion detects the file type, "
+                "delimiter, text encoding, DNS columns, packet captures, Zeek "
+                "logs and supported network telemetry automatically."
+            ),
+            "Generic DNS CSV": "query_name; all other fields are optional",
+            "Zeek dns.log": "Zeek #fields header with query",
+            "Pi-hole FTL database": "queries view with standard Pi-hole fields",
+            "AdGuard Home query log": "query-log JSON with host and timestamp fields",
+        }
+        st.caption(tr(format_caption[telemetry_format]))
+        with st.expander(tr("Input requirements"), expanded=False):
+            st.write(tr(required_caption[telemetry_format]))
+            st.caption(
+                tr("Optional fields enrich the evidence. Missing values are handled by the existing parser.")
+            )
+
         upload_label = {
             "Auto-detect": "Upload telemetry",
             "Generic DNS CSV": "Upload DNS CSV",
