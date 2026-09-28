@@ -260,6 +260,7 @@ _TR: dict[str, str] = {
     "Analyze": "Analiz et",
     "Uploaded telemetry exceeds the 100 MB application limit.": "Yüklenen telemetri 100 MB uygulama sınırını aşıyor.",
     "Telemetry input must use UTF-8 encoding.": "Telemetri girdisi UTF-8 kodlaması kullanmalıdır.",
+    "Preparing local analysis engine…": "Yerel analiz motoru hazırlanıyor…",
     "Analyzing telemetry…": "Telemetri analiz ediliyor…",
     "Generic DNS CSV": "Genel DNS CSV",
     "Zeek dns.log": "Zeek dns.log",
