@@ -61,6 +61,26 @@ def test_ml_signal_presentation_converts_model_score_to_clear_zero_to_100_scale(
     assert "did not raise" in explanation
 
 
+def test_known_threat_neutralizes_ml_risk_presentation():
+    from types import SimpleNamespace
+
+    from threatfusion.ui_quick_lookup import _ml_signal_presentation
+
+    result = SimpleNamespace(
+        verdict=SimpleNamespace(value="known_threat"),
+        ml_score=0.50,
+        ml_tier=None,
+    )
+
+    tone, level, subtitle, score, explanation = _ml_signal_presentation(result)
+
+    assert tone == "neutral"
+    assert level == "Context only"
+    assert subtitle == "Final decision comes from CTI"
+    assert score == 50
+    assert "does not override the CTI verdict" in explanation
+
+
 def test_ml_signal_presentation_keeps_existing_high_tier_semantics():
     from types import SimpleNamespace
 
