@@ -144,6 +144,9 @@ def validate_final_cti_refreshes(
         if refreshed.astimezone(timezone.utc) <= cutoff:
             stale.append(source)
             continue
+        if status.record_count < 1:
+            stale.append(source)
+            continue
         selected.append(status)
 
     if stale:
