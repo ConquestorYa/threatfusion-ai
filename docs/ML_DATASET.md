@@ -859,6 +859,40 @@ recall by retained source. Because the benign half is now confirmed-benign
 CESNET rather than Tranco-only data, the reported FPR directly answers the
 long-tail benign lexical false-positive question for this untouched window.
 
+### Final C=4 temporal holdout result
+
+The final frozen C=4 evaluation was completed on 2026-09-28 without retraining
+or threshold tuning. After final development-overlap removal, the retained
+holdout contained 240 post-freeze malicious domains and 19,912 confirmed-benign
+CESNET domains.
+
+Frozen operating-point results:
+
+| Tier | Threshold | Recall | Recall 95% CI | FPR | FPR 95% CI | Precision | TP | FP | FN | TN |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| High | 0.938460 | 26.67% | 21.47–32.60% | 0.56% | 0.46–0.67% | 36.57% | 64 | 111 | 176 | 19,801 |
+| Medium | 0.823553 | 50.42% | 44.13–56.69% | 2.35% | 2.15–2.57% | 20.54% | 121 | 468 | 119 | 19,444 |
+| Low | 0.754178 | 55.42% | 49.09–61.57% | 4.08% | 3.81–4.36% | 14.07% | 133 | 812 | 107 | 19,100 |
+
+Retained-source malicious recall was:
+
+- SGB: 222 samples; High 27.93%, Medium 52.70%, Low 57.66%
+- URLhaus: 18 samples; High 11.11%, Medium 22.22%, Low 27.78%
+- ThreatFox: no eligible retained domain/URL samples in this temporal holdout,
+  so source recall is unavailable rather than zero
+
+The result demonstrates useful lexical signal on genuinely post-freeze
+malicious domains, but the untouched benign CESNET false-positive rate is
+materially above the development FPR budgets at the Medium and Low operating
+points. The High tier is substantially more conservative, but it still misses
+most malicious domains. For v0.1.0, the C=4 output therefore remains an
+auxiliary signal inside the hybrid assessment rather than a standalone malware
+verdict.
+
+No threshold was changed after seeing these final results. Any future model,
+feature, class-weight, sampling, or threshold change informed by this holdout
+would make it development evidence and require a new untouched final holdout.
+
 Precision in this report is still conditional on the retained holdout class
 mix. It must not be presented as deployed-world PPV without a representative
 malicious base rate.

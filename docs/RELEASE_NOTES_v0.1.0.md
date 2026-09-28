@@ -1,6 +1,6 @@
 # ThreatFusion AI v0.1.0 — Release Notes Draft
 
-> **Status: release candidate.** Core feature development is complete. Do not publish these notes as the final GitHub release until the remaining temporal ML measurement, sanitized screenshots, hosted demo, and manual release checks are complete.
+> **Status: release candidate.** Core feature development is complete. Do not publish these notes as the final GitHub release until sanitized screenshots, hosted demo, and manual release checks are complete.
 
 ## Overview
 
@@ -111,18 +111,35 @@ A bounded regularization experiment kept the same character 2–6 TF-IDF + balan
 
 The C=4 candidate improved the development medium operating-point recall from 20.22% to 25.52% while development-test FPR moved from 0.52% to 0.60%.
 
-The C=4 artifact is frozen for one final untouched post-freeze temporal holdout.
+The C=4 artifact was frozen before the final untouched post-freeze temporal holdout.
 
-The final protocol now requires post-freeze ThreatFox / URLhaus / SGB cache
+The final protocol required post-freeze ThreatFox / URLhaus / SGB cache
 refreshes and a separate untouched confirmed-benign CESNET sampling window.
-Exact development-domain overlap is removed again before scoring. This keeps
+Exact development-domain overlap was removed again before scoring. This kept
 the malicious temporal-recall question and real-traffic benign-FPR question
 inside one frozen-threshold evaluation without reusing the CESNET development
 sample.
 
-**Final temporal measurement: pending before release.**
+The final retained holdout contained 240 post-freeze malicious domains and
+19,912 confirmed-benign CESNET domains. Frozen-threshold results were:
 
-No additional v1 model family or threshold tuning is planned after that measurement.
+- High: 26.67% recall, 0.56% FPR, 36.57% holdout precision
+- Medium: 50.42% recall, 2.35% FPR, 20.54% holdout precision
+- Low: 55.42% recall, 4.08% FPR, 14.07% holdout precision
+
+Source recall showed materially stronger performance on the retained SGB
+samples than on the much smaller retained URLhaus subset. ThreatFox contributed
+no eligible retained domain/URL sample to this temporal holdout, so a ThreatFox
+source-recall value is not reported.
+
+The final result supports keeping lexical ML as an auxiliary signal. Medium and
+Low false-positive rates on untouched CESNET remain too high for the model to
+be described as a standalone malicious-domain detector, while High is more
+conservative but still misses most post-freeze malicious domains.
+
+No additional v1 model family or threshold tuning is planned from this final
+measurement. Any future model or threshold change informed by these results
+requires a new untouched final holdout.
 
 ## Security and privacy
 
