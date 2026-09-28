@@ -989,3 +989,48 @@ The resulting artifact remains development-only until a new untouched temporal
 holdout is collected after the artifact freeze. The 2026-09-28 C=4 final
 holdout cannot be reused as final evidence for this lexical candidate.
 
+### Frozen lexical C=4 identity and next untouched holdout
+
+The selected lexical C=4 artifact was frozen locally on 2026-09-28 with:
+
+```text
+model: lr_char_2_6_plus_lexical_c4
+artifact SHA-256: 82f07f99820cea4ec2b8c2c07ab3d6a9387c87b17fafe1994d7730cc39386d14
+freeze cutoff UTC: 2026-09-28T21:38:37.5577083Z
+high threshold: 0.933823
+medium threshold: 0.832484
+low threshold: 0.760446
+```
+
+These bytes and thresholds are now frozen. Any retraining, feature change, or
+threshold adjustment requires a different artifact identity and another fresh
+holdout.
+
+The previous benign evidence windows must not be reused:
+
+- development: first 20,000 CESNET unique domains
+- prior C=4 final holdout: CESNET unique-domain window 40,000–60,000
+
+For the lexical C=4 final evaluation, reserve a new untouched deterministic
+CESNET window 80,000–100,000, leaving an additional 20,000-domain gap after
+the prior final window:
+
+```powershell
+python scripts\sample_cesnet_benign_domains.py `
+  --skip-unique 80000 `
+  --limit 20000 `
+  --output-csv data\evaluation\cesnet-benign-lexical-final-20k.csv `
+  --metadata-output data\evaluation\cesnet-benign-lexical-final-20k.metadata.json
+```
+
+The malicious half must come only from CTI cache refreshes performed strictly
+after `2026-09-28T21:38:37.5577083Z`, and malicious domains must have an
+earliest usable `first_seen` strictly after that same cutoff. Refreshing the
+cache after the cutoff is necessary but does not by itself make older
+indicators eligible.
+
+Once all required CTI sources are refreshed after the cutoff, build the new
+holdout with the frozen lexical artifact and the new benign window. Do not use
+the prior `holdout-v3-c4-final` snapshot or its 2026-09-28 result to select,
+tune, or validate this artifact.
+
