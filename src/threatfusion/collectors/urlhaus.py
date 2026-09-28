@@ -29,9 +29,13 @@ def _parse_timestamp(value: Any) -> datetime | None:
             return datetime.strptime(value, "%Y-%m-%d %H:%M:%S UTC").replace(
                 tzinfo=timezone.utc
             )
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
         return None
+
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed
 
 
 def _parse_tags(value: Any) -> list[str]:
