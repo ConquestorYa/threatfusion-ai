@@ -908,3 +908,57 @@ eligible domain/URL samples to the retained temporal holdout; a source with no
 eligible domain-level samples must be reported as unavailable rather than
 assigned a synthetic recall value. These limitations remain part of the final
 interpretation.
+
+## Post-final lexical feature development iteration
+
+The completed C=4 temporal holdout is now inspected evidence. It must not be
+used again to select or tune the next model. The next development iteration
+therefore returns to the existing `development-v2` snapshot and compares the
+current C=4 character model against a small domain-string-only extension.
+
+The enhanced representation keeps the same character 2-6 sublinear TF-IDF and
+adds 14 bounded lexical features:
+
+- normalized domain length
+- label count
+- maximum and mean label length
+- digit ratio
+- hyphen ratio
+- vowel ratio
+- unique-character ratio
+- normalized Shannon entropy
+- longest digit-run ratio
+- longest consonant-run ratio
+- longest repeated-character-run ratio
+- punycode-label ratio
+- numeric-label ratio
+
+These features use only the normalized domain string. They perform no DNS,
+WHOIS, network, CTI, reputation, or web lookup. The lexical block is scaled on
+the training split inside the scikit-learn pipeline so validation and
+development-test rows do not influence feature scaling.
+
+Run the bounded comparison locally:
+
+```powershell
+python scripts\evaluate_ml_feature_iteration.py `
+  --snapshot-dir data\snapshots\development-v2 `
+  --fpr-budgets 0.001 0.005 0.01
+```
+
+The shared development split compares:
+
+- the current char 2-6 TF-IDF + balanced Logistic Regression C=4 baseline
+- char 2-6 TF-IDF + lexical features with C=1
+- char 2-6 TF-IDF + lexical features with C=2
+- char 2-6 TF-IDF + lexical features with C=4
+
+Thresholds are selected on VALIDATION only for the requested FPR budgets. The
+script then prints development-test recall/FPR/precision, benign-source FPR,
+and malicious-source recall. It does not persist or promote a model.
+
+If an enhanced candidate is selected from this development experiment, it must
+be frozen as a new artifact before collecting a **new** untouched post-freeze
+holdout. The 2026-09-28 C=4 final holdout cannot be reused as final evidence
+for that candidate.
+
