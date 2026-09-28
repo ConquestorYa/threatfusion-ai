@@ -190,7 +190,21 @@ def _render_signal_summary(result: QuickLookupResult) -> None:
 
 def _ml_signal_presentation(result: QuickLookupResult) -> tuple[str, str, str, int, str]:
     """Return a simple model-signal grade without presenting the score as probability."""
+    known_threat = (
+        getattr(getattr(result, "verdict", None), "value", None) == "known_threat"
+    )
+
     if result.ml_score is None:
+        if known_threat:
+            return (
+                "neutral",
+                tr("Context only"),
+                tr("Final decision comes from CTI"),
+                0,
+                tr(
+                    "Known threat intelligence matched this target. No model score was available, and the CTI verdict remains authoritative."
+                ),
+            )
         return (
             "neutral",
             tr("Not scored"),
@@ -200,6 +214,17 @@ def _ml_signal_presentation(result: QuickLookupResult) -> tuple[str, str, str, i
         )
 
     score = max(0, min(100, round(float(result.ml_score) * 100)))
+
+    if known_threat:
+        return (
+            "neutral",
+            tr("Context only"),
+            tr("Final decision comes from CTI"),
+            score,
+            tr(
+                "Known threat intelligence matched this target. The ML score is shown only as additional context and does not override the CTI verdict."
+            ),
+        )
 
     if result.ml_tier == "high":
         return (
@@ -239,12 +264,28 @@ def _render_ml_risk_card(result: QuickLookupResult) -> None:
     tone, level, subtitle, score, explanation = _ml_signal_presentation(result)
     score_text = "—" if result.ml_score is None else f"{score}"
     width = 0 if result.ml_score is None else score
+    known_threat = result.verdict.value == "known_threat"
+
+    kicker = tr("ML context") if known_threat else tr("ML risk signal")
+    scale_html = ""
+    note = tr("Model signal strength · not a probability")
+    if known_threat:
+        note = tr("Model context · not a verdict or probability")
+    else:
+        scale_html = (
+            '<div class="tf-ml-risk-scale">'
+            f'<span>{safe_text(tr("Minimal"))}</span>'
+            f'<span>{safe_text(tr("Low"))}</span>'
+            f'<span>{safe_text(tr("Medium"))}</span>'
+            f'<span>{safe_text(tr("High"))}</span>'
+            '</div>'
+        )
 
     st.markdown(
         f'<div class="tf-ml-risk-card tf-ml-risk-card--{tone}">'
         '<div class="tf-ml-risk-head">'
         '<div>'
-        f'<div class="tf-ml-risk-kicker">{safe_text(tr("ML risk signal"))}</div>'
+        f'<div class="tf-ml-risk-kicker">{safe_text(kicker)}</div>'
         f'<div class="tf-ml-risk-level">{safe_text(level)}</div>'
         '</div>'
         f'<div class="tf-ml-risk-score"><strong>{safe_text(score_text)}</strong><span>/100</span></div>'
@@ -253,14 +294,9 @@ def _render_ml_risk_card(result: QuickLookupResult) -> None:
         '<div class="tf-ml-risk-track" aria-hidden="true">'
         f'<span class="tf-ml-risk-fill" style="width:{width}%"></span>'
         '</div>'
-        '<div class="tf-ml-risk-scale">'
-        f'<span>{safe_text(tr("Minimal"))}</span>'
-        f'<span>{safe_text(tr("Low"))}</span>'
-        f'<span>{safe_text(tr("Medium"))}</span>'
-        f'<span>{safe_text(tr("High"))}</span>'
-        '</div>'
+        f'{scale_html}'
         f'<div class="tf-ml-risk-explanation">{safe_text(explanation)}</div>'
-        f'<div class="tf-ml-risk-note">{safe_text(tr("Model signal strength · not a probability"))}</div>'
+        f'<div class="tf-ml-risk-note">{safe_text(note)}</div>'
         '</div>',
         unsafe_allow_html=True,
     )
@@ -275,7 +311,19 @@ def _render_signal_console(result: QuickLookupResult) -> None:
         else tr("No CTI match")
     )
 
-    if result.ml_score is None:
+    known_threat = result.verdict.value == "known_threat"
+    if known_threat:
+        ml_tone = "neutral"
+        ml_value = tr("Context only")
+        ml_sub = (
+            tr(
+                "Model score {score} · final decision from CTI",
+                score=f"{result.ml_score:.4f}",
+            )
+            if result.ml_score is not None
+            else tr("Final decision comes from CTI")
+        )
+    elif result.ml_score is None:
         ml_tone = "info"
         ml_value = tr("Not scored")
         ml_sub = tr("No model score was available")
