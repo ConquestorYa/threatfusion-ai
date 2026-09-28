@@ -14,6 +14,7 @@ from sklearn.pipeline import Pipeline
 
 from .hybrid_assessment import MLThresholds
 from .ml_dataset import DomainSample, normalize_domain_candidate
+from .ml_feature_iteration import build_lexical_feature_pipeline
 from .ml_fpr_comparison import (
     build_candidate_pipelines,
     evaluate_candidate,
@@ -27,9 +28,15 @@ _METADATA_FILENAME = "metadata.json"
 _CHECKSUM_FILENAME = "artifact.sha256"
 SELECTED_DEVELOPMENT_MODEL = "lr_char_2_6_sublinear_balanced"
 C4_DEVELOPMENT_CANDIDATE = "lr_char_2_6_balanced_c4"
+LEXICAL_C4_DEVELOPMENT_CANDIDATE = "lr_char_2_6_plus_lexical_c4"
 SUPPORTED_DEVELOPMENT_MODELS = (
     SELECTED_DEVELOPMENT_MODEL,
     C4_DEVELOPMENT_CANDIDATE,
+    LEXICAL_C4_DEVELOPMENT_CANDIDATE,
+)
+TEMPORAL_FINAL_CANDIDATES = (
+    C4_DEVELOPMENT_CANDIDATE,
+    LEXICAL_C4_DEVELOPMENT_CANDIDATE,
 )
 
 
@@ -68,6 +75,11 @@ def _build_development_model(
         return build_candidate_pipelines(random_state=random_state)[model_name]
     if model_name == C4_DEVELOPMENT_CANDIDATE:
         return build_recall_iteration_candidates(random_state=random_state)[model_name]
+    if model_name == LEXICAL_C4_DEVELOPMENT_CANDIDATE:
+        return build_lexical_feature_pipeline(
+            c_value=4.0,
+            random_state=random_state,
+        )
     raise ValueError(f"unsupported development model: {model_name}")
 
 
