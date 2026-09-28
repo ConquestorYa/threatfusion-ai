@@ -5,13 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pandas as pd
-import plotly.graph_objects as go
 import streamlit as st
 
 from .dashboard import format_timestamp, reason_label
 from .i18n import tr, translate_dataframe
 from .quick_lookup import QuickLookupResult
-from .ui_theme import apply_plotly_theme, metric_card, palette, safe_text, section_label
+from .ui_theme import metric_card, safe_text, section_label
 
 
 @dataclass(frozen=True)
@@ -189,47 +188,82 @@ def _render_signal_summary(result: QuickLookupResult) -> None:
     )
 
 
-def _ml_score_figure(result: QuickLookupResult) -> go.Figure:
-    """Render the model's 0-1 score without presenting it as a probability."""
-    colors = palette()
-    visual = _presentation_for(result.verdict.value)
-    semantic_color = {
-        "safe": colors["green"],
-        "review": colors["yellow"],
-        "danger": colors["red"],
-    }.get(visual.signal_tone, colors["cyan"])
-
-    score = float(result.ml_score or 0.0)
-    figure = go.Figure(
-        go.Indicator(
-            mode="gauge+number",
-            value=score,
-            number={
-                "valueformat": ".3f",
-                "font": {"size": 30, "color": colors["text"]},
-            },
-            gauge={
-                "axis": {
-                    "range": [0, 1],
-                    "tickvals": [0, 0.25, 0.5, 0.75, 1],
-                    "ticktext": ["0", ".25", ".50", ".75", "1"],
-                    "tickfont": {"size": 10, "color": colors["muted"]},
-                },
-                "bar": {"color": semantic_color, "thickness": 0.34},
-                "bgcolor": colors["panel_alt"],
-                "borderwidth": 0,
-            },
-            title={
-                "text": (
-                    f"<b>{tr('ML model score')}</b><br>"
-                    f"<span style='font-size:11px'>{tr('Uncalibrated score · not probability')}</span>"
-                ),
-                "font": {"size": 14, "color": colors["muted"]},
-            },
+def _ml_signal_presentation(result: QuickLookupResult) -> tuple[str, str, str, int, str]:
+    """Return a simple model-signal grade without presenting the score as probability."""
+    if result.ml_score is None:
+        return (
+            "neutral",
+            tr("Not scored"),
+            tr("No model score was available"),
+            0,
+            tr("Model signal unavailable"),
         )
-    )
-    return apply_plotly_theme(figure, height=250)
 
+    score = max(0, min(100, round(float(result.ml_score) * 100)))
+
+    if result.ml_tier == "high":
+        return (
+            "danger",
+            tr("High"),
+            tr("Strong model signal"),
+            score,
+            tr("This score crossed the model's high review threshold."),
+        )
+    if result.ml_tier == "medium":
+        return (
+            "review",
+            tr("Medium"),
+            tr("Moderate model signal"),
+            score,
+            tr("This score crossed the model's medium review threshold."),
+        )
+    if result.ml_tier == "low":
+        return (
+            "low",
+            tr("Low"),
+            tr("Weak model signal"),
+            score,
+            tr("This score crossed the model's low review threshold."),
+        )
+
+    return (
+        "safe",
+        tr("Minimal"),
+        tr("Below review threshold"),
+        score,
+        tr("The model did not raise this target for review."),
+    )
+
+
+def _render_ml_risk_card(result: QuickLookupResult) -> None:
+    tone, level, subtitle, score, explanation = _ml_signal_presentation(result)
+    score_text = "—" if result.ml_score is None else f"{score}"
+    width = 0 if result.ml_score is None else score
+
+    st.markdown(
+        f'<div class="tf-ml-risk-card tf-ml-risk-card--{tone}">'
+        '<div class="tf-ml-risk-head">'
+        '<div>'
+        f'<div class="tf-ml-risk-kicker">{safe_text(tr("ML risk signal"))}</div>'
+        f'<div class="tf-ml-risk-level">{safe_text(level)}</div>'
+        '</div>'
+        f'<div class="tf-ml-risk-score"><strong>{safe_text(score_text)}</strong><span>/100</span></div>'
+        '</div>'
+        f'<div class="tf-ml-risk-subtitle">{safe_text(subtitle)}</div>'
+        '<div class="tf-ml-risk-track" aria-hidden="true">'
+        f'<span class="tf-ml-risk-fill" style="width:{width}%"></span>'
+        '</div>'
+        '<div class="tf-ml-risk-scale">'
+        f'<span>{safe_text(tr("Minimal"))}</span>'
+        f'<span>{safe_text(tr("Low"))}</span>'
+        f'<span>{safe_text(tr("Medium"))}</span>'
+        f'<span>{safe_text(tr("High"))}</span>'
+        '</div>'
+        f'<div class="tf-ml-risk-explanation">{safe_text(explanation)}</div>'
+        f'<div class="tf-ml-risk-note">{safe_text(tr("Model signal strength · not a probability"))}</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
 def _render_signal_console(result: QuickLookupResult) -> None:
     visual = _presentation_for(result.verdict.value)
@@ -308,13 +342,9 @@ def _render_signal_console(result: QuickLookupResult) -> None:
 
 def _render_graphic_overview(result: QuickLookupResult) -> None:
     section_label(tr("Signal overview"))
-    chart_col, flow_col = st.columns([1, 1.65], vertical_alignment="center")
-    with chart_col:
-        st.plotly_chart(
-            _ml_score_figure(result),
-            width="stretch",
-            config={"displayModeBar": False},
-        )
+    ml_col, flow_col = st.columns([1, 1.65], vertical_alignment="center")
+    with ml_col:
+        _render_ml_risk_card(result)
     with flow_col:
         _render_signal_console(result)
 
