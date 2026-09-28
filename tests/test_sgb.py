@@ -80,7 +80,7 @@ def test_domain_mapping() -> None:
     assert record.ioc_type is IOCType.DOMAIN
     assert record.source == "SGB"
     assert record.first_seen is not None
-    assert record.first_seen.isoformat() == "2026-09-23T12:00:00"
+    assert record.first_seen == datetime(2026, 9, 23, 12, 0, tzinfo=timezone.utc)
 
 
 @pytest.mark.parametrize(
