@@ -10,6 +10,7 @@ from sklearn.preprocessing import StandardScaler
 from threatfusion.ml_dataset import DomainSample
 from threatfusion.ml_feature_iteration import (
     build_feature_iteration_candidates,
+    build_lexical_feature_pipeline,
     run_feature_iteration,
 )
 from threatfusion.ml_lexical_features import DomainLexicalFeatures
@@ -45,6 +46,18 @@ def test_feature_iteration_keeps_baseline_and_three_enhanced_candidates() -> Non
         "lr_char_2_6_plus_lexical_c2",
         "lr_char_2_6_plus_lexical_c4",
     )
+
+
+def test_reusable_lexical_pipeline_builder_uses_requested_c() -> None:
+    pipeline = build_lexical_feature_pipeline(
+        c_value=4.0,
+        random_state=42,
+    )
+
+    classifier = pipeline.named_steps["classifier"]
+    assert isinstance(classifier, LogisticRegression)
+    assert classifier.C == 4.0
+    assert "features" in pipeline.named_steps
 
 
 def test_enhanced_candidates_combine_tfidf_and_scaled_lexical_features() -> None:

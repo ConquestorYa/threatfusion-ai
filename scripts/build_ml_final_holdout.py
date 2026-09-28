@@ -13,7 +13,7 @@ sys.path.insert(0, str(_PROJECT_ROOT / "src"))
 from threatfusion.cti_cache import load_ioc_records, list_cti_cache_status
 from threatfusion.dns import parse_dns_csv_with_diagnostics
 from threatfusion.ml_artifact import (
-    C4_DEVELOPMENT_CANDIDATE,
+    TEMPORAL_FINAL_CANDIDATES,
     compute_ml_artifact_checksum,
     load_trusted_ml_artifact,
 )
@@ -112,9 +112,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.artifact_dir,
             expected_checksum=args.expected_artifact_sha256,
         )
-        if artifact.metadata.model_name != C4_DEVELOPMENT_CANDIDATE:
+        if artifact.metadata.model_name not in TEMPORAL_FINAL_CANDIDATES:
             raise ValueError(
-                "final v1 protocol requires the frozen C=4 candidate"
+                "final temporal protocol requires a supported frozen candidate"
             )
         artifact_checksum = compute_ml_artifact_checksum(args.artifact_dir)
 
