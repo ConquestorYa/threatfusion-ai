@@ -957,8 +957,35 @@ Thresholds are selected on VALIDATION only for the requested FPR budgets. The
 script then prints development-test recall/FPR/precision, benign-source FPR,
 and malicious-source recall. It does not persist or promote a model.
 
-If an enhanced candidate is selected from this development experiment, it must
-be frozen as a new artifact before collecting a **new** untouched post-freeze
-holdout. The 2026-09-28 C=4 final holdout cannot be reused as final evidence
-for that candidate.
+The development comparison selected
+`lr_char_2_6_plus_lexical_c4` as the next candidate. At the shared
+development-test operating points it improved the current C=4 baseline:
+
+| Validation FPR budget | Baseline recall | Lexical C=4 recall | Baseline test FPR | Lexical C=4 test FPR | Baseline precision | Lexical C=4 precision |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0.1% | 13.03% | 16.17% | 0.04% | 0.07% | 96.67% | 94.74% |
+| 0.5% | 25.52% | 27.31% | 0.60% | 0.47% | 77.38% | 82.16% |
+| 1.0% | 30.01% | 32.88% | 1.05% | 1.03% | 69.58% | 71.91% |
+
+The 0.5% operating point is the clearest improvement: recall increased while
+false-positive rate fell. The 0.1% point trades a small FPR increase for more
+recall, so this remains development evidence rather than proof of final
+generalization.
+
+Freeze the selected candidate locally without overwriting the prior C=4
+artifact:
+
+```powershell
+python scripts\train_ml_artifact.py `
+  --snapshot-dir data\snapshots\development-v2 `
+  --output-dir data\models\development-v4-lexical-c4 `
+  --model-name lr_char_2_6_plus_lexical_c4 `
+  --high-fpr-budget 0.001 `
+  --medium-fpr-budget 0.005 `
+  --low-fpr-budget 0.01
+```
+
+The resulting artifact remains development-only until a new untouched temporal
+holdout is collected after the artifact freeze. The 2026-09-28 C=4 final
+holdout cannot be reused as final evidence for this lexical candidate.
 
