@@ -78,7 +78,7 @@ def test_load_normalizes_legacy_naive_cache_timestamp_to_utc(tmp_path) -> None:
         ],
     )
 
-    with sqlite3.connect(db_path) as connection:
+    with __import__("sqlite3").connect(db_path) as connection:
         connection.execute(
             "UPDATE cti_records SET first_seen = ? WHERE source = ?",
             ("2026-09-28T19:22:20", "SGB"),
