@@ -980,6 +980,7 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
 .tf-signal-node--review { border-left:4px solid var(--tf-yellow); }
 .tf-signal-node--danger { border-left:4px solid var(--tf-red); }
 .tf-signal-node--info { border-left:4px solid var(--tf-cyan); }
+.tf-signal-node--neutral { border-left:4px solid var(--tf-muted); }
 .tf-signal-node-label {
     color:var(--tf-muted);
     font-size:.7rem;
