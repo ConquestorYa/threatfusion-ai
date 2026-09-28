@@ -6,12 +6,16 @@ import socket
 import pytest
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import FeatureUnion, Pipeline
+from sklearn.preprocessing import StandardScaler
 
 from threatfusion.ml_artifact import (
     C4_DEVELOPMENT_CANDIDATE,
+    LEXICAL_C4_DEVELOPMENT_CANDIDATE,
     SELECTED_DEVELOPMENT_MODEL,
     compute_ml_artifact_checksum,
     SUPPORTED_DEVELOPMENT_MODELS,
+    TEMPORAL_FINAL_CANDIDATES,
     load_trusted_ml_artifact,
     predict_domain_probabilities,
     predict_domain_scores,
@@ -20,6 +24,7 @@ from threatfusion.ml_artifact import (
     write_ml_artifact,
 )
 from threatfusion.ml_dataset import DomainSample
+from threatfusion.ml_lexical_features import DomainLexicalFeatures
 
 
 def make_samples(count_per_label: int = 50) -> list[DomainSample]:
@@ -71,6 +76,11 @@ def test_c4_candidate_can_be_frozen_without_changing_default() -> None:
     assert SUPPORTED_DEVELOPMENT_MODELS == (
         SELECTED_DEVELOPMENT_MODEL,
         C4_DEVELOPMENT_CANDIDATE,
+        LEXICAL_C4_DEVELOPMENT_CANDIDATE,
+    )
+    assert TEMPORAL_FINAL_CANDIDATES == (
+        C4_DEVELOPMENT_CANDIDATE,
+        LEXICAL_C4_DEVELOPMENT_CANDIDATE,
     )
 
     classifier = c4_artifact.model.named_steps["classifier"]
@@ -81,6 +91,60 @@ def test_c4_candidate_can_be_frozen_without_changing_default() -> None:
     assert isinstance(vectorizer, TfidfVectorizer)
     assert vectorizer.ngram_range == (2, 6)
     assert vectorizer.sublinear_tf is True
+
+
+def test_lexical_c4_candidate_can_be_frozen() -> None:
+    artifact = train_selected_model_artifact(
+        make_samples(),
+        model_name=LEXICAL_C4_DEVELOPMENT_CANDIDATE,
+        high_fpr_budget=0.001,
+        medium_fpr_budget=0.005,
+        low_fpr_budget=0.01,
+    )
+
+    assert artifact.metadata.model_name == LEXICAL_C4_DEVELOPMENT_CANDIDATE
+    classifier = artifact.model.named_steps["classifier"]
+    assert isinstance(classifier, LogisticRegression)
+    assert classifier.C == pytest.approx(4.0)
+    assert classifier.class_weight == "balanced"
+
+    features = artifact.model.named_steps["features"]
+    assert isinstance(features, FeatureUnion)
+    transformers = dict(features.transformer_list)
+    tfidf = transformers["char_tfidf"]
+    lexical = transformers["lexical"]
+
+    assert isinstance(tfidf, TfidfVectorizer)
+    assert tfidf.ngram_range == (2, 6)
+    assert tfidf.sublinear_tf is True
+    assert isinstance(lexical, Pipeline)
+    assert isinstance(lexical.named_steps["extract"], DomainLexicalFeatures)
+    assert isinstance(lexical.named_steps["scale"], StandardScaler)
+
+
+def test_lexical_c4_artifact_roundtrip_preserves_predictions(tmp_path) -> None:
+    artifact = train_selected_model_artifact(
+        make_samples(),
+        model_name=LEXICAL_C4_DEVELOPMENT_CANDIDATE,
+        high_fpr_budget=0.001,
+        medium_fpr_budget=0.005,
+        low_fpr_budget=0.01,
+    )
+    artifact_dir = tmp_path / "lexical-c4"
+    before = predict_domain_scores(
+        artifact,
+        ["malware-001.bad-example.test", "popular-001.good-example.test"],
+    )
+
+    write_ml_artifact(artifact, artifact_dir)
+    loaded = load_trusted_ml_artifact(artifact_dir)
+    after = predict_domain_scores(
+        loaded,
+        ["malware-001.bad-example.test", "popular-001.good-example.test"],
+    )
+
+    assert loaded.metadata.model_name == LEXICAL_C4_DEVELOPMENT_CANDIDATE
+    assert after == pytest.approx(before)
 
 
 def test_c4_artifact_roundtrip_is_trusted(tmp_path) -> None:
