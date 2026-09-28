@@ -69,6 +69,31 @@ def test_sample_cesnet_domain_names_normalizes_deduplicates_and_limits() -> None
     assert duplicates == 1
 
 
+def test_sample_cesnet_domain_names_supports_disjoint_unique_offset() -> None:
+    records = [
+        {"domain_name": "one.example"},
+        {"domain_name": "ONE.example."},
+        {"domain_name": "two.example"},
+        {"domain_name": "three.example"},
+        {"domain_name": "four.example"},
+    ]
+
+    domains, invalid, duplicates = sample_cesnet_domain_names(
+        records,
+        limit=2,
+        skip_unique=2,
+    )
+
+    assert domains == ("three.example", "four.example")
+    assert invalid == 0
+    assert duplicates == 1
+
+
+def test_sample_cesnet_domain_names_rejects_negative_offset() -> None:
+    with pytest.raises(ValueError, match="non-negative"):
+        sample_cesnet_domain_names([], limit=1, skip_unique=-1)
+
+
 def test_sample_cesnet_domain_names_requires_positive_limit() -> None:
     with pytest.raises(ValueError, match="positive"):
         sample_cesnet_domain_names([], limit=0)
