@@ -82,6 +82,18 @@ def test_successful_url_conversion_and_field_mapping() -> None:
     assert records[0].confidence is None
 
 
+def test_naive_export_timestamp_is_normalized_to_utc() -> None:
+    session = make_session(
+        "1,2026-09-28 19:22:20,https://naive.example/a,online,malware,,link,reporter"
+    )
+
+    record = URLhausCollector("secret", session).fetch_recent_urls()[0]
+
+    assert record.first_seen == datetime(
+        2026, 9, 28, 19, 22, 20, tzinfo=timezone.utc
+    )
+
+
 def test_iso_timestamp_is_supported_and_malformed_timestamp_is_none() -> None:
     session = make_session(
         "1,not-a-timestamp,https://one.example/a,online,malware,,link,reporter\n"
