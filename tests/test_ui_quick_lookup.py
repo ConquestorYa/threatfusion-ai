@@ -42,19 +42,39 @@ def test_unknown_lookup_falls_back_to_review_state():
     assert view.kicker == "Unknown"
 
 
-def test_ml_score_figure_keeps_score_on_zero_to_one_scale():
+def test_ml_signal_presentation_converts_model_score_to_clear_zero_to_100_scale():
     from types import SimpleNamespace
 
-    from threatfusion.ui_quick_lookup import _ml_score_figure
+    from threatfusion.ui_quick_lookup import _ml_signal_presentation
 
     result = SimpleNamespace(
-        verdict=SimpleNamespace(value="low"),
         ml_score=0.42,
+        ml_tier=None,
     )
 
-    figure = _ml_score_figure(result)
+    tone, level, subtitle, score, explanation = _ml_signal_presentation(result)
 
-    indicator = figure.data[0]
-    assert indicator.value == 0.42
-    assert tuple(indicator.gauge.axis.range) == (0, 1)
-    assert "not probability" in indicator.title.text
+    assert tone == "safe"
+    assert level == "Minimal"
+    assert subtitle == "Below review threshold"
+    assert score == 42
+    assert "did not raise" in explanation
+
+
+def test_ml_signal_presentation_keeps_existing_high_tier_semantics():
+    from types import SimpleNamespace
+
+    from threatfusion.ui_quick_lookup import _ml_signal_presentation
+
+    result = SimpleNamespace(
+        ml_score=0.87,
+        ml_tier="high",
+    )
+
+    tone, level, subtitle, score, explanation = _ml_signal_presentation(result)
+
+    assert tone == "danger"
+    assert level == "High"
+    assert subtitle == "Strong model signal"
+    assert score == 87
+    assert "high review threshold" in explanation

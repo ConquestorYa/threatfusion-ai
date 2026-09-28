@@ -418,6 +418,36 @@ def test_result_filters_do_not_change_underlying_report(feedback_app):
     )
 
 
+def test_telemetry_intake_defers_model_and_cti_loading_until_analyze(
+    feedback_app,
+    monkeypatch,
+) -> None:
+    app_module, _, _, _ = feedback_app
+    calls = {"artifact": 0, "ioc": 0}
+
+    def load_artifact(path, expected_checksum=None):
+        calls["artifact"] += 1
+        return SimpleNamespace(metadata=SimpleNamespace(model_name="test-model"))
+
+    def load_iocs(path):
+        calls["ioc"] += 1
+        return []
+
+    monkeypatch.setattr(app_module, "_load_artifact", load_artifact)
+    monkeypatch.setattr(app_module, "load_ioc_records", load_iocs)
+
+    app = AppTest.from_string("import streamlit_app\nstreamlit_app.main()")
+    app.session_state["workspace_nav"] = "Analyze telemetry"
+    app.run(timeout=15)
+
+    assert not app.exception
+    assert calls == {"artifact": 0, "ioc": 0}
+    analyze_button = next(
+        button for button in app.button if button.label == "Analyze"
+    )
+    assert analyze_button.disabled
+
+
 def test_auto_detect_is_default_and_uses_raw_upload_bytes(
     feedback_app,
     monkeypatch,

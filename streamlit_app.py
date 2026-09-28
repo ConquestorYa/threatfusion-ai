@@ -786,39 +786,6 @@ def main() -> None:
                 tr("Optional fields enrich the evidence. Missing values are handled by the existing parser.")
             )
 
-        try:
-            artifact = _load_artifact(str(model_dir), config.model_sha256)
-        except (OSError, TypeError, ValueError) as error:
-            st.error(
-                tr("The local ML artifact is not ready. Set up a trusted artifact to analyze telemetry.")
-            )
-            with st.expander(tr("Setup details"), expanded=False):
-                st.code("python scripts/train_ml_artifact.py", language="shell")
-                st.caption(type(error).__name__)
-            return
-
-        if (
-            getattr(artifact.metadata, "evaluation_status", None)
-            == "demo_only_synthetic"
-        ):
-            st.warning(
-                tr(
-                    "Demo ML artifact active. It uses synthetic training data only "
-                    "to exercise the interface and must not be interpreted as "
-                    "measured model performance."
-                )
-            )
-
-        indicators = load_ioc_records(db_path)
-        if not indicators:
-            st.warning(
-                tr(
-                    "CTI cache is empty. Analysis can still use ML and DNS "
-                    "behavior, but known-threat matching will be unavailable. "
-                    "Run scripts/refresh_cti_cache.py to populate the cache."
-                )
-            )
-
         upload_label = {
             "Auto-detect": "Upload telemetry",
             "Generic DNS CSV": "Upload DNS CSV",
@@ -903,20 +870,96 @@ def main() -> None:
                 st.session_state.pop("dns_input_detection", None)
                 st.session_state.pop("analysis_audit_metadata", None)
 
+            content = None
+            input_ready = True
             if len(content_bytes) > MAX_UPLOAD_BYTES:
                 st.error(tr("Uploaded telemetry exceeds the 100 MB application limit."))
-            elif telemetry_format == "Auto-detect":
-                if st.button(tr("Analyze"), type="primary"):
+                input_ready = False
+            elif telemetry_format not in {"Auto-detect", "Pi-hole FTL database"}:
+                try:
+                    content = content_bytes.decode("utf-8-sig")
+                except UnicodeDecodeError:
+                    st.error(tr("Telemetry input must use UTF-8 encoding."))
+                    input_ready = False
+
+            if input_ready and st.button(
+                tr("Analyze"),
+                type="primary",
+                key="analyze_telemetry",
+            ):
+                try:
+                    with st.spinner(tr("Preparing local analysis engine…")):
+                        artifact = _load_artifact(
+                            str(model_dir),
+                            config.model_sha256,
+                        )
+                        indicators = load_ioc_records(db_path)
+                except (OSError, TypeError, ValueError) as error:
+                    st.error(
+                        tr(
+                            "The local ML artifact is not ready. Set up a trusted artifact to analyze telemetry."
+                        )
+                    )
+                    with st.expander(tr("Setup details"), expanded=False):
+                        st.code("python scripts/train_ml_artifact.py", language="shell")
+                        st.caption(type(error).__name__)
+                else:
+                    if (
+                        getattr(artifact.metadata, "evaluation_status", None)
+                        == "demo_only_synthetic"
+                    ):
+                        st.warning(
+                            tr(
+                                "Demo ML artifact active. It uses synthetic training data only "
+                                "to exercise the interface and must not be interpreted as "
+                                "measured model performance."
+                            )
+                        )
+
+                    if not indicators:
+                        st.warning(
+                            tr(
+                                "CTI cache is empty. Analysis can still use ML and DNS "
+                                "behavior, but known-threat matching will be unavailable. "
+                                "Run scripts/refresh_cti_cache.py to populate the cache."
+                            )
+                        )
+
                     try:
                         with st.spinner(tr("Analyzing telemetry…")):
-                            result, diagnostics, detection = (
-                                analyze_dns_upload_with_diagnostics(
-                                    content_bytes,
-                                    getattr(uploaded, "name", None),
+                            if telemetry_format == "Auto-detect":
+                                result, diagnostics, detection = (
+                                    analyze_dns_upload_with_diagnostics(
+                                        content_bytes,
+                                        getattr(uploaded, "name", None),
+                                        indicators,
+                                        artifact,
+                                    )
+                                )
+                            elif telemetry_format == "Pi-hole FTL database":
+                                result, diagnostics = (
+                                    analyze_pihole_query_db_with_diagnostics(
+                                        content_bytes,
+                                        indicators,
+                                        artifact,
+                                    )
+                                )
+                                detection = None
+                            else:
+                                analyzers = {
+                                    "Generic DNS CSV": analyze_dns_csv_with_diagnostics,
+                                    "Zeek dns.log": analyze_zeek_dns_log_with_diagnostics,
+                                    "AdGuard Home query log": (
+                                        analyze_adguard_query_log_with_diagnostics
+                                    ),
+                                }
+                                analyzer = analyzers[telemetry_format]
+                                result, diagnostics = analyzer(
+                                    content,
                                     indicators,
                                     artifact,
                                 )
-                            )
+                                detection = None
                     except ValueError as error:
                         st.error(
                             tr(
@@ -927,7 +970,10 @@ def main() -> None:
                     else:
                         st.session_state["analysis_result"] = result
                         st.session_state["dns_parse_diagnostics"] = diagnostics
-                        st.session_state["dns_input_detection"] = detection
+                        if detection is None:
+                            st.session_state.pop("dns_input_detection", None)
+                        else:
+                            st.session_state["dns_input_detection"] = detection
                         try:
                             st.session_state["analysis_audit_metadata"] = (
                                 capture_analysis_audit_metadata(
@@ -948,93 +994,25 @@ def main() -> None:
                             )
                         else:
                             st.rerun()
-            elif telemetry_format == "Pi-hole FTL database":
-                if st.button(tr("Analyze"), type="primary"):
-                    try:
-                        result, diagnostics = analyze_pihole_query_db_with_diagnostics(
-                            content_bytes,
-                            indicators,
-                            artifact,
-                        )
-                    except ValueError as error:
-                        st.error(tr("DNS telemetry could not be analyzed: {error}", error=error))
-                    else:
-                        st.session_state["analysis_result"] = result
-                        st.session_state["dns_parse_diagnostics"] = diagnostics
-                        try:
-                            st.session_state["analysis_audit_metadata"] = (
-                                capture_analysis_audit_metadata(
-                                    model_dir,
-                                    artifact,
-                                    list_cti_cache_status(db_path),
-                                    stale_after_by_source=(
-                                        config.cti_stale_after_by_source
-                                    ),
-                                )
-                            )
-                        except OSError:
-                            st.session_state.pop("analysis_audit_metadata", None)
-                            st.warning(
-                                tr(
-                                    "Analysis completed, but reproducibility metadata could not be captured. Re-run the analysis before saving history."
-                                )
-                            )
-                        else:
-                            st.rerun()
-            else:
-                try:
-                    content = content_bytes.decode("utf-8-sig")
-                except UnicodeDecodeError:
-                    st.error(tr("Telemetry input must use UTF-8 encoding."))
-                else:
-                    if st.button(tr("Analyze"), type="primary"):
-                        try:
-                            analyzers = {
-                                "Generic DNS CSV": analyze_dns_csv_with_diagnostics,
-                                "Zeek dns.log": analyze_zeek_dns_log_with_diagnostics,
-                                "AdGuard Home query log": (
-                                    analyze_adguard_query_log_with_diagnostics
-                                ),
-                            }
-                            analyzer = analyzers[telemetry_format]
-                            with st.spinner(tr("Analyzing telemetry…")):
-                                result, diagnostics = analyzer(
-                                    content,
-                                    indicators,
-                                    artifact,
-                                )
-                        except ValueError as error:
-                            st.error(tr("DNS telemetry could not be analyzed: {error}", error=error))
-                        else:
-                            st.session_state["analysis_result"] = result
-                            st.session_state["dns_parse_diagnostics"] = diagnostics
-                            try:
-                                st.session_state["analysis_audit_metadata"] = (
-                                    capture_analysis_audit_metadata(
-                                        model_dir,
-                                        artifact,
-                                        list_cti_cache_status(db_path),
-                                        stale_after_by_source=(
-                                            config.cti_stale_after_by_source
-                                        ),
-                                    )
-                                )
-                            except OSError:
-                                st.session_state.pop(
-                                    "analysis_audit_metadata",
-                                    None,
-                                )
-                                st.warning(
-                                    tr(
-                                        "Analysis completed, but reproducibility metadata could not be captured. Re-run the analysis before saving history."
-                                    )
-                                )
-                            else:
-                                st.rerun()
+
 
     result = st.session_state.get("analysis_result")
     diagnostics = st.session_state.get("dns_parse_diagnostics")
     detection = st.session_state.get("dns_input_detection")
+    artifact = None
+    if result is not None:
+        try:
+            artifact = _load_artifact(str(model_dir), config.model_sha256)
+        except (OSError, TypeError, ValueError) as error:
+            st.error(
+                tr(
+                    "The local ML artifact is not ready. Set up a trusted artifact to analyze telemetry."
+                )
+            )
+            with st.expander(tr("Setup details"), expanded=False):
+                st.code("python scripts/train_ml_artifact.py", language="shell")
+                st.caption(type(error).__name__)
+            return
     if result is not None and diagnostics is not None:
         with st.expander(tr("Input quality"), expanded=False):
             if detection is not None:
