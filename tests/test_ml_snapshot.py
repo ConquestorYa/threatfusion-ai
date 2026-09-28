@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import socket
+from datetime import datetime, timezone
 
 import pytest
 
@@ -9,8 +10,10 @@ from threatfusion.ml_snapshot import (
     DatasetSnapshotStatistics,
     DomainDatasetSnapshot,
     build_domain_snapshot,
+    build_domain_snapshot_from_samples,
     parse_tranco_csv,
 )
+from threatfusion.ml_dataset import DomainSample
 from threatfusion.models import IOCRecord, IOCType
 
 
@@ -73,6 +76,33 @@ def snapshot_indicators() -> list[IOCRecord]:
         IOCRecord("203.0.113.7", IOCType.IPV4, "ThreatFox"),
         IOCRecord("hash-value", IOCType.SHA256, "SGB"),
     ]
+
+
+def test_snapshot_from_prepared_samples_preserves_temporal_metadata() -> None:
+    first_seen = datetime(2026, 9, 28, 12, 0, tzinfo=timezone.utc)
+    snapshot = build_domain_snapshot_from_samples(
+        [
+            DomainSample(
+                "temporal.example",
+                1,
+                "URLhaus",
+                first_seen=first_seen,
+            )
+        ],
+        ["safe.example"],
+        benign_source="CESNET",
+        benign_snapshot_id="final-window",
+        benign_snapshot_date="2026-09-28",
+    )
+
+    assert snapshot.samples[0] == DomainSample(
+        "temporal.example",
+        1,
+        "URLhaus",
+        first_seen=first_seen,
+    )
+    assert snapshot.statistics.malicious_by_source == {"URLhaus": 1}
+    assert snapshot.statistics.final_benign_count == 1
 
 
 def test_snapshot_integrates_iocs_benign_domains_and_statistics() -> None:
