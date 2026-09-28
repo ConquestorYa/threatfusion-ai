@@ -769,25 +769,95 @@ The runtime default remains unchanged until a new untouched holdout is
 evaluated. Existing C=1 artifacts remain supported by the trusted artifact
 loader.
 
-## Post-freeze temporal cutoff
+## Post-freeze final temporal protocol
 
-For a final evaluation of a model candidate selected after the development
-snapshot was created, do not use the development snapshot date as the only
-malicious `first_seen` cutoff. Record a conservative timestamp after the
-artifact has been frozen, then pass it explicitly:
+The frozen v1 C=4 artifact has a recorded SHA-256 identity:
+
+```text
+d2b6a34710312ecd80340d86b7118e3d2a94bfe258575ad7ccd34c87cf1639c3
+```
+
+For the final v1 evaluation, use the conservative protocol boundary
+`2026-09-26T12:45:00+03:00`. The artifact had already been frozen before this
+boundary; the timestamp is deliberately conservative and is not presented as
+the exact byte-creation time.
+
+The final protocol now separates the two evidence needs:
+
+- malicious candidates come from ThreatFox, URLhaus and SGB cache snapshots
+  refreshed after the post-freeze cutoff;
+- benign false-positive measurement uses an untouched deterministic window
+  from the confirmed-benign CESNET real-traffic corpus;
+- every domain already present in `development-v2` is removed again before
+  scoring;
+- malicious rows must have a usable `first_seen` strictly after the cutoff;
+- the C=4 model bytes and thresholds remain frozen.
+
+Do not reuse `cesnet-benign-20k.csv`: it is development evidence. Create a
+different CESNET window. For example, leave a 20,000-domain gap after the
+development sample and retain the following 20,000 unique domains:
+
+```powershell
+python scripts\sample_cesnet_benign_domains.py `
+  --skip-unique 40000 `
+  --limit 20000 `
+  --output-csv data\evaluation\cesnet-benign-final-20k.csv `
+  --metadata-output data\evaluation\cesnet-benign-final-20k.metadata.json
+```
+
+The offset is deterministic. The final holdout builder also removes any
+remaining normalized overlap with the full development snapshot, so the
+evaluation does not rely on the offset alone.
+
+Refresh the local CTI cache after the cutoff, then build the final snapshot
+from that cache plus the untouched benign window:
+
+```powershell
+python scripts\build_ml_final_holdout.py `
+  --db-path data\threatfusion.sqlite `
+  --artifact-dir data\models\development-v3-c4 `
+  --expected-artifact-sha256 d2b6a34710312ecd80340d86b7118e3d2a94bfe258575ad7ccd34c87cf1639c3 `
+  --development-snapshot-dir data\snapshots\development-v2 `
+  --benign-dns-csv data\evaluation\cesnet-benign-final-20k.csv `
+  --confirm-benign-label `
+  --benign-source-id cesnet-final-window-40k-60k `
+  --holdout-snapshot-date YYYY-MM-DD `
+  --malicious-first-seen-after 2026-09-26T12:45:00+03:00 `
+  --output-dir data\snapshots\holdout-v3-c4-final
+```
+
+The builder refuses to proceed unless ThreatFox, URLhaus and SGB all have a
+non-empty local cache refresh later than the cutoff. This makes temporary
+upstream API failure a collection/refresh concern rather than a reason to
+change the frozen evaluation protocol.
+
+Evaluate the resulting snapshot with the exact same cutoff and trusted
+artifact identity:
 
 ```powershell
 python scripts\evaluate_ml_final_holdout.py `
   --artifact-dir data\models\development-v3-c4 `
+  --expected-artifact-sha256 d2b6a34710312ecd80340d86b7118e3d2a94bfe258575ad7ccd34c87cf1639c3 `
   --development-snapshot-dir data\snapshots\development-v2 `
-  --holdout-snapshot-dir data\snapshots\holdout-v3-c4 `
+  --holdout-snapshot-dir data\snapshots\holdout-v3-c4-final `
   --malicious-first-seen-after 2026-09-26T12:45:00+03:00 `
   --json-output data\evaluation\final_holdout_v3_c4.json
 ```
 
-Use the actual recorded freeze cutoff rather than the example timestamp above.
-Timezone-aware timestamps are required for timestamp-level filtering. Malicious
-records with missing or timezone-naive timing are excluded from that strict
-timestamp-filtered subset. The older `--strict-temporal-malicious` option is
-retained for development-date filtering and backward compatibility.
+This produces frozen high / medium / low threshold metrics, confusion-matrix
+counts, 95% confidence intervals in the aggregate JSON report, and malicious
+recall by retained source. Because the benign half is now confirmed-benign
+CESNET rather than Tranco-only data, the reported FPR directly answers the
+long-tail benign lexical false-positive question for this untouched window.
 
+Precision in this report is still conditional on the retained holdout class
+mix. It must not be presented as deployed-world PPV without a representative
+malicious base rate.
+
+The CESNET final window is untouched relative to model selection but comes
+from the same published 2024 source corpus as the earlier development window.
+The explicit offset and overlap removal prevent exact-domain reuse; they do
+not prove independence of organization, domain family, or traffic-generating
+process. Likewise, post-freeze malicious `first_seen` filtering improves
+temporal separation but does not by itself eliminate campaign/source-family
+leakage. These limitations remain part of the final interpretation.
