@@ -14,6 +14,7 @@ from threatfusion.persistence import (
     get_analysis_assessments,
     get_analysis_run,
     get_analyst_feedback,
+    get_latest_analyst_feedback_for_domains,
     list_analysis_runs,
     save_analyst_feedback,
     save_bulk_analyst_feedback,
@@ -195,3 +196,46 @@ def test_first_saved_run_compares_against_empty_history(tmp_path) -> None:
     assert comparison.new_domains == ("a.example",)
     assert comparison.removed_domains == ()
     assert comparison.verdict_changes == ()
+
+
+def test_cross_run_comparison_and_feedback_ignore_ip_target_labels(tmp_path) -> None:
+    db_path = tmp_path / "history.sqlite"
+    previous = save_runtime_analysis(
+        db_path,
+        _result(
+            [
+                ("192.0.2.10", HybridVerdict.REVIEW),
+                ("shared.example", HybridVerdict.LOW),
+                ("gone.example", HybridVerdict.LOW),
+            ]
+        ),
+    )
+    current = save_runtime_analysis(
+        db_path,
+        _result(
+            [
+                ("198.51.100.20", HybridVerdict.HIGH_RISK),
+                ("shared.example", HybridVerdict.HIGH_RISK),
+                ("new.example", HybridVerdict.LOW),
+            ]
+        ),
+    )
+    save_analyst_feedback(db_path, previous, "IP target 1", "benign")
+    save_analyst_feedback(db_path, previous, "shared.example", "uncertain")
+
+    comparison = compare_analysis_runs(db_path, current)
+    assert comparison.previous_run_id == previous
+    assert comparison.new_domains == ("new.example",)
+    assert comparison.removed_domains == ("gone.example",)
+    assert [change.domain for change in comparison.verdict_changes] == [
+        "shared.example"
+    ]
+    assert get_latest_analyst_feedback_for_domains(
+        db_path, ["IP target 1", "shared.example"]
+    ) == {
+        "shared.example": get_analyst_feedback(db_path, previous)[1],
+    }
+    assert [item.domain for item in get_analyst_feedback(db_path, previous)] == [
+        "IP target 1",
+        "shared.example",
+    ]

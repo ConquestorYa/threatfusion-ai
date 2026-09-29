@@ -848,7 +848,7 @@ def compare_analysis_runs(
     *,
     previous_run_id: int | None = None,
 ) -> RunComparison:
-    """Compare one saved run with an explicit or immediately previous run."""
+    """Compare domain assessments across runs; IP target labels are run-local."""
     initialize_database(db_path)
 
     with _connect(Path(db_path)) as connection:
@@ -888,7 +888,7 @@ def compare_analysis_runs(
                 """
                 SELECT domain, verdict
                 FROM analysis_assessments
-                WHERE analysis_run_id = ?
+                WHERE analysis_run_id = ? AND target_type = 'domain'
                 """,
                 (current_run_id,),
             )
@@ -901,7 +901,7 @@ def compare_analysis_runs(
                     """
                     SELECT domain, verdict
                     FROM analysis_assessments
-                    WHERE analysis_run_id = ?
+                    WHERE analysis_run_id = ? AND target_type = 'domain'
                     """,
                     (resolved_previous,),
                 )
@@ -985,8 +985,15 @@ def get_latest_analyst_feedback_for_domains(
                 label,
                 note,
                 updated_at
-            FROM analyst_feedback
+            FROM analyst_feedback AS feedback
             WHERE domain IN ({placeholders})
+                AND EXISTS (
+                    SELECT 1
+                    FROM analysis_assessments AS assessment
+                    WHERE assessment.analysis_run_id = feedback.analysis_run_id
+                        AND assessment.domain = feedback.domain
+                        AND assessment.target_type = 'domain'
+                )
             ORDER BY
                 domain ASC,
                 julianday(updated_at) DESC,
