@@ -341,20 +341,40 @@ def _infer_field_mapping(
 
     mapping: dict[str, str] = {}
     used: set[str] = set()
-    for canonical in (
+    fields = (
         "query_name",
         "timestamp",
         "client_ip",
         "query_type",
         "response_ip",
         "response_code",
-    ):
+    )
+
+    # Reserve every explicit header before inspecting cell contents. Otherwise
+    # an absent optional field can steal another field's named IP column.
+    for canonical in fields:
+        ranked_headers = [
+            (
+                _header_score(field, canonical)
+                + _content_score(canonical, values_by_field[field]),
+                field,
+            )
+            for field in fieldnames
+            if field not in used and _header_score(field, canonical) > 0
+        ]
+        if ranked_headers:
+            _, field = max(ranked_headers)
+            mapping[canonical] = field
+            used.add(field)
+
+    for canonical in fields:
+        if canonical in mapping:
+            continue
         ranked: list[tuple[float, str]] = []
         for field in fieldnames:
             if field in used:
                 continue
-            score = _header_score(field, canonical)
-            score += _content_score(canonical, values_by_field[field])
+            score = _content_score(canonical, values_by_field[field])
             if score > 0:
                 ranked.append((score, field))
 
