@@ -20,6 +20,10 @@ PHISHTANK_PUBLIC_REFRESH_INTERVAL = timedelta(hours=24)
 ProgressCallback = Callable[[str, str, str | None], None]
 
 
+class PartialFeedCoverage(Exception):
+    """A successful partial fetch must not replace a full source snapshot."""
+
+
 @dataclass(frozen=True)
 class CTIRefreshOutcome:
     source: str
@@ -64,6 +68,16 @@ def _replace_nonempty(
         records,
         refreshed_at=refreshed_at,
     )
+
+
+def _fetch_complete_urlhaus(key: str) -> list[IOCRecord]:
+    result = URLhausCollector(key).fetch_full_urls_with_coverage()
+    if result.coverage != "full":
+        raise PartialFeedCoverage(
+            f"recent URLhaus fallback returned {len(result.records):,} records; "
+            "previous full cache retained"
+        )
+    return list(result.records)
 
 
 def _fetch_complete_sgb(
@@ -137,7 +151,7 @@ def refresh_configured_sources(
         jobs.append(
             (
                 "URLhaus",
-                lambda: URLhausCollector(urlhaus_key.strip()).fetch_full_urls(),
+                lambda: _fetch_complete_urlhaus(urlhaus_key.strip()),
             )
         )
     phishtank_app_key = (
@@ -213,6 +227,16 @@ def refresh_configured_sources(
                 records,
                 refreshed_at=reference,
             )
+        except PartialFeedCoverage as error:
+            _emit_progress(progress, source, "degraded", str(error))
+            outcomes.append(
+                CTIRefreshOutcome(
+                    source=source,
+                    status="degraded",
+                    detail=str(error),
+                )
+            )
+            continue
         except Exception as error:
             _emit_progress(
                 progress,

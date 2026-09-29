@@ -118,6 +118,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"  {outcome.source}: refreshed ({outcome.record_count} records)")
         elif outcome.status == "fresh":
             print(f"  {outcome.source}: skipped (cache still fresh)")
+        elif outcome.status == "degraded":
+            detail = f" ({outcome.detail})" if outcome.detail else ""
+            print(
+                f"  {outcome.source}: degraded{detail}; "
+                "previous full cache preserved"
+            )
         else:
             detail = f": {outcome.detail}" if outcome.detail else ""
             print(
