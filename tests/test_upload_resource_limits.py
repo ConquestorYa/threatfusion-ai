@@ -5,6 +5,7 @@ import sqlite3
 import sys
 import zipfile
 from types import SimpleNamespace
+from xml.etree import ElementTree
 
 import dpkt
 import openpyxl
@@ -109,10 +110,13 @@ def test_pandas_xlsx_path_bounds_declared_sheet_dimension(monkeypatch) -> None:
             for member in original.infolist():
                 data = original.read(member.filename)
                 if member.filename == "xl/worksheets/sheet1.xml":
-                    data = data.replace(
-                        b'<dimension ref="A1:B4"/>',
-                        b'<dimension ref="A1:XFD1048576"/>',
+                    root = ElementTree.fromstring(data)
+                    dimension = root.find(
+                        "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}dimension"
                     )
+                    assert dimension is not None
+                    dimension.set("ref", "A1:XFD1048576")
+                    data = ElementTree.tostring(root, encoding="utf-8")
                 output.writestr(member, data)
 
     monkeypatch.setattr(
