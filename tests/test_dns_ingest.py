@@ -38,7 +38,7 @@ def test_auto_detects_flexible_csv_headers_and_semantic_query_type() -> None:
 def test_auto_detects_semicolon_delimiter_and_cp1254_text() -> None:
     content = (
         "zaman;istemci;domain;tip\n"
-        "2026-09-26 10:00:00;10.0.0.5;�rnek.example;A\n"
+        "2026-09-26 10:00:00;10.0.0.5;örnek.example;A\n"
     ).encode("cp1254")
 
     parsed, detection = parse_dns_upload_with_diagnostics(
@@ -47,7 +47,7 @@ def test_auto_detects_semicolon_delimiter_and_cp1254_text() -> None:
     )
 
     assert detection.encoding == "cp1254"
-    assert parsed.events[0].query_name == "�rnek.example"
+    assert parsed.events[0].query_name == "örnek.example"
 
 
 def test_auto_detects_utf16_tsv() -> None:
