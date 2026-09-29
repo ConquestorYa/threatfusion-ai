@@ -38,7 +38,7 @@ def test_auto_detects_flexible_csv_headers_and_semantic_query_type() -> None:
 def test_auto_detects_semicolon_delimiter_and_cp1254_text() -> None:
     content = (
         "zaman;istemci;domain;tip\n"
-        "2026-09-26 10:00:00;10.0.0.5;örnek.example;A\n"
+        "2026-09-26 10:00:00;10.0.0.5;�rnek.example;A\n"
     ).encode("cp1254")
 
     parsed, detection = parse_dns_upload_with_diagnostics(
@@ -47,7 +47,7 @@ def test_auto_detects_semicolon_delimiter_and_cp1254_text() -> None:
     )
 
     assert detection.encoding == "cp1254"
-    assert parsed.events[0].query_name == "örnek.example"
+    assert parsed.events[0].query_name == "�rnek.example"
 
 
 def test_auto_detects_utf16_tsv() -> None:
@@ -95,6 +95,18 @@ def test_auto_detects_xlsx_and_selects_dns_worksheet() -> None:
         "api.example.com",
     ]
     assert [event.query_type for event in parsed.events] == ["A", "AAAA"]
+
+
+def test_xlsx_response_ip_header_is_not_consumed_by_missing_client_ip() -> None:
+    buffer = io.BytesIO()
+    pd.DataFrame(
+        {"Query Domain": ["example.com"], "Answer IP": ["203.0.113.9"]}
+    ).to_excel(buffer, index=False)
+
+    parsed, _ = parse_dns_upload_with_diagnostics(buffer.getvalue(), "dns.xlsx")
+
+    assert parsed.events[0].client_ip is None
+    assert parsed.events[0].response_ip == "203.0.113.9"
 
 
 def test_xlsx_uses_builtin_reader_when_excel_engine_is_unavailable(
