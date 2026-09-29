@@ -650,6 +650,7 @@ def persisted_assessment_rows(
     for assessment in assessments:
         row = {
             "Domain": assessment.domain,
+            "Target type": assessment.target_type,
             "Verdict": verdict_label(assessment.verdict),
             "ML score": assessment.ml_score,
             "ML tier": ml_tier_label(

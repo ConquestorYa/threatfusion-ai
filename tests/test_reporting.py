@@ -85,6 +85,7 @@ def test_json_report_contains_summary_and_aggregate_findings() -> None:
     assert payload["summary"] == {
         "dns_events": 1,
         "unique_domains": 1,
+        "ip_targets": 0,
         "known_ioc_matches": 1,
         "known_threat": 1,
         "high_risk": 0,

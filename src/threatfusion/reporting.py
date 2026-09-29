@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 
 from .dashboard import ml_tier_label, reason_label, verdict_label
 from .runtime_analysis import RuntimeAnalysisResult
+from .target_privacy import safe_target_labels
 
 
 @dataclass(frozen=True)
@@ -38,15 +39,19 @@ def _verdict_counts(result: RuntimeAnalysisResult) -> dict[str, int]:
 
 def _finding_rows(result: RuntimeAnalysisResult) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
+    targets = safe_target_labels(item.domain for item in result.assessments)
 
     for assessment in sorted(
         result.assessments,
         key=lambda item: item.domain,
     ):
         behavior = assessment.behavior
+        target = targets[assessment.domain]
         rows.append(
             {
-                "domain": assessment.domain,
+                "domain": target.domain,
+                "target_type": target.target_type,
+                "target": target.label,
                 "verdict": verdict_label(assessment.verdict.value),
                 "ml_score": assessment.ml_score,
                 "ml_tier": ml_tier_label(
@@ -81,6 +86,8 @@ def _csv_text(rows: list[dict[str, object]]) -> str:
     output = io.StringIO(newline="")
     fieldnames = [
         "domain",
+        "target_type",
+        "target",
         "verdict",
         "ml_score",
         "ml_tier",
@@ -124,13 +131,15 @@ def build_analysis_report(
     generated_text = _generated_at_text(generated_at)
     rows = _finding_rows(result)
     counts = _verdict_counts(result)
+    domain_count = sum(row["target_type"] == "domain" for row in rows)
 
     payload = {
         "generated_at": generated_text,
         "model_name": model_name.strip(),
         "summary": {
             "dns_events": len(result.events),
-            "unique_domains": len(result.assessments),
+            "unique_domains": domain_count,
+            "ip_targets": len(rows) - domain_count,
             "known_ioc_matches": len(result.matches),
             "known_threat": counts["known_threat"],
             "high_risk": counts["high_risk"],
@@ -142,6 +151,7 @@ def build_analysis_report(
             "raw_dns_rows_included": False,
             "client_ip_values_included": False,
             "response_ip_values_included": False,
+            "target_ip_values_included": False,
         },
     }
 
