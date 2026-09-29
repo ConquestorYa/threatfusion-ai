@@ -472,9 +472,39 @@ def _preflight_xlsx_dimensions(content: bytes) -> None:
         for _, sheet_path in _xlsx_sheet_paths(archive):
             max_row = 0
             max_column = 0
+            last_row = 0
             with archive.open(sheet_path) as stream:
                 try:
-                    for _, element in ElementTree.iterparse(stream, events=("end",)):
+                    for event, element in ElementTree.iterparse(
+                        stream, events=("start", "end")
+                    ):
+                        if (
+                            event == "start"
+                            and element.tag == f"{{{_XLSX_MAIN_NS}}}dimension"
+                        ):
+                            reference = element.attrib.get("ref", "")
+                            match = re.fullmatch(
+                                r"(?:[A-Za-z]{1,3}[1-9][0-9]*:)?"
+                                r"([A-Za-z]{1,3})([1-9][0-9]*)",
+                                reference,
+                            )
+                            if match is None:
+                                raise ValueError("XLSX sheet dimension is invalid")
+                            declared_column = _xlsx_column_index(
+                                match.group(1) + match.group(2)
+                            ) + 1
+                            declared_row = int(match.group(2))
+                            _validate_excel_dimensions(
+                                declared_row,
+                                declared_column,
+                                workbook_cells=0,
+                                format_name="XLSX",
+                            )
+                            max_row = max(max_row, declared_row)
+                            max_column = max(max_column, declared_column)
+                            continue
+                        if event != "end":
+                            continue
                         if element.tag != f"{{{_XLSX_MAIN_NS}}}row":
                             continue
                         raw_row = element.attrib.get("r", "")
@@ -486,9 +516,10 @@ def _preflight_xlsx_dimensions(content: bytes) -> None:
                                     "XLSX row reference is invalid"
                                 ) from error
                         else:
-                            row_number = max_row + 1
+                            row_number = last_row + 1
                         if row_number < 1:
                             raise ValueError("XLSX row reference is invalid")
+                        last_row = row_number
                         max_row = max(max_row, row_number)
                         if max_row > _MAX_XLSX_ROWS:
                             raise ValueError(

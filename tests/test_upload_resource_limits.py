@@ -101,6 +101,31 @@ def test_pandas_xlsx_path_bounds_sparse_rectangle(monkeypatch) -> None:
         dns_ingest.parse_dns_upload_with_diagnostics(output.getvalue(), "dns.xlsx")
 
 
+def test_pandas_xlsx_path_bounds_declared_sheet_dimension(monkeypatch) -> None:
+    content = _normal_xlsx()
+    rewritten = io.BytesIO()
+    with zipfile.ZipFile(io.BytesIO(content)) as original:
+        with zipfile.ZipFile(rewritten, "w") as output:
+            for member in original.infolist():
+                data = original.read(member.filename)
+                if member.filename == "xl/worksheets/sheet1.xml":
+                    data = data.replace(
+                        b'<dimension ref="A1:B4"/>',
+                        b'<dimension ref="A1:XFD1048576"/>',
+                    )
+                output.writestr(member, data)
+
+    monkeypatch.setattr(
+        dns_ingest.pd,
+        "ExcelFile",
+        lambda *args, **kwargs: pytest.fail("oversized dimension reached pandas"),
+    )
+    with pytest.raises(ValueError, match="safe row import limit"):
+        dns_ingest.parse_dns_upload_with_diagnostics(
+            rewritten.getvalue(), "dns.xlsx"
+        )
+
+
 def test_pandas_xlsx_path_bounds_workbook_total(monkeypatch) -> None:
     book = openpyxl.Workbook()
     book.active.append(["query_name", "response_ip"])
