@@ -1034,3 +1034,10 @@ holdout with the frozen lexical artifact and the new benign window. Do not use
 the prior `holdout-v3-c4-final` snapshot or its 2026-09-28 result to select,
 tune, or validate this artifact.
 
+The final holdout builder writes `provenance.json` beside its `dataset.csv` and
+`metadata.json`. It binds the exact artifact SHA-256, development and holdout
+snapshot hashes, model name, protocol version, and the literal freeze cutoff.
+The explicit post-freeze temporal evaluator requires and verifies this manifest before scoring;
+the aggregate report carries the same identity. The frozen model file and
+thresholds are never rewritten by this step.
+

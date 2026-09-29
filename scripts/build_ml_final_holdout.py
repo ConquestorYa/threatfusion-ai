@@ -18,6 +18,10 @@ from threatfusion.ml_artifact import (
     load_trusted_ml_artifact,
 )
 from threatfusion.ml_benign_telemetry import prepare_benign_telemetry
+from threatfusion.ml_final_provenance import (
+    validate_frozen_lexical_identity,
+    write_final_provenance,
+)
 from threatfusion.ml_holdout_collection import (
     final_holdout_experiment_metadata,
     prepare_final_holdout_collection,
@@ -30,7 +34,7 @@ from threatfusion.ml_snapshot_io import read_domain_snapshot, write_domain_snaps
 _DEFAULT_SOURCES = ("ThreatFox", "URLhaus", "SGB")
 
 
-def _timezone_aware_datetime(value: str) -> datetime:
+def _timezone_aware_datetime(value: str) -> str:
     try:
         parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
     except ValueError as error:
@@ -41,7 +45,7 @@ def _timezone_aware_datetime(value: str) -> datetime:
         raise argparse.ArgumentTypeError(
             "timestamp must include a timezone offset"
         )
-    return parsed
+    return value.strip()
 
 
 def _sha256(path: Path) -> str:
@@ -108,6 +112,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
 
     try:
+        cutoff = datetime.fromisoformat(
+            args.malicious_first_seen_after.replace("Z", "+00:00")
+        )
         artifact = load_trusted_ml_artifact(
             args.artifact_dir,
             expected_checksum=args.expected_artifact_sha256,
@@ -117,6 +124,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "final temporal protocol requires a supported frozen candidate"
             )
         artifact_checksum = compute_ml_artifact_checksum(args.artifact_dir)
+        validate_frozen_lexical_identity(
+            artifact.metadata.model_name,
+            artifact_checksum,
+            args.malicious_first_seen_after,
+        )
 
         development = read_domain_snapshot(args.development_snapshot_dir)
         context = prepare_final_holdout_collection(
@@ -133,7 +145,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         final_statuses = validate_final_cti_refreshes(
             statuses,
             required_sources=args.required_sources,
-            malicious_first_seen_after=args.malicious_first_seen_after,
+            malicious_first_seen_after=cutoff,
         )
         indicators = load_ioc_records(
             args.db_path,
@@ -155,7 +167,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         malicious_selection = select_final_temporal_malicious_samples(
             indicators,
-            malicious_first_seen_after=args.malicious_first_seen_after,
+            malicious_first_seen_after=cutoff,
         )
         if not malicious_selection.samples:
             raise ValueError(
@@ -177,7 +189,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "post_freeze_temporal_malicious_plus_confirmed_benign_dns"
                 ),
                 "malicious_first_seen_after": (
-                    args.malicious_first_seen_after.isoformat()
+                    cutoff.isoformat()
                 ),
                 "required_cti_sources": list(args.required_sources),
                 "cti_refreshes": {
@@ -224,6 +236,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.output_dir,
             experiment_metadata=experiment_metadata,
         )
+        provenance_path = write_final_provenance(
+            args.development_snapshot_dir,
+            args.output_dir,
+            model_name=artifact.metadata.model_name,
+            artifact_sha256=artifact_checksum,
+            cutoff=args.malicious_first_seen_after,
+        )
     except (OSError, TypeError, UnicodeDecodeError, ValueError) as error:
         raise SystemExit(
             "Final holdout build failed: "
@@ -235,7 +254,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"  Frozen artifact SHA-256: {artifact_checksum}")
     print(
         "  Malicious first_seen cutoff: "
-        f"{args.malicious_first_seen_after.isoformat()}"
+        f"{args.malicious_first_seen_after}"
     )
     print("  Required CTI refreshes:")
     for status in final_statuses:
@@ -284,6 +303,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     print(f"  Dataset: {dataset_path}")
     print(f"  Metadata: {metadata_path}")
+    print(f"  Provenance: {provenance_path}")
     print(
         "Next step: run evaluate_ml_final_holdout.py with the same explicit "
         "post-freeze cutoff. Thresholds remain frozen."

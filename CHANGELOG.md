@@ -41,16 +41,18 @@ release date is added only when the final tag/release is created.
 - ML terminology uses `ml_score` rather than implying calibrated malware
   probability.
 - The v1 scope is frozen around final evaluation, portfolio presentation,
-  hosted demo, and release instead of expanding into API/streaming/Suricata,
+  hosted demo, and release instead of expanding into API/streaming,
   SOC integrations, LLM features, or neural-network model families.
+- Suricata EVE ingestion is implemented. The completed character-only C=4
+  final evaluation is historical; frozen Lexical C4 still awaits its own final.
 - The runtime default remains the earlier trusted artifact while experimental
   candidates are evaluated separately and never auto-promoted.
 
 ### Release gates still open
 
-- Complete the final untouched post-freeze temporal holdout for the frozen C=4
-  candidate and document the result without further v1 model tuning.
-- Capture sanitized screenshots from a real application run.
+- Complete a new untouched post-freeze temporal holdout for frozen Lexical C4
+  when enough eligible malicious domains exist; retain its artifact and cutoff.
+- Review the existing sanitized screenshots against the release build.
 - Publish and verify the hosted public-mode demo.
 - Complete final manual release verification, then create the `v0.1.0` tag
   and GitHub release.

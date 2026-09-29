@@ -9,6 +9,7 @@ from threatfusion.ml_evaluation_report import (
     read_frozen_holdout_report,
     write_frozen_holdout_report,
 )
+from threatfusion.ml_final_provenance import FinalProvenance
 from threatfusion.ml_high_recall import ThresholdMetrics
 from threatfusion.ml_holdout import (
     FrozenHoldoutEvaluation,
@@ -175,6 +176,28 @@ def test_temporal_report_records_filter_protocol_and_counts(tmp_path) -> None:
     assert loaded.malicious_first_seen_after == "2026-09-23"
     assert loaded.malicious_missing_first_seen_removed == 7
     assert loaded.malicious_not_after_cutoff_removed == 11
+
+
+def test_report_roundtrip_keeps_final_provenance_identity(tmp_path) -> None:
+    identity = FinalProvenance(
+        schema_version=1,
+        protocol="post_freeze_temporal_malicious_plus_confirmed_benign_dns",
+        model_name="model-a",
+        artifact_sha256="a" * 64,
+        development_snapshot_sha256="b" * 64,
+        holdout_snapshot_sha256="c" * 64,
+        cutoff="2026-09-23T00:00:00Z",
+    )
+    report = build_frozen_holdout_report(
+        evaluation(),
+        model_name="model-a",
+        development_snapshot_date="2026-09-23",
+        holdout_snapshot_date="2026-09-25",
+        provenance=identity,
+    )
+    path = write_frozen_holdout_report(report, tmp_path / "final.json")
+
+    assert read_frozen_holdout_report(path).provenance == identity
 
 
 def test_report_refuses_overwrite_by_default(tmp_path) -> None:
