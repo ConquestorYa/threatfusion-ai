@@ -259,6 +259,7 @@ def _show_history(db_path: Path) -> None:
 
         compact_columns = [
             "Domain",
+            "Target type",
             "Verdict",
             "ML score",
             "ML tier",

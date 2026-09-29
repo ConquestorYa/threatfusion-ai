@@ -9,6 +9,7 @@ from pathlib import Path
 
 from .audit import AnalysisAuditMetadata, CTISourceAudit
 from .runtime_analysis import RuntimeAnalysisResult
+from .target_privacy import safe_target_labels
 
 
 @dataclass(frozen=True)
@@ -50,6 +51,7 @@ class PersistedDomainAssessment:
     known_match_types: tuple[str, ...]
     behavior_signals: tuple[str, ...]
     reasons: tuple[str, ...]
+    target_type: str = "domain"
 
     @property
     def ml_probability(self) -> float | None:
@@ -127,6 +129,7 @@ CREATE TABLE IF NOT EXISTS analysis_assessments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     analysis_run_id INTEGER NOT NULL,
     domain TEXT NOT NULL,
+    target_type TEXT NOT NULL DEFAULT 'domain',
     verdict TEXT NOT NULL,
     ml_probability REAL,
     ml_tier TEXT,
@@ -206,6 +209,41 @@ def _migrate_analysis_runs(connection: sqlite3.Connection) -> None:
         )
 
 
+def _migrate_assessment_target_type(connection: sqlite3.Connection) -> None:
+    existing = {
+        str(row[1])
+        for row in connection.execute("PRAGMA table_info(analysis_assessments)")
+    }
+    if "target_type" in existing:
+        return
+    connection.execute(
+        "ALTER TABLE analysis_assessments "
+        "ADD COLUMN target_type TEXT NOT NULL DEFAULT 'domain'"
+    )
+    legacy_rows = connection.execute(
+        "SELECT id, analysis_run_id, domain FROM analysis_assessments"
+    ).fetchall()
+    by_run: dict[int, list[tuple[int, str]]] = {}
+    for row_id, run_id, domain in legacy_rows:
+        by_run.setdefault(int(run_id), []).append((int(row_id), str(domain)))
+    for run_id, rows in by_run.items():
+        labels = safe_target_labels(domain for _, domain in rows)
+        for row_id, domain in rows:
+            target = labels[domain]
+            if target.target_type != "ip":
+                continue
+            connection.execute(
+                "UPDATE analysis_assessments "
+                "SET domain = ?, target_type = 'ip' WHERE id = ?",
+                (target.label, row_id),
+            )
+            connection.execute(
+                "UPDATE analyst_feedback SET domain = ? "
+                "WHERE analysis_run_id = ? AND domain = ?",
+                (target.label, run_id, domain),
+            )
+
+
 
 def _connect(db_path: Path) -> sqlite3.Connection:
     connection = sqlite3.connect(Path(db_path))
@@ -221,6 +259,7 @@ def initialize_database(db_path: Path) -> None:
     with _connect(path) as connection:
         connection.executescript(_SCHEMA)
         _migrate_analysis_runs(connection)
+        _migrate_assessment_target_type(connection)
 
 
 def _created_at_text(created_at: datetime | None) -> str:
@@ -261,7 +300,7 @@ def save_runtime_analysis(
 ) -> int:
     """Persist summary and per-domain assessment data for one analysis run.
 
-    Raw DNS rows and client IP values are intentionally not persisted.
+    Raw DNS rows, client IPs, and IP targets are intentionally not persisted.
     """
     initialize_database(db_path)
 
@@ -365,12 +404,15 @@ def save_runtime_analysis(
         run_id = int(cursor.lastrowid)
 
         rows = []
+        targets = safe_target_labels(item.domain for item in result.assessments)
         for assessment in result.assessments:
             behavior = assessment.behavior
+            target = targets[assessment.domain]
             rows.append(
                 (
                     run_id,
-                    assessment.domain,
+                    target.label,
+                    target.target_type,
                     assessment.verdict.value,
                     assessment.ml_score,
                     assessment.ml_tier,
@@ -393,6 +435,7 @@ def save_runtime_analysis(
             INSERT INTO analysis_assessments (
                 analysis_run_id,
                 domain,
+                target_type,
                 verdict,
                 ml_probability,
                 ml_tier,
@@ -408,7 +451,7 @@ def save_runtime_analysis(
                 behavior_signals_json,
                 reasons_json
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             rows,
         )
@@ -540,6 +583,7 @@ def get_analysis_assessments(
     return [
         PersistedDomainAssessment(
             domain=str(row["domain"]),
+            target_type=str(row["target_type"]),
             verdict=str(row["verdict"]),
             ml_score=(
                 float(row["ml_probability"])
@@ -804,7 +848,7 @@ def compare_analysis_runs(
     *,
     previous_run_id: int | None = None,
 ) -> RunComparison:
-    """Compare one saved run with an explicit or immediately previous run."""
+    """Compare domain assessments across runs; IP target labels are run-local."""
     initialize_database(db_path)
 
     with _connect(Path(db_path)) as connection:
@@ -844,7 +888,7 @@ def compare_analysis_runs(
                 """
                 SELECT domain, verdict
                 FROM analysis_assessments
-                WHERE analysis_run_id = ?
+                WHERE analysis_run_id = ? AND target_type = 'domain'
                 """,
                 (current_run_id,),
             )
@@ -857,7 +901,7 @@ def compare_analysis_runs(
                     """
                     SELECT domain, verdict
                     FROM analysis_assessments
-                    WHERE analysis_run_id = ?
+                    WHERE analysis_run_id = ? AND target_type = 'domain'
                     """,
                     (resolved_previous,),
                 )
@@ -941,8 +985,15 @@ def get_latest_analyst_feedback_for_domains(
                 label,
                 note,
                 updated_at
-            FROM analyst_feedback
+            FROM analyst_feedback AS feedback
             WHERE domain IN ({placeholders})
+                AND EXISTS (
+                    SELECT 1
+                    FROM analysis_assessments AS assessment
+                    WHERE assessment.analysis_run_id = feedback.analysis_run_id
+                        AND assessment.domain = feedback.domain
+                        AND assessment.target_type = 'domain'
+                )
             ORDER BY
                 domain ASC,
                 julianday(updated_at) DESC,
