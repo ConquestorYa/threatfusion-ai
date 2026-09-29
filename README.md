@@ -232,7 +232,14 @@ Encrypted DNS such as DoH/DoT is not claimed to be recoverable from packet captu
 
 ThreatFusion uses a classical lexical model rather than treating AI as a black box:
 
-**character 2–6 TF-IDF → balanced Logistic Regression → frozen operating thresholds**
+**character 2–6 TF-IDF + lexical features → balanced Logistic Regression → frozen operating thresholds**
+
+| Artifact | Evaluation status |
+| --- | --- |
+| Earlier character-only C=4 | Historical final evaluation completed; its results apply only to that artifact. |
+| Frozen Lexical C4 (`lr_char_2_6_plus_lexical_c4`) | Final evaluation **pending**. SHA-256 `82f07f99820cea4ec2b8c2c07ab3d6a9387c87b17fafe1994d7730cc39386d14`; freeze cutoff `2026-09-28T21:38:37.5577083Z`. |
+
+The configured runtime artifact is selected separately; freezing Lexical C4 did not automatically promote it as the demo default.
 
 The ML signal is designed for **previously unseen domain names** and is intentionally subordinate to deterministic CTI evidence.
 
@@ -241,7 +248,7 @@ Important limitations:
 - model output is an **uncalibrated score**, not a malware probability;
 - model promotion is never automatic;
 - false-positive rate and recall are measured separately;
-- the final post-freeze temporal evaluation for the current C=4 candidate is still a release task;
+- a new untouched post-freeze temporal evaluation for frozen Lexical C4 remains pending; the older C=4 holdout cannot be reused;
 - the project does not claim perfect detection.
 
 Detailed methodology and evaluation history: **[docs/ML_DATASET.md](docs/ML_DATASET.md)**.
@@ -254,7 +261,7 @@ ThreatFusion treats suspicious indicators as **inert data**.
 
 - uploaded telemetry is processed locally / in memory by default;
 - raw uploaded rows are not stored in analysis history;
-- raw client and response IP values are excluded from portable reports;
+- raw client, response, and IP-target values are excluded from portable reports;
 - Quick Lookup does not visit URLs, resolve hosts, or download content;
 - public mode disables shared analysis-history browsing and saving;
 - third-party CTI dumps are not committed to the repository;
@@ -481,7 +488,7 @@ threatfusion-ai/
 
 Remaining release work is intentionally narrow:
 
-- one final untouched post-freeze temporal ML measurement;
+- one new untouched post-freeze temporal ML measurement for frozen Lexical C4, once enough eligible malicious domains exist;
 - hosted public-mode demo;
 - final release checklist and GitHub release/tag.
 

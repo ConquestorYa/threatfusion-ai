@@ -9,7 +9,10 @@ from pathlib import Path
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT / "src"))
 
-from threatfusion.ml_artifact import load_trusted_ml_artifact
+from threatfusion.ml_artifact import (
+    compute_ml_artifact_checksum,
+    load_trusted_ml_artifact,
+)
 from threatfusion.ml_evaluation_report import (
     build_frozen_holdout_report,
     write_frozen_holdout_report,
@@ -17,6 +20,10 @@ from threatfusion.ml_evaluation_report import (
 from threatfusion.ml_holdout import (
     evaluate_frozen_artifact_on_holdout,
     validate_fresh_snapshot_dates,
+)
+from threatfusion.ml_final_provenance import (
+    FINAL_PROVENANCE_FILENAME,
+    read_and_validate_final_provenance,
 )
 from threatfusion.ml_snapshot_io import read_domain_snapshot
 
@@ -47,6 +54,11 @@ def _first_seen_cutoff(value: str) -> date | datetime:
     return parsed
 
 
+def _first_seen_cutoff_text(value: str) -> str:
+    _first_seen_cutoff(value)
+    return value.strip()
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Evaluate the frozen ThreatFusion ML artifact on a fresh holdout"
@@ -74,7 +86,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     temporal_group.add_argument(
         "--malicious-first-seen-after",
-        type=_first_seen_cutoff,
+        type=_first_seen_cutoff_text,
         default=None,
         metavar="ISO_CUTOFF",
         help=(
@@ -84,6 +96,12 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument(
+        "--provenance-manifest",
+        type=Path,
+        default=None,
+        help="Defaults to provenance.json beside the final holdout snapshot",
+    )
     return parser
 
 
@@ -102,6 +120,14 @@ def _print_metrics(name: str, metrics) -> None:
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
 
+    if args.provenance_manifest is not None and (
+        not args.strict_temporal_malicious
+        and args.malicious_first_seen_after is None
+    ):
+        raise SystemExit(
+            "A final provenance manifest requires an explicit temporal cutoff"
+        )
+
     try:
         artifact = load_trusted_ml_artifact(
             args.artifact_dir,
@@ -113,7 +139,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             development.metadata.benign_snapshot_date,
             holdout.metadata.benign_snapshot_date,
         )
-        malicious_first_seen_after = args.malicious_first_seen_after
+        malicious_first_seen_after = (
+            _first_seen_cutoff(args.malicious_first_seen_after)
+            if args.malicious_first_seen_after is not None
+            else None
+        )
         if args.strict_temporal_malicious:
             development_date = development.metadata.benign_snapshot_date
             if development_date is None:
@@ -122,6 +152,29 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "development snapshot date"
                 )
             malicious_first_seen_after = date.fromisoformat(development_date)
+
+        provenance = None
+        if (
+            args.malicious_first_seen_after is not None
+            or args.provenance_manifest is not None
+        ):
+            cutoff_text = (
+                args.malicious_first_seen_after
+                if args.malicious_first_seen_after is not None
+                else malicious_first_seen_after.isoformat()
+            )
+            manifest_path = (
+                args.provenance_manifest
+                or args.holdout_snapshot_dir / FINAL_PROVENANCE_FILENAME
+            )
+            provenance = read_and_validate_final_provenance(
+                manifest_path,
+                args.development_snapshot_dir,
+                args.holdout_snapshot_dir,
+                model_name=artifact.metadata.model_name,
+                artifact_sha256=compute_ml_artifact_checksum(args.artifact_dir),
+                cutoff=cutoff_text,
+            )
 
         evaluation = evaluate_frozen_artifact_on_holdout(
             artifact,
@@ -138,6 +191,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     development.metadata.benign_snapshot_date
                 ),
                 holdout_snapshot_date=holdout.metadata.benign_snapshot_date,
+                provenance=provenance,
             )
             report_path = write_frozen_holdout_report(
                 report,

@@ -1,6 +1,6 @@
 # ThreatFusion AI v0.1.0 — Release Notes Draft
 
-> **Status: release candidate.** Core feature development is complete. Do not publish these notes as the final GitHub release until sanitized screenshots, hosted demo, and manual release checks are complete.
+> **Status: release candidate.** Frozen Lexical C4 final evaluation is pending. Do not publish these notes as the final GitHub release until that evaluation, hosted demo, screenshot review, and manual release checks are complete.
 
 ## Overview
 
@@ -105,6 +105,15 @@ The dashboard includes:
 
 Known IOC evidence remains stronger than the lexical ML signal.
 
+**Current frozen Lexical C4:** `lr_char_2_6_plus_lexical_c4`, SHA-256
+`82f07f99820cea4ec2b8c2c07ab3d6a9387c87b17fafe1994d7730cc39386d14`,
+freeze cutoff `2026-09-28T21:38:37.5577083Z`. Its final evaluation is
+**pending**. No final recall, FPR, or precision is claimed for this artifact.
+Its thresholds remain high `0.933823`, medium `0.832484`, low `0.760446`.
+The historical holdout below cannot be reused for this artifact.
+
+### Historical character-only C=4 result
+
 The original model exposed excessive false positives on long-tail benign CESNET data. A CESNET-augmented v2 candidate substantially reduced false positives, but fresh-holdout malicious recall fell too far to justify promotion.
 
 A bounded regularization experiment kept the same character 2–6 TF-IDF + balanced Logistic Regression family and compared only <code>C=0.5, 1, 2, 4</code>.
@@ -132,20 +141,21 @@ samples than on the much smaller retained URLhaus subset. ThreatFox contributed
 no eligible retained domain/URL sample to this temporal holdout, so a ThreatFox
 source-recall value is not reported.
 
-The final result supports keeping lexical ML as an auxiliary signal. Medium and
+This historical result supports keeping lexical ML as an auxiliary signal. Medium and
 Low false-positive rates on untouched CESNET remain too high for the model to
 be described as a standalone malicious-domain detector, while High is more
 conservative but still misses most post-freeze malicious domains.
 
-No additional v1 model family or threshold tuning is planned from this final
-measurement. Any future model or threshold change informed by these results
-requires a new untouched final holdout.
+The later Lexical C4 iteration used this result only as development evidence.
+Its new final must use the separately reserved benign window and post-freeze
+malicious first-seen protocol described in `ML_DATASET.md`. No further tuning
+of the frozen artifact or thresholds is planned.
 
 ## Security and privacy
 
 - uploaded telemetry is processed locally / in memory by default;
 - raw uploaded telemetry rows are not persisted in saved analysis history;
-- portable reports exclude raw client/response IP values;
+- portable reports exclude raw client/response and IP-target values;
 - threat indicators are treated as inert data and are not visited or resolved;
 - public mode disables shared history saving/browsing;
 - public deployment uses sanitized runtime assets;

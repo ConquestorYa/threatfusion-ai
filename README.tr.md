@@ -232,7 +232,14 @@ PCAP üzerinden DoH/DoT gibi şifreli DNS'ten domain çıkarıldığı iddia edi
 
 ThreatFusion “AI” katmanını kara kutu gibi kullanmaz:
 
-**character 2–6 TF-IDF → balanced Logistic Regression → dondurulmuş eşikler**
+**character 2–6 TF-IDF + lexical özellikler → balanced Logistic Regression → dondurulmuş eşikler**
+
+| Artifact | Değerlendirme durumu |
+| --- | --- |
+| Önceki yalnızca karakter temelli C=4 | Tarihsel nihai değerlendirme tamamlandı; sonuçlar yalnızca bu artifact'e aittir. |
+| Dondurulmuş Lexical C4 (`lr_char_2_6_plus_lexical_c4`) | Nihai değerlendirme **beklemede**. SHA-256 `82f07f99820cea4ec2b8c2c07ab3d6a9387c87b17fafe1994d7730cc39386d14`; freeze cutoff `2026-09-28T21:38:37.5577083Z`. |
+
+Çalışma zamanı artifact'i ayrıca yapılandırılır; Lexical C4'ün dondurulması onu demo varsayılanına otomatik olarak yükseltmedi.
 
 ML sinyali özellikle **daha önce görülmemiş domain adları** için tasarlanmıştır ve deterministik CTI kanıtından bilinçli olarak daha düşük önceliktedir.
 
@@ -241,7 +248,7 @@ ML sinyali özellikle **daha önce görülmemiş domain adları** için tasarlan
 - model çıktısı **kalibre edilmiş olasılık değildir**;
 - model otomatik olarak production varsayılanına yükseltilmez;
 - false-positive rate ve recall ayrı ayrı ölçülür;
-- mevcut C=4 adayının son post-freeze temporal değerlendirmesi release öncesi kalan iştir;
+- dondurulmuş Lexical C4 için yeni ve dokunulmamış freeze sonrası zamansal değerlendirme beklemededir; eski C=4 holdout'u tekrar kullanılamaz;
 - proje “kusursuz tespit” iddiasında bulunmaz.
 
 Ayrıntılı metodoloji: **[docs/ML_DATASET.md](docs/ML_DATASET.md)**.
@@ -254,7 +261,7 @@ ThreatFusion şüpheli göstergeleri **pasif veri** olarak işler.
 
 - yüklenen telemetri varsayılan olarak yerel / bellekte işlenir;
 - ham telemetri satırları analiz geçmişine kaydedilmez;
-- taşınabilir raporlara ham istemci ve response IP değerleri eklenmez;
+- taşınabilir raporlara ham istemci, response ve IP-hedef değerleri eklenmez;
 - Hızlı Sorgu URL açmaz, hostname çözmez ve içerik indirmez;
 - public mode ortak analiz geçmişini kapatır;
 - üçüncü taraf CTI dump'ları repoya commit edilmez;
@@ -481,7 +488,7 @@ threatfusion-ai/
 
 Release için kalan işler bilinçli olarak dar tutulmuştur:
 
-- son untouched post-freeze temporal ML ölçümü;
+- yeterli uygun zararlı domain biriktiğinde dondurulmuş Lexical C4 için yeni bir untouched freeze sonrası zamansal ML ölçümü;
 - hosted public-mode demo;
 - final release checklist ve GitHub release/tag.
 

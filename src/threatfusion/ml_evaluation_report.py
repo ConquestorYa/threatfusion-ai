@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .ml_holdout import FrozenHoldoutEvaluation, HoldoutSourceMetrics
+from .ml_final_provenance import FinalProvenance
 
 _SCHEMA_VERSION = 3
 _SUPPORTED_SCHEMA_VERSIONS = {1, 2, 3}
@@ -87,6 +88,7 @@ class FrozenHoldoutReport:
     malicious_first_seen_after: str | None = None
     malicious_missing_first_seen_removed: int = 0
     malicious_not_after_cutoff_removed: int = 0
+    provenance: FinalProvenance | None = None
 
 
 def _wilson_interval(
@@ -211,6 +213,7 @@ def build_frozen_holdout_report(
     development_snapshot_date: str,
     holdout_snapshot_date: str,
     generated_at: datetime | None = None,
+    provenance: FinalProvenance | None = None,
 ) -> FrozenHoldoutReport:
     """Build an aggregate-only report from a frozen holdout evaluation."""
     timestamp = generated_at or datetime.now(timezone.utc)
@@ -257,6 +260,7 @@ def build_frozen_holdout_report(
         malicious_not_after_cutoff_removed=(
             evaluation.malicious_not_after_cutoff_removed
         ),
+        provenance=provenance,
     )
 
 
@@ -387,6 +391,18 @@ def read_frozen_holdout_report(path: Path) -> FrozenHoldoutReport:
     if not isinstance(source_metrics_raw, list):
         raise TypeError("holdout source metrics must be a list")
 
+    provenance_raw = raw.get("provenance")
+    if provenance_raw is not None and not isinstance(provenance_raw, dict):
+        raise TypeError("holdout provenance must be an object")
+    try:
+        provenance = (
+            FinalProvenance(**provenance_raw)
+            if provenance_raw is not None
+            else None
+        )
+    except TypeError as error:
+        raise ValueError("holdout provenance schema is invalid") from error
+
     try:
         report = FrozenHoldoutReport(
             schema_version=int(raw["schema_version"]),
@@ -422,6 +438,7 @@ def read_frozen_holdout_report(path: Path) -> FrozenHoldoutReport:
             malicious_not_after_cutoff_removed=int(
                 raw.get("malicious_not_after_cutoff_removed", 0)
             ),
+            provenance=provenance,
         )
     except KeyError as error:
         raise ValueError("holdout report schema is incomplete") from error

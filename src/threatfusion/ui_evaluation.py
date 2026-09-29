@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 import pandas as pd
 import plotly.express as px
@@ -13,7 +14,39 @@ from .evaluation_dashboard import (
 )
 from .i18n import tr, translate_dataframe
 from .ml_evaluation_report import read_frozen_holdout_report
+from .ml_artifact import LEXICAL_C4_DEVELOPMENT_CANDIDATE
+from .ml_final_provenance import (
+    LEXICAL_C4_ARTIFACT_SHA256,
+    LEXICAL_C4_FREEZE_CUTOFF,
+)
 from .ui_theme import apply_plotly_theme, metric_card, palette
+
+
+def _is_current_lexical_final_report(report) -> bool:
+    identity = report.provenance
+    try:
+        report_cutoff_matches = (
+            datetime.fromisoformat(
+                report.malicious_first_seen_after.replace("Z", "+00:00")
+            )
+            == datetime.fromisoformat(
+                LEXICAL_C4_FREEZE_CUTOFF.replace("Z", "+00:00")
+            )
+        )
+    except (AttributeError, ValueError):
+        report_cutoff_matches = False
+    return bool(
+        report.model_name == LEXICAL_C4_DEVELOPMENT_CANDIDATE
+        and report.protocol == "fresh_collection_disjoint_first_seen_filtered"
+        and report_cutoff_matches
+        and identity is not None
+        and identity.schema_version == 1
+        and identity.protocol
+        == "post_freeze_temporal_malicious_plus_confirmed_benign_dns"
+        and identity.model_name == LEXICAL_C4_DEVELOPMENT_CANDIDATE
+        and identity.artifact_sha256 == LEXICAL_C4_ARTIFACT_SHA256
+        and identity.cutoff == LEXICAL_C4_FREEZE_CUTOFF
+    )
 
 
 def _show_model_evaluation(report_path: Path) -> None:
@@ -23,23 +56,25 @@ def _show_model_evaluation(report_path: Path) -> None:
             st.markdown(f"### {tr('Final holdout not evaluated')}")
             st.write(
                 tr(
-                    "The frozen development model has not yet been measured on "
-                    "the separately collected fresh disjoint holdout."
+                    "The frozen Lexical C4 model's final evaluation is pending. "
+                    "The historical C4 final result does not apply to it."
                 )
             )
             st.caption(
                 tr(
-                    "Until that report exists, ThreatFusion intentionally keeps "
-                    "the model in development status."
+                    "Use a new untouched post-freeze holdout and verify its "
+                    "provenance before reporting Lexical C4 final metrics."
                 )
             )
             with st.expander(tr("Show final-evaluation command"), expanded=False):
                 st.code(
                     "python scripts\\evaluate_ml_final_holdout.py "
-                    "--artifact-dir data\\models\\development-001 "
-                    "--development-snapshot-dir data\\snapshots\\baseline-001 "
-                    "--holdout-snapshot-dir data\\snapshots\\holdout-001 "
-                    "--json-output data\\evaluation\\final_holdout.json",
+                    "--artifact-dir data\\models\\development-v4-lexical-c4 "
+                    f"--expected-artifact-sha256 {LEXICAL_C4_ARTIFACT_SHA256} "
+                    "--development-snapshot-dir data\\snapshots\\development-v2 "
+                    "--holdout-snapshot-dir data\\snapshots\\holdout-lexical-c4-final "
+                    f"--malicious-first-seen-after {LEXICAL_C4_FREEZE_CUTOFF} "
+                    "--json-output data\\evaluation\\final_holdout_lexical_c4.json",
                     language="powershell",
                 )
         return
@@ -53,12 +88,15 @@ def _show_model_evaluation(report_path: Path) -> None:
 
     summary = summarize_holdout_report(report)
 
-    st.success(
-        tr(
-            "Frozen-model holdout report loaded. No retraining or threshold "
-            "tuning was performed on this holdout."
+    if _is_current_lexical_final_report(report):
+        st.success(tr("Frozen Lexical C4 final report loaded with provenance."))
+    else:
+        st.info(
+            tr(
+                "Historical or unbound model report. Frozen Lexical C4 final "
+                "evaluation is pending."
+            )
         )
-    )
     st.write(f"**{tr('Model')}:** {summary.model_name}")
     st.write(
         f"**{tr('Snapshot dates')}:** "
@@ -184,11 +222,18 @@ def _show_model_evaluation(report_path: Path) -> None:
             "benign alerts."
         )
     )
-    st.caption(
-        tr(
-            "Protocol: fresh-collection disjoint holdout. Every domain seen in "
-            "the development snapshot is removed before evaluation. This is not "
-            "a strict IOC first-seen temporal split because DomainSample does not "
-            "store malicious IOC first_seen timestamps."
+    if report.malicious_first_seen_after is not None:
+        st.caption(
+            tr(
+                "Protocol: development-domain overlap removed; malicious "
+                "first_seen must be strictly after the displayed cutoff."
+            )
+            + f" {report.malicious_first_seen_after}"
         )
-    )
+    else:
+        st.caption(
+            tr(
+                "Protocol: fresh-collection disjoint holdout with development "
+                "overlap removed; no malicious first_seen filter was applied."
+            )
+        )
