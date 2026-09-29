@@ -33,6 +33,9 @@ class FakeURLhausCollector:
             )
         ]
 
+    def fetch_full_urls_with_coverage(self):
+        return SimpleNamespace(records=tuple(self.fetch_full_urls()), coverage="full")
+
 
 class FakePhishTankCollector:
     def fetch_verified_online_urls(self):
@@ -94,6 +97,52 @@ def test_refresh_updates_all_configured_sources(tmp_path, monkeypatch):
         "URLhaus",
         "PhishTank",
         "SGB",
+    }
+
+
+def test_urlhaus_recent_fallback_keeps_full_cache_and_reports_degraded(
+    tmp_path, monkeypatch
+) -> None:
+    _patch_collectors(monkeypatch)
+    db_path = tmp_path / "cti.sqlite"
+    older = datetime(2026, 9, 25, tzinfo=timezone.utc)
+    replace_source_records(
+        db_path,
+        "URLhaus",
+        [
+            IOCRecord("https://old.example/a", IOCType.URL, "URLhaus"),
+            IOCRecord("https://recent.example/b", IOCType.URL, "URLhaus"),
+        ],
+        refreshed_at=older,
+    )
+
+    class PartialURLhausCollector:
+        def __init__(self, key):
+            pass
+
+        def fetch_full_urls_with_coverage(self):
+            return SimpleNamespace(
+                records=(
+                    IOCRecord("https://recent.example/b", IOCType.URL, "URLhaus"),
+                ),
+                coverage="recent_fallback",
+            )
+
+    monkeypatch.setattr(cti_refresh, "URLhausCollector", PartialURLhausCollector)
+    outcomes = cti_refresh.refresh_configured_sources(
+        db_path,
+        threatfox_key=None,
+        urlhaus_key="uh",
+        force=True,
+        now=older + timedelta(days=1),
+    )
+
+    outcome = next(item for item in outcomes if item.source == "URLhaus")
+    assert outcome.status == "degraded"
+    assert "recent" in (outcome.detail or "")
+    assert {item.value for item in load_ioc_records(db_path, sources=["URLhaus"])} == {
+        "https://old.example/a",
+        "https://recent.example/b",
     }
 
 
