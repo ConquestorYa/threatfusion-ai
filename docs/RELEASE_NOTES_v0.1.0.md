@@ -175,7 +175,10 @@ artifact remains an auxiliary candidate and is not the runtime default.
 ## Known limitations
 
 - Augmented lexical runtime promotion is deferred pending stronger untouched
-  temporal evidence; the current cache retains zero post-cutoff malicious domains.
+  temporal evidence. The initial cache retained zero post-cutoff malicious
+  domains; a subsequent independent SGB refresh found five development-disjoint
+  domains, kept unscored. This small single-source collection is insufficient
+  promotion evidence.
 - The original default artifact is absent from the current checkout. The
   generated synthetic demo artifact does not supply final ML evidence.
 - Aggregate reports display their actual protocol and, for new schema-v4
