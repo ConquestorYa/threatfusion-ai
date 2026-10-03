@@ -45,11 +45,14 @@ release date is added only when the final tag/release is created.
   SOC integrations, LLM features, or neural-network model families.
 - The runtime default remains the earlier trusted artifact while experimental
   candidates are evaluated separately and never auto-promoted.
+- Documentation now distinguishes the completed historical character-only C=4
+  holdout, the rejected reconstructed lexical candidate, and the improved
+  augmented lexical candidate measured with a fresh-disjoint protocol.
 
 ### Release gates still open
 
-- Complete the final untouched post-freeze temporal holdout for the frozen C=4
-  candidate and document the result without further v1 model tuning.
+- Decide whether the improved augmented lexical candidate should receive a
+  stronger temporal collection before any runtime promotion.
 - Capture sanitized screenshots from a real application run.
 - Publish and verify the hosted public-mode demo.
 - Complete final manual release verification, then create the `v0.1.0` tag

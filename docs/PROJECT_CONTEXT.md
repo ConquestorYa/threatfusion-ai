@@ -113,7 +113,17 @@ The development workflow includes:
 
 ML scores are uncalibrated and are not presented as malware probabilities.
 
-The current C=4 candidate is frozen for one final post-freeze temporal measurement before the v0.1.0 release is finalized.
+The earlier character-only C=4 candidate completed its post-freeze temporal
+holdout on 2026-09-28. That result remains historical development evidence and
+supports keeping lexical ML as an auxiliary signal rather than a standalone
+detector.
+
+The current experiment is `lr_char_2_6_plus_lexical_c4`, a frozen character
+2-6 TF-IDF plus bounded lexical-feature Logistic Regression artifact. The
+originally recorded artifact was not available in this checkout, so a separate
+reconstructed artifact was evaluated on a new untouched post-freeze holdout.
+Its false-positive rates were operationally unusable, so it was not promoted
+and no final standalone performance claim is made for it.
 
 ### Analyst workflow
 
@@ -163,7 +173,8 @@ Feature development for v0.1.0 is considered complete.
 
 Remaining release tasks are:
 
-- final post-freeze temporal ML evaluation;
+- decide whether the improved augmented lexical candidate should be retained
+	as a documented auxiliary artifact or receive a stronger temporal collection;
 - sanitized portfolio screenshots;
 - hosted public-mode demo;
 - final release checklist;

@@ -1034,3 +1034,84 @@ holdout with the frozen lexical artifact and the new benign window. Do not use
 the prior `holdout-v3-c4-final` snapshot or its 2026-09-28 result to select,
 tune, or validate this artifact.
 
+## Reconstructed lexical C=4 holdout result
+
+The originally recorded lexical artifact from the prior development workflow
+was not present in this checkout. A separate development-only artifact was
+therefore reconstructed from the refreshed local CTI cache and the pinned
+Tranco `L5PV4` snapshot. Its identity was:
+
+- model: `lr_char_2_6_plus_lexical_c4`
+- artifact SHA-256: `8b207dc363edde3544a8dcd447b80968c433b1d2b929616d492d40d5204ef356`
+- freeze cutoff: `2026-10-02T21:55:51Z`
+- holdout benign window: CESNET unique-domain offset 80,000, 20,000 retained
+  domains
+- retained malicious domains: 155
+- retained benign domains: 19,929
+
+The frozen reconstructed artifact was evaluated once on the post-freeze
+holdout without retraining or threshold tuning:
+
+| Tier | Threshold | Recall | FPR | Precision | TP | FP | FN | TN |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| High | 0.995799 | 69.68% | 14.09% | 3.70% | 108 | 2,807 | 47 | 17,122 |
+| Medium | 0.972128 | 82.58% | 25.60% | 2.45% | 128 | 5,102 | 27 | 14,827 |
+| Low | 0.923755 | 86.45% | 33.99% | 1.94% | 134 | 6,773 | 21 | 13,156 |
+
+The high recall is not operationally useful at these false-positive rates. The
+reconstructed lexical candidate is therefore **not promoted** to the runtime
+default. The runtime continues using the trusted existing development artifact
+and lexical ML remains auxiliary inside the hybrid assessment. Any new model,
+feature, sampling, or threshold change requires a new development iteration and
+another untouched holdout.
+
+## Reconstructed-snapshot feature iteration
+
+After the reconstructed lexical C=4 holdout was rejected, a bounded feature
+comparison was run on the reconstructed development snapshot only. The
+completed post-freeze holdout was not reused for selection.
+
+At the validation FPR budgets, the lexical C=4 candidate measured:
+
+| Validation FPR budget | Development-test recall | Development-test FPR | Precision |
+| --- | ---: | ---: | ---: |
+| 0.1% | 58.95% | 0.13% | 99.98% |
+| 0.5% | 77.50% | 0.47% | 99.94% |
+| 1.0% | 84.30% | 1.07% | 99.87% |
+
+Lexical C=2 reached 84.42% recall at the 1.0% budget, but its development
+FPR was 1.12%; lexical C=4 remained the more conservative candidate at that
+operating point and was stronger at the 0.5% budget. These development results
+do not override the rejected post-freeze holdout result. No candidate was
+promoted, and any new selection requires a new untouched holdout.
+
+## Augmented lexical C=4 fresh-disjoint evaluation
+
+The hard-negative development snapshot was used to train a new lexical C=4
+artifact after adding a separate CESNET development window. A new CESNET
+window at unique-domain offset 120,000 with 20,000 retained domains was then
+collected for evaluation. The holdout removed every normalized domain present
+in the augmented development snapshot before scoring.
+
+The post-freeze temporal protocol could not retain malicious domains because
+the refreshed feeds contained no usable `first_seen` values strictly after the
+new artifact cutoff. A separate `fresh_collection_disjoint` evaluation was
+therefore run without first-seen filtering. This protocol measures a fresh
+collection boundary and domain disjointness, but it does not prove strict IOC
+temporal separation.
+
+Frozen augmented artifact results:
+
+| Tier | Threshold | Recall | FPR | Precision | TP | FP | FN | TN |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| High | 0.995293 | 60.62% | 0.85% | 36.33% | 97 | 170 | 63 | 19,766 |
+| Medium | 0.957530 | 78.75% | 1.95% | 24.51% | 126 | 388 | 34 | 19,548 |
+| Low | 0.913834 | 81.87% | 2.62% | 20.03% | 131 | 523 | 29 | 19,413 |
+
+These results are materially better than the earlier reconstructed temporal
+experiment, especially at the High tier, and support keeping hard-negative
+augmentation in further development. They are not strict temporal evidence and
+do not by themselves justify runtime promotion. The artifact remains separate
+from the runtime default pending a stronger temporal collection or an explicit
+product decision to accept the fresh-disjoint limitation.
+

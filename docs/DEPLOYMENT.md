@@ -317,8 +317,10 @@ The public dashboard can display an aggregate frozen-holdout report through:
 THREATFUSION_EVALUATION_REPORT=/runtime/evaluation/final_holdout.json
 ```
 
-The report is optional. Before the final holdout is collected, the Model
-evaluation tab shows a clear development-status message.
+The report is optional. The Model evaluation tab must clearly distinguish the
+completed reconstructed lexical C=4 report from the runtime default. That
+candidate was not promoted because its holdout false-positive rate was too
+high. The completed character-only C=4 report remains historical evidence.
 
 To include a completed aggregate report in the sanitized runtime bundle:
 

@@ -241,7 +241,10 @@ ML sinyali özellikle **daha önce görülmemiş domain adları** için tasarlan
 - model çıktısı **kalibre edilmiş olasılık değildir**;
 - model otomatik olarak production varsayılanına yükseltilmez;
 - false-positive rate ve recall ayrı ayrı ölçülür;
-- mevcut C=4 adayının son post-freeze temporal değerlendirmesi release öncesi kalan iştir;
+- önceki yalnızca karakter özellikli C=4 adayının post-freeze temporal değerlendirmesi tamamlanmış tarihsel bir ölçümdür;
+- yeniden oluşturulan lexical C=4 adayı post-freeze holdout’tan geçti ancak false-positive oranı operasyonel olarak kullanılamadığı için terfi ettirilmedi;
+- hard-negative ile güçlendirilmiş lexical aday fresh-disjoint testinde daha iyi FPR verdi ancak bu protokol strict temporal olmadığı için yardımcı sinyal olarak kaldı;
+- runtime varsayılanı güvenilir eski artifact olarak kaldı;
 - proje “kusursuz tespit” iddiasında bulunmaz.
 
 Ayrıntılı metodoloji: **[docs/ML_DATASET.md](docs/ML_DATASET.md)**.
@@ -481,7 +484,7 @@ threatfusion-ai/
 
 Release için kalan işler bilinçli olarak dar tutulmuştur:
 
-- son untouched post-freeze temporal ML ölçümü;
+- yeni bir ML development iterasyonuna başlanıp başlanmayacağına karar vermek;
 - hosted public-mode demo;
 - final release checklist ve GitHub release/tag.
 

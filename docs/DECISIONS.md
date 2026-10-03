@@ -46,11 +46,19 @@
 
 ## DEC-008: Prevent ML data leakage
 
-**Status:** PLANNED.
+**Status:** IMPLEMENTED IN EVALUATION WORKFLOW; STRICT TEMPORAL CLAIMS REMAIN LIMITED.
 
-**Decision:** Future model evaluation should use time-based train/test splitting and source-aware evaluation where appropriate.
+**Decision:** Model development uses domain-disjoint train/validation/test
+splits, validation-only threshold selection, source-aware diagnostics, and
+fresh holdout workflows with optional first-seen filtering. The evaluator
+describes the general fresh holdout protocol as
+`fresh_collection_disjoint`; a collection timestamp alone is not treated as
+proof that every IOC is temporally independent.
 
-**Reason:** Threat intelligence and DNS observations are time-dependent, and careless splitting can let information from the future or from the same source leak into evaluation data.
+**Reason:** Threat intelligence and DNS observations are time-dependent, and
+careless splitting can let information from the future or from the same source
+leak into evaluation data. The implemented safeguards improve separation
+without overstating what the available IOC timestamps prove.
 
 ## DEC-009: Secrets never stored in source control
 

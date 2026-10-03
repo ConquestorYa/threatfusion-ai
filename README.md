@@ -241,7 +241,10 @@ Important limitations:
 - model output is an **uncalibrated score**, not a malware probability;
 - model promotion is never automatic;
 - false-positive rate and recall are measured separately;
-- the final post-freeze temporal evaluation for the current C=4 candidate is still a release task;
+- the earlier character-only C=4 candidate has a completed historical post-freeze temporal evaluation;
+- the reconstructed lexical C=4 candidate completed a post-freeze holdout but was not promoted because its false-positive rate was operationally unusable;
+- a hard-negative augmented lexical candidate improved fresh-disjoint FPR, but remains auxiliary because that protocol is not strict temporal evidence;
+- the runtime default remains the trusted earlier artifact;
 - the project does not claim perfect detection.
 
 Detailed methodology and evaluation history: **[docs/ML_DATASET.md](docs/ML_DATASET.md)**.
@@ -481,7 +484,7 @@ threatfusion-ai/
 
 Remaining release work is intentionally narrow:
 
-- one final untouched post-freeze temporal ML measurement;
+- decide whether to begin a new ML development iteration;
 - hosted public-mode demo;
 - final release checklist and GitHub release/tag.
 

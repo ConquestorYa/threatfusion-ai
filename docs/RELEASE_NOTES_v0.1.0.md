@@ -133,13 +133,23 @@ no eligible retained domain/URL sample to this temporal holdout, so a ThreatFox
 source-recall value is not reported.
 
 The final result supports keeping lexical ML as an auxiliary signal. Medium and
-Low false-positive rates on untouched CESNET remain too high for the model to
-be described as a standalone malicious-domain detector, while High is more
-conservative but still misses most post-freeze malicious domains.
+Low false-positive rates on untouched CESNET remain too high for the
+character-only C=4 model to be described as a standalone malicious-domain
+detector, while High is more conservative but still misses most post-freeze
+malicious domains.
 
-No additional v1 model family or threshold tuning is planned from this final
-measurement. Any future model or threshold change informed by these results
-requires a new untouched final holdout.
+After this historical holdout, a bounded lexical-feature extension was
+selected as `lr_char_2_6_plus_lexical_c4`. A separately reconstructed artifact
+was evaluated on a new untouched post-freeze holdout, but its false-positive
+rate was too high for promotion. The runtime default remains unchanged, and
+the result must not be presented as a standalone malicious-domain detector.
+
+A follow-up hard-negative development iteration added a separate CESNET
+window and produced an augmented lexical C=4 artifact. Its fresh-collection
+disjoint evaluation measured 60.62%/78.75%/81.87% recall at
+0.85%/1.95%/2.62% FPR for the high/medium/low tiers. This is a meaningful
+improvement, but it is not strict first-seen temporal evidence, so the
+artifact remains an auxiliary candidate and is not the runtime default.
 
 ## Security and privacy
 

@@ -275,7 +275,11 @@ flowchart LR
 
 Model experimentation and runtime inference are separated.
 
-The current release position is documented in <code>ML_DATASET.md</code>. A final post-freeze temporal measurement for the frozen C=4 candidate remains release work.
+The current release position is documented in <code>ML_DATASET.md</code>. The
+earlier character-only C=4 candidate has a completed historical temporal
+holdout. A reconstructed lexical C=4 candidate was also evaluated on a new
+untouched post-freeze holdout, but its false-positive rate was operationally
+unusable, so it remains separate from the runtime default.
 
 ## Presentation layer
 

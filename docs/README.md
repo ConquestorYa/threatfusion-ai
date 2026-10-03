@@ -14,6 +14,7 @@ This directory contains the technical documentation behind the portfolio-facing 
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Docker, public mode, sanitized runtime bundles and scheduled CTI refresh |
 | [RELEASE_NOTES_v0.1.0.md](RELEASE_NOTES_v0.1.0.md) | v0.1.0 release-candidate scope and limitations |
 | [RELEASE_CHECKLIST_v0.1.0.md](RELEASE_CHECKLIST_v0.1.0.md) | Final publication checklist |
+| [RELEASE_HANDOFF.md](RELEASE_HANDOFF.md) | Current release status, blockers and exact next steps |
 | [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) | Problem statement, goals, implemented scope and intended users |
 | [DECISIONS.md](DECISIONS.md) | Important technical and product decisions |
 | [UI_REVIEW.md](UI_REVIEW.md) | Manual Streamlit presentation/regression review flow |
