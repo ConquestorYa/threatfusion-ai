@@ -4,6 +4,21 @@ ThreatFusion AI can be packaged as a Streamlit container for a hosted demo.
 The hosted path must keep the same privacy and secret-handling boundaries as
 the local application.
 
+## Current development policy
+
+The user has paused public hosting during development. Work and security checks
+stay local; completed, verified source changes may still be published to GitHub.
+Do not create or resume a hosted site, tunnel or preview without a new explicit
+user request. Bind local test servers to `127.0.0.1`.
+
+The retained Blueprint disables automatic service deploys and preview
+environments. This does not suspend an already-created Render service and does
+not switch off an existing Blueprint's dashboard Auto Sync setting. Before
+updating a hosting-connected branch, suspend the existing demo and verify
+Auto-Deploy is Off and Blueprint Auto Sync is No. When those settings cannot be
+verified, publish source changes to a separate `local-development/` branch
+instead. GitHub CI on that branch tests code/containers without deploying them.
+
 ## Public mode
 
 Set:
@@ -11,6 +26,9 @@ Set:
 ```text
 THREATFUSION_PUBLIC_MODE=1
 ```
+
+This flag enables privacy restrictions; it does not publish a website. Local
+testing still binds to loopback. Hosting requires a separate explicit request.
 
 Public mode disables:
 
@@ -139,7 +157,7 @@ If the trusted original model is unavailable, opt into CTI matching and DNS
 behavior without loading an ML artifact:
 
 ```bash
-THREATFUSION_CTI_ONLY=1 .venv/bin/python -m streamlit run streamlit_app.py
+THREATFUSION_CTI_ONLY=1 .venv/bin/python -m streamlit run streamlit_app.py --server.address=127.0.0.1
 .venv/bin/python -m threatfusion.cli telemetry.csv --cti-only --db data/threatfusion.sqlite
 ```
 
@@ -155,8 +173,8 @@ For the portfolio-hosted demo, the repository can generate its entire runtime
 during the Render build. The generated CTI cache and ML artifact are synthetic
 and demo-only; they are not the measured local model or third-party feed data.
 
-Use the repository's `render.yaml` Blueprint after the commit is available on
-`main`. It selects the free Frankfurt web-service plan and
+Only after an explicit user request to host, use the repository's `render.yaml`
+Blueprint. It selects the free Frankfurt web-service plan and
 `Dockerfile.public-demo`. The image generates its synthetic runtime during the
 build and copies its SHA-256 pin to a separate root-owned file. Code, model and
 pin remain read-only to the non-root web process. No local runtime upload,
@@ -187,8 +205,9 @@ python scripts/check_public_demo_proxy.py --base-url http://127.0.0.1:18501
 Run the check only against your own demo. CI builds this image and checks its
 privacy boundary, health, response headers, body limits and HTTP 429 responses.
 Both Streamlit and Nginx are supervised and terminated on SIGTERM. Free Render
-services can sleep when idle; the hosted URL and live HTTPS verification remain
-a release gate until the service is actually deployed.
+services can sleep when idle. Hosted verification is deferred while the project
+undergoes local development and security review; the presence of this image or
+Blueprint does not authorize public deployment.
 
 No ThreatFox or URLhaus credential is required by this public-demo service.
 The synthetic demo artifact exists only so visitors can exercise the complete
@@ -201,7 +220,7 @@ aggregate evaluation reports.
 Mount only the sanitized runtime directory:
 
 ```text
-docker run --rm -p 8501:8501 \
+docker run --rm -p 127.0.0.1:8501:8501 \
   -e THREATFUSION_PUBLIC_MODE=1 \
   -e THREATFUSION_DB_PATH=/app/runtime/threatfusion.sqlite \
   -e THREATFUSION_MODEL_DIR=/app/runtime/models/development-001 \

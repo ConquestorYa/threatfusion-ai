@@ -2,6 +2,28 @@
 
 Status date: 2026-10-04
 
+## Current user instructions — local development only
+
+This policy supersedes the earlier hosted-demo/release plan below. Continue
+development and security checks locally. Do not create or resume a public site,
+tunnel or hosted preview unless the user explicitly asks. Completed and verified
+code/configuration/documentation may still be published to GitHub, keeping all
+private/third-party data local and ignored. See the root `AGENTS.md`.
+
+A read-only Render check found that the demo service had already been created:
+its current deploy was live, service Auto-Deploy was enabled and the trigger was
+`checksPass`. No service was created or deployed by this policy update. The
+available connector cannot suspend services or change auto-deploy/Blueprint
+auto-sync, and no controllable browser is available. The user was asked to
+suspend the service and disable both automation settings in the dashboard.
+Until those external changes are verified, do not update the connected `main`
+branch. Publish this change on `local-development/local-only-policy` instead.
+
+The retained Blueprint now requests manual deployment and disables previews;
+GitHub CI also runs on `local-development/` branches. YAML/schema/lint/privacy
+checks validate this configuration change. These file changes alone do not
+close an existing public service or turn off dashboard Auto Sync.
+
 ## Current position
 
 - The earlier character-only C=4 model has a completed historical post-freeze
@@ -187,9 +209,9 @@ to defer promotion; they are not new tuning data. See DEC-082.
 1. Collect stronger untouched post-freeze temporal evidence before reconsidering
    augmented runtime promotion. This is a future ML gate; v0.1.0 can retain the
    documented auxiliary/default policy without promoting the candidate.
-2. Publish the public-mode demo behind HTTPS and hosting-layer rate limits.
-3. Confirm the `v0.1.0` tag/release after the model decision and deployment
-  checks.
+2. Complete local security review and fix confirmed issues.
+3. Revisit final release timing after those checks. Public hosting requires a
+   new explicit user request and is not an active development task.
 
 ## Current blockers
 
@@ -203,8 +225,9 @@ to defer promotion; they are not new tuning data. See DEC-082.
   evaluation; it cannot restore the historical model claim.
 - CTI-only operation is available now without that model. For full historical
   ML operation, restore the trusted backup privately if one exists elsewhere.
-- Apply the ready free-plan Render Blueprint through the dashboard; then
-  verify the actual hosted HTTPS, WebSocket and client-address/rate-limit path.
+- Suspend the previously created Render demo and disable Auto-Deploy and
+  Blueprint Auto Sync; verify those external settings before updating `main`.
+  The local manual-deploy Blueprint cannot make those dashboard changes itself.
 - The normal pre-existing terminal may still lack the refreshed `docker` group
   membership. Open a new terminal or run `newgrp docker` before using Docker.
 

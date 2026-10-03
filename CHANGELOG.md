@@ -51,6 +51,12 @@ release date is added only when the final tag/release is created.
 
 ### Changed
 
+- Development remains local; public hosting requires a new explicit user
+  request. Verified source updates can still be published to GitHub. The
+  retained Render Blueprint disables automatic deploy and previews; CI also
+  supports separate `local-development/` branches to avoid an active main-branch
+  hosting integration. Existing service suspension and Blueprint Auto Sync
+  must be handled and verified separately.
 - Fresh-disjoint snapshots now remove malicious and benign development overlap
   before persistence and use the canonical protocol identifier.
 - The evaluation dashboard describes each report's actual temporal protocol,
@@ -79,6 +85,7 @@ release date is added only when the final tag/release is created.
 
 - Collect stronger untouched temporal evidence before reconsidering augmented
   runtime promotion; the current decision is to retain it experimentally.
-- Publish and verify the hosted public-mode demo.
+- Complete local security review and remediation. Public hosting is deferred
+  unless the user explicitly requests it again.
 - Complete final manual release verification, then create the `v0.1.0` tag
   and GitHub release.

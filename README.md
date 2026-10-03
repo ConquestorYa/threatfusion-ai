@@ -358,7 +358,7 @@ $env:THREATFUSION_MODEL_SHA256=(Get-Content "runtime\models\development-001\arti
 Start the web interface:
 
 ~~~powershell
-.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py --server.address=127.0.0.1
 ~~~
 
 Streamlit normally opens the application automatically. If it does not, open **http://localhost:8501** in your browser. Stop the server with **Ctrl+C**.
@@ -371,7 +371,7 @@ For a Linux/private checkout with a CTI cache but no trusted original model,
 explicitly disable ML:
 
 ```bash
-THREATFUSION_CTI_ONLY=1 .venv/bin/python -m streamlit run streamlit_app.py
+THREATFUSION_CTI_ONLY=1 .venv/bin/python -m streamlit run streamlit_app.py --server.address=127.0.0.1
 ```
 
 CTI and DNS behavior remain available; ML and model-dependent history are
@@ -390,7 +390,7 @@ $env:THREATFUSION_DB_PATH="runtime\threatfusion.sqlite"
 $env:THREATFUSION_MODEL_DIR="runtime\models\development-001"
 $env:THREATFUSION_MODEL_SHA256=(Get-Content "runtime\models\development-001\artifact.sha256" -Raw).Trim()
 
-.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py --server.address=127.0.0.1
 ~~~
 
 If you intentionally want to regenerate the synthetic runtime, use:
@@ -422,7 +422,7 @@ The updater forces the configured ThreatFox, URLhaus, and SGB sources to refresh
 Then start the site separately:
 
 ~~~powershell
-.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py --server.address=127.0.0.1
 ~~~
 
 Starting Streamlit does **not** update the database or wait for external CTI services. Run `update_cti_database.py` whenever you want fresh CTI data.

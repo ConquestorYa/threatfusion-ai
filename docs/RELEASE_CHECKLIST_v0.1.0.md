@@ -30,7 +30,8 @@ Use this checklist before creating the `v0.1.0` portfolio release.
 
 - [x] `CHANGELOG.md` updated for `0.1.0`.
 - [x] Release notes drafted from changelog highlights.
-- [x] Tag plan confirmed (`v0.1.0`, after hosted verification).
+- [ ] Reconfirm final release timing after local security review; earlier
+  portfolio/hosting plans do not authorize deployment during development.
 
 ## 5) Portfolio presentation assets
 
@@ -43,7 +44,8 @@ Use this checklist before creating the `v0.1.0` portfolio release.
 - [x] Threat IOC values are handled as inert data only (no IOC browsing/resolution behavior introduced).
 - [x] Public-mode behavior verified (`THREATFUSION_PUBLIC_MODE=1`).
 - [x] Explicit CTI-only CLI/dashboard operation verified with absent model.
-- [ ] Hosted HTTPS, WebSocket and ingress/client rate limits verified.
+- [ ] Local security review and remediation completed.
+- [ ] Any later hosted verification explicitly requested by the user.
 - [x] Remaining known TODOs are explicitly documented (no invented permissions/claims).
 
 ## 7) Current ML release gate

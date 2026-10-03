@@ -190,18 +190,23 @@ The system is intentionally bounded rather than attempting unlimited packet-proc
 
 ## Release position
 
-Feature development for v0.1.0 is considered complete.
+The project remains in local development and security review. Previously
+completed feature/CI checks do not establish public-deployment readiness.
+The user requires an explicit new request before creating or resuming any public
+site or hosted preview. Completed, verified source changes may be published to
+GitHub independently of hosting. See `AGENTS.md` for branch and data boundaries.
 
 Remaining release tasks are:
 
 - preserve the deferred ML promotion decision and collect stronger untouched
   temporal evidence before revisiting it;
 - retain the reviewed sanitized portfolio screenshots;
-- hosted public-mode demo;
+- local security review and remediation;
+- public demo only if later explicitly requested by the user;
 - final release checklist;
 - GitHub tag/release.
 
-These are release/presentation tasks rather than new core product features.
+Public hosting and final release are deferred while this work continues.
 
 ## Explicit non-goals for v0.1.0
 

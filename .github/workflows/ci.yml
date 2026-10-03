@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - "local-development/**"
 
 permissions:
   contents: read
@@ -98,7 +99,7 @@ jobs:
 
       - name: Start container with safe public default
         run: |
-          docker run -d --name threatfusion-ci -p 8501:8501 \
+          docker run -d --name threatfusion-ci -p 127.0.0.1:8501:8501 \
             -e THREATFUSION_MODEL_SHA256=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
             threatfusion-ci
 

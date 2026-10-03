@@ -1,4 +1,8 @@
 # yaml-language-server: $schema=https://render.com/schema/render.yaml.json
+# Future deployment requires an explicit user request. Do not apply this
+# Blueprint during local development. Dashboard Auto Sync must also be disabled.
+previews:
+  generation: "off"
 services:
   - type: web
     name: threatfusion-ai-demo
@@ -9,7 +13,7 @@ services:
     dockerfilePath: ./Dockerfile.public-demo
     dockerContext: .
     healthCheckPath: /_stcore/health
-    autoDeployTrigger: checksPass
+    autoDeployTrigger: "off"
     envVars:
       - key: THREATFUSION_PUBLIC_MODE
         value: "1"

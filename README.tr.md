@@ -358,7 +358,7 @@ $env:THREATFUSION_MODEL_SHA256=(Get-Content "runtime\models\development-001\arti
 Web arayüzünü başlat:
 
 ~~~powershell
-.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py --server.address=127.0.0.1
 ~~~
 
 Streamlit normalde tarayıcıyı otomatik açar. Açılmazsa tarayıcıdan **http://localhost:8501** adresine git. Sunucuyu kapatmak için terminalde **Ctrl+C** kullan.
@@ -371,7 +371,7 @@ Linux/private checkout'ta CTI cache mevcutken güvenilir orijinal model yoksa
 ML'yi açıkça devre dışı bırakarak çalıştır:
 
 ```bash
-THREATFUSION_CTI_ONLY=1 .venv/bin/python -m streamlit run streamlit_app.py
+THREATFUSION_CTI_ONLY=1 .venv/bin/python -m streamlit run streamlit_app.py --server.address=127.0.0.1
 ```
 
 CTI ve DNS davranış analizi kullanılabilir; ML ve model bilgisi gerektiren
@@ -390,7 +390,7 @@ $env:THREATFUSION_DB_PATH="runtime\threatfusion.sqlite"
 $env:THREATFUSION_MODEL_DIR="runtime\models\development-001"
 $env:THREATFUSION_MODEL_SHA256=(Get-Content "runtime\models\development-001\artifact.sha256" -Raw).Trim()
 
-.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py --server.address=127.0.0.1
 ~~~
 
 Sentetik runtime'ı bilerek baştan oluşturmak istersen:
@@ -422,7 +422,7 @@ Bu güncelleyici yapılandırılmış ThreatFox, URLhaus ve SGB kaynaklarını z
 Ardından siteyi ayrı olarak başlat:
 
 ~~~powershell
-.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py --server.address=127.0.0.1
 ~~~
 
 Streamlit'i başlatmak **veritabanını güncellemez ve dış CTI servislerini beklemez**. Güncel veri istediğinde `update_cti_database.py` dosyasını çalıştırman yeterlidir.

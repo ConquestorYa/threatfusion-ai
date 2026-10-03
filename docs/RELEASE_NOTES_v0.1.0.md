@@ -1,6 +1,9 @@
 # ThreatFusion AI v0.1.0 — Release Notes Draft
 
-> **Status: release candidate.** Core feature development is complete. Do not publish these notes as the final GitHub release until sanitized screenshots, hosted demo, and manual release checks are complete.
+> **Status: development / security review.** Completed features remain under
+> local verification and security review. Public hosting requires a new explicit
+> user request. Publishing verified source changes to GitHub does not authorize
+> deploying a site or finalizing this draft as a release.
 
 ## Overview
 
