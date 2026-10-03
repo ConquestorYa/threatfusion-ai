@@ -345,6 +345,50 @@ def test_history_and_evaluation_work_without_model(feedback_app, monkeypatch):
     assert app.selectbox(key="feedback_domain_1").value == "a.example"
 
 
+def test_explicit_cti_only_lookup_works_without_model(feedback_app, monkeypatch):
+    from threatfusion.cti_cache import replace_source_records
+    from threatfusion.models import IOCRecord, IOCType
+
+    app_module, db_path, _, _ = feedback_app
+    monkeypatch.setenv("THREATFUSION_CTI_ONLY", "1")
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("CTI-only UI must not load a model")
+
+    monkeypatch.setattr(app_module, "_load_artifact", forbidden)
+    replace_source_records(db_path, "ThreatFox", [IOCRecord("known.example", IOCType.DOMAIN, "ThreatFox")])
+    app = AppTest.from_string("import streamlit_app\nstreamlit_app.main()")
+    app.run(timeout=15)
+    assert not app.exception
+    assert not app.error
+    assert any("CTI-only mode" in item.value for item in app.warning)
+    assert not any(button.key == "nav_analysis_history" for button in app.button)
+    app.text_input(key="quick_lookup_input").set_value("known.example")
+    app.button(key="quick_lookup_analyze").click().run(timeout=15)
+    assert not app.exception
+    assert not app.error
+    assert app.session_state["quick_lookup_result"].ml_score is None
+    assert app.session_state["quick_lookup_result"].verdict.value == "known_threat"
+
+
+def test_cti_only_telemetry_results_export_without_artifact(feedback_app, monkeypatch):
+    from threatfusion.runtime_analysis import analyze_dns_events
+    app_module, _, _, _ = feedback_app
+    monkeypatch.setenv("THREATFUSION_CTI_ONLY", "1")
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("CTI-only UI must not load a model")
+
+    monkeypatch.setattr(app_module, "_load_artifact", forbidden)
+    app = AppTest.from_string("import streamlit_app\nstreamlit_app.main()")
+    app.session_state["analysis_result"] = analyze_dns_events([DNSEvent(query_name="unseen.example")], [], None)
+    app.session_state["workspace_nav"] = "Analyze telemetry"
+    app.run(timeout=15)
+    assert not app.exception
+    assert not app.error
+    assert "Priority findings" in [item.value for item in app.subheader]
+
+
 def test_sidebar_status_is_not_a_dataframe(feedback_app, monkeypatch):
     from datetime import datetime, timezone
     from threatfusion.cti_cache import CTICacheStatus

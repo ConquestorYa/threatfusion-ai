@@ -244,7 +244,8 @@ Important limitations:
 - the earlier character-only C=4 candidate has a completed historical post-freeze temporal evaluation;
 - the reconstructed lexical C=4 candidate completed a post-freeze holdout but was not promoted because its false-positive rate was operationally unusable;
 - a hard-negative augmented lexical candidate improved fresh-disjoint FPR, but remains auxiliary because that protocol is not strict temporal evidence;
-- the runtime default remains the trusted earlier artifact;
+- augmented runtime promotion is deferred until stronger untouched temporal evidence;
+- the default path still targets the earlier artifact, which is absent in this checkout; the generated synthetic demo is a separate model;
 - the project does not claim perfect detection.
 
 Detailed methodology and evaluation history: **[docs/ML_DATASET.md](docs/ML_DATASET.md)**.
@@ -365,6 +366,19 @@ Streamlit normally opens the application automatically. If it does not, open **h
 The generated runtime contains **synthetic documentation-only CTI and a demo-only ML artifact**. It is designed to demonstrate the interface safely and must not be used for model-performance claims.
 
 ### 5. Starting the demo again later
+
+For a Linux/private checkout with a CTI cache but no trusted original model,
+explicitly disable ML:
+
+```bash
+THREATFUSION_CTI_ONLY=1 .venv/bin/python -m streamlit run streamlit_app.py
+```
+
+CTI and DNS behavior remain available; ML and model-dependent history are
+disabled. This does not promote an experimental model. The synthetic hosted
+demo uses [`render.yaml`](render.yaml) and
+[`Dockerfile.public-demo`](Dockerfile.public-demo); see
+the [deployment guide](docs/DEPLOYMENT.md) for limits and verification.
 
 You do **not** need to reinstall anything. Open PowerShell, return to the repository, set the runtime variables again, and start Streamlit:
 

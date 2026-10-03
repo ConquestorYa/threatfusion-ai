@@ -125,6 +125,25 @@ reconstructed artifact was evaluated on a new untouched post-freeze holdout.
 Its false-positive rates were operationally unusable, so it was not promoted
 and no final standalone performance claim is made for it.
 
+The subsequent hard-negative augmented lexical C=4 artifact measured
+60.62%/78.75%/81.87% recall and 0.85%/1.95%/2.62% FPR at High/medium/low on a
+fresh-collection disjoint holdout. It remains experimental: initial strict
+post-freeze selection retained zero malicious domains; a later independent SGB
+refresh found only five eligible disjoint domains, without model scoring. Runtime promotion
+is deferred until stronger untouched temporal evidence exists (DEC-082).
+
+The configured original `data/models/development-001` artifact is absent in
+this checkout. The separately generated synthetic demo model shares the
+directory name but has `demo_only_synthetic` status and supplies no final ML
+performance evidence. Local caches, datasets, evaluations and artifacts are
+ignored data; a GitHub clone must regenerate its own assets and cannot reproduce
+historical frozen bytes simply by fetching current feeds.
+
+When that trusted original is unavailable, explicit CTI-only operation keeps
+CTI matching and DNS behavior available without loading any model. The UI/CLI
+label ML as disabled and model-dependent history is disabled (DEC-083). The
+synthetic public demo remains a separate presentation runtime (DEC-084).
+
 ### Analyst workflow
 
 The Streamlit application includes:
@@ -158,7 +177,9 @@ Implemented safeguards include:
 
 ## Resource boundaries
 
-The Streamlit upload limit is 100 MB.
+The private/local Streamlit upload limit is 100 MB. The dedicated synthetic
+public-demo image limits uploads to 20 MB and bounds proxy requests and
+concurrent WebSocket sessions.
 
 Runtime analysis is separately bounded to:
 
@@ -173,9 +194,9 @@ Feature development for v0.1.0 is considered complete.
 
 Remaining release tasks are:
 
-- decide whether the improved augmented lexical candidate should be retained
-	as a documented auxiliary artifact or receive a stronger temporal collection;
-- sanitized portfolio screenshots;
+- preserve the deferred ML promotion decision and collect stronger untouched
+  temporal evidence before revisiting it;
+- review the existing sanitized portfolio screenshots;
 - hosted public-mode demo;
 - final release checklist;
 - GitHub tag/release.

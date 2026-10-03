@@ -14,8 +14,14 @@ Status date: 2026-10-04
   60.62%/78.75%/81.87% and FPR of 0.85%/1.95%/2.62%.
 - It is not the runtime default because fresh-disjoint evidence is not strict
   first-seen temporal evidence.
-- The runtime/default and synthetic demo continue to use the trusted
-  `development-001` artifact.
+- Runtime promotion is deferred until stronger untouched post-freeze temporal
+  evidence is available. The augmented artifact stays an experimental candidate.
+- The default configuration still points to `data/models/development-001`, but
+  that original artifact is **absent in this checkout**. The available synthetic
+  demo runtime has a separate `development-001` directory and
+  `demo_only_synthetic` status; it is not the original measured artifact.
+- Explicit CTI-only operation is now available when the original artifact is
+  unavailable. It does not change the default or promote either candidate.
 
 ## Completed in this checkout
 
@@ -76,23 +82,119 @@ Status date: 2026-10-04
 - The fresh-disjoint builder is implemented at
   `scripts/build_ml_fresh_disjoint_holdout.py`; it preserves the temporal
   builder’s stricter behavior and labels the alternative protocol explicitly.
-- Ruff, the full pytest suite, public-release audit, and `git diff --check`
-  pass. The current suite has 709 passing tests.
+- The initial verification passed all 709 pre-existing tests.
+
+## Continuation audit — 2026-10-04
+
+- GitHub's three context documents matched the local pre-edit versions. The
+  initial worktree had only the user's untracked `komutlar.txt`; it was preserved.
+- The augmented artifact checksum is
+  `643b5adc1cf4bc4cb9c677df88aa4797dcbd6ae1be8ff0d0c0f4ee7d7f3e4cd9`.
+  Its bytes match the recorded collection identity, and all three frozen
+  thresholds match the existing aggregate report. No holdout rescoring or
+  threshold tuning was performed.
+- A read-only audit against the recorded `2026-10-03T20:41:49Z` cutoff retained
+  **zero** strict-temporal malicious domains: all 473,323 unique candidates had
+  usable earliest timing at or before the cutoff. The required sources were
+  refreshed at `2026-10-03T21:20:55.415866Z`. No feed refresh was performed in
+  this continuation.
+- The existing fresh-disjoint snapshot is a legacy pre-filter collection:
+  the evaluator removed 473,163 development overlaps, leaving 160 malicious
+  and 19,936 benign domains. Its report remains unchanged. New builder outputs
+  remove both classes' development overlap **before persistence**, require both
+  retained classes, and use the canonical `fresh_collection_disjoint` identifier.
+- New schema-v4 aggregate reports carry the evaluated artifact SHA-256.
+  Evaluation checks recorded artifact/development provenance and refuses to
+  drop or alter a temporal snapshot's recorded cutoff. Synthetic demo artifacts
+  are refused as final ML evidence. Schema-v1/v2/v3 reports remain readable.
+- The evaluation page describes the actual first-seen protocol, cutoff and
+  removal counts, distinguishes legacy reports without artifact identity, and
+  explains that loading a report does not promote its candidate.
+- SQLite sidecars are ignored. The release audit checks local data/model paths
+  in the tracked tree and history even when file contents are binary.
+- CTI caches, datasets, models and existing evaluation files remain local and
+  ignored. Neither Git LFS nor publishing these files is part of this release.
+
+The augmented High tier still has 0.85% measured FPR against a 0.1% validation
+budget, and source coverage is uneven: SGB contributes 138 malicious domains
+with 69.57% High recall; URLhaus contributes 22 with 4.55%; ThreatFox contributes
+none after overlap removal. These inspected aggregates strengthen the decision
+to defer promotion; they are not new tuning data. See DEC-082.
+
+## Validation after continuation
+
+- Full pytest suite with coverage: **742 passed**, **88%** total coverage.
+- Ruff and `git diff --check`: passed.
+- Public-release tracked-tree and full reachable-history audit: zero findings;
+  newly added task files were also scanned explicitly before any staging.
+- Historical artifact path aliases are checked even if a binary blob also
+  appeared under a permitted path and the artifact was later removed.
+- Isolated synthetic runtime: Streamlit localhost health returned `200 / ok`;
+  the application loaded its checksum-verified demo model without UI errors,
+  and public mode hid shared history. The temporary server was stopped.
+- Checksums verified all 32 existing local data files unchanged at the end of
+  that audit. The initial untracked note was not modified by the agent; it was
+  no longer present when the subsequently authorized implementation started.
+  No commit, push, hosted deployment or release tag was created in that audit.
+
+## Authorized release implementation — 2026-10-04
+
+- A local backup search did not find the trusted original runtime artifact.
+  The CTI-only dashboard and CLI paths skip model loading/scoring, preserve
+  exact CTI and behavior evidence, and label exports without fabricated ML
+  values. Model-dependent history is disabled in this mode (DEC-083).
+- `Dockerfile.public-demo` generates only synthetic assets, keeps code/model
+  and the independent checksum pin read-only, and supervises loopback Streamlit
+  behind Nginx. Request, WebSocket connection and upload limits are applied;
+  access logs and request buffering are disabled (DEC-084).
+- The Docker context is an allowlist of application/configuration files. Private
+  CTI, datasets, model binaries, telemetry, secrets, tests and Git metadata do
+  not enter either image. No live-feed credentials are needed for the demo.
+- `render.yaml` targets the free Frankfurt plan, Docker runtime and health
+  endpoint. Official Render JSON Schema validation passed. A dedicated CI job
+  builds the synthetic image and checks proxy limits and a real Streamlit session.
+- Full verification: **763 tests passed**, **90%** coverage; Ruff and
+  tracked-tree/reachable-history release auditing passed. The standard and demo
+  Docker images both built successfully. Local proxy checks verified HTTP 200,
+  security headers, oversized-body HTTP 413 and burst HTTP 429; health remained
+  HTTP 200. A real WebSocket session rendered the UI without exceptions.
+- A separate ignored CTI cache copy was refreshed: SGB retained 488,504 active
+  records and five development-disjoint post-cutoff domains. All five come from
+  SGB and remain unscored. ThreatFox/URLhaus retained the earlier post-cutoff
+  cache snapshots because new keyed credentials were unavailable; PhishTank
+  refresh failed at its access/security redirect and preserved previous data.
+  The original cache and all 32 existing local data files retained their
+  checksums. No inspected holdout was rescored and no threshold was tuned.
+- Hosted deployment is still pending: the Render connection requires user
+  workspace confirmation, its service-creation tool cannot configure the custom
+  Dockerfile, and this session has no controllable browser. The ready Blueprint
+  can be applied from the Render dashboard after publication to `main`.
+- The final `v0.1.0` tag/release remains gated on actual hosted HTTPS and ingress
+  verification; local Docker success is not claimed as a hosted deployment.
 
 ## Remaining release gates
 
-1. Decide whether the augmented candidate’s fresh-disjoint evidence is enough
-  for an explicitly documented auxiliary runtime promotion, or collect a
-  stronger post-freeze temporal sample.
+1. Collect stronger untouched post-freeze temporal evidence before reconsidering
+   augmented runtime promotion. This is a future ML gate; v0.1.0 can retain the
+   documented auxiliary/default policy without promoting the candidate.
 2. Publish the public-mode demo behind HTTPS and hosting-layer rate limits.
 3. Confirm the `v0.1.0` tag/release after the model decision and deployment
   checks.
 
 ## Current blockers
 
-- The strict temporal protocol still has no eligible post-freeze malicious
-  `first_seen` samples. The available augmented evidence is fresh-disjoint,
-  not strict temporal.
+- The follow-up collection has only five unscored post-freeze malicious domains,
+  all SGB, after the initial zero-eligible result. This is insufficient stronger
+  temporal evidence. The available augmented performance report remains
+  fresh-disjoint, not strict temporal; promotion stays deferred.
+- The original configured runtime artifact is absent locally. Use the synthetic
+  demo generator for presentation, or restore the trusted original artifact from
+  its private/local source. Retraining produces a new identity and requires new
+  evaluation; it cannot restore the historical model claim.
+- CTI-only operation is available now without that model. For full historical
+  ML operation, restore the trusted backup privately if one exists elsewhere.
+- Apply the ready free-plan Render Blueprint through the dashboard; then
+  verify the actual hosted HTTPS, WebSocket and client-address/rate-limit path.
 - The normal pre-existing terminal may still lack the refreshed `docker` group
   membership. Open a new terminal or run `newgrp docker` before using Docker.
 

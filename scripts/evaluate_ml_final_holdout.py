@@ -9,7 +9,10 @@ from pathlib import Path
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT / "src"))
 
-from threatfusion.ml_artifact import load_trusted_ml_artifact
+from threatfusion.ml_artifact import (
+    compute_ml_artifact_checksum,
+    load_trusted_ml_artifact,
+)
 from threatfusion.ml_evaluation_report import (
     build_frozen_holdout_report,
     write_frozen_holdout_report,
@@ -18,7 +21,10 @@ from threatfusion.ml_holdout import (
     evaluate_frozen_artifact_on_holdout,
     validate_fresh_snapshot_dates,
 )
-from threatfusion.ml_snapshot_io import read_domain_snapshot
+from threatfusion.ml_snapshot_io import (
+    read_domain_snapshot,
+    read_snapshot_experiment_metadata,
+)
 
 
 def _first_seen_cutoff(value: str) -> date | datetime:
@@ -107,8 +113,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.artifact_dir,
             expected_checksum=args.expected_artifact_sha256,
         )
+        artifact_checksum = compute_ml_artifact_checksum(args.artifact_dir)
+        if artifact.metadata.evaluation_status == "demo_only_synthetic":
+            raise ValueError("synthetic demo artifacts cannot produce final ML evidence")
         development = read_domain_snapshot(args.development_snapshot_dir)
         holdout = read_domain_snapshot(args.holdout_snapshot_dir)
+        provenance = read_snapshot_experiment_metadata(args.holdout_snapshot_dir)
+        frozen_checksum = provenance.get("frozen_artifact_sha256")
+        if frozen_checksum is not None and frozen_checksum != artifact_checksum:
+            raise ValueError("holdout frozen artifact identity does not match the artifact")
+        for field, actual in (
+            ("development_benign_snapshot_id", development.metadata.benign_snapshot_id),
+            ("development_benign_snapshot_date", development.metadata.benign_snapshot_date),
+        ):
+            if field in provenance and provenance[field] != actual:
+                raise ValueError("holdout development provenance does not match the snapshot")
         validate_fresh_snapshot_dates(
             development.metadata.benign_snapshot_date,
             holdout.metadata.benign_snapshot_date,
@@ -123,6 +142,15 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
             malicious_first_seen_after = date.fromisoformat(development_date)
 
+        if provenance.get("evaluation_protocol") == (
+            "post_freeze_temporal_malicious_plus_confirmed_benign_dns"
+        ):
+            recorded_cutoff = _first_seen_cutoff(
+                str(provenance.get("malicious_first_seen_after", ""))
+            )
+            if malicious_first_seen_after != recorded_cutoff:
+                raise ValueError("temporal holdout requires its recorded post-freeze cutoff")
+
         evaluation = evaluate_frozen_artifact_on_holdout(
             artifact,
             development.samples,
@@ -134,6 +162,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             report = build_frozen_holdout_report(
                 evaluation,
                 model_name=artifact.metadata.model_name,
+                artifact_sha256=artifact_checksum,
                 development_snapshot_date=(
                     development.metadata.benign_snapshot_date
                 ),
@@ -144,7 +173,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 args.json_output,
                 overwrite=args.overwrite,
             )
-    except (OSError, TypeError, ValueError) as error:
+    except (OSError, TypeError, ValueError, argparse.ArgumentTypeError) as error:
         raise SystemExit(
             "Final holdout evaluation failed: "
             f"{type(error).__name__}: {error}"
@@ -152,6 +181,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     print("ThreatFusion AI frozen final-holdout evaluation")
     print(f"  Model: {artifact.metadata.model_name}")
+    print(f"  Frozen artifact SHA-256: {artifact_checksum}")
     print(
         "  Development benign snapshot date: "
         f"{development.metadata.benign_snapshot_date}"

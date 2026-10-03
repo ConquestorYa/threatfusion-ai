@@ -89,6 +89,7 @@ def _show_system_status(
     evaluation_report_path: Path,
     *,
     cti_stale_after_by_source=None,
+    cti_only=False,
 ) -> None:
     st.sidebar.markdown(f"### {tr('Workspace health')}")
 
@@ -97,8 +98,8 @@ def _show_system_status(
     model_ready = model_path.exists() and metadata_path.exists()
     status_card(
         tr("ML artifact"),
-        tr("Present") if model_ready else tr("Missing"),
-        "good" if model_ready else "bad",
+        tr("Disabled") if cti_only else tr("Present") if model_ready else tr("Missing"),
+        "info" if cti_only else "good" if model_ready else "bad",
     )
 
     statuses = list_cti_cache_status(db_path)
@@ -399,7 +400,7 @@ def _show_analysis_result(
     with export_tab:
         report = build_analysis_report(
             result,
-            model_name=artifact.metadata.model_name,
+            model_name=artifact.metadata.model_name if artifact else "cti_only_ml_disabled",
         )
         export_columns = st.columns(2)
         export_columns[0].download_button(
@@ -583,6 +584,7 @@ def main() -> None:
         model_dir,
         config.evaluation_report_path,
         cti_stale_after_by_source=config.cti_stale_after_by_source,
+        cti_only=config.cti_only,
     )
     pages = [
         "Analyze telemetry",
@@ -590,7 +592,7 @@ def main() -> None:
         "Analysis history",
         "Model evaluation",
     ]
-    if config.public_mode:
+    if not config.history_enabled:
         pages.remove("Analysis history")
 
     default_page = (
@@ -607,7 +609,7 @@ def main() -> None:
     # live prominently in the main canvas instead of being tiny sidebar items.
     with navigation:
         st.markdown(f"### {tr('Secondary views')}")
-        if not config.public_mode:
+        if config.history_enabled:
             if st.button(
                 tr("Analysis history"),
                 key="nav_analysis_history",
@@ -627,6 +629,12 @@ def main() -> None:
         st.caption(tr("Primary tools are available in the main workspace."))
 
     _render_primary_workspace_launcher(page)
+    if config.cti_only:
+        st.warning(tr(
+            "CTI-only mode: ML is disabled. Results use the local CTI cache and "
+            "available DNS behavior only. A missing match does not establish "
+            "that a target is benign. Shared history is disabled in this mode."
+        ))
 
     if page == "Quick lookup":
         render_app_header(
@@ -636,7 +644,7 @@ def main() -> None:
         )
 
         try:
-            artifact = _load_artifact(str(model_dir), config.model_sha256)
+            artifact = None if config.cti_only else _load_artifact(str(model_dir), config.model_sha256)
         except (OSError, TypeError, ValueError) as error:
             st.error(
                 tr(
@@ -649,7 +657,7 @@ def main() -> None:
                 st.caption(type(error).__name__)
             return
 
-        if (
+        if artifact is not None and (
             getattr(artifact.metadata, "evaluation_status", None)
             == "demo_only_synthetic"
         ):
@@ -664,6 +672,8 @@ def main() -> None:
         if not list_cti_cache_status(db_path):
             st.warning(
                 tr(
+                    "CTI cache is empty. CTI-only lookup has no known-indicator evidence."
+                    if config.cti_only else
                     "CTI cache is empty. Quick lookup can still use the ML model, "
                     "but known-indicator matching is unavailable."
                 )
@@ -889,7 +899,7 @@ def main() -> None:
             ):
                 try:
                     with st.spinner(tr("Preparing local analysis engine…")):
-                        artifact = _load_artifact(
+                        artifact = None if config.cti_only else _load_artifact(
                             str(model_dir),
                             config.model_sha256,
                         )
@@ -904,7 +914,7 @@ def main() -> None:
                         st.code("python scripts/train_ml_artifact.py", language="shell")
                         st.caption(type(error).__name__)
                 else:
-                    if (
+                    if artifact is not None and (
                         getattr(artifact.metadata, "evaluation_status", None)
                         == "demo_only_synthetic"
                     ):
@@ -919,6 +929,9 @@ def main() -> None:
                     if not indicators:
                         st.warning(
                             tr(
+                                "CTI cache is empty. Results can include DNS behavior only; "
+                                "known-indicator matching and ML are unavailable."
+                                if config.cti_only else
                                 "CTI cache is empty. Analysis can still use ML and DNS "
                                 "behavior, but known-threat matching will be unavailable. "
                                 "Run scripts/refresh_cti_cache.py to populate the cache."
@@ -974,6 +987,9 @@ def main() -> None:
                             st.session_state.pop("dns_input_detection", None)
                         else:
                             st.session_state["dns_input_detection"] = detection
+                        if config.cti_only:
+                            st.session_state.pop("analysis_audit_metadata", None)
+                            st.rerun()
                         try:
                             st.session_state["analysis_audit_metadata"] = (
                                 capture_analysis_audit_metadata(
@@ -1002,7 +1018,7 @@ def main() -> None:
     artifact = None
     if result is not None:
         try:
-            artifact = _load_artifact(str(model_dir), config.model_sha256)
+            artifact = None if config.cti_only else _load_artifact(str(model_dir), config.model_sha256)
         except (OSError, TypeError, ValueError) as error:
             st.error(
                 tr(

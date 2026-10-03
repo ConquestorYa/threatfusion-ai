@@ -184,7 +184,7 @@ def _evidence_from_match(match: DNSIOCMatch) -> QuickLookupEvidence:
 def analyze_quick_lookup_from_cache(
     value: str,
     db_path: Path,
-    artifact: TrainedMLArtifact,
+    artifact: TrainedMLArtifact | None,
 ) -> QuickLookupResult:
     """Analyze one target using indexed CTI candidates instead of loading the full cache."""
     _, domain, normalized_url, normalized_ip = _parse_lookup_input(value)
@@ -200,7 +200,7 @@ def analyze_quick_lookup_from_cache(
 def analyze_quick_lookup(
     value: str,
     indicators: list[IOCRecord] | tuple[IOCRecord, ...],
-    artifact: TrainedMLArtifact,
+    artifact: TrainedMLArtifact | None,
 ) -> QuickLookupResult:
     """Analyze one inert URL/domain without DNS resolution or HTTP requests."""
     input_type, domain, normalized_url, normalized_ip = _parse_lookup_input(value)
@@ -272,7 +272,7 @@ def analyze_quick_lookup(
         for indicator in exact_url_indicators
     )
 
-    if normalized_ip is None:
+    if normalized_ip is None and artifact is not None:
         scores = predict_domain_scores(artifact, [domain])
         score = scores.get(domain)
         tier = _ml_tier(artifact, score)

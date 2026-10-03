@@ -35,8 +35,9 @@ variables:
 ```text
 THREATFUSION_DB_PATH=/app/runtime/threatfusion.sqlite
 THREATFUSION_MODEL_DIR=/app/runtime/models/development-001
-# Required whenever THREATFUSION_PUBLIC_MODE=1:
+# Required in public mode when ML is enabled:
 THREATFUSION_MODEL_SHA256=<64-character SHA-256 digest>
+THREATFUSION_CTI_ONLY=0
 THREATFUSION_CTI_STALE_HOURS_THREATFOX=24
 THREATFUSION_CTI_STALE_HOURS_URLHAUS=24
 THREATFUSION_CTI_STALE_HOURS_SGB=24
@@ -57,10 +58,9 @@ travels with the model. Public mode therefore fails closed unless
 the expected digest outside the artifact directory.
 
 The interactive dashboard does not need feed credentials when a prepared CTI
-cache is supplied. A separate maintenance workflow remains the preferred
-deployment model. For low-cost demo hosting that has no scheduler, ThreatFusion
-also supports an opt-in process-local background refresher; see the scheduled
-refresh section below.
+cache is supplied. A separate maintenance workflow is used for live CTI refresh;
+the web process does not run a background feed refresher. A synthetic public
+demo needs no live feed refresh.
 
 ## Container build
 
@@ -133,32 +133,62 @@ If the output directory already contains files, rebuild explicitly with:
 python scripts/prepare_deployment_bundle.py --overwrite
 ```
 
+## Explicit CTI-only local operation
+
+If the trusted original model is unavailable, opt into CTI matching and DNS
+behavior without loading an ML artifact:
+
+```bash
+THREATFUSION_CTI_ONLY=1 .venv/bin/python -m streamlit run streamlit_app.py
+.venv/bin/python -m threatfusion.cli telemetry.csv --cti-only --db data/threatfusion.sqlite
+```
+
+The dashboard labels ML as disabled, exports no invented ML score, and disables
+history because its current audit schema requires actual model provenance.
+Unmatched domains are not thereby confirmed benign. This mode is explicit;
+missing or invalid artifacts do not silently select it. Restore the trusted
+original privately to resume the existing ML runtime policy.
+
 ## Render public-demo path
 
 For the portfolio-hosted demo, the repository can generate its entire runtime
 during the Render build. The generated CTI cache and ML artifact are synthetic
 and demo-only; they are not the measured local model or third-party feed data.
 
-Build command:
+Use the repository's `render.yaml` Blueprint after the commit is available on
+`main`. It selects the free Frankfurt web-service plan and
+`Dockerfile.public-demo`. The image generates its synthetic runtime during the
+build and copies its SHA-256 pin to a separate root-owned file. Code, model and
+pin remain read-only to the non-root web process. No local runtime upload,
+database service, persistent disk or feed credential is required.
 
-```text
-python -m pip install -r requirements-runtime.txt && python -m pip install --no-deps -e . && python scripts/generate_public_demo_runtime.py --output-dir runtime
+Render terminates HTTPS; Nginx listens on `$PORT` (default `10000`) and forwards
+to Streamlit on loopback `8501`. Requests are limited to 10/s per client and
+50/s globally, with bounded bursts; WebSocket connections are limited to three
+per client and eight globally. Health probes remain available under visitor
+limits. Public-demo uploads are limited to 20 MB (21 MB proxy allowance for
+multipart framing), while private/local Streamlit defaults remain 100 MB.
+Proxy access logs and upload buffering are disabled.
+
+The Blueprint trusts Render's private ingress and Cloudflare's published proxy
+networks for client addressing. Verify the hosted ingress path and per-client
+limits before release; keep those ranges current. A directly exposed local
+container trusts no forwarded headers by default. Never trust `0.0.0.0/0` or
+`::/0`. The global limit still applies regardless of visitor identity.
+
+Reproduce the deployment check without any developer data:
+
+```bash
+docker build -f Dockerfile.public-demo -t threatfusion-public-demo .
+docker run --rm -p 127.0.0.1:18501:10000 threatfusion-public-demo
+python scripts/check_public_demo_proxy.py --base-url http://127.0.0.1:18501
 ```
 
-Start command:
-
-```text
-streamlit run streamlit_app.py --server.address=0.0.0.0 --server.port=$PORT
-```
-
-Environment variables:
-
-```text
-THREATFUSION_PUBLIC_MODE=1
-THREATFUSION_DB_PATH=runtime/threatfusion.sqlite
-THREATFUSION_MODEL_DIR=runtime/models/development-001
-THREATFUSION_MODEL_SHA256=<trusted digest computed outside the deployed model directory>
-```
+Run the check only against your own demo. CI builds this image and checks its
+privacy boundary, health, response headers, body limits and HTTP 429 responses.
+Both Streamlit and Nginx are supervised and terminated on SIGTERM. Free Render
+services can sleep when idle; the hosted URL and live HTTPS verification remain
+a release gate until the service is actually deployed.
 
 No ThreatFox or URLhaus credential is required by this public-demo service.
 The synthetic demo artifact exists only so visitors can exercise the complete
@@ -331,3 +361,14 @@ python scripts\prepare_deployment_bundle.py \
 
 The report contains aggregate metrics and source-level recall only; it does not
 contain holdout domain rows.
+
+New schema-v4 reports also identify the evaluated artifact by SHA-256; legacy
+reports may lack this identity. The dashboard displays the report's actual
+first-seen protocol. A report can describe an experimental artifact different
+from the deployed model, and displaying it does not authorize promotion.
+
+The original configured `data/models/development-001` model is absent from the
+current development checkout. Use the synthetic runtime generator for the
+public demo; its `development-001` directory contains a demo-only model, not the
+historical measured artifact. Keep local datasets, evaluation files, real model
+artifacts and SQLite caches outside Git and public deployment bundles.

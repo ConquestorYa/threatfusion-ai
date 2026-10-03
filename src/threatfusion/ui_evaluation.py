@@ -60,6 +60,14 @@ def _show_model_evaluation(report_path: Path) -> None:
         )
     )
     st.write(f"**{tr('Model')}:** {summary.model_name}")
+    if report.artifact_sha256 is not None:
+        st.caption(f"{tr('Evaluated artifact SHA-256')}: {report.artifact_sha256}")
+    else:
+        st.caption(tr("Legacy report: evaluated artifact identity is unavailable."))
+    st.info(
+        tr("This report describes the evaluated artifact. Loading it does not promote "
+           "that artifact or establish the runtime model's performance.")
+    )
     st.write(
         f"**{tr('Snapshot dates')}:** "
         f"{tr('development')} {summary.development_snapshot_date} → "
@@ -184,11 +192,22 @@ def _show_model_evaluation(report_path: Path) -> None:
             "benign alerts."
         )
     )
-    st.caption(
-        tr(
-            "Protocol: fresh-collection disjoint holdout. Every domain seen in "
-            "the development snapshot is removed before evaluation. This is not "
-            "a strict IOC first-seen temporal split because DomainSample does not "
-            "store malicious IOC first_seen timestamps."
+    if report.malicious_first_seen_after is None:
+        st.caption(
+            tr("Protocol: fresh-collection disjoint holdout. Development domains "
+               "are excluded, but malicious IOC first_seen is not filtered. "
+               "This report does not establish strict temporal separation.")
         )
-    )
+    else:
+        st.caption(
+            tr("Protocol: fresh-collection disjoint holdout with malicious "
+               "first_seen filtering. Development domains and records without "
+               "usable timing are excluded. The cutoff must match the artifact "
+               "freeze to support a post-freeze claim; campaign/source-family "
+               "leakage can remain.")
+        )
+        st.write(f"**{tr('Malicious first_seen cutoff')}:** {report.malicious_first_seen_after}")
+        st.caption(
+            f"{tr('Missing timing removed')}: {report.malicious_missing_first_seen_removed:,} · "
+            f"{tr('At or before cutoff removed')}: {report.malicious_not_after_cutoff_removed:,}"
+        )

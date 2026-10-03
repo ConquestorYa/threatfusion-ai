@@ -15,10 +15,11 @@ class AppConfig:
     public_mode: bool
     model_sha256: str | None
     cti_stale_hours_by_source: tuple[tuple[str, float], ...]
+    cti_only: bool = False
 
     @property
     def history_enabled(self) -> bool:
-        return not self.public_mode
+        return not self.public_mode and not self.cti_only
 
     @property
     def cti_stale_after_by_source(self) -> dict[str, timedelta]:
@@ -97,7 +98,8 @@ def load_app_config(
         default=False,
     )
     model_sha256 = _optional_sha256(values, "THREATFUSION_MODEL_SHA256")
-    if public_mode and model_sha256 is None:
+    cti_only = _parse_bool(values.get("THREATFUSION_CTI_ONLY"), default=False)
+    if public_mode and not cti_only and model_sha256 is None:
         raise ValueError(
             "THREATFUSION_MODEL_SHA256 is required when "
             "THREATFUSION_PUBLIC_MODE=1"
@@ -121,6 +123,7 @@ def load_app_config(
         ),
         public_mode=public_mode,
         model_sha256=model_sha256,
+        cti_only=cti_only,
         cti_stale_hours_by_source=(
             (
                 "ThreatFox",

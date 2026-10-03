@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import subprocess
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 
 @dataclass(frozen=True)
@@ -76,6 +76,28 @@ def scan_release_text(
     return tuple(findings)
 
 
+def scan_release_path(
+    path: str,
+    *,
+    object_id: str | None = None,
+) -> tuple[ReleaseAuditFinding, ...]:
+    """Reject local data/model files even when their payload is binary."""
+    normalized = path.casefold()
+    parts = PurePosixPath(normalized).parts
+    local_data = len(parts) >= 2 and parts[0] == "data" and parts[1] in {
+        "snapshots", "models", "evaluation", "deployment", "demo",
+    }
+    filename = PurePosixPath(normalized).name
+    database = any(
+        filename.endswith(suffix) or suffix + "-" in filename
+        for suffix in (".db", ".sqlite", ".sqlite3")
+    )
+    model = filename.endswith((".joblib", ".pkl", ".pickle"))
+    if local_data or database or model:
+        return (ReleaseAuditFinding("local-data-artifact", path, object_id),)
+    return ()
+
+
 def _git(
     repository: Path,
     *args: str,
@@ -104,6 +126,7 @@ def audit_tracked_tree(
         if not raw_name:
             continue
         relative = raw_name.decode("utf-8", errors="strict")
+        findings.extend(scan_release_path(relative))
         path = root / relative
         try:
             payload = path.read_bytes()
@@ -150,6 +173,31 @@ def _history_blob_index(repository: Path) -> list[tuple[str, str]]:
     return blobs
 
 
+def _history_artifact_findings(repository: Path) -> tuple[ReleaseAuditFinding, ...]:
+    """Check every historical path, including aliases of the same blob."""
+    records = iter(_git(
+        repository, "log", "--all", "--raw", "-z", "--format=",
+        "--no-abbrev", "--no-renames", "--diff-merges=separate",
+    ).split(b"\0"))
+    findings: dict[tuple[str, str], ReleaseAuditFinding] = {}
+    for raw_header in records:
+        header = raw_header.lstrip(b"\n")
+        if not header:
+            continue
+        fields = header.split()
+        if len(fields) != 5 or not fields[0].startswith(b":"):
+            raise RuntimeError("unexpected Git history path record")
+        raw_path = next(records, None)
+        if raw_path is None:
+            raise RuntimeError("Git history path record is incomplete")
+        path = raw_path.decode("utf-8", errors="strict")
+        sha = fields[2] if fields[4] == b"D" else fields[3]
+        object_id = sha.decode("ascii")
+        for finding in scan_release_path(path, object_id=object_id):
+            findings[(path, object_id)] = finding
+    return tuple(findings.values())
+
+
 def audit_git_history(
     repository: Path,
 ) -> tuple[tuple[ReleaseAuditFinding, ...], int]:
@@ -169,7 +217,7 @@ def audit_git_history(
     if process.stdin is None or process.stdout is None:
         raise RuntimeError("git cat-file batch pipes are unavailable")
 
-    findings: list[ReleaseAuditFinding] = []
+    findings: list[ReleaseAuditFinding] = list(_history_artifact_findings(root))
     scanned = 0
     try:
         for object_id, path in blobs:

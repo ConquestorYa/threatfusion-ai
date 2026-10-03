@@ -1,0 +1,32 @@
+FROM python:3.12-slim@sha256:f77ac9e44ae96ef2c90b8053ea08c31f8be030f824196b0ae4db6d462c84e51f
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    THREATFUSION_PUBLIC_MODE=1 \
+    PORT=10000
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends nginx-light \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --uid 10001 threatfusion
+
+COPY requirements-runtime.txt ./
+RUN python -m pip install --no-cache-dir -r requirements-runtime.txt
+
+COPY . .
+RUN python scripts/generate_public_demo_runtime.py --output-dir runtime \
+    && cp runtime/models/development-001/artifact.sha256 /app/public-demo.sha256 \
+    && chmod -R a-w /app/runtime \
+    && mkdir -p /app/data \
+    && chown threatfusion:threatfusion /app/data
+
+USER threatfusion
+EXPOSE 10000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ.get('PORT', '10000') + '/_stcore/health', timeout=3)"
+
+CMD ["python", "scripts/serve_public_demo.py"]

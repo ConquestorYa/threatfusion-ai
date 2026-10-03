@@ -12,6 +12,19 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Explicit CTI-only dashboard/CLI operation when a trusted ML artifact is
+  unavailable, with disabled ML scoring and provenance-dependent history.
+- Synthetic-only public-demo Docker image and free Render Blueprint, independent
+  read-only model pin, Nginx request/connection/upload limits and supervised
+  shutdown. CI checks the generated runtime and proxy behavior without private
+  data or feed credentials.
+- Artifact SHA-256 identity in schema-v4 aggregate ML reports, with legacy
+  schema-v1/v2/v3 report support and collection-provenance validation.
+- Fresh-disjoint builder regression coverage for domain separation, empty
+  classes, post-cutoff refreshes, existing-output preservation and inert output.
+- Release audit rejection of local dataset/cache/model paths, including binary
+  artifacts in the tracked tree and reachable history; SQLite sidecar ignores.
+
 - Multi-source IOC collection and normalization for ThreatFox, URLhaus, and SGB.
 - DNS telemetry ingestion for generic CSV, Zeek `dns.log`, Pi-hole FTL, and
   AdGuard Home.
@@ -38,6 +51,19 @@ release date is added only when the final tag/release is created.
 
 ### Changed
 
+- Fresh-disjoint snapshots now remove malicious and benign development overlap
+  before persistence and use the canonical protocol identifier.
+- The evaluation dashboard describes each report's actual temporal protocol,
+  cutoff and artifact identity. Loading a report never promotes its artifact.
+- Final evaluation rejects synthetic demo artifacts, mismatched recorded
+  artifact/development provenance and missing/changed recorded temporal cutoffs.
+- Augmented runtime promotion is deferred pending stronger untouched temporal
+  evidence; the missing original default artifact is distinguished from the
+  separately generated synthetic demo runtime.
+- Independent follow-up CTI collection found five unscored post-cutoff SGB
+  domains. Original local data remains unchanged; this readiness count does not
+  replace the fresh-disjoint result or justify promotion.
+
 - ML terminology uses `ml_score` rather than implying calibrated malware
   probability.
 - The v1 scope is frozen around final evaluation, portfolio presentation,
@@ -51,9 +77,9 @@ release date is added only when the final tag/release is created.
 
 ### Release gates still open
 
-- Decide whether the improved augmented lexical candidate should receive a
-  stronger temporal collection before any runtime promotion.
-- Capture sanitized screenshots from a real application run.
+- Collect stronger untouched temporal evidence before reconsidering augmented
+  runtime promotion; the current decision is to retain it experimentally.
+- Review the existing sanitized application screenshots.
 - Publish and verify the hosted public-mode demo.
 - Complete final manual release verification, then create the `v0.1.0` tag
   and GitHub release.

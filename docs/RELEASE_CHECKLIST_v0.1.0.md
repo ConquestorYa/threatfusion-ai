@@ -20,12 +20,16 @@ Use this checklist before creating the `v0.1.0` portfolio release.
 - [x] Ruff passes.
 - [x] Pytest passes.
 - [x] Docker build/health workflow remains passing in CI.
+- [x] Synthetic demo image, rate/body limits and real WebSocket UI session
+  verified locally; new CI job added for this boundary.
+- [x] Render Blueprint validated against the official JSON Schema.
+- [ ] New commit's Linux/Windows/container CI results verified on GitHub.
 
 ## 4) Release notes and versioning
 
 - [x] `CHANGELOG.md` updated for `0.1.0`.
 - [x] Release notes drafted from changelog highlights.
-- [ ] Tag plan confirmed (`v0.1.0`).
+- [x] Tag plan confirmed (`v0.1.0`, after hosted verification).
 
 ## 5) Portfolio presentation assets
 
@@ -37,6 +41,8 @@ Use this checklist before creating the `v0.1.0` portfolio release.
 
 - [x] Threat IOC values are handled as inert data only (no IOC browsing/resolution behavior introduced).
 - [x] Public-mode behavior verified (`THREATFUSION_PUBLIC_MODE=1`).
+- [x] Explicit CTI-only CLI/dashboard operation verified with absent model.
+- [ ] Hosted HTTPS, WebSocket and ingress/client rate limits verified.
 - [x] Remaining known TODOs are explicitly documented (no invented permissions/claims).
 
 ## 7) Current ML release gate
@@ -57,5 +63,14 @@ Use this checklist before creating the `v0.1.0` portfolio release.
 	unusable.
 - [x] Augmented lexical C=4 fresh-disjoint evaluation completed with aggregate
 	metrics and its non-temporal limitation documented.
-- [ ] Decide whether to promote the augmented candidate as an explicitly
-	auxiliary runtime artifact or require stronger temporal evidence first.
+- [x] Promotion decision recorded: keep the augmented candidate experimental
+  and require stronger untouched temporal evidence before runtime promotion
+  (DEC-082).
+- [x] Original configured runtime artifact absence and synthetic demo distinction
+  documented in the handoff.
+- [x] Fresh-disjoint persistence, report provenance and binary/local-artifact
+  release safeguards covered by regression tests.
+- [x] Independent follow-up collection checked temporal readiness: five
+  development-disjoint SGB domains, kept unscored; original data preserved.
+- [ ] Collect enough untouched temporal evidence with broader source coverage
+  before revisiting promotion; do not reuse inspected holdouts for selection.

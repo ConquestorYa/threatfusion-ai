@@ -58,17 +58,13 @@ def is_ml_scoring_candidate(value: str) -> bool:
 
 def _validate_runtime_bounds(events: list[DNSEvent]) -> None:
     if len(events) > MAX_DNS_EVENTS:
-        raise ValueError(
-            f"DNS input exceeds the {MAX_DNS_EVENTS} event analysis limit"
-        )
+        raise ValueError(f"DNS input exceeds the {MAX_DNS_EVENTS} event analysis limit")
 
     for event in events:
         if not isinstance(event.query_name, str):
             raise ValueError("DNS query name must be text")
         if len(event.query_name) > MAX_QUERY_NAME_CHARS:
-            raise ValueError(
-                "DNS query name exceeds the safe analysis length limit"
-            )
+            raise ValueError("DNS query name exceeds the safe analysis length limit")
 
         for field_name, value in (
             ("client_ip", event.client_ip),
@@ -100,7 +96,7 @@ def _validate_runtime_bounds(events: list[DNSEvent]) -> None:
 def analyze_dns_events(
     events: Iterable[DNSEvent],
     indicators: Iterable[IOCRecord],
-    artifact: TrainedMLArtifact,
+    artifact: TrainedMLArtifact | None,
     *,
     behavior_config: BehaviorHeuristicConfig | None = None,
 ) -> RuntimeAnalysisResult:
@@ -115,19 +111,23 @@ def analyze_dns_events(
     _validate_runtime_bounds(event_list)
 
     matches = match_dns_events(event_list, indicator_list)
-    ml_scores = predict_domain_scores(
-        artifact,
-        [
-            event.query_name
-            for event in event_list
-            if is_ml_scoring_candidate(event.query_name)
-        ],
+    ml_scores = (
+        predict_domain_scores(
+            artifact,
+            [
+                event.query_name
+                for event in event_list
+                if is_ml_scoring_candidate(event.query_name)
+            ],
+        )
+        if artifact is not None
+        else {}
     )
     assessments = assess_dns_domains(
         event_list,
         matches,
-        ml_scores=ml_scores,
-        ml_thresholds=artifact.thresholds,
+        ml_scores=ml_scores if artifact is not None else None,
+        ml_thresholds=artifact.thresholds if artifact is not None else None,
         behavior_config=behavior_config,
     )
 
@@ -143,7 +143,7 @@ def analyze_dns_upload_with_diagnostics(
     content: bytes,
     filename: str | None,
     indicators: Iterable[IOCRecord],
-    artifact: TrainedMLArtifact,
+    artifact: TrainedMLArtifact | None,
     *,
     behavior_config: BehaviorHeuristicConfig | None = None,
 ) -> tuple[RuntimeAnalysisResult, DNSParseDiagnostics, DNSInputDetection]:
@@ -161,7 +161,7 @@ def analyze_dns_upload_with_diagnostics(
 def analyze_adguard_query_log_with_diagnostics(
     content: str,
     indicators: Iterable[IOCRecord],
-    artifact: TrainedMLArtifact,
+    artifact: TrainedMLArtifact | None,
     *,
     behavior_config: BehaviorHeuristicConfig | None = None,
 ) -> tuple[RuntimeAnalysisResult, DNSParseDiagnostics]:
@@ -179,7 +179,7 @@ def analyze_adguard_query_log_with_diagnostics(
 def analyze_dns_csv_with_diagnostics(
     content: str,
     indicators: Iterable[IOCRecord],
-    artifact: TrainedMLArtifact,
+    artifact: TrainedMLArtifact | None,
     *,
     behavior_config: BehaviorHeuristicConfig | None = None,
 ) -> tuple[RuntimeAnalysisResult, DNSParseDiagnostics]:
@@ -197,7 +197,7 @@ def analyze_dns_csv_with_diagnostics(
 def analyze_pihole_query_db_with_diagnostics(
     content: bytes,
     indicators: Iterable[IOCRecord],
-    artifact: TrainedMLArtifact,
+    artifact: TrainedMLArtifact | None,
     *,
     behavior_config: BehaviorHeuristicConfig | None = None,
 ) -> tuple[RuntimeAnalysisResult, DNSParseDiagnostics]:
@@ -215,7 +215,7 @@ def analyze_pihole_query_db_with_diagnostics(
 def analyze_zeek_dns_log_with_diagnostics(
     content: str,
     indicators: Iterable[IOCRecord],
-    artifact: TrainedMLArtifact,
+    artifact: TrainedMLArtifact | None,
     *,
     behavior_config: BehaviorHeuristicConfig | None = None,
 ) -> tuple[RuntimeAnalysisResult, DNSParseDiagnostics]:
@@ -233,7 +233,7 @@ def analyze_zeek_dns_log_with_diagnostics(
 def analyze_dns_csv(
     content: str,
     indicators: Iterable[IOCRecord],
-    artifact: TrainedMLArtifact,
+    artifact: TrainedMLArtifact | None,
     *,
     behavior_config: BehaviorHeuristicConfig | None = None,
 ) -> RuntimeAnalysisResult:

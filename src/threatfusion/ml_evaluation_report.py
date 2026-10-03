@@ -8,8 +8,8 @@ from pathlib import Path
 
 from .ml_holdout import FrozenHoldoutEvaluation, HoldoutSourceMetrics
 
-_SCHEMA_VERSION = 3
-_SUPPORTED_SCHEMA_VERSIONS = {1, 2, 3}
+_SCHEMA_VERSION = 4
+_SUPPORTED_SCHEMA_VERSIONS = {1, 2, 3, 4}
 _PROTOCOL = "fresh_collection_disjoint"
 _TEMPORAL_PROTOCOL = "fresh_collection_disjoint_first_seen_filtered"
 _SUPPORTED_PROTOCOLS = {_PROTOCOL, _TEMPORAL_PROTOCOL}
@@ -87,6 +87,19 @@ class FrozenHoldoutReport:
     malicious_first_seen_after: str | None = None
     malicious_missing_first_seen_removed: int = 0
     malicious_not_after_cutoff_removed: int = 0
+    artifact_sha256: str | None = None
+
+
+def _artifact_checksum(value: object) -> str | None:
+    if value is None:
+        return None
+    if (
+        not isinstance(value, str)
+        or len(value) != 64
+        or any(character not in "0123456789abcdef" for character in value)
+    ):
+        raise ValueError("artifact_sha256 must be a lowercase SHA-256 hex digest")
+    return value
 
 
 def _wilson_interval(
@@ -211,6 +224,7 @@ def build_frozen_holdout_report(
     development_snapshot_date: str,
     holdout_snapshot_date: str,
     generated_at: datetime | None = None,
+    artifact_sha256: str | None = None,
 ) -> FrozenHoldoutReport:
     """Build an aggregate-only report from a frozen holdout evaluation."""
     timestamp = generated_at or datetime.now(timezone.utc)
@@ -226,6 +240,7 @@ def build_frozen_holdout_report(
         ),
         generated_at=timestamp.astimezone(timezone.utc).isoformat(),
         model_name=model_name,
+        artifact_sha256=_artifact_checksum(artifact_sha256),
         development_snapshot_date=development_snapshot_date,
         holdout_snapshot_date=holdout_snapshot_date,
         input_count=evaluation.input_count,
@@ -393,6 +408,7 @@ def read_frozen_holdout_report(path: Path) -> FrozenHoldoutReport:
             protocol=str(raw["protocol"]),
             generated_at=str(raw["generated_at"]),
             model_name=str(raw["model_name"]),
+            artifact_sha256=_artifact_checksum(raw.get("artifact_sha256")),
             development_snapshot_date=str(raw["development_snapshot_date"]),
             holdout_snapshot_date=str(raw["holdout_snapshot_date"]),
             input_count=int(raw["input_count"]),
@@ -438,5 +454,11 @@ def read_frozen_holdout_report(path: Path) -> FrozenHoldoutReport:
         and report.malicious_first_seen_after is None
     ):
         raise ValueError("temporal holdout report requires a first-seen cutoff")
+    if report.protocol == _PROTOCOL and (
+        report.malicious_first_seen_after is not None
+        or report.malicious_missing_first_seen_removed
+        or report.malicious_not_after_cutoff_removed
+    ):
+        raise ValueError("non-temporal holdout report cannot contain temporal filtering")
 
     return report

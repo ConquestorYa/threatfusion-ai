@@ -21,6 +21,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("input", type=Path, help="Telemetry file to analyze")
     parser.add_argument(
+        "--cti-only",
+        action="store_true",
+        help="Use CTI matching and DNS behavior without loading any ML artifact",
+    )
+    parser.add_argument(
         "--format",
         choices=("dns-csv", "zeek", "pihole", "adguard"),
         default="dns-csv",
@@ -66,7 +71,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     content = _load_input(args.input, args.format)
 
-    artifact = load_trusted_ml_artifact(args.model_dir)
+    artifact = None if args.cti_only else load_trusted_ml_artifact(args.model_dir)
     indicators = load_ioc_records(args.db)
 
     if args.format == "dns-csv":
@@ -98,7 +103,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     report = build_analysis_report(
         result,
-        model_name=artifact.metadata.model_name,
+        model_name=artifact.metadata.model_name if artifact else "cti_only_ml_disabled",
     )
 
     if args.json_output is not None:
@@ -116,6 +121,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         verdict_counts[assessment.verdict.value] += 1
 
     print("ThreatFusion analysis complete")
+    if args.cti_only:
+        print("  Mode: CTI and DNS behavior only; ML disabled")
     print(f"  Input rows: {diagnostics.total_rows}")
     print(f"  Accepted rows: {diagnostics.accepted_rows}")
     print(f"  Domains: {len(result.assessments)}")

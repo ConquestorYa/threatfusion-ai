@@ -798,3 +798,47 @@ source diagnostics expose uneven performance without inventing undefined
 metrics, while backward-compatible report loading preserves reproducibility of
 older evaluation artifacts.
 
+## DEC-082: Defer augmented runtime promotion until stronger temporal evidence
+
+**Decision (2026-10-04):** Retain the augmented lexical C=4 artifact as an
+experimental candidate. Do not change runtime defaults or frozen thresholds
+from its inspected fresh-disjoint result. Require a new untouched post-freeze
+temporal collection before reconsidering promotion.
+
+**Reason:** Fresh-disjoint High/medium/low recall is 60.62%/78.75%/81.87%, but
+FPR is 0.85%/1.95%/2.62%, exceeding the corresponding validation budgets of
+0.1%/0.5%/1.0%. The malicious sample has only 160 domains, uneven source recall
+and no retained ThreatFox examples. All 473,323 unique current malicious
+candidates have earliest usable first_seen at or before the frozen cutoff.
+Refreshing a cache does not make those indicators temporally new.
+
+**Consequences:** Existing holdout evidence remains inspected and cannot select
+or tune a successor. New fresh-disjoint snapshots remove development overlap
+before persistence. Aggregate reports identify exact artifact bytes and the UI
+shows their actual protocol. The original default artifact is absent from this
+checkout; the synthetic demo remains a separate presentation asset.
+
+## DEC-083: Make operation without ML an explicit mode
+
+**Decision (2026-10-04):** Add `THREATFUSION_CTI_ONLY=1` for the dashboard and
+`--cti-only` for the CLI. Preserve deterministic CTI and DNS behavior while
+skipping artifact loading and scoring. Disable provenance-dependent history in
+this mode, label ML as disabled, and export absent ML values honestly.
+
+**Reason:** The original runtime artifact is missing from this checkout. A
+trusted-model backup can restore it privately; retraining or choosing an
+experimental/synthetic substitute cannot restore its historical identity.
+Explicit CTI-only operation keeps the core analyst workflow usable without
+changing the default model or promoting the augmented candidate.
+
+## DEC-084: Build the hosted demonstration entirely from synthetic inputs
+
+**Decision (2026-10-04):** Use a dedicated non-root Docker image and free Render
+Blueprint. Generate synthetic CTI/model assets at build time, pin the model
+outside its read-only directory, and place Nginx request and connection limits
+in front of Streamlit. Keep health checks independent of visitor limits.
+
+**Reason:** Local CTI, ML snapshots and telemetry must not enter the deployment
+context. Anonymous presentation needs transport security and resource limits
+without live-feed credentials or third-party data redistribution. Actual hosted
+HTTPS and ingress verification remain required before the final release tag.

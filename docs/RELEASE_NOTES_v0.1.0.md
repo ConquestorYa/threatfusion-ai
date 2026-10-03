@@ -55,7 +55,8 @@ The Streamlit dashboard can auto-detect:
 - AdGuard Home query logs;
 - dnstop domain summaries.
 
-The upload limit is 100 MB. Runtime analysis remains bounded to 100,000 events and 25,000 unique targets.
+The private/local upload limit is 100 MB; the synthetic public-demo image uses
+20 MB. Runtime analysis remains bounded to 100,000 events and 25,000 unique targets.
 
 ### Explainable analysis
 
@@ -74,6 +75,15 @@ Hybrid verdicts remain explainable:
 - <code>low</code>
 
 Exact known-domain evidence is intentionally stronger than URL-hostname/response-IP context, ML, or behavior heuristics.
+
+An explicit CTI-only dashboard/CLI mode supports matching and DNS behavior when
+the trusted original artifact is unavailable. It skips ML loading and scoring,
+labels the mode clearly, and disables model-dependent history. Experimental
+artifacts are never selected as an automatic fallback.
+
+The dedicated synthetic public-demo image and free Render Blueprint add request,
+connection and upload limits, an independent read-only model pin, and real
+Streamlit-session CI verification without uploading local feed data or models.
 
 ### Analyst workflow
 
@@ -163,6 +173,13 @@ artifact remains an auxiliary candidate and is not the runtime default.
 - third-party live feed dumps are not committed to the repository.
 
 ## Known limitations
+
+- Augmented lexical runtime promotion is deferred pending stronger untouched
+  temporal evidence; the current cache retains zero post-cutoff malicious domains.
+- The original default artifact is absent from the current checkout. The
+  generated synthetic demo artifact does not supply final ML evidence.
+- Aggregate reports display their actual protocol and, for new schema-v4
+  reports, exact artifact identity; loading a report does not promote a model.
 
 - ML scores are uncalibrated scores, not literal malware probabilities;
 - model performance depends on source mix, time and base rates;

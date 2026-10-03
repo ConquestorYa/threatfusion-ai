@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
+import pytest
+from streamlit.testing.v1 import AppTest
+
 from threatfusion.evaluation_dashboard import (
     operating_point_rows,
     source_metric_rows,
@@ -13,6 +18,7 @@ from threatfusion.ml_evaluation_report import (
     HoldoutSourceOperatingPointReport,
     HoldoutSourceRecallReport,
     RateIntervalReport,
+    write_frozen_holdout_report,
 )
 
 
@@ -159,3 +165,34 @@ def test_source_metric_rows_include_class_specific_rates() -> None:
     assert rows[1]["High recall"] is None
     assert rows[1]["High FPR"] == 0.01
     assert "95% CI" in rows[1]["High FPR interval"]
+
+
+@pytest.mark.parametrize("temporal", [False, True])
+def test_evaluation_page_describes_actual_protocol_and_artifact(tmp_path, temporal):
+    evaluated = replace(report(), artifact_sha256="a" * 64)
+    if temporal:
+        evaluated = replace(
+            evaluated,
+            protocol="fresh_collection_disjoint_first_seen_filtered",
+            malicious_first_seen_after="2026-09-24T12:00:00+00:00",
+            malicious_missing_first_seen_removed=3,
+            malicious_not_after_cutoff_removed=7,
+        )
+    path = write_frozen_holdout_report(evaluated, tmp_path / "report.json")
+    app = AppTest.from_string(
+        "from pathlib import Path\n"
+        "from threatfusion.ui_evaluation import _show_model_evaluation\n"
+        f"_show_model_evaluation(Path({str(path)!r}))\n"
+    ).run(timeout=15)
+    assert not app.exception
+    captions = " ".join(item.value for item in app.caption)
+    assert "a" * 64 in captions
+    assert "does not promote" in " ".join(item.value for item in app.info)
+    if temporal:
+        assert "with malicious first_seen filtering" in captions
+        assert "Missing timing removed: 3" in captions
+        assert "2026-09-24T12:00:00+00:00" in " ".join(item.value for item in app.markdown)
+    else:
+        assert "first_seen is not filtered" in captions
+        assert "does not establish strict temporal separation" in captions
+    assert "DomainSample does not store" not in captions

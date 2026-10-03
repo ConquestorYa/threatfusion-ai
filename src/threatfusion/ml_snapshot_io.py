@@ -274,3 +274,11 @@ def read_domain_snapshot(output_dir: Path) -> DomainDatasetSnapshot:
         metadata=metadata,
         statistics=statistics,
     )
+
+
+def read_snapshot_experiment_metadata(output_dir: Path) -> dict[str, Any]:
+    """Read optional collection provenance from a saved local snapshot."""
+    payload = _load_metadata(Path(output_dir) / _METADATA_FILENAME)
+    if "experiment_metadata" not in payload:
+        return {}
+    return _require_mapping(payload, "experiment_metadata")

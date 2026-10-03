@@ -18,6 +18,7 @@ from threatfusion.ml_artifact import (
 )
 from threatfusion.ml_benign_telemetry import prepare_benign_telemetry
 from threatfusion.ml_dataset import extract_malicious_domains
+from threatfusion.ml_holdout import prepare_disjoint_holdout
 from threatfusion.ml_holdout_collection import (
     final_holdout_experiment_metadata,
     prepare_final_holdout_collection,
@@ -86,6 +87,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.artifact_dir,
             expected_checksum=args.expected_artifact_sha256,
         )
+        if artifact.metadata.evaluation_status == "demo_only_synthetic":
+            raise ValueError("synthetic demo artifacts cannot produce final ML evidence")
         development = read_domain_snapshot(args.development_snapshot_dir)
         artifact_checksum = compute_ml_artifact_checksum(args.artifact_dir)
         context = prepare_final_holdout_collection(
@@ -123,10 +126,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             benign_snapshot_id=args.benign_source_id,
             benign_snapshot_date=args.holdout_snapshot_date,
         )
+        prepared = prepare_disjoint_holdout(development.samples, snapshot.samples)
+        snapshot = build_domain_snapshot_from_samples(
+            (sample for sample in prepared.samples if sample.label == 1),
+            (sample.domain for sample in prepared.samples if sample.label == 0),
+            benign_source=args.benign_source,
+            benign_snapshot_id=args.benign_source_id,
+            benign_snapshot_date=args.holdout_snapshot_date,
+        )
         metadata = final_holdout_experiment_metadata(context)
         metadata.update(
             {
-                "evaluation_protocol": "fresh_collection disjoint",
+                "evaluation_protocol": "fresh_collection_disjoint",
                 "cti_refresh_after": args.cti_refresh_after.isoformat(),
                 "required_cti_sources": list(args.required_sources),
                 "cti_refreshes": {
@@ -134,12 +145,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                 },
                 "active_ioc_records_loaded": len(indicators),
                 "malicious_candidates_loaded": len(malicious_samples),
+                "development_overlap_removed": prepared.overlap_removed,
+                "malicious_retained_domains": snapshot.statistics.final_malicious_count,
                 "benign_input_sha256": _sha256(args.benign_dns_csv),
                 "benign_input_events": benign_preparation.input_event_count,
                 "benign_development_overlap_removed": (
                     benign_preparation.development_overlap_removed
                 ),
-                "benign_retained_domains": len(benign_preparation.retained_domains),
+                "benign_retained_domains": snapshot.statistics.final_benign_count,
                 "temporal_first_seen_filter_applied": False,
             }
         )
@@ -159,9 +172,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"  CTI refresh cutoff: {args.cti_refresh_after.isoformat()}")
     print(f"  Active IOC records loaded: {len(indicators):,}")
     print(f"  Malicious candidates loaded: {len(malicious_samples):,}")
+    print(f"  Removed development overlap: {prepared.overlap_removed:,}")
+    print(f"  Retained malicious domains: {snapshot.statistics.final_malicious_count:,}")
     print(
         "  Retained confirmed-benign domains: "
-        f"{len(benign_preparation.retained_domains):,}"
+        f"{snapshot.statistics.final_benign_count:,}"
     )
     print(f"  Dataset: {dataset_path}")
     print(f"  Metadata: {metadata_path}")

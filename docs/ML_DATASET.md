@@ -1115,3 +1115,80 @@ do not by themselves justify runtime promotion. The artifact remains separate
 from the runtime default pending a stronger temporal collection or an explicit
 product decision to accept the fresh-disjoint limitation.
 
+### Runtime decision and continuation audit — 2026-10-04
+
+Runtime promotion is **deferred** (DEC-082). The augmented frozen identity is
+`643b5adc1cf4bc4cb9c677df88aa4797dcbd6ae1be8ff0d0c0f4ee7d7f3e4cd9`, and its
+recorded freeze cutoff is `2026-10-03T20:41:49Z`. A read-only local audit confirmed
+the artifact identity and stored thresholds against the original collection and
+report. It found zero eligible strict-temporal malicious domains: all 473,323
+unique candidates have earliest usable first_seen at or before that cutoff.
+No final scoring was repeated and no thresholds were changed.
+
+The fresh-disjoint result retains only 160 malicious domains: 138 SGB domains
+and 22 URLhaus domains, with no retained ThreatFox domains. High-tier recall is
+69.57% for SGB and 4.55% for URLhaus (one of 22); these small, uneven subsets
+limit source-generalization claims. The High FPR of 0.85% corresponds to roughly
+85 false alarms per 10,000 benign domains in this corpus, exceeding its 0.1%
+validation budget. This does not measure production query-frequency alert load.
+
+The existing snapshot contains 493,259 pre-filter samples; its original
+evaluator removed 473,163 development overlaps, retaining 160 malicious and
+19,936 benign domains. It is preserved as historical evidence. New
+`build_ml_fresh_disjoint_holdout.py` outputs remove overlap in both classes
+before writing, refuse an empty class, and record
+`evaluation_protocol=fresh_collection_disjoint` with
+`temporal_first_seen_filter_applied=false`. This correction changes snapshot
+preparation, not the previously reported metrics or temporal builder policy.
+
+New schema-v4 reports include the evaluated `artifact_sha256`; schema-v1/v2/v3
+reports remain readable and have no guaranteed byte identity. The evaluation
+CLI checks the recorded frozen identity and development snapshot provenance
+when supplied by the collection metadata. For temporal-builder snapshots it
+requires the recorded explicit cutoff, so omitting or changing the cutoff
+cannot silently weaken the report. Synthetic demo artifacts are refused as
+final evidence. Loading any report in the UI is presentation only.
+
+### Follow-up temporal readiness — 2026-10-04 local date
+
+A separate ignored copy of the CTI cache was refreshed without changing the
+original cache. SGB completed with 488,504 active records at
+`2026-10-03T22:30:34.153113Z`. ThreatFox and URLhaus retained their earlier
+post-cutoff snapshots because credentials were unavailable for a new keyed
+refresh. PhishTank's access/security redirect prevented refresh; its previous
+cache was preserved and it is not a required source for this ML protocol.
+
+At `2026-10-03T22:36:15Z`, earliest-first-seen selection found 473,328 unique
+malicious candidates: 473,323 at or before the same frozen cutoff, zero missing
+usable timestamps, and **five** post-cutoff domains, all from SGB. Those five
+are disjoint from the augmented development snapshot. This is a collection
+readiness result, not model-performance evidence: no model prediction, threshold
+tuning, final evaluation, or promotion was performed. Five examples from one
+source do not supply the stronger temporal/generalization evidence needed.
+
+Keep collecting permitted source snapshots into a separate local cache before
+building a final holdout with a new untouched benign window. Do not repeat an
+evaluation after each small feed update to select thresholds or models. The
+readiness JSON and copied SQLite cache remain under ignored `data/evaluation/`;
+only these aggregate counts are published. All 32 pre-existing local data files
+retained their original checksums after this collection.
+
+### Local assets and fresh clones
+
+The CTI cache, dataset CSVs, CESNET windows, evaluation files and model binaries
+are local/ignored assets. GitHub contains code, synthetic tests, methodology and
+aggregate documentation. Git LFS does not resolve redistribution rights or
+telemetry privacy and is not used for these datasets.
+
+This checkout contains the reconstructed and augmented experimental artifacts,
+but not the original configured `data/models/development-001` artifact. The
+available demo runtime contains a separate synthetic `development-001` model
+with `evaluation_status=demo_only_synthetic`.
+
+A fresh clone can run the synthetic demo generator without feeds or credentials.
+Real ML work requires locally acquiring permitted CTI and attributed benign
+data, persisting development snapshots, training a new artifact and recording
+its checksum/freeze time before collecting an untouched holdout. Live re-fetches
+cannot reconstruct historical artifact identities or reproduce old metrics by
+assumption. Keep development and inspected holdout windows separate, and do not
+reuse the 120,000–140,000 CESNET window to select a successor.

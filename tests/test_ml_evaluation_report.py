@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 
 import pytest
@@ -128,7 +129,7 @@ def test_report_roundtrip_is_deterministic_and_aggregate_only(tmp_path) -> None:
     text = path.read_text(encoding="utf-8")
 
     assert loaded == report
-    assert loaded.schema_version == 3
+    assert loaded.schema_version == 4
     assert loaded.protocol == "fresh_collection_disjoint"
     assert loaded.retained_count == 100
     assert loaded.high.threshold == pytest.approx(0.80)
@@ -274,3 +275,45 @@ def test_schema_v1_report_remains_readable(tmp_path) -> None:
     assert report.schema_version == 1
     assert report.source_metrics == ()
     assert report.high.recall_ci is None
+    assert report.artifact_sha256 is None
+
+
+def test_report_preserves_exact_artifact_identity(tmp_path):
+    report = build_frozen_holdout_report(
+        evaluation(), model_name="model-a", artifact_sha256="a" * 64,
+        development_snapshot_date="2026-09-23", holdout_snapshot_date="2026-09-25",
+    )
+    path = write_frozen_holdout_report(report, tmp_path / "report.json")
+    assert read_frozen_holdout_report(path).artifact_sha256 == "a" * 64
+
+
+@pytest.mark.parametrize("checksum", ["bad", "g" * 64, 123, "A" * 64])
+def test_report_rejects_invalid_artifact_identity(tmp_path, checksum):
+    with pytest.raises(ValueError, match="artifact_sha256"):
+        build_frozen_holdout_report(
+            evaluation(), model_name="model-a", artifact_sha256=checksum,
+            development_snapshot_date="2026-09-23", holdout_snapshot_date="2026-09-25",
+        )
+    report = build_frozen_holdout_report(
+        evaluation(), model_name="model-a",
+        development_snapshot_date="2026-09-23", holdout_snapshot_date="2026-09-25",
+    )
+    path = write_frozen_holdout_report(report, tmp_path / "report.json")
+    raw = json.loads(path.read_text())
+    raw["artifact_sha256"] = checksum
+    path.write_text(json.dumps(raw))
+    with pytest.raises(ValueError, match="artifact_sha256"):
+        read_frozen_holdout_report(path)
+
+
+def test_non_temporal_report_rejects_temporal_claim(tmp_path):
+    report = build_frozen_holdout_report(
+        evaluation(), model_name="model-a",
+        development_snapshot_date="2026-09-23", holdout_snapshot_date="2026-09-25",
+    )
+    path = write_frozen_holdout_report(report, tmp_path / "report.json")
+    raw = json.loads(path.read_text())
+    raw["malicious_first_seen_after"] = "2026-09-23"
+    path.write_text(json.dumps(raw))
+    with pytest.raises(ValueError, match="non-temporal"):
+        read_frozen_holdout_report(path)

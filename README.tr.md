@@ -244,7 +244,8 @@ ML sinyali özellikle **daha önce görülmemiş domain adları** için tasarlan
 - önceki yalnızca karakter özellikli C=4 adayının post-freeze temporal değerlendirmesi tamamlanmış tarihsel bir ölçümdür;
 - yeniden oluşturulan lexical C=4 adayı post-freeze holdout’tan geçti ancak false-positive oranı operasyonel olarak kullanılamadığı için terfi ettirilmedi;
 - hard-negative ile güçlendirilmiş lexical aday fresh-disjoint testinde daha iyi FPR verdi ancak bu protokol strict temporal olmadığı için yardımcı sinyal olarak kaldı;
-- runtime varsayılanı güvenilir eski artifact olarak kaldı;
+- augmented adayın runtime promotion’ı daha güçlü ve dokunulmamış temporal kanıta kadar ertelendi;
+- varsayılan yol eski artifact’ı işaret ediyor ancak bu checkout’ta o dosya yok; üretilen sentetik demo ayrı bir model;
 - proje “kusursuz tespit” iddiasında bulunmaz.
 
 Ayrıntılı metodoloji: **[docs/ML_DATASET.md](docs/ML_DATASET.md)**.
@@ -365,6 +366,19 @@ Streamlit normalde tarayıcıyı otomatik açar. Açılmazsa tarayıcıdan **htt
 Oluşturulan runtime yalnızca **sentetik dokümantasyon CTI verileri ve demo-only ML artifact** içerir. Arayüzü güvenli şekilde göstermek içindir; model performansı iddiası için kullanılmamalıdır.
 
 ### 5. Daha sonra tekrar çalıştırmak
+
+Linux/private checkout'ta CTI cache mevcutken güvenilir orijinal model yoksa
+ML'yi açıkça devre dışı bırakarak çalıştır:
+
+```bash
+THREATFUSION_CTI_ONLY=1 .venv/bin/python -m streamlit run streamlit_app.py
+```
+
+CTI ve DNS davranış analizi kullanılabilir; ML ve model bilgisi gerektiren
+history kapalıdır. Deneysel model promotion yapılmaz. Sentetik hosted demo
+[`render.yaml`](render.yaml) ve
+[`Dockerfile.public-demo`](Dockerfile.public-demo) kullanır; limitler ve
+doğrulama için [deployment rehberine](docs/DEPLOYMENT.md) bak.
 
 Bağımlılıkları yeniden kurmana gerek yok. PowerShell'i aç, proje klasörüne gir, runtime değişkenlerini yeniden ayarla ve Streamlit'i başlat:
 

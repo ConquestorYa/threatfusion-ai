@@ -23,6 +23,7 @@ dist/
 # Testing / coverage
 .pytest_cache/
 .coverage
+coverage.xml
 htmlcov/
 
 # Ruff / type checking
@@ -40,6 +41,9 @@ Thumbs.db
 *.db
 *.sqlite
 *.sqlite3
+*.db-*
+*.sqlite-*
+*.sqlite3-*
 
 # Logs
 *.log

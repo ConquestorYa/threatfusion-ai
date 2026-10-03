@@ -126,3 +126,38 @@ jobs:
       - name: Clean up container
         if: always()
         run: docker rm -f threatfusion-ci || true
+
+  public-demo-smoke:
+    name: Synthetic public demo + proxy limits
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build synthetic demo image
+        run: docker build -f Dockerfile.public-demo -t threatfusion-public-demo .
+
+      - name: Start isolated demo
+        run: docker run -d --name threatfusion-public-demo -p 127.0.0.1:18501:10000 threatfusion-public-demo
+
+      - name: Verify read-only synthetic runtime and privacy boundary
+        run: |
+          docker exec threatfusion-public-demo sh -c 'test "$(id -u)" = "10001"'
+          docker exec threatfusion-public-demo sh -c 'test ! -w /app/runtime/models/development-001/model.joblib'
+          docker exec threatfusion-public-demo sh -c 'test ! -w /app/public-demo.sha256'
+          docker exec threatfusion-public-demo sh -c 'test ! -e /app/data/threatfusion.sqlite && test ! -e /app/.git && test ! -e /app/tests'
+
+      - name: Verify health, headers, body limit and request limit
+        run: python scripts/check_public_demo_proxy.py --base-url http://127.0.0.1:18501
+
+      - name: Verify real Streamlit session through the proxy
+        run: docker exec threatfusion-public-demo python scripts/check_public_demo_session.py
+
+      - name: Show startup logs on failure
+        if: failure()
+        run: docker logs --tail 30 threatfusion-public-demo
+
+      - name: Clean up demo
+        if: always()
+        run: docker rm -f threatfusion-public-demo || true
