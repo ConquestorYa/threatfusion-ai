@@ -79,7 +79,6 @@ release date is added only when the final tag/release is created.
 
 - Collect stronger untouched temporal evidence before reconsidering augmented
   runtime promotion; the current decision is to retain it experimentally.
-- Review the existing sanitized application screenshots.
 - Publish and verify the hosted public-mode demo.
 - Complete final manual release verification, then create the `v0.1.0` tag
   and GitHub release.

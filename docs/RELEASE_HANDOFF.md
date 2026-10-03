@@ -171,6 +171,16 @@ to defer promotion; they are not new tuning data. See DEC-082.
   can be applied from the Render dashboard after publication to `main`.
 - The final `v0.1.0` tag/release remains gated on actual hosted HTTPS and ingress
   verification; local Docker success is not claimed as a hosted deployment.
+- Source implementation was published to GitHub `main` as
+  `dc03e368308e91c14b74ff389b269c594e926f9d`. Its reachable-history audit passed
+  again after publication. CI run `37159279681` verifies this implementation;
+  deployment assets still contain no private data.
+- That CI run completed successfully: Ubuntu Ruff/pytest/coverage/pip-audit,
+  Windows pytest, standard Docker build/health, and synthetic-demo privacy,
+  proxy limits and real WebSocket-session checks all passed.
+- The three existing portfolio screenshots were reviewed visually: they use
+  inert `.example` synthetic findings and show no private telemetry or secrets.
+  PNG metadata and EXIF are empty. No screenshot regeneration was necessary.
 
 ## Remaining release gates
 

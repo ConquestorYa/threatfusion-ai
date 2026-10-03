@@ -196,7 +196,7 @@ Remaining release tasks are:
 
 - preserve the deferred ML promotion decision and collect stronger untouched
   temporal evidence before revisiting it;
-- review the existing sanitized portfolio screenshots;
+- retain the reviewed sanitized portfolio screenshots;
 - hosted public-mode demo;
 - final release checklist;
 - GitHub tag/release.

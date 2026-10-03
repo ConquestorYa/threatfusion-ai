@@ -23,7 +23,8 @@ Use this checklist before creating the `v0.1.0` portfolio release.
 - [x] Synthetic demo image, rate/body limits and real WebSocket UI session
   verified locally; new CI job added for this boundary.
 - [x] Render Blueprint validated against the official JSON Schema.
-- [ ] New commit's Linux/Windows/container CI results verified on GitHub.
+- [x] Implementation commit `dc03e36` passed Linux/Windows and both container
+  jobs on GitHub (CI run `37159279681`).
 
 ## 4) Release notes and versioning
 
