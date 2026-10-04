@@ -14,6 +14,24 @@ _LANGUAGE_BY_OPTION = {
 }
 
 _TR: dict[str, str] = {
+    "Connection activity": "Bağlantı etkinliği",
+    "Host {number}": "Sistem {number}",
+    "Connection timing, duration and byte counts are review context. They do not prove malware or downloads.": "Bağlantı zamanları, süreleri ve veri miktarları inceleme için bağlam sağlar. Zararlı yazılım veya indirme gerçekleştiğini kanıtlamaz.",
+    "Direction means originator to responder. Hostnames and inbound/outbound direction are not inferred.": "Yön, bağlantıyı başlatandan yanıtlayana doğrudur. Domain veya ağın içine/dışına gidiş yönü varsayılmaz.",
+    "Upload a Zeek conn.log to inspect connection activity.": "Bağlantı etkinliğini incelemek için Zeek conn.log yükle.",
+    "Show connection endpoint IPs in this view and export": "Bu görünümde ve raporda bağlantı uçlarının IP adreslerini göster",
+    "Show only connection reviews": "Yalnızca inceleme gerektiren bağlantıları göster",
+    "No connection groups currently require review.": "Şu an inceleme gerektiren bağlantı grubu yok.",
+    "Download connection review JSON": "Bağlantı inceleme JSON raporunu indir",
+    "Connection exports remain sensitive telemetry. Host aliases apply only to this report.": "Bağlantı raporları hassas telemetri içerir. Sistem takma adları yalnızca bu rapor için geçerlidir.",
+    "Long bidirectional TCP session (at least 1 hour)": "Uzun çift yönlü TCP bağlantısı (en az 1 saat)",
+    "Sustained periodic successful TCP connections": "Uzun süreli düzenli başarılı TCP bağlantıları",
+    "Connection identity unavailable": "Bağlantı kimliği yok",
+    "Conflicting connection identities excluded": "Çelişen bağlantı kimlikleri dışarıda bırakıldı",
+    "Endpoint metadata incomplete": "Bağlantı uçlarının bilgileri eksik",
+    "Insufficient connection timing coverage": "Bağlantı zaman bilgileri yetersiz",
+    "Some sessions are unconfirmed or incomplete": "Bazı bağlantılar doğrulanmamış veya eksik",
+    "Some session durations are missing": "Bazı bağlantı süreleri eksik",
     "Device {number}": "Cihaz {number}",
     "Client identity unavailable": "İstemci kimliği yok",
     "Some timestamps are missing": "Bazı zaman kayıtları eksik",
@@ -553,6 +571,12 @@ _TR: dict[str, str] = {
 }
 
 _COLUMN_TR = {
+    "Originator": "Başlatan", "Responder": "Yanıtlayan",
+    "Responder port": "Hedef portu", "Protocol": "Protokol",
+    "Connections": "Bağlantılar", "Confirmed sessions": "Doğrulanmış bağlantılar",
+    "Duplicate rows excluded": "Dışarıda bırakılan tekrarlar", "Conflicting UIDs": "Çelişen kimlikler",
+    "Max duration (s)": "En uzun süre (sn)", "Originator bytes": "Başlatanın baytları",
+    "Responder bytes": "Yanıtlayanın baytları",
     "Target": "Hedef",
     "Telemetry events": "Telemetri kayıtları",
     "Device": "Cihaz",

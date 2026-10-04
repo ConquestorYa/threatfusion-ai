@@ -6,7 +6,8 @@ import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from .dashboard import device_finding_rows, ml_tier_label, reason_label, verdict_label
+from .dashboard import connection_finding_rows, device_finding_rows, ml_tier_label, reason_label, verdict_label
+from .connections import POLICY_ID as CONNECTION_POLICY_ID
 from .device_triage import POLICY_ID
 from .runtime_analysis import RuntimeAnalysisResult
 
@@ -16,6 +17,26 @@ class AnalysisReport:
     json_text: str
     csv_text: str
     generated_at: str
+
+
+def build_connection_report(
+    result: RuntimeAnalysisResult, *, include_ips: bool = False,
+    generated_at: datetime | None = None,
+) -> str:
+    return json.dumps({
+        "schema_version": 1, "policy": CONNECTION_POLICY_ID,
+        "generated_at": _generated_at_text(generated_at),
+        "findings": connection_finding_rows(result.connection_findings, include_ips=include_ips),
+        "privacy": {"endpoint_ips_included": include_ips, "raw_connection_rows_included": False,
+                    "connection_uids_included": False, "host_alias_scope": "this_report_only"},
+        "limitations": [
+            "Review priority is not proof of C2, malware, downloads or execution.",
+            "Observation direction is originator to responder, not inferred inbound/outbound.",
+            "No DNS hostname association is inferred from shared IPs.",
+            "Legitimate updates and long-lived services can also enter review.",
+            "Aliases do not anonymize timestamps, ports and traffic statistics.",
+        ],
+    }, indent=2, ensure_ascii=False) + "\n"
 
 
 def build_device_report(

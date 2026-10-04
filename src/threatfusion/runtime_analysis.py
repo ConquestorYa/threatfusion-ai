@@ -5,6 +5,8 @@ from dataclasses import dataclass
 
 from .dns import DNSEvent, DNSParseDiagnostics, parse_dns_csv_with_diagnostics
 from .device_triage import DeviceFinding, build_device_findings
+from .connections import ConnectionFinding, ConnectionRecord, analyze_connections
+from .network_telemetry import parse_zeek_conn_log_with_diagnostics
 from .dns_ingest import DNSInputDetection, parse_dns_upload_with_diagnostics
 from .dns_adguard import parse_adguard_query_log_with_diagnostics
 from .dns_pihole import parse_pihole_query_db_with_diagnostics
@@ -41,6 +43,7 @@ class RuntimeAnalysisResult:
     ml_scores: dict[str, float]
     assessments: tuple[HybridAssessment, ...]
     device_findings: tuple[DeviceFinding, ...] = ()
+    connection_findings: tuple[ConnectionFinding, ...] = ()
 
     @property
     def ml_probabilities(self) -> dict[str, float]:
@@ -101,6 +104,7 @@ def analyze_dns_events(
     artifact: TrainedMLArtifact | None,
     *,
     behavior_config: BehaviorHeuristicConfig | None = None,
+    connections: Iterable[ConnectionRecord] = (),
 ) -> RuntimeAnalysisResult:
     """Run the local ThreatFusion analysis pipeline over DNS events.
 
@@ -111,6 +115,9 @@ def analyze_dns_events(
     event_list = list(events)
     indicator_list = list(indicators)
     _validate_runtime_bounds(event_list)
+    connection_list = tuple(connections)
+    if len(connection_list) > MAX_DNS_EVENTS:
+        raise ValueError("Connection input exceeds the event analysis limit")
 
     matches = match_dns_events(event_list, indicator_list)
     ml_scores = (
@@ -144,6 +151,7 @@ def analyze_dns_events(
             ml_thresholds=artifact.thresholds if artifact is not None else None,
             behavior_config=behavior_config,
         ),
+        connection_findings=analyze_connections(connection_list),
     )
 
 
@@ -162,8 +170,19 @@ def analyze_dns_upload_with_diagnostics(
         indicators,
         artifact,
         behavior_config=behavior_config,
+        connections=parsed.connections,
     )
     return result, parsed.diagnostics, detection
+
+
+def analyze_zeek_conn_log_with_diagnostics(
+    content: str, indicators: Iterable[IOCRecord], artifact: TrainedMLArtifact | None,
+) -> tuple[RuntimeAnalysisResult, DNSParseDiagnostics]:
+    parsed = parse_zeek_conn_log_with_diagnostics(content)
+    result = analyze_dns_events(
+        parsed.events, indicators, artifact, connections=parsed.connections,
+    )
+    return result, parsed.diagnostics
 
 
 def analyze_adguard_query_log_with_diagnostics(

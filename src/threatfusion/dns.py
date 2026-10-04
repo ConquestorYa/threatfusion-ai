@@ -5,6 +5,7 @@ import math
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from .connections import ConnectionRecord
 
 
 @dataclass
@@ -24,12 +25,14 @@ class DNSParseDiagnostics:
     skipped_missing_query_name: int
     invalid_timestamps: int
     invalid_response_ips: int
+    invalid_connection_fields: int = 0
 
 
 @dataclass(frozen=True)
 class DNSParseResult:
     events: tuple[DNSEvent, ...]
     diagnostics: DNSParseDiagnostics
+    connections: tuple[ConnectionRecord, ...] = ()
 
 
 _DNS_QUERY_TYPES = {

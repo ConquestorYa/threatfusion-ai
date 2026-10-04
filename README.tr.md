@@ -213,7 +213,7 @@ Dashboard varsayılan olarak **Otomatik algıla** modunda çalışır.
 | CSV / TSV / TXT | ✅ | ayraç, encoding ve DNS sütunları otomatik tahmin edilir |
 | XLSX / XLS | ✅ | worksheet ve yaygın DNS sütunları otomatik algılanır |
 | Zeek <code>dns.log</code> | ✅ | standart <code>#fields</code> parser |
-| Zeek <code>conn.log</code> | ✅ | hedef-IP CTI analizi; veri setindeki hazır etiketler kullanılmaz |
+| Zeek <code>conn.log</code> | ✅ | hedef-IP CTI, bağlantı bilgileri ve temkinli inceleme; hazır veri etiketleri kullanılmaz |
 | PCAP / PCAPNG / CAP | ✅ | klasik UDP/53 DNS çıkarımı |
 | Suricata EVE JSON / JSONL | ✅ | DNS öncelikli, hedef-IP fallback |
 | Pi-hole FTL SQLite | ✅ | query veritabanı bellekte işlenir |
@@ -234,6 +234,13 @@ cihaz raporu rapora özel takma adlar kullanır.
 [Tespit yol haritası ve kanıt sınırları](docs/DETECTION_ROADMAP.md) ile
 [yerel lab kontrollerine](docs/LOCAL_LAB.md) bakabilirsin. RITA'ya yakın temel
 yetenekler geliştirme hedefidir; mevcut doğruluk veya eşdeğerlik iddiası değildir.
+
+**Bağlantı etkinliği** sekmesi, standart Zeek TSV kayıtlarından süre, gözlem
+yönü, veri miktarları ve düzenli başarılı TCP bağlantılarını gösterir. Uzun veya
+düzenli bağlantılar zararsız da olabilir; kuyruk C2 veya indirme kanıtı değildir.
+Ayrı bağlantı raporunda iki uçtaki IP'ler de varsayılan olarak gizlidir.
+CLI için `--format zeek-conn --connection-json-output /repo/disinda/inceleme.json`
+seçeneklerini kullanabilirsin.
 
 ---
 

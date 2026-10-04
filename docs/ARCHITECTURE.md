@@ -177,6 +177,16 @@ Packet-capture support extracts classic UDP/53 DNS observations. ThreatFusion do
 
 Connection logs do not contain DNS query names. ThreatFusion maps destination IP observations into passive CTI analysis targets. Any dataset-provided benign/malicious labels are ignored by the detector.
 
+The standard TSV adapter also retains typed UID, endpoint ports, observation
+direction, duration, payload-byte counts, state and capture-gap metadata.
+`connections.py` groups originator/responder/protocol/responder-port separately,
+excludes repeated/conflicting UIDs and exposes a conservative Review queue for
+long bidirectional TCP or sustained successful connection timing. It does not
+infer DNS hostnames, inbound/outbound direction, file transfers or malware.
+The separate connection view/export defaults to report-local host aliases and
+does not persist raw rows or connection IDs in aggregate history. See
+`DETECTION_ROADMAP.md` for policy and measured coverage limits.
+
 ### Resource bounds
 
 The Streamlit upload limit is 100 MB.

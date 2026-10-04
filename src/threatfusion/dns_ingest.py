@@ -582,7 +582,7 @@ def parse_dns_upload_with_diagnostics(
         parsed = parse_zeek_conn_log_with_diagnostics(text)
         return parsed, DNSInputDetection(
             format_name="Zeek conn.log",
-            detail="destination-IP telemetry; domain ML is skipped for IP targets",
+            detail="destination-IP CTI and connection review; domain ML is skipped for IP targets",
             encoding=encoding,
         )
 

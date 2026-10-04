@@ -11,14 +11,15 @@ RITA's documented core capabilities are beaconing, long connections, DNS
 tunneling and threat-intelligence checks:
 [official RITA README](https://github.com/activecm/rita#rita-real-intelligence-threat-analytics).
 ThreatFusion does not yet have measured equivalent coverage. Its existing
-`conn.log` importer maps destination-IP observations for CTI; it discards
-duration/connection statistics and is not long-connection detection.
+`conn.log` importer now preserves typed connection metadata for conservative
+long-session/regularity review, alongside destination-IP CTI. This initial
+context is not measured equivalent C2 detection.
 
 | Capability | Current evidence | Next acceptance gate |
 | --- | --- | --- |
 | Client-level DNS review | Independent client/target assessments, sustained-periodic review, CTI evidence scope; synthetic checks and existing Zeek replay | Realistic DNS caching/update controls, several independent windows, alert burden and analyst usefulness |
-| Connection behavior | Destination-IP CTI ingestion exists | Preserve UID, duration, direction, ports and bytes; verify long sessions and noisy benign controls |
-| Beaconing | DNS regularity heuristic and review queue; no network beacon-detection accuracy claim | Connection timing and size analysis on declared jitter/retry/idle controls; compare native RITA outputs on shared logs |
+| Connection behavior | Typed UID/direction/ports/duration/bytes; long bidirectional TCP review; isolated cache/persistence capture | Independent longer captures, partial-session coverage and operational alert burden |
+| Beaconing | Sustained successful TCP timing review plus DNS regularity; no C2 accuracy claim | Robust timing/size analysis and jitter/retry/idle controls on independent permitted windows |
 | DNS tunneling | Hostname shape context only | Registrable-domain aggregation with proper suffix handling, unique-label/size/type evidence, benign CDN/telemetry controls and independent recordings |
 | Continuous collection | Manual local upload/CLI | Rotation-aware, bounded, restart-safe ingestion with checkpoints and duplicate protection |
 | Analyst operations | Local web investigation, feedback, aggregate exports and explicit device export | Device investigation/timelines, bounded retention and documented SIEM export contracts |

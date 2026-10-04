@@ -16,6 +16,7 @@ from .persistence import (
 )
 from .runtime_analysis import RuntimeAnalysisResult
 from .device_triage import DeviceFinding
+from .connections import ConnectionFinding
 
 
 @dataclass(frozen=True)
@@ -176,6 +177,43 @@ def device_finding_rows(
             "Coverage limits": "; ".join(coverage_labels[value] for value in finding.limitations),
         })
     return rows
+
+
+def connection_finding_rows(
+    findings: tuple[ConnectionFinding, ...], *, include_ips: bool = False,
+) -> list[dict[str, object]]:
+    hosts = sorted({ip for f in findings for ip in (f.originator_ip, f.responder_ip) if ip})
+    aliases = {ip: f"Host {index:03d}" for index, ip in enumerate(hosts, 1)}
+    def host(ip):
+        return ip if include_ips and ip else aliases.get(ip, "Unattributed")
+    reasons = {
+        "long_bidirectional_tcp_session": "Long bidirectional TCP session (at least 1 hour)",
+        "sustained_periodic_connections": "Sustained periodic successful TCP connections",
+    }
+    limits = {
+        "missing_connection_uid": "Connection identity unavailable",
+        "conflicting_connection_uid": "Conflicting connection identities excluded",
+        "incomplete_endpoint_metadata": "Endpoint metadata incomplete",
+        "missing_connection_timestamps": "Some timestamps are missing",
+        "ambiguous_connection_timezone": "Timestamp timezone is ambiguous",
+        "insufficient_connection_timing": "Insufficient connection timing coverage",
+        "unconfirmed_or_incomplete_sessions": "Some sessions are unconfirmed or incomplete",
+        "missing_connection_duration": "Some session durations are missing",
+    }
+    return [{
+        "Originator": host(f.originator_ip), "Responder": host(f.responder_ip),
+        "Responder port": f.responder_port, "Protocol": f.protocol,
+        "Queue priority": f.priority.title(), "Connections": f.connection_count,
+        "Confirmed sessions": f.confirmed_session_count,
+        "Duplicate rows excluded": f.duplicate_rows, "Conflicting UIDs": f.conflicting_uids,
+        "First observed": f.first_seen.isoformat() if f.first_seen else None,
+        "Last observed": f.last_seen.isoformat() if f.last_seen else None,
+        "Max duration (s)": f.max_duration_seconds,
+        "Originator bytes": f.originator_bytes, "Responder bytes": f.responder_bytes,
+        "Periodic interval (s)": f.interval_seconds, "Periodicity score": f.periodicity_score,
+        "Evidence": "; ".join(reasons[r] for r in f.reasons),
+        "Coverage limits": "; ".join(limits[r] for r in f.limitations),
+    } for f in findings]
 
 
 def build_relationship_graph(

@@ -12,6 +12,15 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Typed Zeek TSV connection metadata and independent originator/responder/port
+  review for long bidirectional TCP sessions and sustained successful timing;
+  duplicate/conflicting UID handling, missing-data limits, bilingual connection
+  view and separate owner-only CLI export with endpoint aliases by default.
+- Real isolated cache/persistent-HTTP/jitter workload capture and immutable
+  synthetic connection workload controls measuring benign review burden.
+  Shared-log RITA comparison retains its native scoring; no C2 accuracy,
+  production parity, private telemetry upload or ML promotion claim.
+
 - Client/target triage with independent CTI/behavior evidence, a separate
   sustained-periodic DNS review queue, coverage limits, bilingual local device
   view and explicit private device JSON export. Existing domain verdicts,

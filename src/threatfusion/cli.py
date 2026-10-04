@@ -7,12 +7,13 @@ from pathlib import Path
 
 from .cti_cache import load_ioc_records
 from .ml_artifact import load_trusted_ml_artifact
-from .reporting import build_analysis_report, build_device_report
+from .reporting import build_analysis_report, build_connection_report, build_device_report
 from .runtime_analysis import (
     analyze_adguard_query_log_with_diagnostics,
     analyze_dns_csv_with_diagnostics,
     analyze_pihole_query_db_with_diagnostics,
     analyze_zeek_dns_log_with_diagnostics,
+    analyze_zeek_conn_log_with_diagnostics,
 )
 
 
@@ -28,7 +29,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--format",
-        choices=("dns-csv", "zeek", "pihole", "adguard"),
+        choices=("dns-csv", "zeek", "zeek-conn", "pihole", "adguard"),
         default="dns-csv",
         help="Input telemetry format",
     )
@@ -62,12 +63,23 @@ def build_parser() -> argparse.ArgumentParser:
         "--include-client-ips", action="store_true",
         help="Include observed client IPs only in the explicit device report",
     )
+    parser.add_argument("--connection-json-output", type=Path,
+                        help="Separate connection review report with host aliases by default")
+    parser.add_argument("--include-connection-ips", action="store_true",
+                        help="Include both endpoint IPs only in the explicit connection report")
     return parser
 
 
 def _write_text(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
+
+
+def _write_private(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as file:
+        file.write(content)
 
 
 def _load_input(path: Path, telemetry_format: str) -> str | bytes:
@@ -81,6 +93,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.include_client_ips and args.device_json_output is None:
         parser.error("--include-client-ips requires --device-json-output")
+    if args.include_connection_ips and args.connection_json_output is None:
+        parser.error("--include-connection-ips requires --connection-json-output")
     content = _load_input(args.input, args.format)
 
     artifact = None if args.cti_only else load_trusted_ml_artifact(args.model_dir)
@@ -91,6 +105,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             str(content),
             indicators,
             artifact,
+        )
+    elif args.format == "zeek-conn":
+        result, diagnostics = analyze_zeek_conn_log_with_diagnostics(
+            str(content), indicators, artifact,
         )
     elif args.format == "zeek":
         result, diagnostics = analyze_zeek_dns_log_with_diagnostics(
@@ -124,11 +142,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         _write_text(args.csv_output, report.csv_text)
     if args.device_json_output is not None:
         content = build_device_report(result, include_client_ips=args.include_client_ips)
-        args.device_json_output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-        # Refuse overwrites/symlinks; local telemetry is owner-only on POSIX.
-        fd = os.open(args.device_json_output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        with os.fdopen(fd, "w", encoding="utf-8") as file:
-            file.write(content)
+        _write_private(args.device_json_output, content)
+    if args.connection_json_output is not None:
+        _write_private(args.connection_json_output, build_connection_report(
+            result, include_ips=args.include_connection_ips,
+        ))
 
     verdict_counts = {
         "known_threat": 0,
@@ -155,4 +173,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         f"{priority}={sum(f.priority == priority for f in result.device_findings)}"
         for priority in ("investigate", "review", "observe")
     ))
+    print(f"  Connection groups: {len(result.connection_findings)}")
+    print(f"  Connection reviews: {sum(f.priority == 'review' for f in result.connection_findings)}")
+    print(f"  Invalid connection fields: {diagnostics.invalid_connection_fields}")
     return 0

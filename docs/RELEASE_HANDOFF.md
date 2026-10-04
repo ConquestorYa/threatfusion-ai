@@ -2,6 +2,50 @@
 
 Status date: 2026-10-04
 
+## Cached workload and connection review increment (2026-10-04)
+
+- Added typed standard-TSV Zeek connection evidence: UID, endpoints/ports,
+  observation direction, duration, payload bytes, state and missed bytes. Missing
+  or invalid optional fields remain unknown and are diagnosed. Labels in supplied
+  datasets are ignored. Metadata does not imply URLs, downloads or execution.
+- `zeek-connection-context-v1` groups originator/responder/protocol/target-port;
+  duplicate UIDs count once and conflicting UIDs are excluded across groups.
+  Long-session Review requires a known originator/target port, nonconflicting
+  UID, TCP SF/S1 state, positive bytes in both directions, zero missed bytes and
+  at least 3,600 seconds of duration. Sustained-timing Review additionally
+  requires complete metadata, 20 distinct aware timestamps over 1,800 seconds
+  and regularity score >= 0.85. These engineering rules are not calibrated C2
+  detectors. DNS/device/domain threat verdicts and frozen ML policy are unchanged.
+- New bilingual Connection activity tab and `--format zeek-conn`,
+  `--connection-json-output` CLI export. Both endpoints default to report-local
+  aliases; explicit `--include-connection-ips` affects only that separate report.
+  Exports refuse existing files and use owner-only POSIX permissions. Public-mode
+  rendering has no address toggle. Raw rows/UIDs are not persisted in history.
+- `cached-http-controls-v1`: 60-second live internal guest-network capture with
+  DNS TTL caching, persistent browser TCP, variable response sizes, matching MIME
+  extensions and polling jitter. Three validated captures each had five DNS queries,
+  78 HTTP 200 requests and 61 TCP sessions (browser 1, updater 30, heartbeat 30),
+  zero kernel drops and zero invalid connection fields. Queue reviews were zero
+  because the observation span is intentionally short; this is not zero FPR or
+  successful detection of the simulated heartbeat. It is not production traffic.
+- Same immutable first capture imported into native pinned RITA with unchanged
+  scoring/disabled feeds: updater and heartbeat both High / beacon 1, no browser
+  row and no modifiers. Short-window queue differences are not tool superiority.
+  Original `periodic-controls-v1` inputs and stored domain/RITA report remain
+  identical. RITA backend returns to its previously stopped state; VM stays up.
+- `connection-workload-controls-v1` predeclares 11 constructed Zeek-record cases
+  at three fixed seeds. There were nine Review groups among 33 benign groups
+  (updates, jittered polling and long streams) and three among three heartbeat
+  simulations. These counts measure review workload, not FPR/recall or real
+  traffic efficacy. No threshold selection or model/holdout scoring occurred.
+- Validation: **904 project tests passed**, **90%** coverage, Ruff and Bash syntax
+  passed; auto-detection, typed fields, incomplete/invalid metadata, UID handling,
+  CLI file privacy and complete bilingual/local/public UI rendering were exercised.
+  Inputs/PCAPs/logs/native CSVs/reports/synthetic cache remain outside the repository.
+- Next gate: longer independent permitted captures, robust timing/size evidence,
+  and explicit expected-software/analyst context to manage benign review burden.
+  Keep strict-temporal ML promotion deferred and all hosting user-suspended.
+
 ## Client-level triage increment (2026-10-04)
 
 - User direction: aim for competitive core network-analysis coverage, with a

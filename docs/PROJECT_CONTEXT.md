@@ -47,6 +47,18 @@ and provides a local privacy-controlled device view/export. See
 Device timelines, continuous telemetry collection and
 retroactive CTI investigations remain future work.
 
+The next increment adds `cached-http-controls-v1`: isolated real packet capture
+with DNS TTL caching, HTTP persistence, variable browser response sizes and
+polling jitter. Three validated runs each observed five DNS queries, 78 HTTP
+requests and 61 TCP sessions; this remains a short synthetic lab workload.
+`zeek-connection-context-v1` now retains UID/ports/duration/bytes/state and
+offers conservative long-session/sustained-timing review in a separate tab and
+CLI report. Constructed longer controls produced nine benign reviews out of
+33 benign groups, plus three simulated heartbeat reviews; this is review burden,
+not malware FPR/recall. Native RITA on the same short cached capture emitted
+High/beacon 1 for updater and heartbeat, with no browser row or modifiers.
+Longer independent recordings and expected-software context are still needed.
+
 ## Linux first-run flow
 
 The READMEs provide a single copy-paste command for Linux x86_64/glibc 2.28+.

@@ -213,7 +213,7 @@ The dashboard defaults to **Auto-detect**.
 | CSV / TSV / TXT | ✅ | delimiter, encoding and DNS columns inferred automatically |
 | XLSX / XLS | ✅ | worksheet and common DNS columns detected automatically |
 | Zeek <code>dns.log</code> | ✅ | standard <code>#fields</code> parsing |
-| Zeek <code>conn.log</code> | ✅ | destination-IP CTI analysis; dataset labels are ignored |
+| Zeek <code>conn.log</code> | ✅ | destination-IP CTI, typed connection metadata and conservative review; dataset labels are ignored |
 | PCAP / PCAPNG / CAP | ✅ | classic UDP/53 DNS extraction |
 | Suricata EVE JSON / JSONL | ✅ | DNS preferred, destination-IP fallback |
 | Pi-hole FTL SQLite | ✅ | query database parsed in memory |
@@ -233,6 +233,12 @@ the explicit device report uses report-local aliases. See the
 [detection roadmap and evidence limits](docs/DETECTION_ROADMAP.md) and
 [local lab controls](docs/LOCAL_LAB.md). Competitive RITA coverage is a development
 goal, not a current accuracy or parity claim.
+
+**Connection activity** adds duration, observation direction, byte totals and
+successful TCP timing review from standard Zeek TSV. Long/periodic connections
+can also be legitimate; this queue does not prove C2 or downloads. Both endpoint
+IPs are hidden by default in its separate export. The CLI accepts
+`--format zeek-conn --connection-json-output /path/outside/repo/review.json`.
 
 ---
 

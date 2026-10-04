@@ -186,8 +186,9 @@ Six regression checks cover checksum-valid wire records, deterministic replay,
 the benign periodic control, DNS destination boundaries, immutable manifests,
 native CSV parsing and invalid-release rejection. The next evidence gate is
 more realistic benign traffic and independent permitted recordings, with
-explicit test plans. Tunneling, long connections, encrypted DNS, continuous
-ingestion, production scale and device incident workflow remain untested.
+explicit test plans. Tunneling, encrypted DNS, continuous ingestion, production
+scale and device incident workflow remain untested. The connection controls below
+add initial long-session policy checks, not production validation.
 
 References: [Ubuntu images](https://cloud-images.ubuntu.com/noble/),
 [Zeek image](https://github.com/activecm/docker-zeek),
@@ -225,3 +226,68 @@ your local report. New device files are owner-only on POSIX and existing files
 are refused. Aggregate JSON/CSV exports retain their previous privacy policy.
 The new Device triage web tab uses the same queue and offers optional local IP
 display; device findings are not written into shared analysis history.
+
+## Cached HTTP workload and connection review
+
+`cached-http-controls-v1` uses a new isolated guest bridge and synthetic `.test`
+names/reserved addresses. Its frozen manifest declares DNS TTL 300 seconds,
+browser HTTP persistence, varying browser response sizes, matching MIME/path
+extensions and polling jitter. Three validated 60-second captures each recorded
+five DNS queries, 78 HTTP 200 requests and 61 TCP sessions: one browser connection,
+30 updater connections and 30 harmless heartbeat connections. Kernel drops and
+invalid connection fields were zero. This demonstrates DNS caching and connection
+reuse; it is not representative company traffic or a malware benchmark.
+
+On this configured host, `../threatfusion-lab/lab cached` runs the guest wrapper,
+copies the new capture outside the repository and validates it. The wrapper is
+local lab configuration, not a portable VM installer. For a new guest, copy
+`cached_workload.py`, `periodic_scenario.py` and `run_cached_live.sh` from
+`scripts/lab/` into `~/threatfusion-lab/`. Docker, Python 3 and passwordless
+guest-only tcpdump access must already be configured. The runner pulls pinned
+images if absent, refuses existing scenario resources, publishes no ports and
+removes its own temporary containers/network. Run inside the guest:
+
+```bash
+bash ~/threatfusion-lab/run_cached_live.sh
+```
+
+Copy its new result directory outside the repository, then from the repository:
+
+```bash
+.venv/bin/python scripts/lab/analyze_cached.py --directory /path/to/new-cached-run
+.venv/bin/python scripts/lab/evaluate_connection_controls.py --output-dir /path/outside/repo/new-connection-controls
+.venv/bin/python scripts/analyze_dns.py /path/to/conn.log --format zeek-conn --cti-only --db /path/to/your/cache.sqlite --connection-json-output /path/outside/repo/connection-review.json
+```
+
+The capture validator checks manifest hashes, DNS answers, exact HTTP requests,
+TCP persistence, successful session metadata and drop accounting before reporting.
+The separate connection report aliases both endpoint addresses by default;
+`--include-connection-ips` explicitly includes them. Exports refuse overwrites
+and use owner-only POSIX permissions. Aggregate destination-IP CTI reports keep
+their existing policy. Treat every traffic report as local sensitive data even
+when aliases are used.
+
+`zeek-connection-context-v1` preserves UID, direction, ports, duration, bytes,
+state and missed bytes. It deduplicates identical UIDs and excludes conflicts.
+Long bidirectional TCP review requires SF/S1, positive payload in both directions,
+zero missed bytes, known originator/target port and duration >= 3,600 seconds.
+Sustained timing review requires complete metadata, >= 20 distinct aware timestamps,
+>= 1,800 seconds and regularity >= 0.85. UDP, failed retries and incomplete capture
+do not become confirmed TCP evidence. Direction means observed originator/responder;
+it does not infer network ingress/egress, downloads, execution or domain attribution.
+
+All three short captures had zero connection reviews because of the declared
+observation gates; this does not mean zero false positives or detected heartbeat.
+Native pinned RITA on the first identical cached capture emitted High / beacon 1
+for both updater and heartbeat, no modifiers, and no browser row. Its scoring was
+unchanged and feeds disabled. `analyze_cached.py --rita-csv /path/to/rita.csv`
+can include that native export in a fresh report; existing reports are refused.
+The original periodic experiment remains immutable.
+
+The longer `connection-workload-controls-v1` contains 11 constructed Zeek-record
+cases at three predeclared seeds. Nine of 33 benign endpoint groups entered Review
+(updates, jittered polling, long streams), as did all three simulated heartbeat
+groups. These counts measure benign review workload, not FPR/recall; no real PCAP,
+independent production accuracy or RITA parity is implied. Expected software
+context and longer independent permitted captures are the next evidence gate.
+All manifests, logs, PCAPs, native exports and evaluation reports remain local.
