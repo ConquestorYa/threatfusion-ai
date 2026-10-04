@@ -24,6 +24,8 @@ release date is added only when the final tag/release is created.
 - First-run verification: 805 local tests passed with 90% coverage; clean Debian
   and Ubuntu installations and ShellCheck passed, with no known pip-audit
   vulnerabilities and no changes to the 32 previously recorded local data files.
+  All six GitHub CI jobs passed; the exact README command was also verified using
+  only downloaded GitHub source, including foreground UI and Ctrl+C cleanup.
 
 - Explicit CTI-only dashboard/CLI operation when a trusted ML artifact is
   unavailable, with disabled ML scoring and provenance-dependent history.

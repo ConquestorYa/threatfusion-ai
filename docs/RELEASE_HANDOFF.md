@@ -48,6 +48,12 @@ close an existing public service or turn off dashboard Auto Sync.
   spaces was covered. No real feed credentials or developer data entered tests.
 - Local regression: **805 passed**, **90%** coverage; Ruff and ShellCheck passed,
   and pip-audit found no known dependency vulnerabilities.
+- Published implementation `633323be61cde41edb296f827471489bea1203b4` passed all
+  six [GitHub CI jobs](https://github.com/ConquestorYa/threatfusion-ai/actions/runs/37164159694),
+  including Windows and both clean Linux installations. The exact README
+  copy-paste command also passed in a third clean Ubuntu environment with no
+  mounted checkout: immutable GitHub source retrieval, real foreground UI,
+  Ctrl+C shutdown and temporary-file cleanup were verified.
 - CI adds the same two clean-install jobs alongside Ubuntu quality, Windows
   pytest and both existing Docker jobs. Ruff, Bash syntax, ShellCheck,
   dependency auditing and tracked-tree/history privacy auditing are part of the
