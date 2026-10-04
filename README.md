@@ -298,7 +298,7 @@ coreutils and flock are required; Debian 12 and Ubuntu 24.04 are tested.
 Allow approximately 2 GB of free disk space and an internet connection for installation.
 
 ```bash
-bash -c 'set -e; f=$(mktemp /tmp/threatfusion-install.XXXXXXXX); trap "rm -f -- \"$f\"" EXIT; u=https://raw.githubusercontent.com/ConquestorYa/threatfusion-ai/local-development/linux-first-run/scripts/install_linux.sh; if command -v curl >/dev/null; then curl --proto "=https" --proto-redir "=https" -fsSL --retry 3 --connect-timeout 20 --max-time 300 "$u" -o "$f"; elif command -v wget >/dev/null; then wget --https-only --timeout=30 --tries=3 -qO "$f" "$u"; else echo "curl veya wget gerekli" >&2; exit 1; fi; bash "$f" "$@"' --
+bash -c 'set -e; f=$(mktemp /tmp/threatfusion-install.XXXXXXXX); trap "rm -f -- \"$f\"" EXIT; u=https://raw.githubusercontent.com/ConquestorYa/threatfusion-ai/main/scripts/install_linux.sh; if command -v curl >/dev/null; then curl --proto "=https" --proto-redir "=https" -fsSL --retry 3 --connect-timeout 20 --max-time 300 "$u" -o "$f"; elif command -v wget >/dev/null; then wget --https-only --timeout=30 --tries=3 -qO "$f" "$u"; else echo "curl veya wget gerekli" >&2; exit 1; fi; bash "$f" "$@"' --
 ```
 
 This installs a private **Python 3.12.14** and all 49 runtime dependencies with
@@ -318,8 +318,8 @@ to collect its own feeds. Your developer cache, models and evaluation files are
 not copied or published. See [Linux installation](docs/INSTALL_LINUX.md) for
 API keys, offline restart, supported systems and troubleshooting.
 
-The command currently uses the verified `local-development/linux-first-run`
-branch; `main` is intentionally unchanged while its hosting automation is unverified.
+The command installs the current `main` revision. The local installer does not
+create or resume a hosted service.
 
 ---
 

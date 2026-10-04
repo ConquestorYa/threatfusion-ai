@@ -66,6 +66,11 @@ release date is added only when the final tag/release is created.
 
 ### Changed
 
+- Integrated verified Linux first-run and credential privacy work into `main`
+  at the user's request; both README download commands and the installer's
+  default ref use `main`. The existing Render demo remains user-suspended;
+  integration uses `[skip render]` and adds no hosted resources.
+
 - CTI refresh diagnostics no longer forward raw collector errors to callbacks,
   outcome details or CLI logs; authenticated URLs/private response values are
   omitted and the safe SGB pagination instruction is retained.

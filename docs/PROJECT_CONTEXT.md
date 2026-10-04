@@ -41,9 +41,9 @@ Real CTI is an explicit separate `cti-only --refresh-cti` path, with optional
 user-provided feed keys and ML disabled. No developer cache, model or holdout
 is copied, distributed or automatically promoted. First-run telemetry is
 session-local; shared persistent analyst history is disabled. This installer
-creates no hosted service. See `INSTALL_LINUX.md`; source publication currently
-uses `local-development/linux-first-run` while `main` hosting automation remains
-unverified.
+creates no hosted service. See `INSTALL_LINUX.md`. The user requested integration
+into `main`; installer downloads and its default ref now use `main`. The existing
+Render demo is confirmed user-suspended and must not be resumed by source updates.
 
 ## Intended users
 

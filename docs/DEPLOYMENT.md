@@ -19,6 +19,13 @@ Auto-Deploy is Off and Blueprint Auto Sync is No. When those settings cannot be
 verified, publish source changes to a separate `local-development/` branch
 instead. GitHub CI on that branch tests code/containers without deploying them.
 
+For the user's explicit `main` integration request, the existing service was
+verified as user-suspended with previews disabled. The merge uses `[skip render]`,
+adds no Blueprint resources and retains manual deploy settings; suspension and
+deploy history must be checked again after CI. This guarded source merge does
+not authorize resuming the service. Render documents the skip phrase in
+[Deploying on Render](https://render.com/docs/deploys#skipping-an-auto-deploy).
+
 ## Public mode
 
 Set:

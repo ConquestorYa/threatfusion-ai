@@ -161,6 +161,9 @@ port, loopback binding, duplicate-launch exclusion, CTI/demo data separation
 and Ctrl+C/SIGTERM cleanup. These tests use generated `.example` fixtures, not
 the developer cache, live feed credentials or private telemetry.
 
-The installer is currently published on `local-development/linux-first-run`.
-The hosting-connected `main` branch remains unchanged while external deployment
-automation is unverified. Publishing this source branch does not create a site.
+The installer downloads from `main` and resolves that ref to an immutable source
+revision. The user requested integrating the verified development work into
+`main`. The existing Render service is user-suspended with previews disabled;
+the integration commit uses `[skip render]` and retains manual-deploy Blueprint
+settings. This source update does not resume hosting. Future hosted deployment
+still requires an explicit user request.

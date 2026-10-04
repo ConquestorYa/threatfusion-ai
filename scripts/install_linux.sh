@@ -6,7 +6,7 @@ umask 077
 INSTALL_UV_VERSION=0.12.23
 INSTALL_UV_SHA256=1cff8783850e794470aadb73f54b749542a511fc57b0ce6468b64bd3852e0ade
 PYTHON_VERSION=3.12.14
-SOURCE_REF=local-development/linux-first-run
+SOURCE_REF=main
 INSTALL_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/threatfusion-ai"
 SOURCE_DIR=""
 MODE=""

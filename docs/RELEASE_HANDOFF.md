@@ -10,19 +10,34 @@ tunnel or hosted preview unless the user explicitly asks. Completed and verified
 code/configuration/documentation may still be published to GitHub, keeping all
 private/third-party data local and ignored. See the root `AGENTS.md`.
 
-A read-only Render check found that the demo service had already been created:
-its current deploy was live, service Auto-Deploy was enabled and the trigger was
-`checksPass`. No service was created or deployed by this policy update. The
-available connector cannot suspend services or change auto-deploy/Blueprint
-auto-sync, and no controllable browser is available. The user was asked to
-suspend the service and disable both automation settings in the dashboard.
-Until those external changes are verified, do not update the connected `main`
-branch. Publish this change on `local-development/local-only-policy` instead.
+A new read-only Render check for the user's explicit `main` integration request
+confirmed `threatfusion-ai-demo` is **user-suspended**, with service previews
+disabled; no other services/previews exist in the confirmed workspace. The
+latest deployment record still refers to `8966620` and is not evidence that the
+suspended service is running. Auto-Deploy still reports `yes` / `checksPass`;
+Blueprint Auto Sync is not verified. Neither setting is claimed to be disabled.
+
+The source integration uses `[skip render]`, adds no Blueprint resources and
+retains the manual-deploy/preview-disabled Blueprint. Suspension and deployment
+history are rechecked after merge/CI. Do not resume hosting; the merge request
+authorizes source integration only. See `AGENTS.md` and Render's documented
+[auto-deploy skip phrase](https://render.com/docs/deploys#skipping-an-auto-deploy).
 
 The retained Blueprint now requests manual deployment and disables previews;
 GitHub CI also runs on `local-development/` branches. YAML/schema/lint/privacy
 checks validate this configuration change. These file changes alone do not
 close an existing public service or turn off dashboard Auto Sync.
+
+## Main integration (2026-10-04)
+
+- The user requested including the verified `local-development/linux-first-run`
+  work in `main`. Preserve its commits and all private/ignored local data.
+- Both README download commands and `scripts/install_linux.sh` now select
+  `main`; each install still resolves one immutable source SHA before download.
+- Source work had 818 local tests and all six CI jobs passing before integration.
+  Integration uses a `[skip render]` commit and a confirmed user-suspended
+  service, with no preview creation or service resume. Verify main CI and the
+  exact main download command before reporting completion.
 
 ## Linux first-run delivery (2026-10-04)
 
@@ -59,8 +74,9 @@ close an existing public service or turn off dashboard Auto Sync.
   dependency auditing and tracked-tree/history privacy auditing are part of the
   verification. Original 32 local data files retain their recorded checksums.
 - See `INSTALL_LINUX.md` and both READMEs for the copy-paste command, supported
-  baseline, optional credentials, restart and recovery. Publish only
-  `local-development/linux-first-run`; do not move the hosting-connected `main`.
+  baseline, optional credentials, restart and recovery. The work was initially
+  published on `local-development/linux-first-run`; the user now requested its
+  guarded integration into `main`.
 - This flow does not change the fresh-disjoint metrics, five unscored eligible
   temporal samples, missing original runtime artifact or deferred promotion.
 
@@ -285,9 +301,10 @@ to defer promotion; they are not new tuning data. See DEC-082.
   evaluation; it cannot restore the historical model claim.
 - CTI-only operation is available now without that model. For full historical
   ML operation, restore the trusted backup privately if one exists elsewhere.
-- Suspend the previously created Render demo and disable Auto-Deploy and
-  Blueprint Auto Sync; verify those external settings before updating `main`.
-  The local manual-deploy Blueprint cannot make those dashboard changes itself.
+- Keep the Render demo user-suspended. Auto-Deploy still reports enabled and
+  Blueprint Auto Sync is not verified; disable them when dashboard access is
+  available. The guarded, explicitly requested source integration above does
+  not authorize resuming the service or bypassing its deployment safeguards.
 - The normal pre-existing terminal may still lack the refreshed `docker` group
   membership. Open a new terminal or run `newgrp docker` before using Docker.
 

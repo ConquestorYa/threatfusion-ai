@@ -299,7 +299,7 @@ Debian 12 ve Ubuntu 24.04 üzerinde test edilmiştir. İlk kurulum için interne
 ve yaklaşık 2 GB boş disk alanı önerilir.
 
 ```bash
-bash -c 'set -e; f=$(mktemp /tmp/threatfusion-install.XXXXXXXX); trap "rm -f -- \"$f\"" EXIT; u=https://raw.githubusercontent.com/ConquestorYa/threatfusion-ai/local-development/linux-first-run/scripts/install_linux.sh; if command -v curl >/dev/null; then curl --proto "=https" --proto-redir "=https" -fsSL --retry 3 --connect-timeout 20 --max-time 300 "$u" -o "$f"; elif command -v wget >/dev/null; then wget --https-only --timeout=30 --tries=3 -qO "$f" "$u"; else echo "curl veya wget gerekli" >&2; exit 1; fi; bash "$f" "$@"' --
+bash -c 'set -e; f=$(mktemp /tmp/threatfusion-install.XXXXXXXX); trap "rm -f -- \"$f\"" EXIT; u=https://raw.githubusercontent.com/ConquestorYa/threatfusion-ai/main/scripts/install_linux.sh; if command -v curl >/dev/null; then curl --proto "=https" --proto-redir "=https" -fsSL --retry 3 --connect-timeout 20 --max-time 300 "$u" -o "$f"; elif command -v wget >/dev/null; then wget --https-only --timeout=30 --tries=3 -qO "$f" "$u"; else echo "curl veya wget gerekli" >&2; exit 1; fi; bash "$f" "$@"' --
 ```
 
 Komut özel **Python 3.12.14** ortamını ve gerekli 49 kütüphaneyi SHA-256
@@ -319,8 +319,8 @@ Geliştirme cache'i, model dosyaları ve değerlendirmeler kopyalanmaz veya
 paylaşılmaz. API anahtarları, offline başlatma ve hata çözümü için
 [Linux kurulum rehberine](docs/INSTALL_LINUX.md) bak.
 
-Komut şimdilik doğrulanan `local-development/linux-first-run` dalını kullanır;
-`main`, hosting otomasyonunun kapatıldığı doğrulanana kadar güncellenmez.
+Komut güncel `main` sürümünü kurar. Local kurulum, hosted servis oluşturmaz
+veya durdurulmuş bir servisi yeniden açmaz.
 
 ---
 
