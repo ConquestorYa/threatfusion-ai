@@ -2,6 +2,48 @@
 
 Status date: 2026-10-04
 
+## Client-level triage increment (2026-10-04)
+
+- User direction: aim for competitive core network-analysis coverage, with a
+  specific measured advantage in explainable DNS/CTI triage. Keep the local web
+  workspace and CLI. `DETECTION_ROADMAP.md` records capability gaps and evidence
+  gates; RITA remains an external comparator, not a mandatory dependency.
+- Runtime now includes independent client/target assessments and scoped match
+  evidence. It reuses one ML inference and the selected artifact's thresholds;
+  no model changes, holdout scoring or runtime promotion occurred. Domain-wide
+  assessments, aggregate exports and persisted history are unchanged.
+- `dns-device-triage-v1`: sustained periodic DNS enters the Review queue only
+  with a valid client, complete aware timestamps, 20 distinct timestamps and
+  at least 1,800 seconds of span. The existing periodicity rule is retained.
+  These engineering coverage gates are not malware detection thresholds.
+  Benign updater and matching heartbeat both get review work, not malware proof.
+  Unknown identities and IP-only connection targets cannot get this DNS reason.
+- Added bilingual Device triage tab with aliases by default; optional IP
+  display/export is local-only. Separate CLI `--device-json-output` uses aliases
+  unless `--include-client-ips` is explicit, writes new owner-only POSIX files
+  and refuses overwrite. Domains/times are still sensitive telemetry. No device
+  queue persistence, third-party redistribution or public hosting is added.
+- Immutable external `dns-device-controls-v1` checks passed **24/24** at two
+  fixed seeds: periodic/jittered benign controls, identical heartbeat simulation,
+  sparse/short/duplicate/missing records, client pooling and scoped synthetic
+  CTI. This is policy-contract evidence, not real-world FPR/recall evaluation.
+- Frozen `periodic-controls-v1` inputs and original domain/RITA JSON report
+  recheck identically. CLI accepted all 816 frozen replay DNS records and
+  produced two device reviews plus three observations; original five Low domain
+  verdicts persist. Local 100,000-event / 10,000-pair CTI/behavior workload took
+  0.87 seconds on this host; this is not a production throughput claim.
+- New reports, inputs and synthetic cache stay in the sibling local lab.
+  Validation: **877 project tests passed**, including 21 new client-triage and
+  control-protocol tests; Ruff and diff checks passed. Whole-dashboard rendering,
+  local/public IP visibility, private CLI export and frozen baseline preservation
+  were exercised. Socket tests require normal local socket permissions.
+  Tracked-tree/reachable-history privacy audit found no findings; pip-audit
+  reported no known dependency vulnerabilities. No runtime credential was used.
+  Next increment: realistic benign collection/independent windows, then preserve
+  connection metadata for long-session/beacon analysis. Existing `conn.log`
+  destination-IP ingestion does not provide that detector yet. Stronger untouched
+  strict-temporal ML evidence is still required before promotion.
+
 ## Local network lab — periodic controls and RITA comparison (2026-10-04)
 
 - Implemented/froze `periodic-controls-v1`: three concurrent synthetic clients,

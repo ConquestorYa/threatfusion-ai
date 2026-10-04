@@ -52,6 +52,7 @@ from threatfusion.ui_components import (
     render_source_status,
 )
 from threatfusion.ui_evaluation import _show_model_evaluation
+from threatfusion.ui_device_triage import render_device_triage
 from threatfusion.ui_history import _show_history
 from threatfusion.ui_investigation import _show_domain_detail
 from threatfusion.ui_quick_lookup import (
@@ -168,6 +169,7 @@ def _show_analysis_result(
     db_path: Path,
     *,
     history_enabled: bool,
+    public_mode: bool = False,
 ) -> None:
     summary = summarize_runtime_result(result)
 
@@ -280,9 +282,10 @@ def _show_analysis_result(
         )
     )
 
-    findings_tab, investigation_tab, matches_tab, campaign_tab, export_tab = st.tabs(
+    findings_tab, device_tab, investigation_tab, matches_tab, campaign_tab, export_tab = st.tabs(
         [
             tr("Domain findings"),
+            tr("Device triage"),
             tr("Domain investigation"),
             tr("IOC evidence"),
             tr("Related activity"),
@@ -291,6 +294,9 @@ def _show_analysis_result(
     )
     with findings_tab:
         render_findings_table(assessment_rows(result), key="live_findings")
+
+    with device_tab:
+        render_device_triage(result, public_mode=public_mode)
 
     with investigation_tab:
         all_rows = assessment_rows(result)
@@ -1076,6 +1082,7 @@ def main() -> None:
             artifact,
             db_path,
             history_enabled=config.history_enabled,
+            public_mode=config.public_mode,
         )
 
     else:

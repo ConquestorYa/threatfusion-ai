@@ -192,3 +192,36 @@ ingestion, production scale and device incident workflow remain untested.
 References: [Ubuntu images](https://cloud-images.ubuntu.com/noble/),
 [Zeek image](https://github.com/activecm/docker-zeek),
 [RITA](https://github.com/activecm/rita).
+
+## Client/target triage coverage controls
+
+`dns-device-triage-v1` adds a separate review queue to the product while
+preserving the original domain verdict/comparison. A frozen replay recheck
+matches the stored v1 domain/RITA report and input hashes. The same 816 DNS
+events yield five client/target findings: two Review queue entries (updater and
+heartbeat) and three Observe entries (browser sites); all five domain verdicts
+remain Low. Review means inspect expected software activity, not confirmed C2.
+
+The isolated 60-second capture lacks the required 30-minute observation span,
+so regular timing alone is insufficient for sustained-periodic review.
+
+From the repository using its own environment:
+
+```bash
+.venv/bin/python scripts/lab/evaluate_device_controls.py --output-dir ../threatfusion-lab/new-device-controls
+.venv/bin/python scripts/analyze_dns.py /path/to/dns.log --format zeek --cti-only --db /path/to/your/cache.sqlite --device-json-output /path/outside/repo/device-review.json
+```
+
+The control runner refuses existing output directories and repository-contained
+paths. It writes 24 synthetic case inputs plus manifest hashes and device
+reports; no real CTI/ML, malicious destination or network access is involved.
+The 24 passing policy expectations are engineering controls, not a malware
+benchmark. It includes sparse DNS/caching and jitter controls but does not
+replace realistic benign captures. See `DETECTION_ROADMAP.md`.
+
+Device JSON exports default to report-local aliases and include targets and
+timestamps. Add `--include-client-ips` only when you need observed addresses in
+your local report. New device files are owner-only on POSIX and existing files
+are refused. Aggregate JSON/CSV exports retain their previous privacy policy.
+The new Device triage web tab uses the same queue and offers optional local IP
+display; device findings are not written into shared analysis history.

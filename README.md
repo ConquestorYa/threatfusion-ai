@@ -226,6 +226,14 @@ The dashboard defaults to **Auto-detect**.
 
 Encrypted DNS such as DoH/DoT is not claimed to be recoverable from packet captures.
 
+The **Device triage** tab separately evaluates observed clients and targets,
+scopes CTI evidence to the matching client, and adds sustained DNS regularity to
+a review queue without declaring malware. IP addresses are hidden by default;
+the explicit device report uses report-local aliases. See the
+[detection roadmap and evidence limits](docs/DETECTION_ROADMAP.md) and
+[local lab controls](docs/LOCAL_LAB.md). Competitive RITA coverage is a development
+goal, not a current accuracy or parity claim.
+
 ---
 
 ## 🧠 Machine-learning position

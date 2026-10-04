@@ -14,6 +14,22 @@ _LANGUAGE_BY_OPTION = {
 }
 
 _TR: dict[str, str] = {
+    "Device {number}": "Cihaz {number}",
+    "Client identity unavailable": "İstemci kimliği yok",
+    "Some timestamps are missing": "Bazı zaman kayıtları eksik",
+    "Timestamp timezone is ambiguous": "Zaman dilimi belirsiz",
+    "Fewer than 20 distinct timestamps": "20'den az ayrı zaman kaydı",
+    "Less than 30 minutes of comparable observations": "Karşılaştırılabilir gözlemler 30 dakikadan kısa",
+    "IP target: DNS periodic review does not apply": "IP hedefi: düzenli DNS incelemesi uygulanmaz",
+    "Device triage": "Cihaz incelemesi",
+    "Client/domain observations are assessed separately. Queue priority is not proof of compromise.": "Cihaz/domain gözlemleri ayrı değerlendirilir. Kuyruk önceliği cihazın ele geçirildiğini kanıtlamaz.",
+    "DNS shows queries, not confirmed connections or downloads. A client address may belong to a resolver or NAT.": "DNS, sorguları gösterir; bağlantı veya indirme gerçekleştiğini doğrulamaz. İstemci adresi DNS çözümleyicisine veya NAT cihazına ait olabilir.",
+    "Show observed client IPs in this view and device export": "Bu görünümde ve cihaz raporunda gözlemlenen istemci IP'lerini göster",
+    "Include observations without review priority": "İnceleme önceliği olmayan gözlemleri de göster",
+    "No device observations currently require review.": "Şu an inceleme gerektiren cihaz gözlemi yok.",
+    "Sustained periodic DNS enters Review after at least 20 distinct, fully timestamped observations over 30 minutes. Legitimate updates may also qualify.": "En az 30 dakikaya yayılan, zaman bilgileri tam olan 20 ayrı düzenli DNS gözlemi inceleme kuyruğuna girer. Zararsız güncellemeler de bu koşulu sağlayabilir.",
+    "Download device triage JSON": "Cihaz inceleme JSON raporunu indir",
+    "Device aliases apply only to this report. Domains and timestamps remain sensitive telemetry; keep this export local.": "Cihaz takma adları yalnızca bu rapor için geçerlidir. Domain ve zaman bilgileri hassas telemetri olmaya devam eder; bu raporu yerelde tut.",
     "Local setup & CTI updates": "Yerel kurulum ve CTI güncellemeleri",
     "This installation uses your own credentials. No developer keys are included.": "Bu kurulum kendi anahtarlarını kullanır. Geliştiricinin anahtarları dahil değildir.",
     "Operating mode": "Çalışma modu",
@@ -537,6 +553,15 @@ _TR: dict[str, str] = {
 }
 
 _COLUMN_TR = {
+    "Target": "Hedef",
+    "Telemetry events": "Telemetri kayıtları",
+    "Device": "Cihaz",
+    "Queue priority": "Kuyruk önceliği",
+    "First observed": "İlk gözlem",
+    "Last observed": "Son gözlem",
+    "Observed span (s)": "Gözlem süresi (sn)",
+    "Distinct timestamps": "Ayrı zaman kayıtları",
+    "Coverage limits": "Veri sınırlamaları",
     "Domain": "Domain",
     "Verdict": "Sonuç",
     "ML score": "ML skoru",
@@ -605,6 +630,9 @@ _COLUMN_TR = {
 }
 
 _VALUE_TR = {
+    "Investigate": "Öncelikle araştır",
+    "Observe": "Gözlem",
+    "Unattributed": "Cihaz belirlenemedi",
     "Known Threat": "Bilinen Tehdit",
     "High Risk": "Yüksek Risk",
     "Review": "İncele",

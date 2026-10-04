@@ -40,7 +40,11 @@ suspicious simulation; the current ThreatFusion verdict also does not elevate
 these patterns by itself. RITA is an optional comparison tool, not a runtime
 dependency or an integrated detector. See `LOCAL_LAB.md` for measured outputs,
 artificial-traffic limitations and reproducible protocol. No production or ML
-promotion claim follows. Device timelines, continuous telemetry collection and
+promotion claim follows. Client/target triage now evaluates devices independently,
+exposes sustained DNS periodicity as review work without a malware verdict,
+and provides a local privacy-controlled device view/export. See
+`DETECTION_ROADMAP.md` for coverage gates and the intended RITA-alternative scope.
+Device timelines, continuous telemetry collection and
 retroactive CTI investigations remain future work.
 
 ## Linux first-run flow

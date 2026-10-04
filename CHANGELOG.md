@@ -12,6 +12,14 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Client/target triage with independent CTI/behavior evidence, a separate
+  sustained-periodic DNS review queue, coverage limits, bilingual local device
+  view and explicit private device JSON export. Existing domain verdicts,
+  aggregate export privacy and frozen ML thresholds remain unchanged.
+- Immutable external synthetic device controls (12 types, two fixed seeds),
+  client-evidence/privacy/UI regressions and a measured-capability roadmap for
+  the intended Zeek/RITA alternative. No production accuracy or parity claim.
+
 - Frozen three-client periodic-control protocol with real short live capture,
   deterministic checksum-valid synthetic-day replay, isolated pinned RITA lab
   setup and native-output comparison reporting. Records inputs/limitations and

@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import argparse
+import os
 from collections.abc import Sequence
 from pathlib import Path
 
 from .cti_cache import load_ioc_records
 from .ml_artifact import load_trusted_ml_artifact
-from .reporting import build_analysis_report
+from .reporting import build_analysis_report, build_device_report
 from .runtime_analysis import (
     analyze_adguard_query_log_with_diagnostics,
     analyze_dns_csv_with_diagnostics,
@@ -53,6 +54,14 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Optional CSV findings output path",
     )
+    parser.add_argument(
+        "--device-json-output", type=Path,
+        help="Separate client/domain triage report (report-local device aliases)",
+    )
+    parser.add_argument(
+        "--include-client-ips", action="store_true",
+        help="Include observed client IPs only in the explicit device report",
+    )
     return parser
 
 
@@ -68,7 +77,10 @@ def _load_input(path: Path, telemetry_format: str) -> str | bytes:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if args.include_client_ips and args.device_json_output is None:
+        parser.error("--include-client-ips requires --device-json-output")
     content = _load_input(args.input, args.format)
 
     artifact = None if args.cti_only else load_trusted_ml_artifact(args.model_dir)
@@ -110,6 +122,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         _write_text(args.json_output, report.json_text)
     if args.csv_output is not None:
         _write_text(args.csv_output, report.csv_text)
+    if args.device_json_output is not None:
+        content = build_device_report(result, include_client_ips=args.include_client_ips)
+        args.device_json_output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        # Refuse overwrites/symlinks; local telemetry is owner-only on POSIX.
+        fd = os.open(args.device_json_output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as file:
+            file.write(content)
 
     verdict_counts = {
         "known_threat": 0,
@@ -131,4 +150,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"  Review: {verdict_counts['review']}")
     print(f"  Low: {verdict_counts['low']}")
     print(f"  IOC matches: {len(result.matches)}")
+    print(f"  Device/domain observations: {len(result.device_findings)}")
+    print("  Device queue: " + ", ".join(
+        f"{priority}={sum(f.priority == priority for f in result.device_findings)}"
+        for priority in ("investigate", "review", "observe")
+    ))
     return 0

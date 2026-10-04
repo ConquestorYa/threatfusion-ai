@@ -226,6 +226,15 @@ Dashboard varsayılan olarak **Otomatik algıla** modunda çalışır.
 
 PCAP üzerinden DoH/DoT gibi şifreli DNS'ten domain çıkarıldığı iddia edilmez.
 
+**Cihaz incelemesi** sekmesi, gözlemlenen istemcileri ve hedefleri ayrı
+değerlendirir; CTI kanıtını ilgili istemciyle ilişkilendirir ve uzun süreli
+düzenli DNS davranışını inceleme kuyruğuna ekler. Düzenlilik tek başına zararlı
+yazılım kararı üretmez. IP adresleri varsayılan olarak gizlidir; isteğe bağlı
+cihaz raporu rapora özel takma adlar kullanır.
+[Tespit yol haritası ve kanıt sınırları](docs/DETECTION_ROADMAP.md) ile
+[yerel lab kontrollerine](docs/LOCAL_LAB.md) bakabilirsin. RITA'ya yakın temel
+yetenekler geliştirme hedefidir; mevcut doğruluk veya eşdeğerlik iddiası değildir.
+
 ---
 
 ## 🧠 Makine öğrenmesi yaklaşımı

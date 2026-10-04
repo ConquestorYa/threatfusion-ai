@@ -15,6 +15,7 @@ from .persistence import (
     PersistedDomainAssessment,
 )
 from .runtime_analysis import RuntimeAnalysisResult
+from .device_triage import DeviceFinding
 
 
 @dataclass(frozen=True)
@@ -109,6 +110,7 @@ _RELATION_PENALTY_LABELS = {
 }
 
 _REASON_LABELS = {
+    "sustained_periodic_dns": "Sustained periodic DNS; inspect expected software activity",
     "known_ioc_match": "Exact known-domain IOC match",
     "url_hostname_ioc_context": "Hostname appears in a malicious URL IOC",
     "response_ip_ioc_context": "Response IP matches known threat infrastructure",
@@ -132,6 +134,48 @@ _REASON_LABELS = {
     "random_like_hostname": "Hostname appears algorithmically random",
     "periodic_query_pattern": "Periodic repeated query timing pattern",
 }
+
+
+def device_finding_rows(
+    findings: tuple[DeviceFinding, ...], *, include_client_ips: bool = False,
+) -> list[dict[str, object]]:
+    """Report-local aliases by default; IP identity is an explicit local choice."""
+    clients = sorted({f.client_ip for f in findings if f.client_ip is not None})
+    aliases = {client: f"Device {index:03d}" for index, client in enumerate(clients, 1)}
+    coverage_labels = {
+        "missing_or_invalid_client_ip": "Client identity unavailable",
+        "missing_timestamps": "Some timestamps are missing",
+        "ambiguous_timestamp_timezone": "Timestamp timezone is ambiguous",
+        "insufficient_distinct_timestamps": "Fewer than 20 distinct timestamps",
+        "insufficient_observed_span": "Less than 30 minutes of comparable observations",
+        "ip_target_not_dns_query": "IP target: DNS periodic review does not apply",
+    }
+    rows = []
+    for finding in findings:
+        assessment = finding.assessment
+        behavior = assessment.behavior
+        rows.append({
+            "Device": (
+                finding.client_ip if include_client_ips and finding.client_ip
+                else aliases.get(finding.client_ip, "Unattributed")
+            ),
+            "Target": assessment.domain,
+            "Queue priority": finding.priority.title(),
+            "Verdict": verdict_label(assessment.verdict.value),
+            "Telemetry events": behavior.event_count,
+            "First observed": behavior.first_seen.isoformat() if behavior.first_seen else None,
+            "Last observed": behavior.last_seen.isoformat() if behavior.last_seen else None,
+            "Observed span (s)": behavior.observed_span_seconds,
+            "Distinct timestamps": finding.distinct_timestamps,
+            "Periodic interval (s)": behavior.periodic_interval_seconds,
+            "Periodicity score": behavior.periodicity_score,
+            "NXDOMAIN ratio": behavior.nxdomain_ratio,
+            "ML score": assessment.ml_score,
+            "Known CTI sources": ", ".join(assessment.known_ioc_sources),
+            "Evidence": _evidence_text(finding.reasons),
+            "Coverage limits": "; ".join(coverage_labels[value] for value in finding.limitations),
+        })
+    return rows
 
 
 def build_relationship_graph(
