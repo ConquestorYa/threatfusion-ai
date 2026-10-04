@@ -77,3 +77,6 @@ data/evaluation/
 # Local analyst endpoint declarations (contain private topology)
 data/analyst/
 expected-connections*.json
+
+# Private automatically collected telemetry/state/snapshots
+data/collector/

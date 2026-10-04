@@ -14,6 +14,23 @@ _LANGUAGE_BY_OPTION = {
 }
 
 _TR: dict[str, str] = {
+    "Collected connections": "Toplanan bağlantılar",
+    "Inspect automatically collected local Zeek connection activity.": "Otomatik alınan yerel Zeek bağlantı etkinliğini incele.",
+    "Completed Zeek logs are collected automatically. This view refreshes every 10 seconds; active files wait for rotation.": "Kapanan Zeek kayıtları otomatik alınır. Bu görünüm 10 saniyede bir yenilenir; aktif dosyalar döndürülene kadar bekler.",
+    "Configure a local collector to show automatically collected connections.": "Otomatik alınan bağlantıları görmek için yerel toplayıcıyı ayarla.",
+    "No collector snapshot yet. Start the local collector.": "Henüz toplayıcı raporu yok. Yerel toplayıcıyı başlat.",
+    "Collector snapshot could not be read. Check private permissions and supported schema.": "Toplayıcı raporu okunamadı. Özel dosya izinlerini ve desteklenen biçimi kontrol et.",
+    "Collector snapshot: {time}": "Toplayıcı rapor zamanı: {time}",
+    "Retained connections": "Tutulan bağlantılar",
+    "Connection reviews": "Bağlantı incelemeleri",
+    "Rejected files": "Reddedilen dosyalar",
+    "The collector reached its record limit. Coverage is incomplete and expected-activity filtering is disabled temporarily.": "Toplayıcı kayıt sınırına ulaştı. Kapsam eksik; beklenen etkinlik filtresi geçici olarak kapalı.",
+    "Some logs were rejected. Check source format, completion and limits before trusting coverage.": "Bazı kayıtlar reddedildi. Kapsama güvenmeden önce kaynak biçimini, kapanışı ve sınırları kontrol et.",
+    "Collector CTI is empty or disabled. These are behavior observations only.": "Toplayıcı CTI verisi boş veya kapalı. Bunlar yalnızca davranış gözlemleridir.",
+    "Showing the first 500 groups. The download contains all retained groups.": "İlk 500 grup gösteriliyor. İndirilen rapor tutulan bütün grupları içerir.",
+    "Download collected connection JSON": "Toplanan bağlantıların JSON raporunu indir",
+    "Collector history is bounded. Aliases are report-local and exports remain sensitive telemetry.": "Toplayıcı geçmişi sınırlıdır. Takma adlar rapora özeldir; raporlar hassas telemetri içerir.",
+    "This snapshot is older than one minute. Check whether the collector is still running.": "Bu rapor bir dakikadan eski. Toplayıcının hâlâ çalıştığını kontrol et.",
     "No unexplained connection reviews in this view.": "Bu görünümde açıklanamayan bağlantı incelemesi yok.",
     "Expected activity is your declaration, not verified software identity. Exact endpoints, traffic limits and expiry are required; CTI conflicts stay visible.": "Beklenen etkinlik senin beyanındır; yazılım kimliğini doğrulamaz. Kesin bağlantı uçları, trafik sınırları ve son geçerlilik tarihi gerekir; CTI çelişkileri görünür kalır.",
     "Optional expected-connection JSON (local session only)": "İsteğe bağlı beklenen bağlantı JSON dosyası (yalnızca yerel oturum)",

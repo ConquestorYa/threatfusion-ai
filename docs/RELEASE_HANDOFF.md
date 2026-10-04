@@ -2,6 +2,57 @@
 
 Status date: 2026-10-04
 
+## Independent coverage and automatic collector (2026-10-04)
+
+- Completed `iot23-connection-coverage-v1`: four predeclared small official
+  real-device connection logs, immutable pre-acquisition plan/hash and source
+  receipts, frozen detector commit `0a3e17c1f4724f2f3d75966b08125ee5e26c8c1d`.
+  Source spans are 1.91–23.98 hours, not new live collection. All 5,272 rows parse
+  without invalid/skipped records. Labels removed before analysis; CTI/ML/rules
+  disabled, no threshold changes or native RITA comparison. Attribution/license
+  references and source fingerprints are in `NETWORK_EVALUATION.md`; inputs,
+  label-free logs/reports and proof state remain outside the repository.
+- Connection reviews: benign 0/16 and 0/176; malicious capture 1/10 (long session)
+  and 0/41 (no confirmed qualifying sessions). The latter exposes partial-session
+  coverage limits. Separate benign domain/IP fallback output has two Review
+  verdicts; do not claim zero overall false positives, malware recall or parity.
+  These inspected v1 inputs cannot serve as untouched evaluation for tuning.
+- Added `closed-zeek-collector-v1`: Linux foreground reader for completed TSV
+  connection logs/gzip, owner-only state and lock, transactional typed evidence/
+  checkpoints, content and semantic dedup, retained-window UID conflicts, finite
+  event/ingestion retention, file/scan/ledger limits and rotating scan cursor.
+  Reports regenerate after interrupted writes/restart. Capacity drops are explicit
+  and disable expected declarations for one ingestion window. Rules and the user's
+  existing CTI reload each tick; no credential use, feed fetch or ML on this path.
+- Installed `threatfusion-ai collect`, package `threatfusion-collect`, and local
+  English/Turkish Collected connections view with ten-second refresh, stale/error/
+  empty-CTI/coverage warnings and reversible expected filtering. Exports keep all
+  groups with endpoint aliases and omit raw UIDs/source paths/declaration IDs.
+  Managed real CTI loopback mode can read its state; demo/hosted public profiles
+  cannot expose it. `TELEMETRY_COLLECTOR.md` documents rotation latency and separate
+  collector/web lifetime. No public site or hidden background service created.
+- Four isolated official-source collector imports matched offline counts/groups/
+  reviews; restarts added zero records and each gzip copy was one duplicate.
+  Initial scans 0.25–0.44 seconds, private state 0.17–1.67 MB locally; these are
+  small single-run measurements, not throughput/peak-memory guarantees.
+- Validation: **959 project tests passed**, **90%** total coverage, Ruff passed.
+  Coverage includes real-process SIGTERM/restart, interruption after commit,
+  conflict/retention/capacity, corrupt/oversized gzip, symlink/FIFO/locks, fair
+  scanning and actual managed/public app rendering. Clean Linux installer CI
+  additionally exercises the installed collect launcher and repeat ingestion.
+  The same black-box flow passed locally in disposable Debian 12 and Ubuntu
+  24.04 containers without preinstalled Python/Git, preserving synthetic model
+  and fixture CTI checksums. Source-path release auditing rejects private
+  collector/analyst JSON directories in addition to caches/models/evaluation.
+- ML artifacts/thresholds and strict-temporal promotion gate remain untouched.
+  Render was verified user-suspended with previews disabled before source
+  publication; integration uses `[skip render]`. Recheck suspension/history and
+  all CI jobs after publishing source; never resume hosting.
+- Next: predeclare partial/reset/retry/jitter/idle development controls and new
+  reserved evaluation windows; actual analyst workflow review; longer live
+  rotation/resource tests and active-tail latency decision. A genuine analyst
+  time-saved claim requires a human workload measurement.
+
 ## Expected connection context increment (2026-10-04)
 
 - Added optional `expected-connection-context-v1` after detection. Exact observed

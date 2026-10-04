@@ -14,6 +14,14 @@ in schema-v2 connection exports, with rule configuration/IDs omitted. See
 
 ## System overview
 
+An optional local Linux collector provides a second ingestion path: completed
+Zeek TSV/gzip archives → bounded typed SQLite evidence/checkpoints → existing
+connection analysis with the user's cached CTI → schema-v2 aliased atomic
+snapshot → local Collected connections fragment. Source and state are private,
+one sensor per state; ingestion does not visit destinations or collect CTI feeds.
+The web process reads snapshots only. ML is disabled on this path. See
+[collector limits and lifetime](TELEMETRY_COLLECTOR.md).
+
 ~~~mermaid
 flowchart LR
     subgraph SOURCES["CTI Sources"]

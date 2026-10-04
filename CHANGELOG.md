@@ -12,6 +12,16 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Linux completed Zeek TSV/gzip collector with private bounded SQLite evidence,
+  crash/restart checkpoints, rotation/content deduplication, fair bounded scans,
+  capacity-loss handling and SIGTERM cleanup. Installed `threatfusion-ai collect`,
+  standalone `threatfusion-collect` and bilingual local refreshing snapshot view;
+  active files wait for closure. No packet capture, public listener or autostart.
+- Immutable four-capture official IoT-23 connection evaluation protocol and
+  aggregate results/coverage gaps; labels excluded, no threshold tuning or ML
+  promotion. Private collector imports reproduce offline results after restart
+  and gzip duplication. Raw data, cache and outputs remain external/ignored.
+
 - Optional expiring exact-endpoint connection declarations with upload-wide
   count/duration/byte limits, scoped CTI override and reversible local expected
   activity filtering. Schema-v2 connection exports retain original evidence and

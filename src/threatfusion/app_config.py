@@ -16,6 +16,7 @@ class AppConfig:
     model_sha256: str | None
     cti_stale_hours_by_source: tuple[tuple[str, float], ...]
     cti_only: bool = False
+    collector_state_dir: Path | None = None
 
     @property
     def history_enabled(self) -> bool:
@@ -124,6 +125,8 @@ def load_app_config(
         public_mode=public_mode,
         model_sha256=model_sha256,
         cti_only=cti_only,
+        collector_state_dir=(Path(values["THREATFUSION_COLLECTOR_STATE_DIR"])
+                             if not public_mode and values.get("THREATFUSION_COLLECTOR_STATE_DIR") else None),
         cti_stale_hours_by_source=(
             (
                 "ThreatFox",

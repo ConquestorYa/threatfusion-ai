@@ -15,10 +15,19 @@ from threatfusion.local_workspace import load_settings, refresh_workspace, valid
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--install-dir", type=Path, required=True)
-    parser.add_argument("action", choices=("stop", "status", "refresh"))
-    args = parser.parse_args()
+    parser.add_argument("action", choices=("stop", "status", "refresh", "collect"))
+    args, extra = parser.parse_known_args()
+    if extra and args.action != "collect":
+        parser.error("Unexpected command options")
     try:
         root = validate_root(args.install_dir)
+        if args.action == "collect":
+            if load_settings(root)["mode"] != "cti-only":
+                print("Toplama için yerel arayüzde gerçek CTI modunu seçin.")
+                return 1
+            from threatfusion.telemetry_collector import main as collect
+            return collect(["--state-dir", str(root / "collector"),
+                            "--db", str(root / "runtime/cti/threatfusion.sqlite"), *extra])
         if args.action in {"stop", "status"}:
             result = request_local_control(root, args.action)
             print(json.dumps(result))

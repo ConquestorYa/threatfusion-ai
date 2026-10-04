@@ -162,6 +162,25 @@ the browser. A failed source refresh never promotes an ML artifact or tunes a
 threshold. History/telemetry stay session-local in this managed profile; the
 `THREATFUSION_PUBLIC_MODE` privacy flag does not imply public network exposure.
 
+## Automatic Zeek connections
+
+In real CTI mode, use a separate terminal:
+
+```bash
+threatfusion-ai collect --input-dir /absolute/path/to/zeek/logs
+```
+
+The local **Collected connections** page refreshes from private state.
+Completed TSV logs/archives are imported once; open logs wait for closure.
+Ctrl+C stops collection; repeating the command resumes without duplicates.
+The web app and collector have separate lifetimes. No background system service
+is installed. Rules, limits and standalone operation are documented in
+[TELEMETRY_COLLECTOR.md](TELEMETRY_COLLECTOR.md).
+
+Uploaded telemetry remains session-local. Opting into this collector persists
+typed connection evidence privately in the installation's `collector/` directory,
+with bounded retention. Nothing is uploaded or added to shared analyst history.
+
 ## Troubleshooting
 
 - Command missing in the current terminal: open a new terminal or use the full

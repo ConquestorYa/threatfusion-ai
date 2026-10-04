@@ -54,6 +54,7 @@ from threatfusion.ui_components import (
 from threatfusion.ui_evaluation import _show_model_evaluation
 from threatfusion.ui_device_triage import render_device_triage
 from threatfusion.ui_connections import render_connections
+from threatfusion.ui_collector import render_collector
 from threatfusion.ui_history import _show_history
 from threatfusion.ui_investigation import _show_domain_detail
 from threatfusion.ui_quick_lookup import (
@@ -610,6 +611,9 @@ def main() -> None:
         "Analysis history",
         "Model evaluation",
     ]
+    collector_available = not config.public_mode or (local_root is not None and config.cti_only)
+    if collector_available:
+        pages.append("Collected connections")
     if not config.history_enabled:
         pages.remove("Analysis history")
 
@@ -645,6 +649,10 @@ def main() -> None:
             st.session_state["workspace_nav"] = "Model evaluation"
             st.rerun()
         st.caption(tr("Primary tools are available in the main workspace."))
+        if collector_available:
+            if st.button(tr("Collected connections"), key="nav_collector", width="stretch"):
+                st.session_state["workspace_nav"] = "Collected connections"
+                st.rerun()
 
     _render_primary_workspace_launcher(page)
     if config.cti_only:
@@ -653,6 +661,12 @@ def main() -> None:
             "available DNS behavior only. A missing match does not establish "
             "that a target is benign. Shared history is disabled in this mode."
         ))
+
+    if page == "Collected connections":
+        render_app_header("Collected connections", "Inspect automatically collected local Zeek connection activity.")
+        render_collector(local_root / "collector" if local_root else config.collector_state_dir,
+                         public_mode=not collector_available)
+        return
 
     if page == "Quick lookup":
         render_app_header(

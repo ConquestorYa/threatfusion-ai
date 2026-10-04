@@ -76,6 +76,8 @@ OPENAI_API_KEY="<set-in-secret-manager>"
         "data/models/model.bin",
         "data/snapshots/dataset.csv",
         "data/evaluation/holdout.json",
+        "data/collector/connections.json",
+        "data/analyst/context.json",
         "data/deployment/runtime/cache.bin",
         "data/demo/public_demo_cti.sqlite",
         "cache.sqlite-wal",

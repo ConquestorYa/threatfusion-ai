@@ -44,8 +44,9 @@ promotion claim follows. Client/target triage now evaluates devices independentl
 exposes sustained DNS periodicity as review work without a malware verdict,
 and provides a local privacy-controlled device view/export. See
 `DETECTION_ROADMAP.md` for coverage gates and the intended RITA-alternative scope.
-Device timelines, continuous telemetry collection and
-retroactive CTI investigations remain future work.
+Device timelines, incremental active-log tailing and retroactive CTI
+investigation workflows remain future work. Completed-log collection is now
+implemented as described below.
 
 The next increment adds `cached-http-controls-v1`: isolated real packet capture
 with DNS TTL caching, HTTP persistence, variable browser response sizes and
@@ -66,7 +67,27 @@ Client/destination CTI conflicts override declarations; incomplete evidence cann
 qualify. Schema-v2 connection reports retain all groups and omit declaration
 IDs/configuration. Eleven constructed controls include an identical heartbeat
 that also matches: software identity and safety remain unverified. See
-`EXPECTED_CONNECTIONS.md`; independent longer recordings remain an open gate.
+`EXPECTED_CONNECTIONS.md`.
+
+`iot23-connection-coverage-v1` now evaluates four preselected official real-device
+logs (1.91–23.98-hour observed spans), keeping labels outside detector input and
+CTI/ML/context disabled. Benign connection reviews were 0/16 and 0/176; malicious
+capture reviews were 1/10 and 0/41. The missed capture and two separate benign
+domain/IP fallback Review verdicts explicitly limit efficacy claims. See
+`NETWORK_EVALUATION.md`; enterprise representativeness and analyst usefulness
+remain unmeasured.
+
+`closed-zeek-collector-v1` adds a foreground Linux consumer for completed TSV
+connection logs/gzip archives, a private SQLite checkpoint/evidence window and
+atomic aliased snapshots. Rotation/restarts/content copies are deduplicated;
+active files wait for closure. CTI reloads from the user's existing cache, rules
+expire/recheck each scan, and capacity loss disables expected filtering. The
+local web Collected connections view refreshes without uploads. Installed
+`threatfusion-ai collect` and standalone `threatfusion-collect` expose automation;
+no public listener, packet sensor or system autostart is introduced. See
+`TELEMETRY_COLLECTOR.md`. Four isolated real-source imports reproduced the frozen
+offline results and survived restart/gzip duplication. This is operational
+contract evidence, not calibrated C2 detection or production sizing.
 
 ## Linux first-run flow
 

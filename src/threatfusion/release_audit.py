@@ -89,6 +89,8 @@ def scan_release_path(
             "evaluation",
             "deployment",
             "demo",
+            "collector",
+            "analyst",
         }
     )
     filename = PurePosixPath(normalized).name

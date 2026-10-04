@@ -76,6 +76,7 @@ jobs:
         run: |
           python -c "import importlib.metadata as m; print(m.version('threatfusion-ai'))"
           threatfusion --help
+          threatfusion-collect --help
 
       - name: Run Ruff
         run: python -m ruff check .

@@ -21,11 +21,31 @@ context is not measured equivalent C2 detection.
 | Connection behavior | Typed UID/direction/ports/duration/bytes; long bidirectional TCP review; isolated cache/persistence capture | Independent longer captures, partial-session coverage and operational alert burden |
 | Beaconing | Sustained successful TCP timing review plus DNS regularity; no C2 accuracy claim | Robust timing/size analysis and jitter/retry/idle controls on independent permitted windows |
 | DNS tunneling | Hostname shape context only | Registrable-domain aggregation with proper suffix handling, unique-label/size/type evidence, benign CDN/telemetry controls and independent recordings |
-| Continuous collection | Manual local upload/CLI | Rotation-aware, bounded, restart-safe ingestion with checkpoints and duplicate protection |
+| Continuous collection | Completed TSV/gzip connection collector, private bounded state, checkpoint/restart/rotation dedup and local snapshot UI | Active-file latency, longer live rotation, representative resource tests; DNS incremental support |
 | Analyst operations | Local web investigation, feedback, device/connection reports and expiring exact-endpoint declarations with CTI override | Independent analyst workload validation, timelines, bounded retention and documented SIEM export contracts |
 | Operational readiness | Local test suite and bounded synthetic workload | Security review, installation/recovery checks and representative throughput/resource measurements |
 
-## Current increment: expected-connection-context-v1
+## Current increment: independent coverage and completed-log collection
+
+Four predeclared official IoT-23 inputs now provide independent 1.91–23.98-hour
+connection coverage observations. One malicious capture yields a long-session
+review; another yields none. Benign captures yield no connection reviews but
+one has two separate fallback verdict reviews. This is not an accuracy or parity
+claim. Labels/CTI/ML/context were excluded and frozen thresholds unchanged. See
+[results and protocol](NETWORK_EVALUATION.md).
+
+Linux completed-file collection now has bounded evidence/checkpoints, content
+deduplication, restart recovery, fair bounded scans and a local refreshing
+snapshot view. All four isolated imports matched offline results after restart
+and gzip duplication. Active files wait for rotation; no sensor/system service
+or production throughput guarantee is installed. See [operation](TELEMETRY_COLLECTOR.md).
+
+Next: declare partial/reset/retry timing controls and reserve new independent
+evaluation inputs before changing detection; validate actual analyst workload
+and longer live rotation/resource behavior. These v1 captures are inspected
+evidence and cannot become an untouched holdout for the next tuned increment.
+
+## Previous increment: expected-connection-context-v1
 
 Optional local declarations separate expected operational activity without
 changing original connection priorities or DNS/domain/device verdicts. Exact

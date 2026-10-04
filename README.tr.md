@@ -247,6 +247,14 @@ kontrol ettiği operasyonel beklentileri açıklanamayan incelemelerden ayırır
 Kesin bağlantı uçları, trafik sınırları ve son geçerlilik tarihi gerekir; CTI
 çelişkileri görünür kalır. Yazılım kimliğini doğrulamaz, önceki kanıtları silmez.
 
+Linux kurulumunda **kapanmış** Zeek TSV bağlantı kayıtlarını otomatik almak için
+`threatfusion-ai collect --input-dir /tam/yol/zeek/logs` çalıştırabilirsin.
+**Toplanan bağlantılar** sayfası yerelde yenilenir; yeniden başlatınca kaldığı
+yerden devam eder, döndürülmüş/sıkıştırılmış kopyaları tekrar saymaz. Açık dosyalar
+kapanmayı bekler. [Kurulum ve sınırlar](docs/TELEMETRY_COLLECTOR.md) ile
+[bağımsız IoT-23 sonuçlarında](docs/NETWORK_EVALUATION.md) kaçırılan senaryolar da
+açıklanıyor. Bu akış kendi CTI cache'ini kullanır; ML modeli çalıştırmaz.
+
 ---
 
 ## 🧠 Makine öğrenmesi yaklaşımı

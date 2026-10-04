@@ -1,0 +1,119 @@
+# Local completed-log collection
+
+The Linux collector reads completed standard TSV Zeek connection logs from a
+user-selected directory. It does not capture packets, install Zeek, access
+observed destinations or open a listening service. It is an optional foreground
+process, separate from the local web application and CTI feed updater.
+
+## Installed application
+
+Upgrade with the README installation command after stopping the app. Select
+real CTI mode, then run in a second terminal:
+
+```bash
+threatfusion-ai collect --input-dir /absolute/path/to/zeek/logs
+```
+
+Open `threatfusion-ai` and select **Collected connections** in the sidebar.
+The English/Turkish view refreshes every ten seconds, warns about stale snapshots,
+rejected inputs, empty CTI and capacity loss, and defaults to unexplained reviews.
+Expected-activity filtering is reversible; the download retains all groups.
+CTI conflicts remain visible even for Observe-priority groups.
+
+Ctrl+C stops the collector. Repeat the same command to resume from checkpoints;
+it works independently of the web process. `threatfusion-ai stop` stops the web
+app, not a collector in another terminal. No boot/login service is installed.
+Use `--once` for one scan. The collector uses the installation's existing private
+CTI cache without collecting feeds or using API credentials. Cache refresh is
+configured separately in Local setup & CTI updates; the next collector scan
+reloads the cache. Check that panel for source freshness and upstream failures.
+An empty cache still permits behavior analysis. ML is disabled on this path.
+
+Optional local declarations are reevaluated on every scan:
+
+```bash
+threatfusion-ai collect --input-dir /absolute/path/to/zeek/logs \
+  --expected-connections /private/path/expected-connections.json
+```
+
+The rule path must remain available. Invalid rules stop processing without
+printing their contents. See [declaration requirements](EXPECTED_CONNECTIONS.md).
+Declarations do not establish software identity or safety.
+
+## Completion and rotation
+
+Candidate names start with `conn.`, `conn_` or `conn-` and end in `.log` or
+`.log.gz`; date subdirectories are scanned. Symlink directories are skipped,
+including ZeekControl's `current` link. Point at the archive root or the actual
+spool directory, using one sensor per state. Never merge different sensors that
+may reuse UIDs. Source/state directories must be separate.
+
+Only files ending in standard `#close\t…` are imported. Open logs wait for
+closure/rotation; JSON logging is unsupported. Zeek closes rotated files and
+ZeekControl can archive/compress them. Configure rotation for the latency you
+need; a ten-second polling interval does not make an hourly rotation immediate.
+See [Zeek logging](https://docs.zeek.org/en/new-tutorial/frameworks/logging.html)
+and [ZeekControl rotation](https://github.com/zeek/zeekctl/blob/master/doc/main.rst).
+Active-file incremental tailing remains future work. Do not add a close marker
+to a file Zeek is still writing.
+
+## Standalone and limits
+
+For a source checkout, use its environment:
+
+```bash
+python -m threatfusion.telemetry_collector \
+  --input-dir /absolute/path/to/zeek/logs \
+  --state-dir /absolute/private/path/collector \
+  --db /absolute/private/path/threatfusion.sqlite
+```
+
+The installed Python package also exposes `threatfusion-collect`. Omit `--db`
+for behavior only. For a standalone local UI, set
+`THREATFUSION_COLLECTOR_STATE_DIR` to that state directory, use the CTI-only
+profile and bind Streamlit to `127.0.0.1`. Public profiles ignore this setting
+and hide the page. The managed loopback profile uses its installation's state,
+even though its session/history privacy flag is enabled. Demo mode has no page.
+
+| Limit | Default / bound |
+| --- | --- |
+| Poll | 10 seconds; configurable 1–3,600 |
+| Evidence window | 24 hours; configurable 1–168 hours |
+| Records | 100,000 maximum; `--max-records` may lower it |
+| File / expanded gzip | 16 MiB each |
+| Scan | 8,192 directory entries; up to 64 changed-file attempts per tick |
+| Checkpoint ledger | Up to 10,000 paths/hashes; missing paths expire after seven days |
+| Snapshot | 64 MiB; table shows first 500 filtered groups, download contains all |
+
+Records expire relative to the latest observed event **and** their ingestion
+time. Historical offline logs can therefore be examined for one ingestion
+window. Unchanged files still present in the source retain checkpoints; expired
+evidence does not reappear on the next scan. Deleted/renamed files outside ledger
+retention or more than 10,000 paths are outside permanent duplicate guarantees.
+Directory scan overflow or unreadable subdirectories fail before import; use a
+smaller readable archive root. An unreadable source never becomes an empty clean
+snapshot; the previous snapshot remains available and grows stale.
+A persisted rotating cursor prevents rejected/open files starving later files.
+
+Capacity pruning is reported as coverage loss. It disables expected-activity
+declarations for an ingestion window, so missing volume cannot create an
+expected classification. Original findings remain. UID conflict detection is
+limited to retained evidence. Invalid metadata/future clocks, links/special
+files, corrupt/oversized archives and changing files are rejected. Rejected
+inputs are retried; a zero-rejection scan is not proof of complete capture.
+
+## State and privacy
+
+State is owned by the current user: directory 0700, files 0600, a single-writer
+lock, private SQLite typed records/checkpoints and atomic JSON snapshots.
+Source and retention settings are bound to this state; select a fresh separate
+state directory for another sensor or changed limits. A crash after checkpoint
+commit regenerates reports on restart without counting evidence again.
+
+The dashboard reads the snapshot, never the raw collector database. Endpoints
+use report-local aliases; raw UIDs, input paths and declaration IDs/configuration
+are not exported. Aliases are not anonymization: timing, port/byte evidence and
+CTI remain sensitive. Keep the entire state, original logs and exports outside
+GitHub, CI, public hosting and shared directories. No developer data or keys are
+bundled. The collector makes no compromise, download-content or analyst-time
+claim. Independent checks are recorded in [network evaluation](NETWORK_EVALUATION.md).
