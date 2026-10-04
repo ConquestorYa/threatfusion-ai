@@ -301,22 +301,29 @@ Allow approximately 2 GB of free disk space and an internet connection for insta
 bash -c 'set -e; f=$(mktemp /tmp/threatfusion-install.XXXXXXXX); trap "rm -f -- \"$f\"" EXIT; u=https://raw.githubusercontent.com/ConquestorYa/threatfusion-ai/main/scripts/install_linux.sh; if command -v curl >/dev/null; then curl --proto "=https" --proto-redir "=https" -fsSL --retry 3 --connect-timeout 20 --max-time 300 "$u" -o "$f"; elif command -v wget >/dev/null; then wget --https-only --timeout=30 --tries=3 -qO "$f" "$u"; else echo "curl veya wget gerekli" >&2; exit 1; fi; bash "$f" "$@"' --
 ```
 
-This installs a private **Python 3.12.14** and all 49 runtime dependencies with
-SHA-256 verification, downloads an immutable source revision, prepares a clearly
-synthetic demo and opens **http://127.0.0.1:8501** (or the next available local
-port). Stop it with **Ctrl+C**. It creates no hosted service.
+The command installs private **Python 3.12.14**, 49 hashed runtime dependencies,
+source code, an applications-menu shortcut and the `threatfusion-ai` command.
+It opens **http://127.0.0.1:8501** (or the next free port) in real CTI mode,
+with **ML disabled**. The sidebar's **Local setup & CTI updates** panel lets you
+enter your own API keys, update feeds and enable optional 6/12/24-hour updates.
+SGB and public PhishTank can be attempted without keys; ThreatFox/URLhaus need
+your own keys. The first cache is empty until you request collection.
 
-Restart without downloading dependencies:
+Reopen from the applications menu or a new terminal:
 
 ```bash
-"${XDG_DATA_HOME:-$HOME/.local/share}/threatfusion-ai/start"
+threatfusion-ai
+threatfusion-ai status
+threatfusion-ai stop
 ```
 
-Real CTI collection is optional and separate: run the launcher with
-`--mode cti-only --refresh-cti`. This mode has **ML disabled** and initially needs
-to collect its own feeds. Your developer cache, models and evaluation files are
-not copied or published. See [Linux installation](docs/INSTALL_LINUX.md) for
-API keys, offline restart, supported systems and troubleshooting.
+Ctrl+C or the web panel's stop button also stops the server/scheduler. Closing
+only the browser tab leaves it running. Automatic refresh runs only while the
+app is running and catches up on restart. Keys stay session-only unless you
+explicitly save them in a private 0600 plaintext file. Demo is optional via
+`threatfusion-ai --mode demo`; its synthetic model is not measured performance.
+See [Linux installation](docs/INSTALL_LINUX.md) for privacy, source access,
+upgrades and the fallback full launcher path. Your developer data is not copied.
 
 The command installs the current `main` revision. The local installer does not
 create or resume a hosted service.

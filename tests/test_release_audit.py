@@ -234,3 +234,10 @@ RENDER_API_KEY="..."
 """
 
     assert scan_release_text(text, path="README.md") == ()
+
+
+def test_saved_installer_credentials_are_rejected_even_with_short_keys():
+    from threatfusion.release_audit import scan_release_path
+
+    findings = scan_release_path("local/credentials.json")
+    assert findings[0].rule == "secret-file-path"

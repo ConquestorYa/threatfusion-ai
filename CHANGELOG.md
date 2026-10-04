@@ -12,6 +12,16 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- User-scoped Linux applications-menu shortcut and `threatfusion-ai` command,
+  with status/refresh/stop commands and supervised Ctrl+C/SIGTERM/SIGHUP cleanup.
+- Managed local CTI settings panel: real CTI default, explicit synthetic mode,
+  masked user-owned keys, session-only use or opt-in private plaintext storage,
+  manual source refresh and optional 6/12/24-hour updates while the app runs.
+- Serialized refresh attempts, safe aggregate status, failed-source cache
+  preservation and startup catch-up without a system service or hidden autostart.
+- Release audit/ignore protection for saved local credentials, plus local UI,
+  ownership/permission, scheduling, command/shortcut and shutdown regression tests.
+
 - Refreshed the three README interface screenshots from the current local UI,
   using only an isolated synthetic runtime and reserved demo telemetry.
 

@@ -11,7 +11,6 @@ sys.path.insert(0, str(_PROJECT_ROOT / "src"))
 
 from threatfusion.local_setup import (
     prepare_local_environment,
-    refresh_local_cti,
     run_local_server,
 )
 
@@ -21,7 +20,7 @@ def main() -> int:
         description="Prepare and start ThreatFusion on loopback only"
     )
     parser.add_argument("--install-dir", type=Path, required=True)
-    parser.add_argument("--mode", choices=("demo", "cti-only"), default="demo")
+    parser.add_argument("--mode", choices=("demo", "cti-only"), default="cti-only")
     parser.add_argument("--refresh-cti", action="store_true")
     parser.add_argument("--port", type=int)
     parser.add_argument("--prepare-only", action="store_true")
@@ -44,7 +43,9 @@ def main() -> int:
                 flush=True,
             )
         if args.refresh_cti:
-            refresh_local_cti(args.install_dir.resolve(), os.environ)
+            from threatfusion.local_workspace import refresh_workspace
+
+            refresh_workspace(args.install_dir.resolve())
         if args.prepare_only:
             print(
                 f"Kurulum hazır. Daha sonra başlatmak için: {shlex.quote(str(args.install_dir.resolve() / 'start'))}",
@@ -52,7 +53,11 @@ def main() -> int:
             )
             return 0
         return run_local_server(
-            _PROJECT_ROOT, environment, port=args.port, open_browser=not args.no_browser
+            _PROJECT_ROOT,
+            environment,
+            port=args.port,
+            open_browser=not args.no_browser,
+            install_dir=args.install_dir.resolve(),
         )
     except (OSError, TypeError, ValueError, RuntimeError) as error:
         print(

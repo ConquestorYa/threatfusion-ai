@@ -154,7 +154,11 @@ def run_application(command: list[str]) -> int:
     process = subprocess.Popen(command, start_new_session=True)
     previous = {}
     try:
-        for signum in (signal.SIGINT, signal.SIGTERM):
+        for signum in (
+            signal.SIGINT,
+            signal.SIGTERM,
+            *([signal.SIGHUP] if hasattr(signal, "SIGHUP") else []),
+        ):
             previous[signum] = signal.signal(
                 signum,
                 lambda received, frame: (
@@ -187,6 +191,11 @@ def main() -> int:
     parser.add_argument("--no-browser", action="store_true")
     parser.add_argument("--refresh-cti", action="store_true")
     parser.add_argument("--launch-only", action="store_true")
+    parser.add_argument(
+        "--no-integrations",
+        action="store_true",
+        help="Do not register desktop or shell shortcuts",
+    )
     args = parser.parse_args()
     try:
         if sys.platform != "linux" or sys.version_info[:3] != PYTHON_VERSION:
@@ -226,7 +235,22 @@ def main() -> int:
                 if not (source / "streamlit_app.py").is_file():
                     raise ValueError("application source is missing")
                 python = prepare_environment(root, source, args.uv)
-            mode = args.mode or existing.get("mode", "demo")
+            sys.path.insert(0, str(source / "src"))
+            from threatfusion.local_workspace import load_settings, save_settings
+            from threatfusion.local_integration import install_user_integration
+
+            settings = load_settings(root)
+            mode = args.mode or (
+                settings["mode"]
+                if (root / "workspace.json").exists()
+                else existing.get("mode", "cti-only")
+            )
+            save_settings(
+                root,
+                mode=mode,
+                interval_hours=settings["interval_hours"],
+                automatic=settings["automatic"],
+            )
             if args.refresh_cti and mode != "cti-only":
                 raise ValueError("feed refresh requires explicit cti-only mode")
             values = {
@@ -247,11 +271,33 @@ def main() -> int:
                 "--launch-only",
             ]
             launcher.write_text(
-                "#!/usr/bin/env bash\nset -e\nunset PYTHONHOME PYTHONPATH VIRTUAL_ENV CONDA_PREFIX\nexec "
+                "#!/usr/bin/env bash\nset -e\nunset PYTHONHOME PYTHONPATH VIRTUAL_ENV CONDA_PREFIX\n"
+                + 'case "${1:-}" in\n  stop|status|refresh) exec '
+                + shlex.join(
+                    [
+                        str(python),
+                        str(source / "scripts/manage_local.py"),
+                        "--install-dir",
+                        str(root),
+                    ]
+                )
+                + ' "$@" ;;\nesac\nexec '
                 + shlex.join(command)
                 + ' "$@"\n'
             )
             launcher.chmod(0o700)
+            if not args.launch_only and not args.no_integrations:
+                registered = install_user_integration(root)
+                print(
+                    "Yeniden aç: uygulamalar menüsünden ThreatFusion AI veya yeni terminalde threatfusion-ai.",
+                    flush=True,
+                )
+                if not all(registered.values()):
+                    print(
+                        "Var olan başka bir kısayol korundu; alternatif başlatıcı: "
+                        + str(launcher),
+                        flush=True,
+                    )
             command = [
                 str(python),
                 str(source / "scripts/start_local.py"),

@@ -17,6 +17,8 @@ dist/
 .env.*
 !.env.example
 **/secrets.toml
+**/credentials.json
+**/control.sock
 *.pem
 *.key
 *.p12

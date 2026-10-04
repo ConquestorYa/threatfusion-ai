@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import json
 import signal
 import socket
 import subprocess
@@ -73,6 +74,9 @@ def prepare_local_environment(
             "PYTHONDONTWRITEBYTECODE": "1",
         }
     )
+    if sys.platform == "linux" and (install_dir / ".threatfusion-install").is_file():
+        values["THREATFUSION_LOCAL_INSTALL_DIR"] = str(install_dir)
+        values["THREATFUSION_LOCAL_LOOPBACK"] = "1"
     if pin:
         values["THREATFUSION_MODEL_SHA256"] = pin
     return values
@@ -149,15 +153,29 @@ def run_local_server(
     port: int | None = None,
     open_browser: bool = True,
     readiness_timeout: float = 60,
+    install_dir: Path | None = None,
 ) -> int:
     selected = choose_local_port(port)
     url = f"http://127.0.0.1:{selected}"
     stop = threading.Event()
     previous = {}
-    for signum in (signal.SIGINT, signal.SIGTERM):
+    for signum in (
+        signal.SIGINT,
+        signal.SIGTERM,
+        *([signal.SIGHUP] if hasattr(signal, "SIGHUP") else []),
+    ):
         previous[signum] = signal.signal(signum, lambda *_: stop.set())
     process = None
+    control = None
     try:
+        if install_dir is not None:
+            from .local_workspace import automatic_refresh_loop, validate_root
+
+            validate_root(install_dir)
+            control = create_local_control(install_dir, stop, url)
+            threading.Thread(
+                target=automatic_refresh_loop, args=(install_dir, stop), daemon=True
+            ).start()
         process = subprocess.Popen(
             streamlit_command(source_dir, selected),
             cwd=source_dir,
@@ -216,5 +234,71 @@ def run_local_server(
                 except ProcessLookupError:
                     pass
                 process.wait(timeout=5)
+        stop.set()
+        if control is not None:
+            control.close()
+            (install_dir / "control.sock").unlink(missing_ok=True)
         for signum, handler in previous.items():
             signal.signal(signum, handler)
+
+
+def create_local_control(root: Path, stop: threading.Event, url: str):
+    """Owner-only Unix socket avoids killing PIDs from stale/reused PID files."""
+    path = root / "control.sock"
+    if path.exists() or path.is_symlink():
+        # Bootstrap holds the exclusive installation session lock here.
+        if path.is_symlink() or not path.is_socket():
+            raise ValueError("unexpected local control file; existing file preserved")
+        path.unlink()
+    control = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    try:
+        control.bind(str(path))
+        path.chmod(0o600)
+        control.listen(4)
+        control.settimeout(0.5)
+    except Exception:
+        control.close()
+        raise
+
+    def serve():
+        while not stop.is_set():
+            try:
+                client, _ = control.accept()
+            except socket.timeout:
+                continue
+            except OSError:
+                break
+            with client:
+                client.settimeout(1)
+                try:
+                    command = client.recv(16).decode("ascii")
+                    if command == "stop":
+                        client.sendall(b"stopping")
+                        stop.set()
+                    elif command == "status":
+                        client.sendall(json.dumps({"url": url}).encode())
+                except (OSError, UnicodeError):
+                    pass
+
+    threading.Thread(target=serve, daemon=True).start()
+    return control
+
+
+def request_local_control(root: Path, command: str) -> dict:
+    from .local_workspace import validate_root
+
+    validate_root(root)
+    if command not in {"status", "stop"}:
+        raise ValueError("invalid local control command")
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
+        client.settimeout(2)
+        try:
+            client.connect(str(root / "control.sock"))
+            client.sendall(command.encode())
+            response = client.recv(4096)
+        except (OSError, socket.timeout):
+            return {"running": False}
+    if command == "stop":
+        return {"running": True, "stopping": response == b"stopping"}
+    values = json.loads(response)
+    return {"running": True, "url": values["url"]}

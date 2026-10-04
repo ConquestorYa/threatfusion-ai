@@ -302,21 +302,30 @@ ve yaklaşık 2 GB boş disk alanı önerilir.
 bash -c 'set -e; f=$(mktemp /tmp/threatfusion-install.XXXXXXXX); trap "rm -f -- \"$f\"" EXIT; u=https://raw.githubusercontent.com/ConquestorYa/threatfusion-ai/main/scripts/install_linux.sh; if command -v curl >/dev/null; then curl --proto "=https" --proto-redir "=https" -fsSL --retry 3 --connect-timeout 20 --max-time 300 "$u" -o "$f"; elif command -v wget >/dev/null; then wget --https-only --timeout=30 --tries=3 -qO "$f" "$u"; else echo "curl veya wget gerekli" >&2; exit 1; fi; bash "$f" "$@"' --
 ```
 
-Komut özel **Python 3.12.14** ortamını ve gerekli 49 kütüphaneyi SHA-256
-kontrolüyle kurar, kaynak kodu indirir ve sentetik demo verisini oluşturur.
-Sonunda tarayıcıda **http://127.0.0.1:8501** açılır; port doluysa sıradaki boş
-local port kullanılır. **Ctrl+C** ile kapatılır. Hosted servis oluşturulmaz.
+Komut özel **Python 3.12.14**, hash doğrulamalı 49 kütüphane, kaynak kod,
+uygulamalar menüsü kısayolu ve `threatfusion-ai` terminal komutunu kurar.
+Tarayıcıda **http://127.0.0.1:8501** (veya sıradaki boş local port) açılır.
+Yeni kurulum gerçek CTI modundadır; **ML kapalıdır** ve ilk cache boştur.
+Yan çubuktaki **Yerel kurulum ve CTI güncellemeleri** panelinden kendi API
+anahtarlarını girip kaynakları güncelle ve isteğe bağlı 6/12/24 saatlik otomatik
+kontrolü aç. SGB ve public PhishTank anahtarsız denenebilir; ThreatFox/URLhaus
+kendi anahtarlarını gerektirir. Veriler ilk güncelleme talebinden sonra indirilir.
 
-Daha sonra tekrar açmak için:
+Tekrar açmak için uygulamalar menüsündeki **ThreatFusion AI** veya yeni terminal:
 
 ```bash
-"${XDG_DATA_HOME:-$HOME/.local/share}/threatfusion-ai/start"
+threatfusion-ai
+threatfusion-ai status
+threatfusion-ai stop
 ```
 
-Gerçek CTI toplamak için bu başlatıcıya `--mode cti-only --refresh-cti` ekle.
-Bu modda **ML kapalıdır**; ilk kez kaynaklardan kendi cache'ini oluşturur.
-Geliştirme cache'i, model dosyaları ve değerlendirmeler kopyalanmaz veya
-paylaşılmaz. API anahtarları, offline başlatma ve hata çözümü için
+Ctrl+C veya web panelindeki kapatma düğmesi sunucuyu ve scheduler'ı durdurur.
+Yalnızca tarayıcı sekmesini kapatmak sunucuyu kapatmaz. Otomatik yenileme
+uygulama çalışırken yapılır; kaçırılan kontrol sonraki açılışta gerçekleştirilir.
+Anahtarlar varsayılan olarak tarayıcı oturumundadır. Açıkça seçersen özel 0600
+izinli, şifrelenmemiş local dosyaya kaydedilir. Sentetik demo isteğe bağlıdır:
+`threatfusion-ai --mode demo`. Geliştirme cache'i, model ve değerlendirmeler
+kopyalanmaz. Ayrıntılar ve alternatif başlatıcı yolu için
 [Linux kurulum rehberine](docs/INSTALL_LINUX.md) bak.
 
 Komut güncel `main` sürümünü kurar. Local kurulum, hosted servis oluşturmaz

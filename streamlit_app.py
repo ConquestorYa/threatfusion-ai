@@ -58,6 +58,7 @@ from threatfusion.ui_quick_lookup import (
     render_quick_lookup_empty_state,
     render_quick_lookup_result,
 )
+from threatfusion.ui_local_settings import resolve_managed_config, render_local_settings
 from threatfusion.ui_theme import (
     THEME_OPTIONS,
     canonical_theme_name,
@@ -557,9 +558,9 @@ def main() -> None:
     )
 
     try:
-        config = load_app_config()
-    except ValueError as error:
-        st.error(tr("Application configuration is invalid: {error}", error=error))
+        config, local_root = resolve_managed_config(load_app_config())
+    except (OSError, TypeError, ValueError):
+        st.error(tr("Application configuration is invalid. Check runtime paths and private file permissions."))
         return
 
     db_path = config.db_path
@@ -577,6 +578,12 @@ def main() -> None:
     render_main_brand()
     if "telemetry_format" in st.session_state:
         st.session_state["telemetry_format"] = st.session_state["telemetry_format"]
+
+    if local_root is not None:
+        try:
+            render_local_settings(local_root)
+        except (OSError, ValueError, TypeError):
+            st.sidebar.error(tr("Local settings could not be read. Check private file permissions."))
 
     navigation = st.sidebar.container()
     _show_system_status(

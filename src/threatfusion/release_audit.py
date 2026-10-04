@@ -95,7 +95,7 @@ def scan_release_path(
     secret_file = (
         filename == ".env"
         or (filename.startswith(".env.") and filename != ".env.example")
-        or filename == "secrets.toml"
+        or filename in {"secrets.toml", "credentials.json"}
         or filename.endswith((".pem", ".key", ".p12", ".pfx"))
     )
     database = any(

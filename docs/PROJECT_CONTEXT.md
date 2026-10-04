@@ -32,18 +32,26 @@ It is an educational prototype, not a production security product.
 ## Linux first-run flow
 
 The READMEs provide a single copy-paste command for Linux x86_64/glibc 2.28+.
-It installs private Python 3.12.14 and hashed runtime dependencies, fetches an
-immutable source revision and starts the synthetic demo on 127.0.0.1. Debian 12
-and Ubuntu 24.04 clean installations are tested without Python/Git prerequisites.
-The saved user-scoped launcher restarts offline and preserves existing data.
+It installs private Python 3.12.14 and hashed runtime dependencies, immutable
+source, the `threatfusion-ai` command and an applications-menu shortcut. New
+installations open real CTI mode (ML disabled), with an initially empty cache.
+Debian 12/Ubuntu 24.04 clean installations are tested without Python/Git.
 
-Real CTI is an explicit separate `cti-only --refresh-cti` path, with optional
-user-provided feed keys and ML disabled. No developer cache, model or holdout
-is copied, distributed or automatically promoted. First-run telemetry is
-session-local; shared persistent analyst history is disabled. This installer
-creates no hosted service. See `INSTALL_LINUX.md`. The user requested integration
-into `main`; installer downloads and its default ref now use `main`. The existing
-Render demo is confirmed user-suspended and must not be resumed by source updates.
+The local-only sidebar panel accepts the user's own masked API keys, applies
+session-only credentials by default, offers explicit optional 0600 plaintext
+storage inside the 0700 installation, and can refresh source caches manually.
+Opt-in 6/12/24-hour automatic refresh runs during the application's lifetime,
+uses saved keys/public sources and catches up at next launch. Refreshes are
+serialized; upstream failures preserve old source data and show safe aggregate
+status. CLI status/refresh/stop and a web stop button control this installation.
+Closing the browser does not stop the server; Ctrl+C/SIGTERM/SIGHUP do.
+
+Demo is an explicit separate mode; its reserved synthetic cache/model never
+enter real CTI scoring. Existing installations retain their selected mode on
+upgrade. No developer cache, model, key or holdout is copied, distributed or
+promoted. First-run telemetry is session-local and shared history is disabled.
+See `INSTALL_LINUX.md`. Source updates target `main` with the hosting guard in
+`AGENTS.md`; the Render demo remains user-suspended and must not be resumed.
 
 ## Intended users
 

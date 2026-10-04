@@ -14,6 +14,45 @@ _LANGUAGE_BY_OPTION = {
 }
 
 _TR: dict[str, str] = {
+    "Local setup & CTI updates": "Yerel kurulum ve CTI güncellemeleri",
+    "This installation uses your own credentials. No developer keys are included.": "Bu kurulum kendi anahtarlarını kullanır. Geliştiricinin anahtarları dahil değildir.",
+    "Operating mode": "Çalışma modu",
+    "Real CTI · ML disabled": "Gerçek CTI · ML kapalı",
+    "Synthetic demo": "Sentetik demo",
+    "Demo data is synthetic. Switch to real CTI to configure sources and updates.": "Demo verileri sentetiktir. Kaynakları ve güncellemeleri ayarlamak için gerçek CTI moduna geç.",
+    "SGB and public PhishTank can be attempted without keys. ThreatFox and URLhaus require your own keys. Source access may fail; previous data is preserved.": "SGB ve public PhishTank anahtarsız denenebilir. ThreatFox ve URLhaus kendi anahtarlarını gerektirir. Kaynak erişimi başarısız olabilir; eski veriler korunur.",
+    "Saved keys: {sources}": "Kayıtlı anahtarlar: {sources}",
+    "Save keys on this computer": "Anahtarları bu bilgisayara kaydet",
+    "Optional storage is a plaintext owner-only (0600) file inside the private installation directory. Leave unchecked for browser-session use only.": "İsteğe bağlı kayıt, özel kurulum dizininde yalnızca sahibinin erişebildiği (0600), şifrelenmemiş bir dosyadır. Yalnızca tarayıcı oturumunda kullanmak için işaretleme.",
+    "Apply keys": "Anahtarları uygula",
+    "Keys applied. Empty fields remove keys from this selection.": "Anahtarlar uygulandı. Boş alanlar bu seçimden anahtarı kaldırır.",
+    "Invalid API key format. No credentials were saved.": "API anahtarı biçimi geçersiz. Hiçbir anahtar kaydedilmedi.",
+    "Forget saved and session keys": "Kayıtlı ve oturumdaki anahtarları unut",
+    "Update CTI now": "CTI verilerini şimdi güncelle",
+    "Updating source caches…": "Kaynak önbellekleri güncelleniyor…",
+    "Automatic updates while the app is running": "Uygulama çalışırken otomatik güncelle",
+    "Update interval (hours)": "Güncelleme aralığı (saat)",
+    "Automatic refresh uses only saved keys and public sources. It stops with the app and catches up on the next start. PhishTank is checked at most once per 24 hours.": "Otomatik güncelleme yalnızca kayıtlı anahtarları ve public kaynakları kullanır. Uygulamayla durur; kaçırılan kontrol sonraki açılışta yapılır. PhishTank en sık 24 saatte bir kontrol edilir.",
+    "Save update settings": "Güncelleme ayarlarını kaydet",
+    "Reopen from the applications menu or run threatfusion-ai. Closing the browser tab does not stop the local server.": "Uygulamalar menüsünden veya threatfusion-ai komutuyla yeniden aç. Tarayıcı sekmesini kapatmak local sunucuyu durdurmaz.",
+    "Stop local application": "Yerel uygulamayı kapat",
+    "The local application is stopping. You can close this tab.": "Yerel uygulama kapanıyor. Bu sekmeyi kapatabilirsin.",
+    "No refresh yet. Use Update CTI now to download source data.": "Henüz güncelleme yok. Kaynak verilerini indirmek için CTI verilerini şimdi güncelle düğmesini kullan.",
+    "Last attempt: {time}": "Son deneme: {time}",
+    "A source update is running. Existing cached data remains available.": "Kaynak güncellemesi sürüyor. Mevcut önbellek kullanılabilir.",
+    "Update failed. Check network access and retry; existing data is preserved.": "Güncelleme başarısız. Ağ erişimini kontrol edip tekrar dene; mevcut veriler korunur.",
+    "{source}: update failed; previous cache preserved. Check source access and your key.": "{source}: güncelleme başarısız; eski önbellek korundu. Kaynak erişimini ve anahtarını kontrol et.",
+    "Cache still fresh": "Önbellek hâlâ güncel",
+    "{count} records updated": "{count} kayıt güncellendi",
+    "{source}: skipped (no API key).": "{source}: atlandı (API anahtarı yok).",
+    "Existing analysis results are snapshots. Run the lookup or analysis again after a cache update.": "Mevcut analiz sonuçları anlık görüntüdür. Önbellek güncellendikten sonra sorguyu veya analizi yeniden çalıştır.",
+    "Local settings could not be read. Check private file permissions.": "Yerel ayarlar okunamadı. Özel dosya izinlerini kontrol et.",
+    "Application configuration is invalid. Check runtime paths and private file permissions.": "Uygulama yapılandırması geçersiz. Çalışma yollarını ve özel dosya izinlerini kontrol et.",
+    "fetching": "indiriliyor",
+    "saving": "kaydediliyor",
+    "failed": "başarısız",
+    "skipped": "atlandı",
+    "refreshed": "güncellendi",
     "Language": "Dil",
     "Theme": "Tema",
     "Controls": "Kontroller",
@@ -618,9 +657,9 @@ def translate_dataframe(frame: pd.DataFrame) -> pd.DataFrame:
     translated = translated.rename(columns=_COLUMN_TR)
     for column in translated.columns:
         translated[column] = translated[column].map(
-            lambda value: _VALUE_TR.get(value, value)
-            if isinstance(value, str)
-            else value
+            lambda value: (
+                _VALUE_TR.get(value, value) if isinstance(value, str) else value
+            )
         )
     return translated
 

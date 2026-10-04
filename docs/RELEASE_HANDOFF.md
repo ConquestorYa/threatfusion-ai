@@ -327,3 +327,42 @@ an older holdout for the lexical candidate.
 - Source-only main update uses [skip render]; the Render service was confirmed
   user-suspended with previews disabled before publication. No public site
   deployment is authorized.
+
+## Managed Linux daily-use follow-up (2026-10-04)
+
+- Default fresh installation now opens real CTI-only operation; the empty cache
+  directs users to local setup. Demo remains explicit and isolated. Existing
+  installations preserve their previous mode and data when upgraded.
+- Installer registers `~/.local/bin/threatfusion-ai` and an XDG applications-menu
+  entry, preserving unrelated commands/entries and shell content. Optional
+  `--no-integrations` omits desktop/command/PATH changes. A new terminal picks
+  up required PATH registration; the full saved launcher always works.
+- Local-only panel supports masked own-key entry, session use by default,
+  explicitly optional 0600 plaintext credential storage in a 0700 root, forgetting
+  keys, manual refresh and opt-in 6/12/24-hour refresh. No developer environment
+  key fallback is used by the managed collector. Hosted/developer profiles lack
+  these controls unless the managed loopback launcher explicitly enables them.
+- Scheduler runs only while the app runs and performs due startup catch-up.
+  Saved keys/public sources are used; unsaved browser-session keys remain local
+  to manual refresh. Failed attempts are throttled, PhishTank retains its minimum
+  24-hour cadence, and a process lock serializes manual/CLI/automatic collection.
+- `threatfusion-ai status/refresh/stop`, a web stop button and Ctrl+C/SIGTERM/SIGHUP
+  supervise lifecycle. An owner-only Unix socket avoids stale-PID process kills.
+  Browser-tab closure leaves the supervised app running; no system/login service
+  or hidden background updater is installed.
+- Full local validation: **850 passed**, **90% coverage**, Ruff/Bash syntax/diff
+  checks and tracked-tree/reachable-history privacy auditing passed. Clean Debian
+  12/Ubuntu 24.04 installs without Python/Git passed repeat install, actual
+  WebSocket UI, registered shortcut/command, loopback binding, duplicate exclusion,
+  offline restart, control status/stop and fixture-data preservation. XDG desktop
+  entry validation passed. Real isolated Chromium verified password clearing,
+  explicit save/forget and web shutdown; a real bootstrap SIGHUP check verified
+  terminal-close cleanup without an orphan server/socket. Bootstrap imports use only the standard
+  library; collector dependencies load only inside the runtime interpreter.
+- Original **34** local data files recorded at this follow-up retained all
+  checksums. Tests use only reserved fixture domains and fake keys. Real upstream
+  availability and key validity are not guaranteed by mock/browser checks.
+- README/installation guide now explain key requirements, storage, scheduling,
+  reopen/stop and the unchanged trusted-model limitation. ML snapshots, temporal
+  evidence, thresholds and promotion policy are untouched. No public deployment
+  is authorized; main publication uses [skip render] after suspension verification.

@@ -66,7 +66,17 @@ def check_running(root: Path, mode: str, port: int, *, auto_port: bool = False) 
                 [str(root / "start"), "--prepare-only"], capture_output=True, text=True
             )
             assert duplicate.returncode == 1 and "zaten çalışıyor" in duplicate.stdout
-            process.send_signal(signal.SIGINT if mode == "demo" else signal.SIGTERM)
+            status = subprocess.run(
+                [str(root / "start"), "status"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            assert json.loads(status.stdout) == {"running": True, "url": url}
+            if mode == "demo":
+                process.send_signal(signal.SIGINT)
+            else:
+                subprocess.run([str(root / "start"), "stop"], check=True)
             assert process.wait(timeout=25) == 0
             time.sleep(0.3)
             with socket.socket() as client:
@@ -90,6 +100,16 @@ def main() -> None:
     assert root != Path.home() and (root / ".threatfusion-install").is_file()
     assert sys.version_info[:3] == (3, 12, 14)
     source = Path(json.loads((root / "installation.json").read_text())["source"])
+    # Default is a real, initially empty CTI workspace. Demo remains optional.
+    assert (root / "workspace.json").is_file()
+    assert (Path.home() / ".local/bin/threatfusion-ai").is_file()
+    assert (
+        Path.home()
+        / ".local/share/applications/io.github.ConquestorYa.ThreatFusionAI.desktop"
+    ).is_file()
+    subprocess.run(
+        [str(root / "start"), "--mode", "demo", "--prepare-only"], check=True
+    )
     model = root / "runtime/demo/bundle/models/development-001/model.joblib"
     demo_db = root / "runtime/demo/bundle/threatfusion.sqlite"
     identity = (digest(model), digest(demo_db))
