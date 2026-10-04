@@ -125,3 +125,11 @@ and known/unknown bytes for selected groups. Reports extend schema 2 additively;
 old snapshots still render. New snapshots reset the selected report-local group.
 See [workflow, bounds and live controls](CONNECTION_INVESTIGATION.md). No SQLite
 migration, raw-row web access, external requests or public listener is added.
+
+## TCP attempt review
+
+Snapshots also include a separate bounded S0/REJ failure-diversity/retry queue
+and Attempt review patterns metric. Original connection reviews retain their
+meaning; expected filters do not hide attempt patterns. Old snapshots are still
+readable, state schema stays 1 and no raw DB web access is added. See
+[TCP attempt workflow and limits](TCP_ATTEMPT_REVIEW.md).

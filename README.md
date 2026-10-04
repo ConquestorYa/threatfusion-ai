@@ -250,6 +250,11 @@ connection-start timelines, Zeek states and known/unknown byte counts. Available
 for uploads and the automatic collector; all findings remain in exports. See
 [workflow, privacy limits and two live packet controls](docs/CONNECTION_INVESTIGATION.md).
 
+**TCP attempt reviews** now groups failed attempts across ports/responders and
+repeated failures within a sliding five-minute window. Benign inventory scans
+and outages can also match. [Rules, live controls and remaining real-source
+coverage gap](docs/TCP_ATTEMPT_REVIEW.md) explain the scope.
+
 Optional [expected connection declarations](docs/EXPECTED_CONNECTIONS.md) separate
 locally verified operational expectations from unexplained reviews. Exact
 endpoints, traffic limits and expiry are required; CTI conflicts stay visible.

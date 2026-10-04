@@ -27,6 +27,7 @@ def build_connection_report(
     expected_rules: tuple[ExpectedConnectionRule, ...] = (), evaluated_at: datetime | None = None,
 ) -> str:
     from .connection_timeline import timeline_report
+    from .connection_attempts import attempt_report
 
     evaluated_at = evaluated_at or datetime.now(timezone.utc)
     return json.dumps({
@@ -37,6 +38,7 @@ def build_connection_report(
         "declaration_count": len(expected_rules),
         "findings": contextual_connection_rows(result, expected_rules, include_ips=include_ips, evaluated_at=evaluated_at),
         "timelines": timeline_report(result.connection_timelines, len(result.connection_findings)),
+        "attempts": attempt_report(result.connection_attempts, result.connection_findings, include_ips=include_ips),
         "privacy": {"endpoint_ips_included": include_ips, "raw_connection_rows_included": False,
                     "connection_uids_included": False, "host_alias_scope": "this_report_only",
                     "rule_ids_and_configuration_included": False},

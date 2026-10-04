@@ -2,6 +2,61 @@
 
 Status date: 2026-10-05
 
+## TCP attempt review increment (2026-10-05)
+
+- Added separate `tcp-attempt-review-v1`: inclusive sliding 300-second source/
+  target/port windows, 20 distinct S0/REJ failed ports or hosts, or 30 repeated
+  failures with >=90% among comparable records. Equal timestamps evaluate as a
+  batch; missing/conflicting/gapped source-window evidence blocks retry ratios.
+  Observed diversity can remain with explicit source coverage limits. One peak
+  per key/pattern, at most 500 findings, with omitted count/warning. Shared UID
+  identity logic preserves original connection/timeline semantics.
+- Schema-2 connection reports add an optional attempts block and collector
+  status adds a separate attempt-review count. Bilingual uploaded/local collector
+  queues remain visible under original/expected filters. Existing CTI/context and
+  original connection/domain/device/ML verdicts are unchanged. IPs default to
+  existing report-local aliases, raw UIDs/rows/source paths remain omitted; no
+  private SQLite/history migration, credentials, feed fetch or public listener.
+- `tcp-attempt-controls-v1` froze inputs before implementation: **32/32 development
+  and 32/32 reserved constructed checks pass**, including benign inventory/outage
+  review burden. An initial input-generator boundary construction correction was
+  made before coding, preserving its prior private receipt. No threshold tuning.
+  Candidate fingerprints then froze before new official/live traffic inspection.
+- New isolated guest run `attempt-live-20261004T214016Z`: **120 real packet-derived
+  records** (84 REJ, 36 SF), three scoped new patterns and zero original connection
+  reviews. Zero invalid metadata/reported kernel drops. Offline/collector match,
+  restart adds zero and gzip replay is one duplicate. This is synthetic plumbing
+  evidence, not real-world malware detection or human efficacy.
+- New official uninspected IoT-23 capture 8-1, selected by HEAD byte size before
+  body acquisition: **10,403 accepted rows**, no invalid/skipped metadata, original
+  groups/reviews **9/0**, new attempt patterns **0**. Trusted isolated baseline
+  `b00fc836367c7ff0f408c6d1bd56d1130a7d5d59` matches original findings/timelines and
+  domain verdict counts. Collector retains all rows in the declared seven-day
+  proof window; restart/gzip contracts pass. Labels stay outside detector input.
+- Post-evaluation coverage diagnostic: 8-1 has 8,222 S0 and two OTH TCP rows, plus
+  2,179 UDP rows. Same-endpoint five-minute failure peak is 16; failed port diversity
+  is one. The sparse-failure gap remains, no increased malware recall/FPR/parity
+  claimed. No fresh independent benign capture. Existing experiment files are not
+  rewritten/rescored as untouched evidence. Full method/attribution/aggregate
+  receipts: `TCP_ATTEMPT_REVIEW.md`. Raw artifacts/state remain private/external.
+- Validation: **1,042 project tests passed**, **90%** coverage, Ruff/Bash/diff checks
+  passed. Coverage includes contracts, inclusive/sliding boundaries, coarse time/
+  denominator order, cross-source conflicts, privacy, caps/omitted counts, malformed
+  snapshot blocks, bilingual queues and actual collector/restart behavior. One
+  initial test assumption about all existing domain verdicts being Low was
+  corrected to compare unchanged original assessments; duplicate volume already
+  creates Review in the original pipeline. No product verdict was weakened.
+- One 100,000-record/1,000-source constructed attempt-analysis check retained 500
+  patterns and disclosed 500 omitted, taking 2.27 seconds and 5.77 MB traced Python
+  allocation peak for that phase only. Input/pipeline allocation and total RSS
+  excluded; not production throughput. All 34 original local data files keep their
+  checksums. Original ML artifact remains absent; fresh-disjoint is not strict
+  temporal and augmented runtime promotion remains deferred.
+- Source-only main integration uses `[skip render]` and suspended hosting/previews
+  guard. Verify all CI and unchanged deployment history after publication. Next:
+  UDP/DNS predeclared scope, new independent benign/sparse-failure recordings,
+  longer live rotation/resource/latency checks and human analyst task evaluation.
+
 ## Connection investigation and live termination controls (2026-10-05)
 
 - Added `connection-start-timeline-v1` to uploaded and collected connection views:

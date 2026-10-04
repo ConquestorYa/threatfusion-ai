@@ -12,6 +12,7 @@ This directory contains the technical documentation behind the portfolio-facing 
 | [TELEMETRY_COLLECTOR.md](TELEMETRY_COLLECTOR.md) | Private automatic completed Zeek logs, restart/rotation, limits and local UI |
 | [NETWORK_EVALUATION.md](NETWORK_EVALUATION.md) | Independent official IoT-23 protocol, aggregate observations and detection gaps |
 | [CONNECTION_INVESTIGATION.md](CONNECTION_INVESTIGATION.md) | Bounded connection timelines, analyst workflow and two isolated live termination controls |
+| [TCP_ATTEMPT_REVIEW.md](TCP_ATTEMPT_REVIEW.md) | Sliding-window TCP failure diversity/retry review, private workflow and reserved evidence |
 | [TCP_TERMINATION.md](TCP_TERMINATION.md) | Partial/reset TCP payload coverage, failed-attempt counts and reserved comparison |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Current data flow, trust boundaries, runtime components and design principles |
 | [DATA_SOURCES.md](DATA_SOURCES.md) | CTI sources, attribution, redistribution boundaries and telemetry privacy |

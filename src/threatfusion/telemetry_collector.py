@@ -275,6 +275,7 @@ class ZeekCollector:
         result = analyze_dns_events(events, indicators, None, connections=records)
         counts["retained_records"] = len(records)
         counts["review_groups"] = sum(f.priority == "review" for f in result.connection_findings)
+        counts["attempt_review_groups"] = len(result.connection_attempts.findings)
         capacity = self.db.execute("SELECT value FROM meta WHERE key='capacity_loss_until'").fetchone()
         capacity_loss = bool(capacity and epoch < float(capacity[0]))
         status = {"schema_version": 1, "policy": POLICY_ID, "updated_at": now.isoformat(),

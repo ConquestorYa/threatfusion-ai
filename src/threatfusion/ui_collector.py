@@ -13,6 +13,8 @@ import streamlit as st
 from .i18n import tr, translate_dataframe
 from .ui_connection_timeline import render_timeline
 from .connection_timeline import validate_timeline_report
+from .connection_attempts import validate_attempt_report
+from .ui_connection_attempts import render_attempts
 
 MAX_SNAPSHOT_BYTES = 64 * 1024 * 1024
 
@@ -60,6 +62,8 @@ def read_snapshot(root: Path):
         raise ValueError("Invalid collected findings")
     if "timelines" in payload:
         validate_timeline_report(payload["timelines"], payload["findings"])
+    if "attempts" in payload:
+        validate_attempt_report(payload["attempts"])
     return payload
 
 
@@ -85,10 +89,11 @@ def render_collector(state_dir: Path | None, *, public_mode: bool):
     st.caption(tr("Collector snapshot: {time}", time=status["updated_at"]))
     if (datetime.now(timezone.utc) - datetime.fromisoformat(status["updated_at"])).total_seconds() > 60:
         st.warning(tr("This snapshot is older than one minute. Check whether the collector is still running."))
-    columns = st.columns(3)
+    columns = st.columns(4)
     columns[0].metric(tr("Retained connections"), counts["retained_records"])
     columns[1].metric(tr("Connection reviews"), counts["review_groups"])
     columns[2].metric(tr("Rejected files"), counts["rejected_files"])
+    columns[3].metric(tr("Attempt review patterns"), counts.get("attempt_review_groups", 0))
     if status.get("capacity_coverage_loss"):
         st.warning(tr("The collector reached its record limit. Coverage is incomplete and expected-activity filtering is disabled temporarily."))
     if counts["rejected_files"]:
@@ -112,6 +117,7 @@ def render_collector(state_dir: Path | None, *, public_mode: bool):
     if len(rows) > 500:
         st.caption(tr("Showing the first 500 groups. The download contains all retained groups."))
     render_timeline(rows[:500], payload.get("timelines", {}), key="collector", revision=status["updated_at"])
+    render_attempts(payload.get("attempts"))
     st.download_button(tr("Download collected connection JSON"), data=json.dumps(payload, indent=2),
                        file_name="threatfusion_collected_connections.json", mime="application/json")
     st.caption(tr("Collector history is bounded. Aliases are report-local and exports remain sensitive telemetry."))

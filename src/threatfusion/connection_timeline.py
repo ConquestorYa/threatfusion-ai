@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from math import ceil, floor
 
-from .connections import ConnectionFinding, ConnectionRecord
+from .connections import ConnectionFinding, ConnectionRecord, connection_identity_index
 
 POLICY_ID = "connection-start-timeline-v1"
 MAX_GROUPS = 200
@@ -33,14 +33,7 @@ def build_timelines(records: tuple[ConnectionRecord, ...], findings: tuple[Conne
     """
     selected = {(f.originator_ip, f.responder_ip, f.responder_port, f.protocol): index
                 for index, f in enumerate(findings[:MAX_GROUPS], 1)}
-    by_uid = {}
-    conflicts = set()
-    for record in records:
-        if not record.uid:
-            continue
-        previous = by_uid.setdefault(record.uid, record)
-        if previous != record:
-            conflicts.add(record.uid)
+    by_uid, conflicts, _ = connection_identity_index(records)
     groups = defaultdict(list)
     for uid, record in by_uid.items():
         key = (record.originator_ip, record.responder_ip, record.responder_port, record.protocol)

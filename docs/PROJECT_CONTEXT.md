@@ -94,6 +94,14 @@ no public listener, packet sensor or system autostart is introduced. See
 offline results and survived restart/gzip duplication. This is operational
 contract evidence, not calibrated C2 detection or production sizing.
 
+`tcp-attempt-review-v1` adds a separate bounded five-minute S0/REJ review
+queue for failed port/host diversity and dense retries. Benign inventory scans
+and service outages can also match. All 64 predeclared contract checks pass;
+a new isolated live 120-record run produces three scoped patterns. A new official
+8-1 capture imports 10,403 rows but produces no attempt review: sparse failures
+remain uncovered. Original findings/verdicts and ML policy are preserved. See
+`TCP_ATTEMPT_REVIEW.md`; no increased malware recall or analyst efficacy claim.
+
 ## Linux first-run flow
 
 Connection policy v2 now includes eligible bidirectional payload from incomplete

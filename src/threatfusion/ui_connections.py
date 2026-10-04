@@ -12,6 +12,8 @@ from .reporting import build_connection_report
 from .runtime_analysis import RuntimeAnalysisResult
 from .connection_timeline import timeline_report
 from .ui_connection_timeline import render_timeline
+from .ui_connection_attempts import render_attempts
+from .connection_attempts import attempt_report
 
 
 def render_connections(result: RuntimeAnalysisResult, *, public_mode: bool) -> None:
@@ -61,6 +63,7 @@ def render_connections(result: RuntimeAnalysisResult, *, public_mode: bool) -> N
     if len(visible) > 500:
         st.caption(tr("Showing the first 500 groups. The download contains all retained groups."))
     render_timeline(visible[:500], timeline_report(result.connection_timelines, len(rows)), key="connection")
+    render_attempts(attempt_report(result.connection_attempts, result.connection_findings, include_ips=include_ips))
     st.download_button(tr("Download connection review JSON"),
                        data=build_connection_report(result, include_ips=include_ips, expected_rules=rules, evaluated_at=now),
                        file_name="threatfusion_connections.json", mime="application/json")

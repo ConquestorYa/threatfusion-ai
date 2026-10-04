@@ -14,6 +14,28 @@ _LANGUAGE_BY_OPTION = {
 }
 
 _TR: dict[str, str] = {
+    "TCP attempt reviews": "TCP denemesi incelemeleri",
+    "These patterns can come from inventory scans, blocked services or outages. Review observed behavior before deciding its cause.": "Bu örüntüler envanter taramalarından, engellenen servislerden veya kesintilerden kaynaklanabilir. Nedeni belirlemeden önce gözlenen davranışı incele.",
+    "Sliding window: 5 minutes; at least 20 failed ports/hosts, or 30 repeated failures with at least 90% failures. Expected declarations do not hide this queue.": "Kayan pencere: 5 dakika; en az 20 başarısız port/hedef veya en az %90 başarısızlıkla 30 tekrar. Beklenen etkinlik beyanları bu kuyruğu gizlemez.",
+    "{count} TCP records lack comparable evidence. Retry ratios require complete source-window coverage; observed port/host diversity can still appear with coverage limits.": "{count} TCP kaydının karşılaştırılabilir kanıtı eksik. Tekrar oranı için kaynak ve zaman penceresinde tam kapsam gerekir; gözlenen port/hedef çeşitliliği kapsam sınırlarıyla gösterilebilir.",
+    "{count} additional attempt reviews exceed the 500-finding limit.": "{count} ek deneme incelemesi 500 bulgu sınırını aşıyor.",
+    "No TCP attempt pattern crossed these review gates. Check capture coverage before interpreting this result.": "Bu inceleme koşullarına uyan TCP denemesi yok. Sonucu yorumlamadan önce kayıt kapsamını kontrol et.",
+    "Failed attempts across multiple ports": "Birden fazla porta başarısız denemeler",
+    "Failed attempts across multiple responders": "Birden fazla hedefe başarısız denemeler",
+    "Repeated failures to one endpoint": "Tek bağlantı ucuna tekrarlanan başarısızlıklar",
+    "Multiple responders": "Birden fazla hedef",
+    "Attempt review patterns": "Deneme incelemesi örüntüleri",
+    "Pattern": "Örüntü",
+    "Window (s)": "Pencere (sn)",
+    "Failed attempts": "Başarısız denemeler",
+    "Unanswered attempts": "Yanıtsız denemeler",
+    "Rejected attempts": "Reddedilen denemeler",
+    "Observed records": "Gözlenen kayıtlar",
+    "Distinct responders": "Farklı hedefler",
+    "Distinct ports": "Farklı portlar",
+    "Failure fraction": "Başarısızlık oranı",
+    "Excluded source TCP records": "Kaynakta dışlanan TCP kayıtları",
+
     "Connection investigation": "Bağlantı incelemesi",
     "Select a connection group": "Bir bağlantı grubu seç",
     "Restart the collector to generate connection timelines.": "Bağlantı zaman çizelgeleri için toplayıcıyı yeniden başlat.",
@@ -631,6 +653,17 @@ _TR: dict[str, str] = {
 }
 
 _COLUMN_TR = {
+    "Pattern": "Örüntü",
+    "Window (s)": "Pencere (sn)",
+    "Failed attempts": "Başarısız denemeler",
+    "Unanswered attempts": "Yanıtsız denemeler",
+    "Rejected attempts": "Reddedilen denemeler",
+    "Observed records": "Gözlenen kayıtlar",
+    "Distinct responders": "Farklı hedefler",
+    "Distinct ports": "Farklı portlar",
+    "Failure fraction": "Başarısızlık oranı",
+    "Excluded source TCP records": "Kaynakta dışlanan TCP kayıtları",
+
     "UTC bucket start": "UTC aralık başlangıcı",
     "Connection starts": "Başlayan bağlantılar",
     "Known originator bytes": "Başlatanın bilinen baytları",

@@ -19,13 +19,25 @@ context is not measured equivalent C2 detection.
 | --- | --- | --- |
 | Client-level DNS review | Independent client/target assessments, sustained-periodic review, CTI evidence scope; synthetic checks and existing Zeek replay | Realistic DNS caching/update controls, several independent windows, alert burden and analyst usefulness |
 | Connection behavior | Typed UID/direction/ports/duration/bytes; long bidirectional TCP review; isolated cache/persistence capture | Independent longer captures, partial-session coverage and operational alert burden |
+| TCP attempt behavior | S0/REJ sliding-window failed port/host diversity and dense retry review; constructed/live controls; one new official capture produces none | New independent benign/sparse-failure controls and reserved inputs; operational review burden |
 | Beaconing | Sustained successful TCP timing review plus DNS regularity; no C2 accuracy claim | Robust timing/size analysis and jitter/retry/idle controls on independent permitted windows |
 | DNS tunneling | Hostname shape context only | Registrable-domain aggregation with proper suffix handling, unique-label/size/type evidence, benign CDN/telemetry controls and independent recordings |
 | Continuous collection | Completed TSV/gzip connection collector, private bounded state, checkpoint/restart/rotation dedup and local snapshot UI | Active-file latency, longer live rotation, representative resource tests; DNS incremental support |
 | Analyst operations | Local web investigation, bounded connection-start timelines, feedback, reports and expiring exact-endpoint declarations with CTI override | Independent analyst workload validation, device DNS timelines and documented SIEM export contracts |
 | Operational readiness | Local test suite and bounded synthetic workload | Security review, installation/recovery checks and representative throughput/resource measurements |
 
-## Current increment: connection investigation and real termination controls
+## Current increment: TCP attempt review
+
+A separate bounded queue groups S0/REJ failures across ports/responders and dense
+retries in sliding five-minute windows. All 64 predeclared controls pass, including
+benign inventory/outage review burden. A new 120-record live control produces
+three patterns; a new official 10,403-record capture produces none. Its maximum
+16 same-endpoint failures per five minutes remains outside the declared gate.
+Original connection/domain verdicts match the trusted baseline. See
+[workflow, scope and coverage gap](TCP_ATTEMPT_REVIEW.md). Next: UDP/DNS controls,
+new independent benign/sparse-failure evidence, longer rotation and analyst study.
+
+## Previous increment: connection investigation and real termination controls
 
 Uploaded/collected groups now have bounded connection-start UTC charts and
 state/known-byte/missing-byte summaries; all findings remain exported with

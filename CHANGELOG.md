@@ -12,6 +12,13 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Separate bounded TCP-attempt review queue for sliding-window failed port/host
+  diversity and repeated S0/REJ failures, explicit coverage and dedup/conflicts,
+  bilingual upload/collector views and additive private schema-v2 exports.
+  Predeclared controls and a real isolated 120-record workload pass; a new
+  official 10,403-record capture exposes a sparse-failure coverage gap without
+  increased recall. Original connection/domain/ML verdicts remain unchanged.
+
 - Bounded connection-start investigation charts and state/known-byte/missing-byte
   summaries for uploaded and automatically collected groups, bilingual local
   views, report-local group references and additive schema-v2 timeline exports.

@@ -55,12 +55,8 @@ class ConnectionFinding:
     failed_attempt_count: int = 0
 
 
-def analyze_connections(records: tuple[ConnectionRecord, ...]) -> tuple[ConnectionFinding, ...]:
-    """Group observation direction, protocol and responder port; never infer domains.
-
-    Repeated identical UIDs count once. Conflicting UIDs are excluded entirely,
-    including across endpoints. No CTI/ML verdict is altered by this queue.
-    """
+def connection_identity_index(records: tuple[ConnectionRecord, ...]):
+    """Shared global identity semantics for findings, timelines and attempt review."""
     by_uid: dict[str, ConnectionRecord] = {}
     conflicts = set()
     duplicates = defaultdict(int)
@@ -74,6 +70,16 @@ def analyze_connections(records: tuple[ConnectionRecord, ...]) -> tuple[Connecti
                 duplicates[record.uid] += 1
         else:
             by_uid[record.uid] = record
+    return by_uid, conflicts, duplicates
+
+
+def analyze_connections(records: tuple[ConnectionRecord, ...]) -> tuple[ConnectionFinding, ...]:
+    """Group observation direction, protocol and responder port; never infer domains.
+
+    Repeated identical UIDs count once. Conflicting UIDs are excluded entirely,
+    including across endpoints. No CTI/ML verdict is altered by this queue.
+    """
+    by_uid, conflicts, duplicates = connection_identity_index(records)
     groups = defaultdict(list)
     for record in records:
         key = (record.originator_ip, record.responder_ip, record.responder_port, record.protocol)

@@ -252,6 +252,11 @@ ve bilinen/eksik bayt sayılarını görebilirsin. Dosya yüklemede ve otomatik 
 çalışır; bütün bulgular raporda kalır. [Kullanım, gizlilik sınırları ve iki gerçek
 paket kontrolü](docs/CONNECTION_INVESTIGATION.md) belgelenmiştir.
 
+**TCP denemesi incelemeleri**, beş dakikalık kayan pencerede farklı port/hedeflere
+başarısız denemeleri ve yoğun tekrarları bir araya getirir. Meşru envanter taraması
+ve servis kesintisi de inceleme oluşturabilir. [Kurallar, gerçek paket kontrolleri
+ve gerçek kayıtlarda kalan kapsam eksikliği](docs/TCP_ATTEMPT_REVIEW.md) belgelenmiştir.
+
 İsteğe bağlı [beklenen bağlantı beyanları](docs/EXPECTED_CONNECTIONS.md), analistin
 kontrol ettiği operasyonel beklentileri açıklanamayan incelemelerden ayırır.
 Kesin bağlantı uçları, trafik sınırları ve son geçerlilik tarihi gerekir; CTI

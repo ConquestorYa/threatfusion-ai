@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .dns import DNSEvent, DNSParseDiagnostics, parse_dns_csv_with_diagnostics
 from .device_triage import DeviceFinding, build_device_findings
 from .connections import ConnectionFinding, ConnectionRecord, analyze_connections
 from .connection_timeline import ConnectionTimeline, build_timelines
+from .connection_attempts import AttemptAnalysis, analyze_attempts
 from .network_telemetry import parse_zeek_conn_log_with_diagnostics
 from .dns_ingest import DNSInputDetection, parse_dns_upload_with_diagnostics
 from .dns_adguard import parse_adguard_query_log_with_diagnostics
@@ -46,6 +47,7 @@ class RuntimeAnalysisResult:
     device_findings: tuple[DeviceFinding, ...] = ()
     connection_findings: tuple[ConnectionFinding, ...] = ()
     connection_timelines: tuple[ConnectionTimeline, ...] = ()
+    connection_attempts: AttemptAnalysis = field(default_factory=AttemptAnalysis)
 
     @property
     def ml_probabilities(self) -> dict[str, float]:
@@ -156,6 +158,7 @@ def analyze_dns_events(
         ),
         connection_findings=connection_findings,
         connection_timelines=build_timelines(connection_list, connection_findings),
+        connection_attempts=analyze_attempts(connection_list),
     )
 
 
