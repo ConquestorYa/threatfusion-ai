@@ -59,6 +59,15 @@ not malware FPR/recall. Native RITA on the same short cached capture emitted
 High/beacon 1 for updater and heartbeat, with no browser row or modifiers.
 Longer independent recordings and expected-software context are still needed.
 
+`expected-connection-context-v1` now provides optional local, expiring exact-pair
+analyst declarations with duration/count/byte limits. It separates declared
+expected activity reversibly and keeps original connection priority/evidence.
+Client/destination CTI conflicts override declarations; incomplete evidence cannot
+qualify. Schema-v2 connection reports retain all groups and omit declaration
+IDs/configuration. Eleven constructed controls include an identical heartbeat
+that also matches: software identity and safety remain unverified. See
+`EXPECTED_CONNECTIONS.md`; independent longer recordings remain an open gate.
+
 ## Linux first-run flow
 
 The READMEs provide a single copy-paste command for Linux x86_64/glibc 2.28+.

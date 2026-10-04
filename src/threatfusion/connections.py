@@ -83,7 +83,7 @@ def analyze_connections(records: tuple[ConnectionRecord, ...]) -> tuple[Connecti
             coverage.append("missing_connection_uid")
         if any(r.uid in conflicts for r in rows):
             coverage.append("conflicting_connection_uid")
-        if not source or port is None or proto is None:
+        if not source or port is None or proto is None or any(r.originator_port is None for r in unique):
             coverage.append("incomplete_endpoint_metadata")
         timestamps = [r.timestamp for r in unique if r.timestamp is not None]
         if len(timestamps) != len(unique):

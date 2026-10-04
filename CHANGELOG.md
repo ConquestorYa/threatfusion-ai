@@ -12,6 +12,12 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Optional expiring exact-endpoint connection declarations with upload-wide
+  count/duration/byte limits, scoped CTI override and reversible local expected
+  activity filtering. Schema-v2 connection exports retain original evidence and
+  all groups, omitting declaration configuration/IDs. Eleven frozen context
+  controls explicitly cover the same-endpoint software-identity limitation.
+
 - Typed Zeek TSV connection metadata and independent originator/responder/port
   review for long bidirectional TCP sessions and sustained successful timing;
   duplicate/conflicting UID handling, missing-data limits, bilingual connection

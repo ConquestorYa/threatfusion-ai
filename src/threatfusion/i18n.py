@@ -14,6 +14,24 @@ _LANGUAGE_BY_OPTION = {
 }
 
 _TR: dict[str, str] = {
+    "No unexplained connection reviews in this view.": "Bu görünümde açıklanamayan bağlantı incelemesi yok.",
+    "Expected activity is your declaration, not verified software identity. Exact endpoints, traffic limits and expiry are required; CTI conflicts stay visible.": "Beklenen etkinlik senin beyanındır; yazılım kimliğini doğrulamaz. Kesin bağlantı uçları, trafik sınırları ve son geçerlilik tarihi gerekir; CTI çelişkileri görünür kalır.",
+    "Optional expected-connection JSON (local session only)": "İsteğe bağlı beklenen bağlantı JSON dosyası (yalnızca yerel oturum)",
+    "Invalid expected-connection file. No declarations applied.": "Beklenen bağlantı dosyası geçersiz. Hiçbir beyan uygulanmadı.",
+    "Declared expected: {expected}; unexplained reviews: {reviews}; CTI conflicts: {conflicts}": "Beklentiye uyan: {expected}; açıklanamayan incelemeler: {reviews}; CTI çelişkileri: {conflicts}",
+    "Include declared expected activity": "Beklentiye uyan etkinlikleri de göster",
+    "Analyst context": "Analist bağlamı",
+    "CTI match": "CTI eşleşmesi",
+    "Declared expected": "Beklentiye uyuyor",
+    "CTI conflict": "CTI çelişkisi",
+    "Needs review": "İnceleme gerekiyor",
+    "Observation": "Gözlem",
+    "Context reason": "Bağlam gerekçesi",
+    "cti_overrides_declaration": "CTI eşleşmesi beyanın önüne geçer",
+    "analyst_declaration_only": "Yalnızca analist beyanına dayanır",
+    "incomplete_evidence": "Beklenti için kanıt eksik",
+    "outside_declared_limits": "Beyan edilen sınırların dışında",
+    "no_active_exact_rule": "Geçerli ve kesin eşleşen beyan yok",
     "Connection activity": "Bağlantı etkinliği",
     "Host {number}": "Sistem {number}",
     "Connection timing, duration and byte counts are review context. They do not prove malware or downloads.": "Bağlantı zamanları, süreleri ve veri miktarları inceleme için bağlam sağlar. Zararlı yazılım veya indirme gerçekleştiğini kanıtlamaz.",
@@ -571,6 +589,8 @@ _TR: dict[str, str] = {
 }
 
 _COLUMN_TR = {
+    "Analyst context": "Analist bağlamı", "CTI match": "CTI eşleşmesi",
+    "Declared expected": "Beklentiye uyuyor", "Context reason": "Bağlam gerekçesi",
     "Originator": "Başlatan", "Responder": "Yanıtlayan",
     "Responder port": "Hedef portu", "Protocol": "Protokol",
     "Connections": "Bağlantılar", "Confirmed sessions": "Doğrulanmış bağlantılar",

@@ -3,9 +3,11 @@ from __future__ import annotations
 import argparse
 import os
 from collections.abc import Sequence
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .cti_cache import load_ioc_records
+from .expected_connections import MAX_RULE_BYTES, connection_contexts, parse_expected_connections
 from .ml_artifact import load_trusted_ml_artifact
 from .reporting import build_analysis_report, build_connection_report, build_device_report
 from .runtime_analysis import (
@@ -67,6 +69,8 @@ def build_parser() -> argparse.ArgumentParser:
                         help="Separate connection review report with host aliases by default")
     parser.add_argument("--include-connection-ips", action="store_true",
                         help="Include both endpoint IPs only in the explicit connection report")
+    parser.add_argument("--expected-connections", type=Path,
+                        help="Local expiring exact-endpoint declarations for the separate connection report")
     return parser
 
 
@@ -95,6 +99,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("--include-client-ips requires --device-json-output")
     if args.include_connection_ips and args.connection_json_output is None:
         parser.error("--include-connection-ips requires --connection-json-output")
+    rules = ()
+    if args.expected_connections is not None:
+        if args.format != "zeek-conn" or args.connection_json_output is None:
+            parser.error("--expected-connections requires --format zeek-conn and --connection-json-output")
+        try:
+            with args.expected_connections.open("rb") as file:
+                rules = parse_expected_connections(file.read(MAX_RULE_BYTES + 1))
+        except (ValueError, OSError):
+            parser.error("Invalid or unreadable expected-connection file; no rules applied")
     content = _load_input(args.input, args.format)
 
     artifact = None if args.cti_only else load_trusted_ml_artifact(args.model_dir)
@@ -131,6 +144,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             artifact,
         )
 
+    context_time = datetime.now(timezone.utc)
     report = build_analysis_report(
         result,
         model_name=artifact.metadata.model_name if artifact else "cti_only_ml_disabled",
@@ -145,7 +159,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         _write_private(args.device_json_output, content)
     if args.connection_json_output is not None:
         _write_private(args.connection_json_output, build_connection_report(
-            result, include_ips=args.include_connection_ips,
+            result, include_ips=args.include_connection_ips, expected_rules=rules, evaluated_at=context_time,
         ))
 
     verdict_counts = {
@@ -175,5 +189,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     ))
     print(f"  Connection groups: {len(result.connection_findings)}")
     print(f"  Connection reviews: {sum(f.priority == 'review' for f in result.connection_findings)}")
+    contexts = connection_contexts(result, rules, evaluated_at=context_time)
+    print(f"  Declared expected groups: {sum(c.expected for c in contexts)}")
+    print(f"  Unexplained connection reviews: {sum(f.priority == 'review' and not c.expected for f, c in zip(result.connection_findings, contexts, strict=True))}")
+    print(f"  Connection CTI conflicts: {sum(c.cti_matched for c in contexts)}")
     print(f"  Invalid connection fields: {diagnostics.invalid_connection_fields}")
     return 0

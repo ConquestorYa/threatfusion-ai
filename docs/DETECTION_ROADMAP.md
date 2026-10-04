@@ -22,10 +22,25 @@ context is not measured equivalent C2 detection.
 | Beaconing | Sustained successful TCP timing review plus DNS regularity; no C2 accuracy claim | Robust timing/size analysis and jitter/retry/idle controls on independent permitted windows |
 | DNS tunneling | Hostname shape context only | Registrable-domain aggregation with proper suffix handling, unique-label/size/type evidence, benign CDN/telemetry controls and independent recordings |
 | Continuous collection | Manual local upload/CLI | Rotation-aware, bounded, restart-safe ingestion with checkpoints and duplicate protection |
-| Analyst operations | Local web investigation, feedback, aggregate exports and explicit device export | Device investigation/timelines, bounded retention and documented SIEM export contracts |
+| Analyst operations | Local web investigation, feedback, device/connection reports and expiring exact-endpoint declarations with CTI override | Independent analyst workload validation, timelines, bounded retention and documented SIEM export contracts |
 | Operational readiness | Local test suite and bounded synthetic workload | Security review, installation/recovery checks and representative throughput/resource measurements |
 
-## Current increment: dns-device-triage-v1
+## Current increment: expected-connection-context-v1
+
+Optional local declarations separate expected operational activity without
+changing original connection priorities or DNS/domain/device verdicts. Exact
+endpoints, upload-wide volume/count/duration bounds and <= 30-day expiry are
+required. Incomplete data cannot qualify. Existing client/destination CTI
+matches override declarations, including for Observe connections. Reports keep
+all groups; the UI filter is reversible and declarations are not persisted.
+See [schema, workflow and evidence limits](EXPECTED_CONNECTIONS.md).
+
+Eleven predeclared synthetic context controls pass, including a same-endpoint
+heartbeat that also matches the declaration. This is an explicit software
+identity limitation, not improved detection or measured false-positive reduction.
+Longer independent permitted capture and analyst workload evaluation remain open.
+
+## Previous increment: dns-device-triage-v1
 
 The existing domain-wide verdict and original `periodic-controls-v1` comparison
 remain unchanged. A separate queue evaluates each observed client and target

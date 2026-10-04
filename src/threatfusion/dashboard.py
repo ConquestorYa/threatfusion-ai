@@ -17,6 +17,7 @@ from .persistence import (
 from .runtime_analysis import RuntimeAnalysisResult
 from .device_triage import DeviceFinding
 from .connections import ConnectionFinding
+from .expected_connections import ExpectedConnectionRule, connection_contexts
 
 
 @dataclass(frozen=True)
@@ -214,6 +215,21 @@ def connection_finding_rows(
         "Evidence": "; ".join(reasons[r] for r in f.reasons),
         "Coverage limits": "; ".join(limits[r] for r in f.limitations),
     } for f in findings]
+
+
+def contextual_connection_rows(
+    result: RuntimeAnalysisResult, rules: tuple[ExpectedConnectionRule, ...] = (),
+    *, include_ips: bool = False, evaluated_at: datetime | None = None,
+) -> list[dict[str, object]]:
+    rows = connection_finding_rows(result.connection_findings, include_ips=include_ips)
+    statuses = {"declared_expected": "Declared expected", "cti_conflict": "CTI conflict",
+                "review": "Needs review", "observe": "Observation"}
+    for row, context in zip(rows, connection_contexts(result, rules, evaluated_at=evaluated_at), strict=True):
+        row["Analyst context"] = statuses[context.status]
+        row["CTI match"] = context.cti_matched
+        row["Declared expected"] = context.expected
+        row["Context reason"] = context.reason
+    return rows
 
 
 def build_relationship_graph(

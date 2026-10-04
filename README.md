@@ -240,6 +240,11 @@ can also be legitimate; this queue does not prove C2 or downloads. Both endpoint
 IPs are hidden by default in its separate export. The CLI accepts
 `--format zeek-conn --connection-json-output /path/outside/repo/review.json`.
 
+Optional [expected connection declarations](docs/EXPECTED_CONNECTIONS.md) separate
+locally verified operational expectations from unexplained reviews. Exact
+endpoints, traffic limits and expiry are required; CTI conflicts stay visible.
+This context does not verify software identity or remove original evidence.
+
 ---
 
 ## 🧠 Machine-learning position

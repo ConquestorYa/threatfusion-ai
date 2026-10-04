@@ -242,6 +242,11 @@ Ayrı bağlantı raporunda iki uçtaki IP'ler de varsayılan olarak gizlidir.
 CLI için `--format zeek-conn --connection-json-output /repo/disinda/inceleme.json`
 seçeneklerini kullanabilirsin.
 
+İsteğe bağlı [beklenen bağlantı beyanları](docs/EXPECTED_CONNECTIONS.md), analistin
+kontrol ettiği operasyonel beklentileri açıklanamayan incelemelerden ayırır.
+Kesin bağlantı uçları, trafik sınırları ve son geçerlilik tarihi gerekir; CTI
+çelişkileri görünür kalır. Yazılım kimliğini doğrulamaz, önceki kanıtları silmez.
+
 ---
 
 ## 🧠 Makine öğrenmesi yaklaşımı

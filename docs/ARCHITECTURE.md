@@ -4,6 +4,14 @@ ThreatFusion AI is a local-first educational cyber threat-analysis platform that
 
 The runtime is intentionally passive: suspicious URLs and domains are treated as data and are not visited or resolved during analysis.
 
+Expected connection context is a separate presentation/export layer after
+detection. A bounded local JSON declaration must match exact endpoints, complete
+session evidence, validity and traffic limits; scoped CTI overrides it. It does
+not mutate runtime findings, thresholds or persisted history. The UI hides
+matching expected groups only through a reversible view filter. All groups stay
+in schema-v2 connection exports, with rule configuration/IDs omitted. See
+[expected connection contracts](EXPECTED_CONNECTIONS.md).
+
 ## System overview
 
 ~~~mermaid

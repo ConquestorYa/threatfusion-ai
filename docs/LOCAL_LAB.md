@@ -291,3 +291,20 @@ groups. These counts measure benign review workload, not FPR/recall; no real PCA
 independent production accuracy or RITA parity is implied. Expected software
 context and longer independent permitted captures are the next evidence gate.
 All manifests, logs, PCAPs, native exports and evaluation reports remain local.
+
+## Expected activity context controls
+
+The separate `expected-connection-controls-v1` runner predeclares 11 constructed
+cases and freezes each log/declaration hash before analysis. It checks declared
+updates/streams, expiry, wrong device/port, byte deviation, incomplete capture,
+an unknown heartbeat and reserved-IP CTI override. An identical heartbeat on the
+declared endpoint also matches, explicitly demonstrating that a declaration
+does not establish software identity. Original detector priorities are retained.
+
+```bash
+.venv/bin/python scripts/lab/evaluate_expected_controls.py --output-dir /path/outside/repo/new-context-controls
+```
+
+Output must be new and outside the repository. This is policy evidence, not a
+new live capture, real FPR/recall or measured analyst time saved. Original periodic
+and cached inputs remain immutable. See [local schema/workflow](EXPECTED_CONNECTIONS.md).

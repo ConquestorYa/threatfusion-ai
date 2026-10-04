@@ -2,6 +2,44 @@
 
 Status date: 2026-10-04
 
+## Expected connection context increment (2026-10-04)
+
+- Added optional `expected-connection-context-v1` after detection. Exact observed
+  originator/responder/TCP port, <= 30-day aware validity and whole-upload group
+  count/duration/byte ceilings are mandatory. Wildcards, networks, extra/duplicate
+  fields, ambiguous timestamps and oversized files are rejected (64 KiB/128 rules).
+  Expired/future/out-of-window, incomplete, conflicting or excessive sessions
+  cannot qualify. Missing originator port is now explicit endpoint coverage loss.
+- Existing client/destination CTI response-IP/network matches override declarations,
+  regardless of port. Conflicts remain visible even for Observe-priority groups.
+  No new originator CTI lookup or shared-IP domain attribution was introduced.
+  Original findings/priorities, domain/device verdicts and ML thresholds/artifacts
+  remain unchanged; context never proves software identity or safety.
+- Local Connection activity accepts session-only declaration JSON and reversibly
+  separates declared expected activity. Public mode never offers the uploader.
+  `--expected-connections` requires Zeek-conn input and the explicit separate
+  report. Invalid CLI files abort before export without echoing private content;
+  invalid UI files apply no declarations. Rules are not written to history.
+- Connection export schema is now v2, adding context/evaluation time/count. All
+  groups and original priorities/evidence remain present. IPs default to aliases;
+  declaration IDs/configuration remain omitted even with explicit IP inclusion.
+  Private local declaration paths/patterns are ignored. `EXPECTED_CONNECTIONS.md`
+  documents usage, limits, schema migration and analyst responsibilities.
+- New immutable `expected-connection-controls-v1`: **11/11** predeclared constructed
+  cases passed, covering benign updates/streams, expiry, device/port/volume
+  deviations, capture gaps, unknown heartbeat and synthetic CTI conflict. An
+  identical heartbeat on the declared endpoint also matches, explicitly recording
+  a software-identity limitation. This is contract evidence, not measured FPR,
+  recall, improved detection or analyst time saved. Intent labels are not inputs
+  to the product's detector/context matcher. Logs/configs/reports remain external.
+- Validation: **943 project tests passed**, **90%** total coverage; Ruff/diff checks
+  passed. Tests exercise exact/network CTI, unchanged aggregate evidence, privacy,
+  expiry/bounds, CLI and bilingual local/public filtering. Original periodic
+  comparison and shared input hashes are rechecked without rewriting outputs.
+- Next: longer independent permitted capture and actual analyst workflow workload
+  validation, followed by restart/rotation-safe continuous collection. No ML
+  holdout was rescored or promoted. All hosting remains user-suspended.
+
 ## Cached workload and connection review increment (2026-10-04)
 
 - Added typed standard-TSV Zeek connection evidence: UID, endpoints/ports,
