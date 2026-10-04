@@ -25,7 +25,19 @@ context is not measured equivalent C2 detection.
 | Analyst operations | Local web investigation, feedback, device/connection reports and expiring exact-endpoint declarations with CTI override | Independent analyst workload validation, timelines, bounded retention and documented SIEM export contracts |
 | Operational readiness | Local test suite and bounded synthetic workload | Security review, installation/recovery checks and representative throughput/resource measurements |
 
-## Current increment: independent coverage and completed-log collection
+## Current increment: TCP termination coverage
+
+Policy v2 retains bidirectional payload from S2/S3/RSTO/RSTR endings under the
+existing long/timing gates and exposes failed/half-open attempts separately.
+Expected declarations cannot hide these partial/reset groups. All 64 predeclared
+development/reserved contract checks pass. Three new official captures have the
+same Review counts as v1; one has 1,637 additional eligible payload sessions.
+Another malicious capture still has no eligible bidirectional sessions.
+See [protocol, counts and limits](TCP_TERMINATION.md). These are coverage gains,
+not increased malware recall or parity. New untouched inputs are required for
+further failure/scan or UDP/DNS detector development.
+
+## Previous increment: independent coverage and completed-log collection
 
 Four predeclared official IoT-23 inputs now provide independent 1.91–23.98-hour
 connection coverage observations. One malicious capture yields a long-session

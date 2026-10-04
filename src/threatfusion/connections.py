@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from statistics import mean, pstdev
 
-POLICY_ID = "zeek-connection-context-v1"
+POLICY_ID = "zeek-connection-context-v2"
 LONG_SESSION_SECONDS = 3600
 MIN_TIMESTAMPS = 20
 MIN_SPAN_SECONDS = 1800
@@ -49,6 +49,10 @@ class ConnectionFinding:
     priority: str
     reasons: tuple[str, ...]
     limitations: tuple[str, ...]
+    payload_session_count: int = 0
+    reset_session_count: int = 0
+    partial_close_count: int = 0
+    failed_attempt_count: int = 0
 
 
 def analyze_connections(records: tuple[ConnectionRecord, ...]) -> tuple[ConnectionFinding, ...]:
@@ -106,6 +110,21 @@ def analyze_connections(records: tuple[ConnectionRecord, ...]) -> tuple[Connecti
         )]
         if len(confirmed) != len(unique):
             coverage.append("unconfirmed_or_incomplete_sessions")
+        payload_sessions = [r for r in unique if (
+            r.protocol == "tcp" and r.state in {"SF", "S1", "S2", "S3", "RSTO", "RSTR"}
+            and r.originator_bytes is not None and r.originator_bytes > 0
+            and r.responder_bytes is not None and r.responder_bytes > 0
+            and r.missed_bytes == 0
+        )]
+        resets = sum(r.protocol == "tcp" and r.state in {"RSTO", "RSTR"} for r in unique)
+        partial_closes = sum(r.protocol == "tcp" and r.state in {"S2", "S3"} for r in unique)
+        failed = sum(r.protocol == "tcp" and r.state in {"S0", "REJ", "RSTOS0", "RSTRH", "SH", "SHR"} for r in unique)
+        if resets:
+            coverage.append("reset_terminated_sessions")
+        if partial_closes:
+            coverage.append("partially_closed_sessions")
+        if failed:
+            coverage.append("failed_or_half_open_attempts")
         durations = [r.duration_seconds for r in unique if r.duration_seconds is not None]
         if len(durations) != len(unique):
             coverage.append("missing_connection_duration")
@@ -113,10 +132,15 @@ def analyze_connections(records: tuple[ConnectionRecord, ...]) -> tuple[Connecti
         # Duration evidence can stand on its own even in a short/sparse capture.
         if source and port is not None and not any(
             value in coverage for value in ("missing_connection_uid", "conflicting_connection_uid")
-        ) and any(r.duration_seconds is not None and r.duration_seconds >= LONG_SESSION_SECONDS for r in confirmed):
+        ) and any(r.duration_seconds is not None and r.duration_seconds >= LONG_SESSION_SECONDS
+                  and (r.state in {"SF", "S1"} or r.originator_port is not None) for r in payload_sessions):
             reasons.append("long_bidirectional_tcp_session")
         if not coverage and score is not None and score >= PERIODICITY_SCORE:
             reasons.append("sustained_periodic_connections")
+        elif (unique and len(payload_sessions) == len(unique)
+              and not set(coverage) - {"unconfirmed_or_incomplete_sessions", "reset_terminated_sessions", "partially_closed_sessions"}
+              and score is not None and score >= PERIODICITY_SCORE):
+            reasons.append("sustained_periodic_payload_connections")
         def total(field):
             values = [getattr(r, field) for r in unique]
             return sum(values) if values and all(v is not None for v in values) else None
@@ -127,6 +151,7 @@ def analyze_connections(records: tuple[ConnectionRecord, ...]) -> tuple[Connecti
             max(durations) if durations else None,
             total("originator_bytes"), total("responder_bytes"), interval, score,
             "review" if reasons else "observe", tuple(reasons), tuple(coverage),
+            len(payload_sessions), resets, partial_closes, failed,
         ))
     return tuple(sorted(findings, key=lambda f: (
         f.priority != "review", f.originator_ip or "", f.responder_ip,

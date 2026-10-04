@@ -242,6 +242,11 @@ Ayrı bağlantı raporunda iki uçtaki IP'ler de varsayılan olarak gizlidir.
 CLI için `--format zeek-conn --connection-json-output /repo/disinda/inceleme.json`
 seçeneklerini kullanabilirsin.
 
+V2 kuralları, kapanışı eksik kalan veya reset ile biten TCP oturumlarının çift
+yönlü verisini de hesaba katar; başarısız/yarım açık denemeleri ayrı sayar. Süre ve
+düzenlilik koşulları geçerlidir. [Kapsam ve yeni değerlendirme](docs/TCP_TERMINATION.md)
+sonuçlarında, gerçek kayıtlardaki inceleme sayısının önceki sürümle aynı olduğu da açıklanır.
+
 İsteğe bağlı [beklenen bağlantı beyanları](docs/EXPECTED_CONNECTIONS.md), analistin
 kontrol ettiği operasyonel beklentileri açıklanamayan incelemelerden ayırır.
 Kesin bağlantı uçları, trafik sınırları ve son geçerlilik tarihi gerekir; CTI

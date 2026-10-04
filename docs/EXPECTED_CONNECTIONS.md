@@ -12,6 +12,11 @@ Neither a match nor the absence of CTI proves safety.
 
 ## Local workflow
 
+Connection policy v2 can review bidirectional reset/partial-close sessions, but
+expected declarations still require original SF/S1 confirmed evidence. Such
+partial/reset groups remain visible and cannot match an expected declaration.
+See [termination coverage](TCP_TERMINATION.md).
+
 1. Keep an `expected-connections.json` outside the repository, with owner-only
    permissions (`chmod 600 expected-connections.json`). Actual addresses and rule
    references describe your topology; do not publish the file.

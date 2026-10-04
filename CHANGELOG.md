@@ -12,6 +12,13 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Zeek connection policy v2 includes bidirectional payload from incomplete TCP
+  closes/reset endings under existing long/timing gates, explicit payload/reset/
+  partial/failed-attempt counts and bilingual private reports/collector views.
+  Expected declarations retain conservative SF/S1 coverage. Predeclared controls
+  and three new official captures document added evidence and remaining gaps;
+  real-source review counts do not increase. No ML or accuracy promotion.
+
 - Linux completed Zeek TSV/gzip collector with private bounded SQLite evidence,
   crash/restart checkpoints, rotation/content deduplication, fair bounded scans,
   capacity-loss handling and SIGTERM cleanup. Installed `threatfusion-ai collect`,

@@ -190,6 +190,7 @@ def connection_finding_rows(
     reasons = {
         "long_bidirectional_tcp_session": "Long bidirectional TCP session (at least 1 hour)",
         "sustained_periodic_connections": "Sustained periodic successful TCP connections",
+        "sustained_periodic_payload_connections": "Sustained periodic bidirectional TCP with incomplete or reset termination",
     }
     limits = {
         "missing_connection_uid": "Connection identity unavailable",
@@ -200,12 +201,19 @@ def connection_finding_rows(
         "insufficient_connection_timing": "Insufficient connection timing coverage",
         "unconfirmed_or_incomplete_sessions": "Some sessions are unconfirmed or incomplete",
         "missing_connection_duration": "Some session durations are missing",
+        "reset_terminated_sessions": "Some TCP sessions ended with a reset",
+        "partially_closed_sessions": "Some TCP sessions have an incomplete close",
+        "failed_or_half_open_attempts": "Some TCP attempts failed or were half open",
     }
     return [{
         "Originator": host(f.originator_ip), "Responder": host(f.responder_ip),
         "Responder port": f.responder_port, "Protocol": f.protocol,
         "Queue priority": f.priority.title(), "Connections": f.connection_count,
         "Confirmed sessions": f.confirmed_session_count,
+        "Bidirectional payload sessions": f.payload_session_count,
+        "Reset endings": f.reset_session_count,
+        "Incomplete closes": f.partial_close_count,
+        "Failed or half-open attempts": f.failed_attempt_count,
         "Duplicate rows excluded": f.duplicate_rows, "Conflicting UIDs": f.conflicting_uids,
         "First observed": f.first_seen.isoformat() if f.first_seen else None,
         "Last observed": f.last_seen.isoformat() if f.last_seen else None,

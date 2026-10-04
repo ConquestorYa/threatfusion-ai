@@ -1,3 +1,5 @@
+import hashlib
+
 import pytest
 from types import SimpleNamespace
 
@@ -17,6 +19,10 @@ def test_official_label_layout_is_stripped_before_detector_and_plan_is_fixed(tmp
     assert len(acquisition_plan()["captures"]) == 4
     with pytest.raises(ValueError):
         strip_labels(content.replace("#separator \\x09", "#separator ,"))
+    frozen_source = tmp_path / "frozen.py"
+    frozen_source.write_bytes(b"# preserved evaluation source\n")
+    monkeypatch.setattr(module, "FROZEN_MODULES", {"connections": hashlib.sha256(frozen_source.read_bytes()).hexdigest()})
+    monkeypatch.setattr(module.importlib.util, "find_spec", lambda name: SimpleNamespace(origin=str(frozen_source)))
     module.verify_frozen_code()
     changed_source = tmp_path / "connections.py"
     changed_source.write_text("# changed detector\n")

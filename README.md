@@ -240,6 +240,11 @@ can also be legitimate; this queue does not prove C2 or downloads. Both endpoint
 IPs are hidden by default in its separate export. The CLI accepts
 `--format zeek-conn --connection-json-output /path/outside/repo/review.json`.
 
+Policy v2 also retains bidirectional payload from incomplete TCP closes and
+reset endings, and separately shows failed/half-open attempt counts. Existing
+duration/timing gates still apply. See [termination coverage and reserved
+comparison](docs/TCP_TERMINATION.md); new real-source Review counts match baseline.
+
 Optional [expected connection declarations](docs/EXPECTED_CONNECTIONS.md) separate
 locally verified operational expectations from unexplained reviews. Exact
 endpoints, traffic limits and expiry are required; CTI conflicts stay visible.

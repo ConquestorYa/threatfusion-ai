@@ -14,6 +14,14 @@ _LANGUAGE_BY_OPTION = {
 }
 
 _TR: dict[str, str] = {
+    "Bidirectional payload sessions": "Çift yönlü veri oturumları",
+    "Reset endings": "Reset ile bitenler",
+    "Incomplete closes": "Tamamlanmamış kapanışlar",
+    "Failed or half-open attempts": "Başarısız veya yarım açık denemeler",
+    "Sustained periodic bidirectional TCP with incomplete or reset termination": "Eksik kapanan veya reset ile biten uzun süreli düzenli çift yönlü TCP",
+    "Some TCP sessions ended with a reset": "Bazı TCP oturumları reset ile bitti",
+    "Some TCP sessions have an incomplete close": "Bazı TCP oturumlarının kapanışı tamamlanmadı",
+    "Some TCP attempts failed or were half open": "Bazı TCP denemeleri başarısız veya yarım açık",
     "Collected connections": "Toplanan bağlantılar",
     "Inspect automatically collected local Zeek connection activity.": "Otomatik alınan yerel Zeek bağlantı etkinliğini incele.",
     "Completed Zeek logs are collected automatically. This view refreshes every 10 seconds; active files wait for rotation.": "Kapanan Zeek kayıtları otomatik alınır. Bu görünüm 10 saniyede bir yenilenir; aktif dosyalar döndürülene kadar bekler.",
@@ -606,6 +614,10 @@ _TR: dict[str, str] = {
 }
 
 _COLUMN_TR = {
+    "Bidirectional payload sessions": "Çift yönlü veri oturumları",
+    "Reset endings": "Reset ile bitenler",
+    "Incomplete closes": "Tamamlanmamış kapanışlar",
+    "Failed or half-open attempts": "Başarısız veya yarım açık denemeler",
     "Analyst context": "Analist bağlamı", "CTI match": "CTI eşleşmesi",
     "Declared expected": "Beklentiye uyuyor", "Context reason": "Bağlam gerekçesi",
     "Originator": "Başlatan", "Responder": "Yanıtlayan",

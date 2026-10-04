@@ -2,6 +2,45 @@
 
 Status date: 2026-10-04
 
+## TCP termination coverage increment (2026-10-04)
+
+- Added `zeek-connection-context-v2`: S2/S3/RSTO/RSTR sessions with positive
+  bidirectional payload/zero gaps can supply existing long/periodic review gates.
+  Thresholds remain 3,600 seconds / 20 timestamps / 1,800 seconds / 0.85.
+  Missing, conflicting, gapped or unconfirmed evidence cannot qualify. Reset/
+  partial-close and failed/half-open counts now appear in bilingual connection
+  views, collector snapshots and aliased schema-v2 reports. Confirmed sessions
+  keep SF/S1 meaning; four fields are additive. Expected declarations still
+  cannot hide partial/reset groups. No connection-state persistence migration.
+- `tcp-termination-coverage-v1` predeclared immutable inputs before implementation:
+  **32/32 development** and **32/32 separate reserved** constructed checks pass.
+  Benign periodic updates and matching heartbeat both Review; these are contracts,
+  not malware truth. Candidate fingerprints/control manifests froze before source
+  acquisition; earlier v1 captures were not rescored or used for tuning.
+- Three new official capture files (Somfy-01, malware 34-1 and 21-1) provide
+  **26,561 accepted rows**, no invalid/skipped metadata and 1.38–24-hour spans.
+  Same-input trusted isolated v1 baseline versus frozen v2: reviews **1/20→1/20**,
+  **1/52→1/52**, **0/51→0/51**; domain/IP verdicts unchanged. A benign Somfy flow
+  is reviewed; no false-positive reduction or increased malware recall claimed.
+- Post-evaluation coverage diagnostic: 34-1 has 1,642 eligible payload sessions
+  versus five original confirmed sessions, exposing 1,584 partial closes and
+  53 reset endings. This adds 1,637 sessions of observed evidence, not new Review
+  groups. 21-1 has zero eligible payload; its 14 malicious-labeled flows include
+  ten S0, one REJ, and one each SF/S2/S1. Eleven failed/half-open attempts and one
+  incomplete close are visible; the detection gap remains explicitly documented.
+  Full protocol, fingerprints and limitations: `TCP_TERMINATION.md`.
+- Validation: **973 project tests passed**, **90%** coverage, Ruff passed.
+  New checks cover termination states, missing/capture-gap evidence, unconfirmed
+  state exclusion, expected-context safety, private reports, bilingual rendering
+  and actual collector snapshot integration. One new Turkish column-label issue
+  was fixed before final verification. Inputs/reports/state remain external.
+- ML model/threshold policy and strict-temporal promotion stay unchanged. Source
+  integration into main uses `[skip render]` with user-suspended hosting/previews
+  guard; CI and deployment history must be verified after publication.
+- Next: representative real reset/close workloads and analyst workload; separately
+  predeclared failure/scan and UDP/DNS coverage with new untouched inputs. Do not
+  tune on these now-inspected captures or claim field efficacy from contract tests.
+
 ## Independent coverage and automatic collector (2026-10-04)
 
 - Completed `iot23-connection-coverage-v1`: four predeclared small official

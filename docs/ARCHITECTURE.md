@@ -12,6 +12,12 @@ matching expected groups only through a reversible view filter. All groups stay
 in schema-v2 connection exports, with rule configuration/IDs omitted. See
 [expected connection contracts](EXPECTED_CONNECTIONS.md).
 
+Connection policy v2 retains additional S2/S3/RSTO/RSTR payload evidence with
+existing long/timing gates, while preserving SF/S1 confirmed-session semantics
+for analyst declarations. Additive report columns expose payload eligibility,
+reset/incomplete endings and failed/half-open attempts; raw record/state schemas
+remain compatible. See [coverage and reserved evaluation](TCP_TERMINATION.md).
+
 ## System overview
 
 An optional local Linux collector provides a second ingestion path: completed

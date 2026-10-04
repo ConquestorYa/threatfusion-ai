@@ -91,6 +91,16 @@ contract evidence, not calibrated C2 detection or production sizing.
 
 ## Linux first-run flow
 
+Connection policy v2 now includes eligible bidirectional payload from incomplete
+close/reset endings while preserving SF/S1 confirmed counts and existing timing/
+duration gates. Four new aliased report/UI fields expose payload, resets, partial
+closes and failed/half-open attempts. Expected declarations cannot hide these
+partial/reset groups. Predeclared controls pass; three new independent captures
+add 1,637 payload sessions in one capture but do not increase Review groups.
+Another malicious capture still produces none. See `TCP_TERMINATION.md` for
+protocol, source identities and coverage limits; no field efficacy or ML change
+is claimed. Collector records remain compatible and snapshots recompute on restart.
+
 The READMEs provide a single copy-paste command for Linux x86_64/glibc 2.28+.
 It installs private Python 3.12.14 and hashed runtime dependencies, immutable
 source, the `threatfusion-ai` command and an applications-menu shortcut. New
