@@ -15,6 +15,8 @@ from .ui_connection_timeline import render_timeline
 from .connection_timeline import validate_timeline_report
 from .connection_attempts import validate_attempt_report
 from .ui_connection_attempts import render_attempts
+from .dns_collection import validate_dns_snapshot
+from .ui_collected_dns import render_collected_dns
 
 MAX_SNAPSHOT_BYTES = 64 * 1024 * 1024
 
@@ -42,7 +44,7 @@ def read_snapshot(root: Path):
         or not isinstance(payload.get("collector"), dict)
         or payload.get("privacy", {}).get("endpoint_ips_included") is not False
         or not isinstance(payload.get("findings"), list) or len(payload["findings"]) > 100_000
-        or payload.get("collector", {}).get("policy") != "closed-zeek-collector-v1"):
+        or payload.get("collector", {}).get("policy") not in ("closed-zeek-collector-v1", "closed-zeek-collector-v2")):
         raise ValueError("Unsupported collector snapshot")
     status = payload["collector"]
     if not isinstance(status.get("counts"), dict) or type(status.get("cti_indicators")) is not int:
@@ -64,6 +66,21 @@ def read_snapshot(root: Path):
         validate_timeline_report(payload["timelines"], payload["findings"])
     if "attempts" in payload:
         validate_attempt_report(payload["attempts"])
+    if status["policy"] == "closed-zeek-collector-v2" and "dns" not in payload:
+        raise ValueError("Missing collected DNS coverage")
+    if "dns" in payload:
+        validate_dns_snapshot(payload["dns"])
+        for key in ("retained_total_records", "retained_dns_records", "analyzed_dns_events", "dns_review_groups", "dns_omitted_groups"):
+            value = status["counts"].get(key)
+            if type(value) is not int or not 0 <= value <= 100_000:
+                raise ValueError("Invalid collected DNS counts")
+        coverage = payload["dns"]["coverage"]
+        if (status["counts"]["retained_total_records"] != status["counts"]["retained_records"] + coverage["retained_records"]
+            or status["counts"]["retained_dns_records"] != coverage["retained_records"]
+            or status["counts"]["analyzed_dns_events"] != coverage["analyzed_events"]
+            or status["counts"]["dns_omitted_groups"] != payload["dns"]["omitted_findings"]
+            or status["counts"]["dns_review_groups"] != sum(row["Queue priority"] != "Observe" for row in payload["dns"]["report"]["findings"])):
+            raise ValueError("Inconsistent collected DNS counts")
     return payload
 
 
@@ -118,6 +135,7 @@ def render_collector(state_dir: Path | None, *, public_mode: bool):
         st.caption(tr("Showing the first 500 groups. The download contains all retained groups."))
     render_timeline(rows[:500], payload.get("timelines", {}), key="collector", revision=status["updated_at"])
     render_attempts(payload.get("attempts"))
+    render_collected_dns(payload.get("dns"))
     st.download_button(tr("Download collected connection JSON"), data=json.dumps(payload, indent=2),
                        file_name="threatfusion_collected_connections.json", mime="application/json")
     st.caption(tr("Collector history is bounded. Aliases are report-local and exports remain sensitive telemetry."))

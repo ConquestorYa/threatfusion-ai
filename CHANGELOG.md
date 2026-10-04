@@ -12,6 +12,14 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Automatic completed TCP/UDP Zeek DNS collection alongside independent original
+  connection results, transaction-aware copy/conflict handling, bounded bilingual
+  client/domain snapshot queue and explicit shared retention/name/group limits.
+  Private schema-1 state is backed up before schema-2 migration; old snapshots
+  remain readable. Two new isolated 24-DNS/2-connection captures reconcile offline,
+  collector and restart/gzip paths. 22 declared contracts pass; existing DNS/ML
+  policy is unchanged. No tunneling, real benign FPR or public deployment claim.
+
 - Separate bounded TCP-attempt review queue for sliding-window failed port/host
   diversity and repeated S0/REJ failures, explicit coverage and dedup/conflicts,
   bilingual upload/collector views and additive private schema-v2 exports.

@@ -261,12 +261,16 @@ endpoints, traffic limits and expiry are required; CTI conflicts stay visible.
 This context does not verify software identity or remove original evidence.
 
 Linux installations can continuously import **completed** Zeek TSV connection
-logs with `threatfusion-ai collect --input-dir /absolute/path/to/zeek/logs`.
+and TCP/UDP DNS logs with `threatfusion-ai collect --input-dir /absolute/path/to/zeek/logs`.
 **Collected connections** refreshes locally; checkpoints survive restarts and
 rotation/gzip copies are deduplicated. Active files wait for closure/rotation.
 See [collector setup and limits](docs/TELEMETRY_COLLECTOR.md) and
 [independent IoT-23 coverage results](docs/NETWORK_EVALUATION.md), including
 missed scenarios. This path uses your existing CTI cache and no ML model.
+The **Collected DNS observations** section adds an independent client/domain
+queue, transaction-aware dedup/conflict coverage and bounded private exports.
+Schema-1 state is backed up before upgrading; DNS queries do not prove downloads.
+See [DNS workflow, migration and two new live controls](docs/DNS_COLLECTION.md).
 
 ---
 

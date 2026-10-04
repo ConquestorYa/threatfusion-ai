@@ -1,4 +1,4 @@
-"""Local Linux consumer for completed Zeek connection logs and archives."""
+"""Local Linux consumer for completed Zeek connection/DNS logs and archives."""
 from __future__ import annotations
 
 import argparse
@@ -19,14 +19,17 @@ from pathlib import Path
 from .connections import ConnectionRecord
 from .cti_cache import load_ioc_records
 from .dns import DNSEvent
+from .dns_zeek import parse_zeek_dns_transactions
+from .dns_collection import build_dns_snapshot, transaction_payload
 from .expected_connections import MAX_RULE_BYTES, parse_expected_connections
 from .network_telemetry import parse_zeek_conn_log_with_diagnostics
 from .reporting import build_connection_report
 from .runtime_analysis import analyze_dns_events
 
-POLICY_ID = "closed-zeek-collector-v1"
+POLICY_ID = "closed-zeek-collector-v2"
 MAX_FILE_BYTES = 16 * 1024 * 1024
 MAX_RECORDS = 100_000
+MAX_DNS_NAMES = 25_000
 MAX_SCAN_ENTRIES = 8192
 MAX_IMPORTS_PER_TICK = 64
 LEDGER_SECONDS = 7 * 86400
@@ -70,7 +73,7 @@ def _candidates(root: Path):
             raise ValueError("Collector directory exceeds the scan limit; select a smaller source")
         dirs[:] = sorted(d for d in dirs if not (Path(directory) / d).is_symlink())
         for name in sorted(files):
-            if name.startswith(("conn.", "conn_", "conn-")) and name.endswith((".log", ".log.gz")):
+            if name.startswith(("conn.", "conn_", "conn-", "dns.", "dns_", "dns-")) and name.endswith((".log", ".log.gz")):
                 yield Path(directory) / name
 
 
@@ -146,14 +149,13 @@ class ZeekCollector:
             self.db = sqlite3.connect(path, timeout=5)
             self.db.execute("PRAGMA auto_vacuum=FULL")
             version = self.db.execute("PRAGMA user_version").fetchone()[0]
-            if version not in (0, 1):
+            if version not in (0, 1, 2):
                 raise ValueError("Unsupported collector state schema")
             self.db.executescript("""
                 CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
-                CREATE TABLE IF NOT EXISTS records(hash TEXT PRIMARY KEY, timestamp REAL, ingested REAL NOT NULL, payload TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS records(hash TEXT PRIMARY KEY, timestamp REAL, ingested REAL NOT NULL, payload TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'conn', query_key TEXT);
                 CREATE TABLE IF NOT EXISTS files(hash TEXT PRIMARY KEY, ingested REAL NOT NULL);
                 CREATE TABLE IF NOT EXISTS paths(path TEXT PRIMARY KEY, signature TEXT NOT NULL, hash TEXT NOT NULL, ingested REAL NOT NULL);
-                PRAGMA user_version=1;
             """)
             binding = json.dumps({"root": str(self.root), "window": self.window, "max_records": self.max_records})
             previous = self.db.execute("SELECT value FROM meta WHERE key='binding'").fetchone()
@@ -161,6 +163,19 @@ class ZeekCollector:
                 raise ValueError("Collector state is bound to its original source and limits")
             with self.db:
                 self.db.execute("INSERT OR IGNORE INTO meta VALUES('binding',?)", (binding,))
+            if version == 1:
+                # Keep a private pre-migration copy. Never overwrite an older
+                # receipt or silently make DNS state readable to a v1 collector.
+                descriptor, backup_name = tempfile.mkstemp(dir=self.state, prefix="collector.schema1-", suffix=".sqlite")
+                os.close(descriptor)
+                with sqlite3.connect(backup_name) as backup:
+                    self.db.backup(backup)
+                with self.db:
+                    self.db.execute("ALTER TABLE records ADD COLUMN kind TEXT NOT NULL DEFAULT 'conn'")
+                    self.db.execute("ALTER TABLE records ADD COLUMN query_key TEXT")
+                    self.db.execute("PRAGMA user_version=2")
+            else:
+                self.db.execute("PRAGMA user_version=2")
         except Exception:
             self.close()
             raise
@@ -190,6 +205,9 @@ class ZeekCollector:
                                       (watermark - self.window, epoch - self.window)).rowcount
         trimmed += self.db.execute("DELETE FROM records WHERE ingested < ?", (epoch - self.window,)).rowcount
         capacity = self.db.execute("DELETE FROM records WHERE hash IN (SELECT hash FROM records ORDER BY timestamp DESC, hash LIMIT -1 OFFSET ?)", (self.max_records,)).rowcount
+        capacity += self.db.execute("""DELETE FROM records WHERE kind='dns' AND query_key NOT IN (
+            SELECT query_key FROM records WHERE kind='dns' GROUP BY query_key
+            ORDER BY MAX(timestamp) DESC, query_key LIMIT ?)""", (MAX_DNS_NAMES,)).rowcount
         if capacity:
             self.db.execute("INSERT OR REPLACE INTO meta VALUES('capacity_loss_until',?)", (str(epoch + self.window),))
         for (path,) in self.db.execute("SELECT path FROM paths WHERE ingested < ?", (epoch - LEDGER_SECONDS,)).fetchall():
@@ -205,8 +223,10 @@ class ZeekCollector:
         if now.tzinfo is None or now.utcoffset() is None:
             raise ValueError("Collector clock must be aware")
         epoch = now.timestamp()
+        indicators = tuple(indicators)
         counts = {"imported_files": 0, "duplicate_files": 0, "unchanged_files": 0,
-                  "open_files": 0, "rejected_files": 0, "new_records": 0, "trimmed_records": 0}
+                  "open_files": 0, "rejected_files": 0, "new_records": 0, "trimmed_records": 0,
+                  "new_dns_records": 0, "new_connection_records": 0}
         # Finish directory validation before committing any file from this scan.
         candidates = sorted(_candidates(self.root))
         self.active_paths = {str(path.relative_to(self.root)) for path in candidates}
@@ -235,31 +255,48 @@ class ZeekCollector:
                     counts["open_files"] += 1
                     continue
                 text, digest, signature = completed
+                kind = "dns" if path.name.startswith(("dns.", "dns_", "dns-")) else "conn"
+                if any(line.startswith("#path") and line[len("#path"):].strip() != kind for line in text.splitlines()):
+                    raise ValueError("Collector log name and declared path disagree")
                 if self.db.execute("SELECT 1 FROM files WHERE hash=?", (digest,)).fetchone():
                     with self.db:
                         self.db.execute("INSERT OR REPLACE INTO paths VALUES(?,?,?,?)", (relative, signature, digest, epoch))
                     counts["duplicate_files"] += 1
                     continue
-                parsed = parse_zeek_conn_log_with_diagnostics(text)
-                if (parsed.diagnostics.skipped_missing_query_name or parsed.diagnostics.invalid_timestamps
-                    or parsed.diagnostics.invalid_response_ips or parsed.diagnostics.invalid_connection_fields):
-                    raise ValueError("Collector source contains invalid records")
-                if any(r.timestamp and r.timestamp.timestamp() > epoch + 300 for r in parsed.connections):
+                if kind == "dns":
+                    records = parse_zeek_dns_transactions(text)
+                    timestamps = [r.event.timestamp for r in records]
+                else:
+                    parsed = parse_zeek_conn_log_with_diagnostics(text)
+                    if (parsed.diagnostics.skipped_missing_query_name or parsed.diagnostics.invalid_timestamps
+                        or parsed.diagnostics.invalid_response_ips or parsed.diagnostics.invalid_connection_fields):
+                        raise ValueError("Collector source contains invalid records")
+                    records = parsed.connections
+                    timestamps = [r.timestamp for r in records]
+                if any(timestamp and timestamp.timestamp() > epoch + 300 for timestamp in timestamps):
                     raise ValueError("Collector source is ahead of the trusted clock")
                 inserted = 0
                 with self.db:
-                    for record in parsed.connections:
-                        payload = asdict(record)
-                        payload["timestamp"] = record.timestamp.isoformat() if record.timestamp else None
-                        text = json.dumps(payload, sort_keys=True, separators=(",", ":"))
-                        inserted += self.db.execute("INSERT OR IGNORE INTO records VALUES(?,?,?,?)", (
-                            hashlib.sha256(text.encode()).hexdigest(),
-                            record.timestamp.timestamp() if record.timestamp else None, epoch, text,
+                    for record in records:
+                        if kind == "dns":
+                            text = transaction_payload(record)
+                            timestamp = record.event.timestamp
+                            query_key = record.event.query_name.strip().casefold().removesuffix(".")
+                        else:
+                            payload = asdict(record)
+                            payload["timestamp"] = record.timestamp.isoformat() if record.timestamp else None
+                            text = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+                            timestamp, query_key = record.timestamp, None
+                        # Existing connection hashes stay byte-identical across migration.
+                        inserted += self.db.execute("INSERT OR IGNORE INTO records VALUES(?,?,?,?,?,?)", (
+                            hashlib.sha256(text.encode()).hexdigest(), timestamp.timestamp() if timestamp else None,
+                            epoch, text, kind, query_key,
                         )).rowcount
                     self.db.execute("INSERT INTO files VALUES(?,?)", (digest, epoch))
                     self.db.execute("INSERT OR REPLACE INTO paths VALUES(?,?,?,?)", (relative, signature, digest, epoch))
                     trimmed = self._prune(epoch)
                 counts["new_records"] += inserted
+                counts["new_dns_records" if kind == "dns" else "new_connection_records"] += inserted
                 counts["trimmed_records"] += trimmed
                 counts["imported_files"] += 1
             except (ValueError, OSError, UnicodeError, EOFError, zlib.error):
@@ -267,13 +304,20 @@ class ZeekCollector:
         with self.db:
             counts["trimmed_records"] += self._prune(epoch)
         records = []
-        for (payload,) in self.db.execute("SELECT payload FROM records ORDER BY timestamp, hash"):
+        for (payload,) in self.db.execute("SELECT payload FROM records WHERE kind='conn' ORDER BY timestamp, hash"):
             values = json.loads(payload)
             values["timestamp"] = datetime.fromisoformat(values["timestamp"]) if values["timestamp"] else None
             records.append(ConnectionRecord(**values))
         events = [DNSEvent(r.responder_ip, r.timestamp, r.originator_ip, response_ip=r.responder_ip) for r in records]
         result = analyze_dns_events(events, indicators, None, connections=records)
+        dns_payloads = [r[0] for r in self.db.execute("SELECT payload FROM records WHERE kind='dns' ORDER BY timestamp, hash")]
+        dns_snapshot = build_dns_snapshot(dns_payloads, indicators, generated_at=now)
         counts["retained_records"] = len(records)
+        counts["retained_total_records"] = len(records) + len(dns_payloads)
+        counts["retained_dns_records"] = len(dns_payloads)
+        counts["analyzed_dns_events"] = dns_snapshot["coverage"]["analyzed_events"]
+        counts["dns_review_groups"] = sum(row["Queue priority"] != "Observe" for row in dns_snapshot["report"]["findings"])
+        counts["dns_omitted_groups"] = dns_snapshot["omitted_findings"]
         counts["review_groups"] = sum(f.priority == "review" for f in result.connection_findings)
         counts["attempt_review_groups"] = len(result.connection_attempts.findings)
         capacity = self.db.execute("SELECT value FROM meta WHERE key='capacity_loss_until'").fetchone()
@@ -281,12 +325,15 @@ class ZeekCollector:
         status = {"schema_version": 1, "policy": POLICY_ID, "updated_at": now.isoformat(),
                   "window_seconds": self.window, "max_records": self.max_records, "counts": counts,
                   "ml_enabled": False, "cti_indicators": len(indicators), "capacity_coverage_loss": capacity_loss,
-                  "limitations": ["Completed TSV connection logs only; active files wait for #close.",
+                  "limitations": ["Completed TSV connection and TCP/UDP DNS logs only; active files wait for #close.",
                                   "One source/sensor per private state; bounded event/ingestion window.",
                                   "UID deduplication/conflicts apply within retained evidence; dropped data is coverage loss.",
+                                  "DNS transaction conflicts are excluded; raw identities remain private.",
+                                  "Shared retention/capacity across log kinds; DNS queries do not prove connections or downloads.",
                                   "No live packet capture, feed updates or analyst efficacy claim."]}
         report = json.loads(build_connection_report(result, expected_rules=() if capacity_loss else rules, evaluated_at=now))
         report["collector"] = status
+        report["dns"] = dns_snapshot
         if capacity_loss:
             report["limitations"].append("Collector capacity dropped evidence; expected-activity declarations are disabled for one ingestion window.")
         content = json.dumps(report, indent=2) + "\n"

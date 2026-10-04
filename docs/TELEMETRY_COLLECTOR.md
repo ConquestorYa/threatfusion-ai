@@ -1,6 +1,6 @@
 # Local completed-log collection
 
-The Linux collector reads completed standard TSV Zeek connection logs from a
+The Linux collector reads completed standard TSV Zeek connection and DNS logs from a
 user-selected directory. It does not capture packets, install Zeek, access
 observed destinations or open a listening service. It is an optional foreground
 process, separate from the local web application and CTI feed updater.
@@ -42,7 +42,7 @@ Declarations do not establish software identity or safety.
 
 ## Completion and rotation
 
-Candidate names start with `conn.`, `conn_` or `conn-` and end in `.log` or
+Candidate names start with `conn.`, `conn_`, `conn-`, `dns.`, `dns_` or `dns-` and end in `.log` or
 `.log.gz`; date subdirectories are scanned. Symlink directories are skipped,
 including ZeekControl's `current` link. Point at the archive root or the actual
 spool directory, using one sensor per state. Never merge different sensors that
@@ -79,11 +79,15 @@ even though its session/history privacy flag is enabled. Demo mode has no page.
 | --- | --- |
 | Poll | 10 seconds; configurable 1–3,600 |
 | Evidence window | 24 hours; configurable 1–168 hours |
-| Records | 100,000 maximum; `--max-records` may lower it |
+| Records | 100,000 shared connection/DNS maximum; `--max-records` may lower it |
+| DNS query names / exported groups | 25,000 normalized names / first 1,000 prioritized groups; omitted count disclosed |
 | File / expanded gzip | 16 MiB each |
 | Scan | 8,192 directory entries; up to 64 changed-file attempts per tick |
 | Checkpoint ledger | Up to 10,000 paths/hashes; missing paths expire after seven days |
 | Snapshot | 64 MiB; table shows first 500 filtered groups, download contains all |
+
+The full-connection export remains complete within retained evidence; DNS exports
+are bounded separately as above. The watermark/window is shared across log kinds.
 
 Records expire relative to the latest observed event **and** their ingestion
 time. Historical offline logs can therefore be examined for one ingestion
@@ -131,5 +135,16 @@ migration, raw-row web access, external requests or public listener is added.
 Snapshots also include a separate bounded S0/REJ failure-diversity/retry queue
 and Attempt review patterns metric. Original connection reviews retain their
 meaning; expected filters do not hide attempt patterns. Old snapshots are still
-readable, state schema stays 1 and no raw DB web access is added. See
+readable; that increment retained state schema 1 and added no raw DB web access. See
 [TCP attempt workflow and limits](TCP_ATTEMPT_REVIEW.md).
+
+## Automatic DNS collection (current policy v2)
+
+Completed TCP/UDP `dns.log` files now enter an independent client/domain queue
+under **Collected DNS observations** on the same page. Identity uses connection
+UID + transaction ID + timestamp, with exact-copy dedup and explicit conflict
+exclusions. CTI/behavior policy is unchanged; there is no hostname/flow join or
+DNS tunneling claim. Private state now upgrades to schema 2 after an owner-only
+schema-1 backup; the earlier TCP-attempt increment required no migration itself.
+Old v1 snapshots stay readable. See [identity, migration, live evidence and
+DNS limits](DNS_COLLECTION.md). No API keys, sensor or new listener are added.

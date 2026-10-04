@@ -2,6 +2,62 @@
 
 Status date: 2026-10-05
 
+## Automatic DNS collection increment (2026-10-05)
+
+- `closed-zeek-collector-v2` consumes completed TSV/gzip connection and TCP/UDP
+  DNS logs from one sensor root. DNS UID identifies a connection, so separate
+  transaction IDs/timestamps survive. Exact full-row copies deduplicate and
+  differing source rows at the same UID/transaction/time are explicitly excluded.
+  Invalid identity/path/row width/future clocks reject the entire file. The
+  existing permissive upload parser and first-IP-answer analysis scope remain.
+- Independent DNS snapshot/UI queue reuses `dns-device-triage-v1` with the user's
+  existing cache and no ML/key/feed requests. Original connection findings,
+  timelines, attempts and domain fallback outputs remain separate and preserved.
+  Bilingual local/public-boundary checks, client/answer CTI isolation and reload
+  without new traffic pass. DNS aliases/connection aliases are independent;
+  no hostname/flow join, tunneling detector, endpoint compromise or download claim.
+- Private SQLite schema 2 upgrades after an owner-only schema-1 backup, retaining
+  old record hashes/checkpoints/binding. Old snapshots render; old collector
+  software rejects new state. Backups retain private evidence outside active
+  retention and need explicit local lifecycle management. Shared 100k record/
+  event/ingestion window plus 25k DNS-name cap can prune mixed evidence; coverage
+  loss disables expected filtering. DNS exports cap 1000 prioritized groups,
+  UI 500, with omitted counts; its review count applies to snapshot groups.
+- Inputs froze before implementation: 11/11 development and 11/11 reserved
+  identifier contracts pass, including benign periodic UDP/TCP updates that
+  both Review under unchanged thresholds. These are the same declared scenario
+  types, not independent traffic or held-out malware accuracy. A runner restart
+  clock assumption (+301 seconds becomes valid after advancing one second) and
+  UI fixture clock were corrected without weakening product guards. Partial/
+  failed receipts remain external; inputs were not rewritten.
+- Runtime/workload hashes froze before new live recording. An experiment path
+  traversal/parent-symlink safeguard was subsequently strengthened; original
+  runtime/workload hashes stayed identical, original freeze retained, final
+  tooling refrozen and the inspected contract set rerun explicitly. Two new
+  isolated real packet captures `dns-collector-live-20261004T222024Z` and
+  `dns-collector-live-20261004T222416Z` each yield 24 DNS rows on two UIDs plus
+  two connection rows: UDP/TCP 12/12, NOERROR/NXDOMAIN/SERVFAIL/unanswered 8/6/6/4,
+  zero invalid/rejected rows/reviews/reported kernel drops. Offline, collector,
+  restart and gzip match; restart adds zero and two copies are duplicates.
+  Short .test-only internal guest workload, not real benign FPR/recall/visibility.
+- Validation: **1,091 project tests passed**, **90%** coverage, Ruff/Bash/diff
+  checks pass. Migration/backup, checkpoint crash/restart, original connection
+  regression, DNS conflicts/full-row answer differences, capacities, malformed
+  snapshots, privacy, CTI scoping and bilingual/public UI are covered. One
+  constructed 10k-record collector tick: all evidence retained, 1000 DNS groups
+  exported/9000 omitted, 5.57 s/47.03 MB traced Python peak/716,115 JSON bytes.
+  Excludes fixture allocation/total RSS; not production throughput.
+- Full method, aggregate fingerprints, reproduction and limitations:
+  `DNS_COLLECTION.md`. Raw logs/PCAP/cache/SQLite/evaluation receipts remain
+  private external files. All 34 original local data files retain checksums.
+  Model identities/thresholds unchanged; original artifact missing, strict
+  temporal insufficient, augmented runtime promotion remains deferred.
+- Source-only main publication uses `[skip render]`; verify all CI and unchanged
+  suspended-service/previews/deployment history after publication. Next:
+  representative longer mixed-log rotation/latency/backlog/resource/recovery
+  tests and device DNS timelines; separately predeclare tunneling/general UDP
+  and new independent benign/sparse-failure controls. Analyst efficacy is open.
+
 ## TCP attempt review increment (2026-10-05)
 
 - Added separate `tcp-attempt-review-v1`: inclusive sliding 300-second source/

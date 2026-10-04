@@ -14,6 +14,16 @@ _LANGUAGE_BY_OPTION = {
 }
 
 _TR: dict[str, str] = {
+    "Restart the updated collector to include DNS logs.": "DNS kayıtlarını dahil etmek için güncel toplayıcıyı yeniden başlat.",
+    "Collected DNS observations": "Toplanan DNS gözlemleri",
+    "No completed DNS records in the retained window. This does not prove absence of DNS traffic.": "Tutulan zaman aralığında kapanmış DNS kaydı yok. Bu, DNS trafiğinin olmadığını kanıtlamaz.",
+    "Analyzed DNS transactions": "Analiz edilen DNS işlemleri",
+    "DNS transport: UDP / TCP": "DNS taşıma protokolü: UDP / TCP",
+    "Excluded DNS records": "Dışlanan DNS kayıtları",
+    "DNS device aliases and connection host aliases are independent within this snapshot.": "Bu rapordaki DNS cihaz takma adları ve bağlantı sistem takma adları birbirinden bağımsızdır.",
+    "Conflicting DNS transaction records were excluded. Check source integrity before trusting coverage.": "Çelişkili DNS işlem kayıtları dışlandı. Kapsama güvenmeden önce kaynak bütünlüğünü kontrol et.",
+    "DNS snapshot contains at most 1,000 prioritized groups. Omitted groups: {count}.": "DNS raporu öncelik sırasıyla en fazla 1.000 grup içerir. Rapora alınmayan grup: {count}.",
+    "Showing the first 500 DNS groups. Download includes all snapshot groups, subject to the 1,000-group cap.": "İlk 500 DNS grubu gösteriliyor. İndirilen rapor, 1.000 grup sınırı içinde rapora alınan bütün grupları içerir.",
     "TCP attempt reviews": "TCP denemesi incelemeleri",
     "These patterns can come from inventory scans, blocked services or outages. Review observed behavior before deciding its cause.": "Bu örüntüler envanter taramalarından, engellenen servislerden veya kesintilerden kaynaklanabilir. Nedeni belirlemeden önce gözlenen davranışı incele.",
     "Sliding window: 5 minutes; at least 20 failed ports/hosts, or 30 repeated failures with at least 90% failures. Expected declarations do not hide this queue.": "Kayan pencere: 5 dakika; en az 20 başarısız port/hedef veya en az %90 başarısızlıkla 30 tekrar. Beklenen etkinlik beyanları bu kuyruğu gizlemez.",

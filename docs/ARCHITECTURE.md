@@ -22,11 +22,15 @@ remain compatible. See [coverage and reserved evaluation](TCP_TERMINATION.md).
 
 An optional local Linux collector provides a second ingestion path: completed
 Zeek TSV/gzip archives → bounded typed SQLite evidence/checkpoints → existing
-connection analysis with the user's cached CTI → schema-v2 aliased atomic
+separate connection and TCP/UDP DNS device analysis with the user's cached CTI → schema-v2 aliased atomic
 snapshot → local Collected connections fragment. Source and state are private,
 one sensor per state; ingestion does not visit destinations or collect CTI feeds.
 The web process reads snapshots only. ML is disabled on this path. See
 [collector limits and lifetime](TELEMETRY_COLLECTOR.md).
+Private state schema 2 upgrades after a schema-1 backup. DNS reconciliation uses
+UID/transaction/time and full-row hash conflicts; it does not join hostnames to
+flows. DNS snapshots cap prioritized groups independently and disclose omissions.
+See [DNS collection](DNS_COLLECTION.md).
 
 ~~~mermaid
 flowchart LR

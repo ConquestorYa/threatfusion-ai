@@ -102,6 +102,19 @@ a new isolated live 120-record run produces three scoped patterns. A new officia
 remain uncovered. Original findings/verdicts and ML policy are preserved. See
 `TCP_ATTEMPT_REVIEW.md`; no increased malware recall or analyst efficacy claim.
 
+`closed-zeek-collector-v2` now also consumes completed TCP/UDP DNS archives into
+an independent device/domain queue, retaining multiple transactions per UID and
+excluding same-identity full-row conflicts. The original connection outputs,
+DNS review thresholds and ML policy stay unchanged. Private SQLite schema 2
+upgrades only after a schema-1 backup; 100k shared records, 25k DNS names and
+1000 exported/500 visible DNS groups keep explicit coverage limits. Two new
+isolated live recordings each reconcile 24 DNS transactions and two connections,
+with zero reviews and restart/gzip duplication checks. These synthetic operational
+contracts do not establish real benign FPR, tunneling coverage or RITA parity.
+See `DNS_COLLECTION.md`; longer mixed-log rotation/resource tests and device DNS
+timelines are next, while active-file tailing and independent analyst evidence
+remain open. No public service is authorized.
+
 ## Linux first-run flow
 
 Connection policy v2 now includes eligible bidirectional payload from incomplete
