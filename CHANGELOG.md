@@ -12,6 +12,13 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Bounded connection-start investigation charts and state/known-byte/missing-byte
+  summaries for uploaded and automatically collected groups, bilingual local
+  views, report-local group references and additive schema-v2 timeline exports.
+  UID conflicts/dedup match existing findings; detector/ML policies are unchanged.
+  Two predeclared isolated real TCP termination captures each reconcile 72 starts
+  across offline/collector/restart/gzip paths. No analyst efficacy claim.
+
 - Zeek connection policy v2 includes bidirectional payload from incomplete TCP
   closes/reset endings under existing long/timing gates, explicit payload/reset/
   partial/failed-attempt counts and bilingual private reports/collector views.

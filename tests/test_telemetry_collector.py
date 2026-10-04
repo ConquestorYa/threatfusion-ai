@@ -59,6 +59,9 @@ def test_rotation_gzip_copy_and_restart_preserve_one_window(paths):
     row, = read_snapshot(state)["findings"]
     assert row["Connections"] == 24 and row["Queue priority"] == "Review"
     assert row["Originator"] == "Host 001"
+    timeline = read_snapshot(state)["timelines"]["groups"][0]
+    assert timeline["group"] == row["Group"]
+    assert sum(bucket["connections"] for bucket in timeline["buckets"]) == 24
 
 
 def test_crash_after_checkpoint_commit_regenerates_report_without_duplicate(paths, monkeypatch):
@@ -199,8 +202,14 @@ def test_collector_ui_bilingual_snapshot_and_public_boundary(paths):
         f"render_collector(Path({str(state)!r}), public_mode=False)\n"
     ).run(timeout=15)
     assert not app.exception and app.dataframe[0].value.iloc[0]["Originator"] == "Host 001"
+    assert app.selectbox(key="collector_timeline_group").value == 1
+    assert app.dataframe[-1].value.iloc[0]["Zeek states"] == "SF: 1"
+    before = read_snapshot(state)
     app.session_state["language_selector"] = "🇹🇷 Türkçe"
-    app.run(timeout=15)
+    app.run(timeout=20)
+    assert not app.exception
+    assert app.dataframe[-1].value.iloc[0]["Zeek durumları"] == "SF: 1"
+    assert read_snapshot(state) == before
     assert not app.exception and app.dataframe[0].value.iloc[0]["Başlatan"] == "Sistem 001"
     public = AppTest.from_string(
         "from pathlib import Path\nfrom threatfusion.ui_collector import render_collector\n"

@@ -44,7 +44,12 @@ promotion claim follows. Client/target triage now evaluates devices independentl
 exposes sustained DNS periodicity as review work without a malware verdict,
 and provides a local privacy-controlled device view/export. See
 `DETECTION_ROADMAP.md` for coverage gates and the intended RITA-alternative scope.
-Device timelines, incremental active-log tailing and retroactive CTI
+Connection-start timelines are now available for uploaded and collected groups,
+with bounded UTC/state/byte summaries and report-local aliases. Two isolated
+live reset/close controls each reconcile 72 starts across offline, collector and
+restart/gzip paths. This is plumbing evidence, not analyst efficacy or detection
+accuracy. See `CONNECTION_INVESTIGATION.md`.
+Device DNS timelines, incremental active-log tailing and retroactive CTI
 investigation workflows remain future work. Completed-log collection is now
 implemented as described below.
 

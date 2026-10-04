@@ -247,6 +247,11 @@ yönlü verisini de hesaba katar; başarısız/yarım açık denemeleri ayrı sa
 düzenlilik koşulları geçerlidir. [Kapsam ve yeni değerlendirme](docs/TCP_TERMINATION.md)
 sonuçlarında, gerçek kayıtlardaki inceleme sayısının önceki sürümle aynı olduğu da açıklanır.
 
+**Bağlantı incelemesi** ile bir grubu seçip UTC zaman çizelgesini, Zeek durumlarını
+ve bilinen/eksik bayt sayılarını görebilirsin. Dosya yüklemede ve otomatik toplayıcıda
+çalışır; bütün bulgular raporda kalır. [Kullanım, gizlilik sınırları ve iki gerçek
+paket kontrolü](docs/CONNECTION_INVESTIGATION.md) belgelenmiştir.
+
 İsteğe bağlı [beklenen bağlantı beyanları](docs/EXPECTED_CONNECTIONS.md), analistin
 kontrol ettiği operasyonel beklentileri açıklanamayan incelemelerden ayırır.
 Kesin bağlantı uçları, trafik sınırları ve son geçerlilik tarihi gerekir; CTI

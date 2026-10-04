@@ -117,3 +117,11 @@ CTI remain sensitive. Keep the entire state, original logs and exports outside
 GitHub, CI, public hosting and shared directories. No developer data or keys are
 bundled. The collector makes no compromise, download-content or analyst-time
 claim. Independent checks are recorded in [network evaluation](NETWORK_EVALUATION.md).
+
+## Connection investigation
+
+The local collected view now offers bounded connection-start timelines, states
+and known/unknown bytes for selected groups. Reports extend schema 2 additively;
+old snapshots still render. New snapshots reset the selected report-local group.
+See [workflow, bounds and live controls](CONNECTION_INVESTIGATION.md). No SQLite
+migration, raw-row web access, external requests or public listener is added.

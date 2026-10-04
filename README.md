@@ -245,6 +245,11 @@ reset endings, and separately shows failed/half-open attempt counts. Existing
 duration/timing gates still apply. See [termination coverage and reserved
 comparison](docs/TCP_TERMINATION.md); new real-source Review counts match baseline.
 
+**Connection investigation** lets you select a group and inspect bounded UTC
+connection-start timelines, Zeek states and known/unknown byte counts. Available
+for uploads and the automatic collector; all findings remain in exports. See
+[workflow, privacy limits and two live packet controls](docs/CONNECTION_INVESTIGATION.md).
+
 Optional [expected connection declarations](docs/EXPECTED_CONNECTIONS.md) separate
 locally verified operational expectations from unexplained reviews. Exact
 endpoints, traffic limits and expiry are required; CTI conflicts stay visible.

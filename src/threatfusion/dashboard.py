@@ -206,6 +206,7 @@ def connection_finding_rows(
         "failed_or_half_open_attempts": "Some TCP attempts failed or were half open",
     }
     return [{
+        "Group": index,
         "Originator": host(f.originator_ip), "Responder": host(f.responder_ip),
         "Responder port": f.responder_port, "Protocol": f.protocol,
         "Queue priority": f.priority.title(), "Connections": f.connection_count,
@@ -222,7 +223,7 @@ def connection_finding_rows(
         "Periodic interval (s)": f.interval_seconds, "Periodicity score": f.periodicity_score,
         "Evidence": "; ".join(reasons[r] for r in f.reasons),
         "Coverage limits": "; ".join(limits[r] for r in f.limitations),
-    } for f in findings]
+    } for index, f in enumerate(findings, 1)]
 
 
 def contextual_connection_rows(

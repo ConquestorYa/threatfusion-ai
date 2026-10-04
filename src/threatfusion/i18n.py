@@ -14,6 +14,23 @@ _LANGUAGE_BY_OPTION = {
 }
 
 _TR: dict[str, str] = {
+    "Connection investigation": "Bağlantı incelemesi",
+    "Select a connection group": "Bir bağlantı grubu seç",
+    "Restart the collector to generate connection timelines.": "Bağlantı zaman çizelgeleri için toplayıcıyı yeniden başlat.",
+    "No timeline for this group. Timelines cover the first 200 groups, with Review groups first; the full findings remain available.": "Bu grubun zaman çizelgesi yok. Önce inceleme grupları olmak üzere ilk 200 grup kapsanır; bütün bulgular erişilebilir kalır.",
+    "UTC buckets: {seconds} seconds. Counts, bytes and states are assigned to connection start time, not transfer time.": "UTC zaman aralıkları: {seconds} saniye. Sayılar, baytlar ve durumlar bağlantı başlangıcına atanır; aktarım zamanını göstermez.",
+    "A zero bucket means no retained connection starts, not proof that the network was idle. States describe Zeek observations, not malware verdicts.": "Sıfır, tutulan kayıtlarda bağlantı başlangıcı yok demektir; ağın boş olduğunu kanıtlamaz. Durumlar Zeek gözlemleridir, zararlı yazılım hükmü değildir.",
+    "{count} connections have missing or ambiguous time and are excluded from the chart.": "{count} bağlantının zamanı eksik veya belirsiz; grafiğe dahil edilmedi.",
+    "No comparable timestamps for this connection group.": "Bu bağlantı grubu için karşılaştırılabilir zaman bilgisi yok.",
+    "Known bytes are partial sums when byte counts are missing. Duplicate and conflicting UIDs are excluded as in the connection findings.": "Bayt sayıları eksikse bilinen baytlar kısmi toplamdır. Tekrarlanan ve çelişen kimlikler bağlantı bulgularındaki gibi dışlanır.",
+    "UTC bucket start": "UTC aralık başlangıcı",
+    "Connection starts": "Başlayan bağlantılar",
+    "Known originator bytes": "Başlatanın bilinen baytları",
+    "Unknown originator byte counts": "Başlatanın bayt sayısı eksik bağlantıları",
+    "Known responder bytes": "Yanıtlayanın bilinen baytları",
+    "Unknown responder byte counts": "Yanıtlayanın bayt sayısı eksik bağlantıları",
+    "Zeek states": "Zeek durumları",
+
     "Bidirectional payload sessions": "Çift yönlü veri oturumları",
     "Reset endings": "Reset ile bitenler",
     "Incomplete closes": "Tamamlanmamış kapanışlar",
@@ -614,6 +631,15 @@ _TR: dict[str, str] = {
 }
 
 _COLUMN_TR = {
+    "UTC bucket start": "UTC aralık başlangıcı",
+    "Connection starts": "Başlayan bağlantılar",
+    "Known originator bytes": "Başlatanın bilinen baytları",
+    "Unknown originator byte counts": "Başlatanın bayt sayısı eksik bağlantıları",
+    "Known responder bytes": "Yanıtlayanın bilinen baytları",
+    "Unknown responder byte counts": "Yanıtlayanın bayt sayısı eksik bağlantıları",
+    "Zeek states": "Zeek durumları",
+    "Group": "Grup",
+
     "Bidirectional payload sessions": "Çift yönlü veri oturumları",
     "Reset endings": "Reset ile bitenler",
     "Incomplete closes": "Tamamlanmamış kapanışlar",

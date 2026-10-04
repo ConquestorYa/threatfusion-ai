@@ -1,6 +1,50 @@
 # v0.1.0 Release Handoff
 
-Status date: 2026-10-04
+Status date: 2026-10-05
+
+## Connection investigation and live termination controls (2026-10-05)
+
+- Added `connection-start-timeline-v1` to uploaded and collected connection views:
+  report-local group selection, UTC start buckets, Zeek state counts, known byte
+  sums and separate unknown-byte counts. No packet/transfer-time inference or
+  detector/ML policy changes; same global UID dedup/conflict exclusion. Missing/
+  ambiguous time is counted outside the chart; unrecognized states become unknown.
+- Summaries are bounded to 200 detector-sorted groups (Review first) and 48
+  adaptive buckets each; both views render/select at most 500 filtered groups.
+  All findings remain downloadable. Schema 2 adds Group references and optional
+  timelines; old snapshots remain readable. No SQLite/history/raw-row migration.
+  New collector snapshots reset selection because aliases/IDs are report-local.
+  Default exports still omit IPs, UIDs, source paths and declaration configuration.
+- `tcp-termination-live-v1` declares 12 attempts each SF/RSTO/RSTR/S2/S3/REJ
+  before capture, using pinned images and an isolated guest-only internal bridge.
+  Two new real packet captures each produce **72 accepted records**, six Observe
+  groups, zero invalid/skipped metadata and zero reported kernel drops. Each
+  timeline retains exactly 72 starts; offline/collector outputs match, restarts
+  add zero records and gzip replay is one duplicate. Scripts/protocol and aggregate
+  hashes are in `CONNECTION_INVESTIGATION.md`; raw artifacts/proofs stay external.
+- These short synthetic live runs validate plumbing/termination coverage only,
+  not hour/30-minute detection gates, malware accuracy, RITA parity, production
+  throughput or human analyst time saved. Existing frozen captures/ML metrics
+  are not retuned or rescored as fresh evidence. Historical experiment runners
+  still require their documented frozen source revision when fingerprints differ.
+- Validation: **995 project tests passed**, **90%** coverage, Ruff passed. Checks
+  cover global/bucket caps, duplicate/conflicting UID reconciliation, timezones,
+  missing bytes/times, corrupted snapshot rejection, report privacy, bilingual
+  uploaded/collector UI, filter selection and snapshot selection reset. Initial
+  test-fixture/old UI-count assumptions were corrected; full tests run with local
+  socket permission required by the existing installer suite.
+- One constructed 100,000-record/200-group summary build retained all starts
+  in 9,400 buckets (1.85 MB timeline JSON), taking 2.53 seconds and 11.0 MB
+  traced Python allocation peak for that phase alone. This excludes input/pipeline
+  memory and is not production throughput or total RSS evidence.
+- All 34 pre-existing local data files retain their checksums. No API keys,
+  caches, traffic logs, PCAPs, datasets or models are included in source release.
+  Original ML artifact remains absent, strict-temporal evidence insufficient,
+  augmented runtime promotion deferred. Source-only main integration uses
+  `[skip render]`; verify all CI and suspended-service/history guard afterwards.
+- Next: predeclare failure/scan and UDP/DNS controls with new reserved inputs;
+  longer live rotation/resource and latency tests; actual human analyst workflow
+  assessment before usefulness claims. No public deployment is authorized.
 
 ## TCP termination coverage increment (2026-10-04)
 

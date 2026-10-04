@@ -180,7 +180,9 @@ def test_ui_expected_filter_cti_visibility_and_public_boundary(monkeypatch, publ
     assert not app.exception
     assert bool(uploader_calls) is not public_mode
     if public_mode:
-        assert len(app.dataframe) == 1
+        assert len([frame for frame in app.dataframe if "Originator" in frame.value.columns]) == 1
+        assert app.dataframe[-1].value["Connection starts"].sum() == app.dataframe[0].value["Connections"].sum()
+        assert "192.0.2.1" not in str([frame.value for frame in app.dataframe])
         return
     assert len(app.dataframe) == 0
     app.checkbox(key="connection_show_expected").check().run(timeout=15)

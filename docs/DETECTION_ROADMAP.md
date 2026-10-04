@@ -22,10 +22,19 @@ context is not measured equivalent C2 detection.
 | Beaconing | Sustained successful TCP timing review plus DNS regularity; no C2 accuracy claim | Robust timing/size analysis and jitter/retry/idle controls on independent permitted windows |
 | DNS tunneling | Hostname shape context only | Registrable-domain aggregation with proper suffix handling, unique-label/size/type evidence, benign CDN/telemetry controls and independent recordings |
 | Continuous collection | Completed TSV/gzip connection collector, private bounded state, checkpoint/restart/rotation dedup and local snapshot UI | Active-file latency, longer live rotation, representative resource tests; DNS incremental support |
-| Analyst operations | Local web investigation, feedback, device/connection reports and expiring exact-endpoint declarations with CTI override | Independent analyst workload validation, timelines, bounded retention and documented SIEM export contracts |
+| Analyst operations | Local web investigation, bounded connection-start timelines, feedback, reports and expiring exact-endpoint declarations with CTI override | Independent analyst workload validation, device DNS timelines and documented SIEM export contracts |
 | Operational readiness | Local test suite and bounded synthetic workload | Security review, installation/recovery checks and representative throughput/resource measurements |
 
-## Current increment: TCP termination coverage
+## Current increment: connection investigation and real termination controls
+
+Uploaded/collected groups now have bounded connection-start UTC charts and
+state/known-byte/missing-byte summaries; all findings remain exported with
+report-local identifiers. Two predeclared isolated live captures each produce
+72 records (12 each SF/RSTO/RSTR/S2/S3/REJ), zero short-window reviews and exact
+offline/collector/restart/gzip reconciliation. Human analyst efficacy remains
+unmeasured. See [workflow and protocol](CONNECTION_INVESTIGATION.md).
+
+## Previous increment: TCP termination coverage
 
 Policy v2 retains bidirectional payload from S2/S3/RSTO/RSTR endings under the
 existing long/timing gates and exposes failed/half-open attempts separately.

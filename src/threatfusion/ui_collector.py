@@ -11,6 +11,8 @@ import pandas as pd
 import streamlit as st
 
 from .i18n import tr, translate_dataframe
+from .ui_connection_timeline import render_timeline
+from .connection_timeline import validate_timeline_report
 
 MAX_SNAPSHOT_BYTES = 64 * 1024 * 1024
 
@@ -56,6 +58,8 @@ def read_snapshot(root: Path):
                 "Evidence", "Coverage limits", "Analyst context", "Context reason"}
     if any(not isinstance(row, dict) or not required.issubset(row) for row in payload["findings"]):
         raise ValueError("Invalid collected findings")
+    if "timelines" in payload:
+        validate_timeline_report(payload["timelines"], payload["findings"])
     return payload
 
 
@@ -107,6 +111,7 @@ def render_collector(state_dir: Path | None, *, public_mode: bool):
         st.info(tr("No unexplained connection reviews in this view."))
     if len(rows) > 500:
         st.caption(tr("Showing the first 500 groups. The download contains all retained groups."))
+    render_timeline(rows[:500], payload.get("timelines", {}), key="collector", revision=status["updated_at"])
     st.download_button(tr("Download collected connection JSON"), data=json.dumps(payload, indent=2),
                        file_name="threatfusion_collected_connections.json", mime="application/json")
     st.caption(tr("Collector history is bounded. Aliases are report-local and exports remain sensitive telemetry."))

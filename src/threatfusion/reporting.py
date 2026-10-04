@@ -26,6 +26,8 @@ def build_connection_report(
     generated_at: datetime | None = None,
     expected_rules: tuple[ExpectedConnectionRule, ...] = (), evaluated_at: datetime | None = None,
 ) -> str:
+    from .connection_timeline import timeline_report
+
     evaluated_at = evaluated_at or datetime.now(timezone.utc)
     return json.dumps({
         "schema_version": 2, "policy": CONNECTION_POLICY_ID,
@@ -34,6 +36,7 @@ def build_connection_report(
         "context_evaluated_at": _generated_at_text(evaluated_at),
         "declaration_count": len(expected_rules),
         "findings": contextual_connection_rows(result, expected_rules, include_ips=include_ips, evaluated_at=evaluated_at),
+        "timelines": timeline_report(result.connection_timelines, len(result.connection_findings)),
         "privacy": {"endpoint_ips_included": include_ips, "raw_connection_rows_included": False,
                     "connection_uids_included": False, "host_alias_scope": "this_report_only",
                     "rule_ids_and_configuration_included": False},
@@ -43,6 +46,8 @@ def build_connection_report(
             "No DNS hostname association is inferred from shared IPs.",
             "Legitimate updates and long-lived services can also enter review.",
             "Aliases do not anonymize timestamps, ports and traffic statistics.",
+            "Timeline bytes/states are assigned to connection start buckets, not transfer time; unknown bytes are counted separately.",
+            "Timelines cover at most 200 groups and 48 buckets per group; absent buckets are not proof of absent network traffic.",
             "Expected activity is an expiring analyst declaration, not verified software identity or safety.",
             "CTI conflicts override expected activity; original priorities and evidence are retained.",
         ],

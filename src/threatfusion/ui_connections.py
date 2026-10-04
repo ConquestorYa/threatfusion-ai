@@ -10,6 +10,8 @@ from .expected_connections import MAX_RULE_BYTES, connection_contexts, parse_exp
 from .i18n import tr, translate_dataframe
 from .reporting import build_connection_report
 from .runtime_analysis import RuntimeAnalysisResult
+from .connection_timeline import timeline_report
+from .ui_connection_timeline import render_timeline
 
 
 def render_connections(result: RuntimeAnalysisResult, *, public_mode: bool) -> None:
@@ -46,16 +48,19 @@ def render_connections(result: RuntimeAnalysisResult, *, public_mode: bool) -> N
     rows = contextual_connection_rows(result, rules, include_ips=include_ips, evaluated_at=now)
     visible = [r for r in rows if (not reviews_only or r["Queue priority"] == "Review" or r["CTI match"])
                and (show_expected or not r["Declared expected"])]
-    for row in rows:
+    for row in visible[:500]:
         for key in ("Originator", "Responder"):
             if str(row[key]).startswith("Host "):
                 row[key] = tr("Host {number}", number=str(row[key])[5:])
         for key in ("Evidence", "Coverage limits", "Analyst context", "Context reason"):
             row[key] = "; ".join(tr(text) for text in str(row[key]).split("; "))
     if visible:
-        st.dataframe(translate_dataframe(pd.DataFrame(visible)), hide_index=True, width="stretch")
+        st.dataframe(translate_dataframe(pd.DataFrame(visible[:500])), hide_index=True, width="stretch")
     else:
         st.info(tr("No unexplained connection reviews in this view." if rules else "No connection groups currently require review."))
+    if len(visible) > 500:
+        st.caption(tr("Showing the first 500 groups. The download contains all retained groups."))
+    render_timeline(visible[:500], timeline_report(result.connection_timelines, len(rows)), key="connection")
     st.download_button(tr("Download connection review JSON"),
                        data=build_connection_report(result, include_ips=include_ips, expected_rules=rules, evaluated_at=now),
                        file_name="threatfusion_connections.json", mime="application/json")
