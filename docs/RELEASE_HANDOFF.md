@@ -278,7 +278,8 @@ to defer promotion; they are not new tuning data. See DEC-082.
   proxy limits and real WebSocket-session checks all passed.
 - The three existing portfolio screenshots were reviewed visually: they use
   inert `.example` synthetic findings and show no private telemetry or secrets.
-  PNG metadata and EXIF are empty. No screenshot regeneration was necessary.
+  PNG metadata and EXIF were empty. This historical review is superseded by
+  the current interface captures recorded below.
 
 ## Remaining release gates
 
@@ -310,3 +311,19 @@ to defer promotion; they are not new tuning data. See DEC-082.
 
 Do not create final ML metrics from the synthetic demo artifact or substitute
 an older holdout for the lexical candidate.
+
+## Current interface screenshots (2026-10-04)
+
+- Replaced Quick Lookup, telemetry overview and domain investigation PNGs used
+  by both README languages with actual current Streamlit UI captures.
+- Captured with isolated Chromium on 127.0.0.1, English/Mid theme and a separate
+  temporary synthetic-only runtime. The input contains 24 events across five
+  reserved example domains; no upstream feeds, private data or API keys used.
+- Browser verification exercised lookup, CSV upload, analysis and investigation.
+  Screenshots were reviewed visually and checked for empty PNG/EXIF metadata.
+  The 48 targeted UI/theme/release-audit tests passed; all 32 previously recorded
+  local data files retain their original checksums.
+  Source model policy, private artifacts and runtime promotion are unchanged.
+- Source-only main update uses [skip render]; the Render service was confirmed
+  user-suspended with previews disabled before publication. No public site
+  deployment is authorized.

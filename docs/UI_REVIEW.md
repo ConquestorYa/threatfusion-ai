@@ -69,3 +69,18 @@ The browser runtime and screenshots use reserved documentation domains and synth
 ## Follow-up screenshot set
 
 For review on your own trusted local data, capture: Analyze telemetry with CTI sidebar and priority queue; an investigated domain with evidence; Analysis history with feedback; Model evaluation with operating points; and a 390 px light-mode view. Redact sensitive information. Screenshots from this implementation run are supplied separately in the task outputs.
+
+## Current README captures (2026-10-04)
+
+The three images in `docs/screenshots/` now show the current interface, including
+the main workspace launcher and language/theme controls. Quick Lookup uses
+`known-threat.example`; the overview and investigation use the deterministic
+24-row synthetic DNS fixture (five domains).
+
+The capture used `prepare_local_environment(..., "demo", ...)` in a new temporary
+directory, the matching synthetic CTI database, and a fresh headless Chromium
+profile. Streamlit bound only to 127.0.0.1; usage statistics were disabled. No
+real feeds or developer runtime were loaded. Lookup, file upload, analysis and
+the investigation tab were exercised through the real browser. Images contain
+no added overlays and no PNG/EXIF metadata. The temporary server was stopped
+after capture. These captures supersede the earlier portfolio screenshot set.

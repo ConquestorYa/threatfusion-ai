@@ -12,6 +12,9 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Refreshed the three README interface screenshots from the current local UI,
+  using only an isolated synthetic runtime and reserved demo telemetry.
+
 - One-command Linux x86_64/glibc first installation without preinstalled
   Python/Git or sudo: fixed uv archive checksum, private Python 3.12.14, 49
   pinned/hash-required wheel dependencies and immutable source checkout.
