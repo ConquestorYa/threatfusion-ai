@@ -3,6 +3,6 @@
 # are CI tooling rather than application runtime dependencies.
 
 pytest==9.1.1
-ruff==0.16.8
+ruff==0.16.9
 pytest-cov
 pip-audit
