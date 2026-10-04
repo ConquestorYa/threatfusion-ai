@@ -29,6 +29,20 @@ Its portfolio value comes from combining:
 
 It is an educational prototype, not a production security product.
 
+## Local network lab direction
+
+A separate local Ubuntu/KVM guest now runs synthetic three-client experiments.
+`periodic-controls-v1` has a real short live capture and a deterministic packet
+replay representing a synthetic day, compared with RITA v5.1.2 using identical
+Zeek records. Both CTI and ML are disabled for the behavior comparison. It shows
+why periodicity alone cannot distinguish legitimate update checks from a
+suspicious simulation; the current ThreatFusion verdict also does not elevate
+these patterns by itself. RITA is an optional comparison tool, not a runtime
+dependency or an integrated detector. See `LOCAL_LAB.md` for measured outputs,
+artificial-traffic limitations and reproducible protocol. No production or ML
+promotion claim follows. Device timelines, continuous telemetry collection and
+retroactive CTI investigations remain future work.
+
 ## Linux first-run flow
 
 The READMEs provide a single copy-paste command for Linux x86_64/glibc 2.28+.

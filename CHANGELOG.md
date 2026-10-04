@@ -12,6 +12,12 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Frozen three-client periodic-control protocol with real short live capture,
+  deterministic checksum-valid synthetic-day replay, isolated pinned RITA lab
+  setup and native-output comparison reporting. Records inputs/limitations and
+  preserves legitimate periodic traffic as a negative control. No CTI/ML
+  promotion or production efficacy claim; generated/downloaded data stays local.
+
 - Local Ubuntu/KVM lab runbook and digest-pinned synthetic DNS/HTTP capture
   smoke sources; three-client Zeek capture and ThreatFusion DNS ingestion were
   verified. VM disks, credentials and traffic outputs remain local. RITA

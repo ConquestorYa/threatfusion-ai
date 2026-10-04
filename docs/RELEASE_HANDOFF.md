@@ -2,6 +2,39 @@
 
 Status date: 2026-10-04
 
+## Local network lab — periodic controls and RITA comparison (2026-10-04)
+
+- Implemented/froze `periodic-controls-v1`: three concurrent synthetic clients,
+  irregular web traffic, benign periodic updater and suspicious heartbeat
+  simulation. Both periodic roles have identical timing; labels stay out of
+  detector inputs. Live capture: 18/30/30 requests, 78 DNS and 78 HTTP exchanges.
+- Added deterministic 24-hour **synthetic PCAP replay**, 240/288/288 requests;
+  Zeek checksum verification remained enabled, and 816 DNS plus 816 HTTP records
+  matched the prewritten manifest. This is not 24 hours of real collection,
+  production validation or new temporal ML evidence.
+- RITA v5.1.2 / ClickHouse 24.1.6 run only inside the local guest with pinned
+  image identities, internal analysis networking, no published ports, no
+  autostart/restart policy and no feed credentials. Official release assets
+  are SHA-256 verified and remain local. Scoring/modifiers are unchanged; only
+  feeds/update checks and the internal-lab subnet mapping differ.
+- Both tools receive the same frozen Zeek records. CTI/ML are off; RITA consumes
+  DNS/HTTP/connection metadata, ThreatFusion's current verdict uses DNS only.
+  ThreatFusion keeps both periodic controls Low with periodic context. RITA
+  marks both Critical / beacon 1.0; synthetic MIME/user-agent modifiers also
+  produce browser findings. This limited observation establishes no accuracy
+  or superiority claim. Preserve v1 inputs and scores without retuning.
+- Public additions: scenario generator/live runner, isolated RITA wrapper and
+  preparer, hashed native-output reporter, tests and updated lab runbook.
+  Runtime models/caches, third-party downloads and all evaluation/traffic files
+  remain outside the repo. VM stays running for the user's active SSH session.
+- Validation: 856 project tests passed (including six new protocol/boundary
+  regressions); Ruff, Bash syntax and tracked-tree/history privacy audit passed.
+  The user-facing `lab scenario` was black-box tested on a new live capture.
+  Native RITA import/CSV export succeeded for both live and replay datasets.
+- Next gate: realistic benign controls and independent permitted recordings;
+  continuous collection, tunneling, long connections, device triage and real
+  deployment performance are not validated. Frozen ML work is unchanged.
+
 ## Local network lab — first capture gate (2026-10-04)
 
 - Created a separate Ubuntu 24.04 QEMU/KVM user-session VM with four vCPUs,
