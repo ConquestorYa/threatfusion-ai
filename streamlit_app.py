@@ -747,7 +747,7 @@ def main() -> None:
 
     render_app_header()
     if config.public_mode:
-        st.caption(tr("Public workspace · Shared analysis history is disabled."))
+        st.caption(tr("Session-only workspace · Shared analysis history is disabled."))
     with st.expander(
         tr("New analysis")
         if st.session_state.get("analysis_result") is not None

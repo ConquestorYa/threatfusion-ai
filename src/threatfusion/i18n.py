@@ -74,7 +74,7 @@ _TR: dict[str, str] = {
     "Checking local threat signals…": "Yerel tehdit sinyalleri kontrol ediliyor…",
     "Lookup input could not be analyzed: {error}": "Girdi analiz edilemedi: {error}",
     "Turn DNS activity into a prioritized investigation queue.": "DNS etkinliğini önceliklendirilmiş bir inceleme kuyruğuna dönüştür.",
-    "Public workspace · Shared analysis history is disabled.": "Herkese açık çalışma alanı · Paylaşılan analiz geçmişi kapalı.",
+    "Session-only workspace · Shared analysis history is disabled.": "Oturuma özel çalışma alanı · Paylaşılan analiz geçmişi kapalı.",
     "Telemetry intake": "Telemetri girişi",
     "New analysis": "Yeni analiz",
     "Telemetry format": "Telemetri formatı",

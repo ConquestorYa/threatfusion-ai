@@ -15,6 +15,39 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  linux-first-run:
+    name: Linux first run (${{ matrix.distribution }}, no Python/Git)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        distribution: ["debian:bookworm-slim", "ubuntu:24.04"]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build clean non-root Linux fixture
+        run: |
+          docker build --build-arg DISTRIBUTION="${{ matrix.distribution }}" \
+            -f tests/installer/Dockerfile -t threatfusion-installer tests/installer
+
+      - name: Install twice and verify real local UI and shutdown
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/source:ro" threatfusion-installer bash -c '
+            set -euo pipefail
+            ! command -v python
+            ! command -v python3
+            ! command -v git
+            install_root="/home/installer/ThreatFusion Data"
+            for attempt in 1 2; do
+              bash /source/scripts/install_linux.sh --source-dir /source \
+                --install-dir "$install_root" --prepare-only --no-browser
+            done
+            python=( "$install_root"/environments/*/bin/python )
+            "${python[0]}" /source/scripts/check_linux_installation.py --install-dir "$install_root"
+          '
+
   quality:
     name: "Quality (Ubuntu): Ruff + pytest + coverage + pip-audit"
     runs-on: ubuntu-latest

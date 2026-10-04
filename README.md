@@ -290,6 +290,39 @@ For hosted deployments, use a separate scheduler / maintenance job if periodic C
 
 ---
 
+## 🐧 Linux — one command, local first
+
+Run this as your normal user in a Linux terminal. Python, Git and sudo are not required.
+Linux **x86_64 with glibc 2.28+**, Bash, curl or wget, HTTPS certificates, tar,
+coreutils and flock are required; Debian 12 and Ubuntu 24.04 are tested.
+Allow approximately 2 GB of free disk space and an internet connection for installation.
+
+```bash
+bash -c 'set -e; f=$(mktemp /tmp/threatfusion-install.XXXXXXXX); trap "rm -f -- \"$f\"" EXIT; u=https://raw.githubusercontent.com/ConquestorYa/threatfusion-ai/local-development/linux-first-run/scripts/install_linux.sh; if command -v curl >/dev/null; then curl --proto "=https" --proto-redir "=https" -fsSL --retry 3 --connect-timeout 20 --max-time 300 "$u" -o "$f"; elif command -v wget >/dev/null; then wget --https-only --timeout=30 --tries=3 -qO "$f" "$u"; else echo "curl veya wget gerekli" >&2; exit 1; fi; bash "$f" "$@"' --
+```
+
+This installs a private **Python 3.12.14** and all 49 runtime dependencies with
+SHA-256 verification, downloads an immutable source revision, prepares a clearly
+synthetic demo and opens **http://127.0.0.1:8501** (or the next available local
+port). Stop it with **Ctrl+C**. It creates no hosted service.
+
+Restart without downloading dependencies:
+
+```bash
+"${XDG_DATA_HOME:-$HOME/.local/share}/threatfusion-ai/start"
+```
+
+Real CTI collection is optional and separate: run the launcher with
+`--mode cti-only --refresh-cti`. This mode has **ML disabled** and initially needs
+to collect its own feeds. Your developer cache, models and evaluation files are
+not copied or published. See [Linux installation](docs/INSTALL_LINUX.md) for
+API keys, offline restart, supported systems and troubleshooting.
+
+The command currently uses the verified `local-development/linux-first-run`
+branch; `main` is intentionally unchanged while its hosting automation is unverified.
+
+---
+
 ## 🖥️ Windows quick start — clean machine
 
 These steps are written for a fresh **Windows 10/11** machine using **PowerShell** and **Python 3.12**.

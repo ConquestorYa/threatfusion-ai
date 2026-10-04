@@ -290,6 +290,40 @@ Hosted kullanımda periyodik CTI yenilemesi gerekiyorsa ayrı scheduler / mainte
 
 ---
 
+## 🐧 Linux — tek komutla local kurulum
+
+Linux terminalinde normal kullanıcı olarak çalıştır; **sudo kullanma**.
+Python ve Git kurulu olmak zorunda değil. Linux **x86_64 / glibc 2.28+**, Bash,
+curl veya wget, HTTPS sertifikaları, tar, coreutils ve flock gerekir.
+Debian 12 ve Ubuntu 24.04 üzerinde test edilmiştir. İlk kurulum için internet
+ve yaklaşık 2 GB boş disk alanı önerilir.
+
+```bash
+bash -c 'set -e; f=$(mktemp /tmp/threatfusion-install.XXXXXXXX); trap "rm -f -- \"$f\"" EXIT; u=https://raw.githubusercontent.com/ConquestorYa/threatfusion-ai/local-development/linux-first-run/scripts/install_linux.sh; if command -v curl >/dev/null; then curl --proto "=https" --proto-redir "=https" -fsSL --retry 3 --connect-timeout 20 --max-time 300 "$u" -o "$f"; elif command -v wget >/dev/null; then wget --https-only --timeout=30 --tries=3 -qO "$f" "$u"; else echo "curl veya wget gerekli" >&2; exit 1; fi; bash "$f" "$@"' --
+```
+
+Komut özel **Python 3.12.14** ortamını ve gerekli 49 kütüphaneyi SHA-256
+kontrolüyle kurar, kaynak kodu indirir ve sentetik demo verisini oluşturur.
+Sonunda tarayıcıda **http://127.0.0.1:8501** açılır; port doluysa sıradaki boş
+local port kullanılır. **Ctrl+C** ile kapatılır. Hosted servis oluşturulmaz.
+
+Daha sonra tekrar açmak için:
+
+```bash
+"${XDG_DATA_HOME:-$HOME/.local/share}/threatfusion-ai/start"
+```
+
+Gerçek CTI toplamak için bu başlatıcıya `--mode cti-only --refresh-cti` ekle.
+Bu modda **ML kapalıdır**; ilk kez kaynaklardan kendi cache'ini oluşturur.
+Geliştirme cache'i, model dosyaları ve değerlendirmeler kopyalanmaz veya
+paylaşılmaz. API anahtarları, offline başlatma ve hata çözümü için
+[Linux kurulum rehberine](docs/INSTALL_LINUX.md) bak.
+
+Komut şimdilik doğrulanan `local-development/linux-first-run` dalını kullanır;
+`main`, hosting otomasyonunun kapatıldığı doğrulanana kadar güncellenmez.
+
+---
+
 ## 🖥️ Windows'ta sıfırdan kurulum
 
 Bu adımlar, hiçbir geliştirme aracı kurulu olmayan **Windows 10/11** bilgisayarda **PowerShell** ve **Python 3.12** kullanılarak projeyi çalıştırmak için hazırlanmıştır.

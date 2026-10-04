@@ -24,6 +24,40 @@ GitHub CI also runs on `local-development/` branches. YAML/schema/lint/privacy
 checks validate this configuration change. These file changes alone do not
 close an existing public service or turn off dashboard Auto Sync.
 
+## Linux first-run delivery (2026-10-04)
+
+- `scripts/install_linux.sh` is the normal-user, one-command entry point. It
+  installs pinned uv 0.12.23, private Python 3.12.14 and 49 hashed binary-wheel
+  dependencies from `requirements-linux.lock`; Python/Git/sudo are not needed.
+- Immutable source downloads and private environment identities are managed by
+  `scripts/bootstrap_linux.py`. The saved `start` launcher supports offline
+  restart; setup refuses unrecognized directories and preserves existing data.
+- First launch is a clearly synthetic demo. Explicit `--mode cti-only
+  --refresh-cti` collects separate real CTI; keys are not saved or passed to the
+  Streamlit child, refresh output omits upstream URL/error details, and ML stays
+  disabled. No experimental artifact is selected or promoted.
+- `scripts/start_local.py` / `local_setup.py` bind only 127.0.0.1, open a browser
+  after health readiness, choose a free port and supervise shutdown. Shared
+  persistent analyst history is disabled in this first-run profile. The UI calls
+  this a session-only workspace, avoiding a misleading public-hosting label.
+- Fresh Debian 12 and Ubuntu 24.04 containers, running as a normal user with no
+  Python/Git, passed full installation and repeat installation. Black-box checks
+  exercised actual Streamlit WebSocket UI rendering in demo and CTI-only modes,
+  loopback binding, occupied-port handling, duplicate-launch exclusion, both
+  Ctrl+C/SIGTERM shutdown and preserved synthetic/CTI fixture data. A path with
+  spaces was covered. No real feed credentials or developer data entered tests.
+- Local regression: **805 passed**, **90%** coverage; Ruff and ShellCheck passed,
+  and pip-audit found no known dependency vulnerabilities.
+- CI adds the same two clean-install jobs alongside Ubuntu quality, Windows
+  pytest and both existing Docker jobs. Ruff, Bash syntax, ShellCheck,
+  dependency auditing and tracked-tree/history privacy auditing are part of the
+  verification. Original 32 local data files retain their recorded checksums.
+- See `INSTALL_LINUX.md` and both READMEs for the copy-paste command, supported
+  baseline, optional credentials, restart and recovery. Publish only
+  `local-development/linux-first-run`; do not move the hosting-connected `main`.
+- This flow does not change the fresh-disjoint metrics, five unscored eligible
+  temporal samples, missing original runtime artifact or deferred promotion.
+
 ## Current position
 
 - The earlier character-only C=4 model has a completed historical post-freeze

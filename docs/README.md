@@ -8,6 +8,7 @@ This directory contains the technical documentation behind the portfolio-facing 
 
 | Document | Use it for |
 | --- | --- |
+| [INSTALL_LINUX.md](INSTALL_LINUX.md) | One-command private Python/dependency install and localhost demo/CTI-only start |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Current data flow, trust boundaries, runtime components and design principles |
 | [DATA_SOURCES.md](DATA_SOURCES.md) | CTI sources, attribution, redistribution boundaries and telemetry privacy |
 | [ML_DATASET.md](ML_DATASET.md) | Dataset construction, evaluation methodology, holdouts and model limitations |

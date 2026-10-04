@@ -29,6 +29,22 @@ Its portfolio value comes from combining:
 
 It is an educational prototype, not a production security product.
 
+## Linux first-run flow
+
+The READMEs provide a single copy-paste command for Linux x86_64/glibc 2.28+.
+It installs private Python 3.12.14 and hashed runtime dependencies, fetches an
+immutable source revision and starts the synthetic demo on 127.0.0.1. Debian 12
+and Ubuntu 24.04 clean installations are tested without Python/Git prerequisites.
+The saved user-scoped launcher restarts offline and preserves existing data.
+
+Real CTI is an explicit separate `cti-only --refresh-cti` path, with optional
+user-provided feed keys and ML disabled. No developer cache, model or holdout
+is copied, distributed or automatically promoted. First-run telemetry is
+session-local; shared persistent analyst history is disabled. This installer
+creates no hosted service. See `INSTALL_LINUX.md`; source publication currently
+uses `local-development/linux-first-run` while `main` hosting automation remains
+unverified.
+
 ## Intended users
 
 The prototype is most relevant to:

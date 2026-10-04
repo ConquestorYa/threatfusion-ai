@@ -12,6 +12,19 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- One-command Linux x86_64/glibc first installation without preinstalled
+  Python/Git or sudo: fixed uv archive checksum, private Python 3.12.14, 49
+  pinned/hash-required wheel dependencies and immutable source checkout.
+- Offline local launcher with separate synthetic demo and explicit CTI-only
+  collection, preserved runtime data, no saved API keys, loopback-only server,
+  health-gated browser opening, free-port selection and supervised shutdown.
+- Debian 12/Ubuntu 24.04 clean-install CI, real WebSocket UI/shutdown checks,
+  first-run failure/privacy regression tests, Linux guide and English/Turkish
+  copy-paste installation instructions.
+- First-run verification: 805 local tests passed with 90% coverage; clean Debian
+  and Ubuntu installations and ShellCheck passed, with no known pip-audit
+  vulnerabilities and no changes to the 32 previously recorded local data files.
+
 - Explicit CTI-only dashboard/CLI operation when a trusted ML artifact is
   unavailable, with disabled ML scoring and provenance-dependent history.
 - Synthetic-only public-demo Docker image and free Render Blueprint, independent
@@ -50,6 +63,9 @@ release date is added only when the final tag/release is created.
   readiness documentation.
 
 ### Changed
+
+- The privacy-profile caption now describes a session-only workspace; using
+  shared-history privacy controls does not imply public hosting.
 
 - Development remains local; public hosting requires a new explicit user
   request. Verified source updates can still be published to GitHub. The
