@@ -16,9 +16,7 @@ class ReleaseAuditFinding:
 _PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
         "private-key",
-        re.compile(
-            r"-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"
-        ),
+        re.compile(r"-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"),
     ),
     ("github-token", re.compile(r"\bgh[pousr]_[A-Za-z0-9]{20,}\b")),
     ("openai-api-key", re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b")),
@@ -38,10 +36,7 @@ _PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ),
     (
         "local-macos-user-path",
-        re.compile(
-            r"(?<![A-Za-z0-9_])/"
-            + r"Users/[^/\s]+"
-        ),
+        re.compile(r"(?<![A-Za-z0-9_])/" + r"Users/[^/\s]+"),
     ),
 )
 
@@ -84,15 +79,32 @@ def scan_release_path(
     """Reject local data/model files even when their payload is binary."""
     normalized = path.casefold()
     parts = PurePosixPath(normalized).parts
-    local_data = len(parts) >= 2 and parts[0] == "data" and parts[1] in {
-        "snapshots", "models", "evaluation", "deployment", "demo",
-    }
+    local_data = (
+        len(parts) >= 2
+        and parts[0] == "data"
+        and parts[1]
+        in {
+            "snapshots",
+            "models",
+            "evaluation",
+            "deployment",
+            "demo",
+        }
+    )
     filename = PurePosixPath(normalized).name
+    secret_file = (
+        filename == ".env"
+        or (filename.startswith(".env.") and filename != ".env.example")
+        or filename == "secrets.toml"
+        or filename.endswith((".pem", ".key", ".p12", ".pfx"))
+    )
     database = any(
         filename.endswith(suffix) or suffix + "-" in filename
         for suffix in (".db", ".sqlite", ".sqlite3")
     )
     model = filename.endswith((".joblib", ".pkl", ".pickle"))
+    if secret_file:
+        return (ReleaseAuditFinding("secret-file-path", path, object_id),)
     if local_data or database or model:
         return (ReleaseAuditFinding("local-data-artifact", path, object_id),)
     return ()
@@ -175,10 +187,19 @@ def _history_blob_index(repository: Path) -> list[tuple[str, str]]:
 
 def _history_artifact_findings(repository: Path) -> tuple[ReleaseAuditFinding, ...]:
     """Check every historical path, including aliases of the same blob."""
-    records = iter(_git(
-        repository, "log", "--all", "--raw", "-z", "--format=",
-        "--no-abbrev", "--no-renames", "--diff-merges=separate",
-    ).split(b"\0"))
+    records = iter(
+        _git(
+            repository,
+            "log",
+            "--all",
+            "--raw",
+            "-z",
+            "--format=",
+            "--no-abbrev",
+            "--no-renames",
+            "--diff-merges=separate",
+        ).split(b"\0")
+    )
     findings: dict[tuple[str, str], ReleaseAuditFinding] = {}
     for raw_header in records:
         header = raw_header.lstrip(b"\n")

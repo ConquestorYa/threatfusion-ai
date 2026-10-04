@@ -122,6 +122,13 @@ your own feed data does not grant redistribution rights; see
 [DATA_SOURCES.md](DATA_SOURCES.md). Fresh-disjoint aggregate results and the
 strict-temporal limitation remain documented in [ML_DATASET.md](ML_DATASET.md).
 
+There is no bundled developer key or shared fallback credential. Each caller
+must supply their own credentials in their own environment. `.env`, Streamlit
+`secrets.toml` and private-key files are ignored and rejected by the release
+audit, including Git history. Refresh failures expose safe diagnostics rather
+than raw HTTP/parser messages that might contain authenticated URLs or private
+values; this applies to the standalone refresh CLI as well as the local launcher.
+
 ## Troubleshooting and reproducibility
 
 - **No network / failed download:** fix access to GitHub/PyPI and rerun the

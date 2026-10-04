@@ -16,6 +16,11 @@ dist/
 .env
 .env.*
 !.env.example
+**/secrets.toml
+*.pem
+*.key
+*.p12
+*.pfx
 
 # Jupyter
 .ipynb_checkpoints/

@@ -1,6 +1,11 @@
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
+import importlib.util
+from pathlib import Path
+
+import pytest
+
 from threatfusion import cti_refresh
 from threatfusion.cti_cache import load_ioc_records, replace_source_records
 from threatfusion.models import IOCRecord, IOCType
@@ -108,9 +113,7 @@ def test_refresh_emits_source_progress(tmp_path, monkeypatch):
         urlhaus_key="uh",
         force=True,
         now=datetime(2026, 9, 26, 12, 0, tzinfo=timezone.utc),
-        progress=lambda source, stage, detail: events.append(
-            (source, stage, detail)
-        ),
+        progress=lambda source, stage, detail: events.append((source, stage, detail)),
     )
 
     assert ("ThreatFox", "fetching", "downloading full current export") in events
@@ -128,10 +131,7 @@ def test_refresh_emits_source_progress(tmp_path, monkeypatch):
         and "100 pages" in detail
         for source, stage, detail in events
     )
-    assert any(
-        source == "SGB" and stage == "refreshed"
-        for source, stage, _ in events
-    )
+    assert any(source == "SGB" and stage == "refreshed" for source, stage, _ in events)
 
 
 def test_public_phishtank_refresh_is_throttled_even_with_force(
@@ -157,12 +157,10 @@ def test_public_phishtank_refresh_is_throttled_even_with_force(
         now=now + timedelta(hours=6),
     )
 
-    assert next(
-        item for item in first if item.source == "PhishTank"
-    ).status == "refreshed"
-    assert next(
-        item for item in second if item.source == "PhishTank"
-    ).status == "fresh"
+    assert (
+        next(item for item in first if item.source == "PhishTank").status == "refreshed"
+    )
+    assert next(item for item in second if item.source == "PhishTank").status == "fresh"
 
 
 def test_public_phishtank_refreshes_again_after_24_hours(
@@ -188,9 +186,10 @@ def test_public_phishtank_refreshes_again_after_24_hours(
         now=now + timedelta(hours=24),
     )
 
-    assert next(
-        item for item in outcomes if item.source == "PhishTank"
-    ).status == "refreshed"
+    assert (
+        next(item for item in outcomes if item.source == "PhishTank").status
+        == "refreshed"
+    )
 
 
 def test_failed_source_preserves_previous_healthy_cache(tmp_path, monkeypatch):
@@ -224,9 +223,72 @@ def test_failed_source_preserves_previous_healthy_cache(tmp_path, monkeypatch):
 
     threatfox = next(item for item in outcomes if item.source == "ThreatFox")
     assert threatfox.status == "failed"
-    assert [item.value for item in load_ioc_records(db_path, sources=["ThreatFox"])] == [
+    assert [
+        item.value for item in load_ioc_records(db_path, sources=["ThreatFox"])
+    ] == ["old.example"]
+
+
+@pytest.mark.parametrize("via_cli", [False, True])
+def test_raw_failure_never_reaches_callbacks_results_or_cli(
+    tmp_path, monkeypatch, capsys, via_cli
+):
+    _patch_collectors(monkeypatch)
+    secret = "fixture-secret-value"
+    private = "private-telemetry.example"
+
+    class FailingThreatFox(FakeThreatFoxCollector):
+        def fetch_full_iocs(self):
+            raise ValueError(f"https://feed.example/{secret}/?ioc={private}")
+
+    monkeypatch.setattr(cti_refresh, "ThreatFoxCollector", FailingThreatFox)
+    db = tmp_path / "cti.sqlite"
+    replace_source_records(
+        db, "ThreatFox", [IOCRecord("old.example", IOCType.DOMAIN, "ThreatFox")]
+    )
+    if via_cli:
+        spec = importlib.util.spec_from_file_location(
+            "refresh_cli",
+            Path(__file__).resolve().parents[1] / "scripts/refresh_cti_cache.py",
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        monkeypatch.setenv("THREATFOX_AUTH_KEY", secret)
+        monkeypatch.setenv("URLHAUS_AUTH_KEY", "fixture-urlhaus-key")
+        assert module.main(["--db", str(db), "--force"]) == 1
+        output = capsys.readouterr().out
+    else:
+        events = []
+        outcomes = cti_refresh.refresh_configured_sources(
+            db,
+            threatfox_key=secret,
+            urlhaus_key=None,
+            force=True,
+            progress=lambda *args: events.append(args),
+        )
+        output = repr(events) + repr(outcomes)
+    assert secret not in output and private not in output
+    assert "https://feed.example" not in output
+    assert "ValueError" in output
+    assert [item.value for item in load_ioc_records(db, sources=["ThreatFox"])] == [
         "old.example"
     ]
+
+
+def test_missing_keys_skip_keyed_collectors_without_a_fallback(tmp_path, monkeypatch):
+    _patch_collectors(monkeypatch)
+
+    def unavailable(*args, **kwargs):
+        raise AssertionError("No default or developer key may be used")
+
+    monkeypatch.setattr(cti_refresh, "ThreatFoxCollector", unavailable)
+    monkeypatch.setattr(cti_refresh, "URLhausCollector", unavailable)
+    outcomes = cti_refresh.refresh_configured_sources(
+        tmp_path / "cti.sqlite",
+        threatfox_key=None,
+        urlhaus_key=None,
+        force=True,
+    )
+    assert {item.source for item in outcomes} == {"PhishTank", "SGB"}
 
 
 def test_fresh_source_is_skipped_without_fetching(tmp_path, monkeypatch):
@@ -322,9 +384,7 @@ def test_sgb_page_progress_is_forwarded(tmp_path, monkeypatch) -> None:
         threatfox_key=None,
         urlhaus_key=None,
         force=True,
-        progress=lambda source, stage, detail: events.append(
-            (source, stage, detail)
-        ),
+        progress=lambda source, stage, detail: events.append((source, stage, detail)),
         now=datetime(2026, 9, 26, tzinfo=timezone.utc),
     )
 

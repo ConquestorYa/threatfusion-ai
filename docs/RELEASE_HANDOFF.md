@@ -64,6 +64,26 @@ close an existing public service or turn off dashboard Auto Sync.
 - This flow does not change the fresh-disjoint metrics, five unscored eligible
   temporal samples, missing original runtime artifact or deferred promotion.
 
+## Credential privacy follow-up (2026-10-04)
+
+- Rechecked the first-run flow: credentials come exclusively from the caller's
+  environment; no developer/shared fallback exists. Missing ThreatFox/URLhaus
+  keys skip those collectors. Demo needs no key or upstream CTI collection.
+- Closed a legacy refresh diagnostic exposure: raw collector exceptions could
+  reach progress callbacks, returned outcome details and CLI logs. Failures now
+  use fixed safe messages while preserving the actionable SGB page-bound hint;
+  neither authenticated URLs nor private payload text is forwarded.
+- Ignored `.env`/Streamlit secrets/private-key files are also rejected by path
+  in the tracked-tree and Git-history release audit, including short keys and
+  binary containers not covered by recognizable token patterns.
+- Regression tests cover callback/result/CLI redaction, absent-key collector
+  exclusion, secret-file paths and removed secrets retained in history. No live
+  keys are used in tests. The credential/privacy follow-up does not complete
+  the broader local security review or authorize public hosting.
+- Follow-up validation: **818 local tests passed**, **90%** coverage; Ruff and
+  tracked-tree/history secret audit passed. All 32 recorded original local data
+  files retain their checksums. No known secret-file/token finding was detected.
+
 ## Current position
 
 - The earlier character-only C=4 model has a completed historical post-freeze

@@ -29,6 +29,18 @@ class CTIRefreshOutcome:
     detail: str | None = None
 
 
+class _IncompleteSGBSnapshotError(ValueError):
+    """Internal marker for a safe, actionable pagination diagnostic."""
+
+
+def _safe_failure_detail(error: Exception) -> str:
+    # Exceptions from HTTP clients/parsers may contain key-bearing URLs,
+    # response bodies or IOC/private values. Never forward their raw text.
+    if isinstance(error, _IncompleteSGBSnapshotError):
+        return "SGB snapshot incomplete; increase --sgb-max-pages and retry."
+    return "Source refresh failed; check source access, credentials and network."
+
+
 def _source_is_stale(
     db_path: Path,
     source: str,
@@ -78,10 +90,7 @@ def _fetch_complete_sgb(
         if total_count is None:
             detail = f"page {page} · {raw_items_seen:,} raw records"
         else:
-            detail = (
-                f"page {page} · {raw_items_seen:,} / "
-                f"{total_count:,} raw records"
-            )
+            detail = f"page {page} · {raw_items_seen:,} / {total_count:,} raw records"
         _emit_progress(progress, "SGB", "fetching", detail)
 
     result = SGBCollector().fetch_bounded_addresses(
@@ -89,7 +98,7 @@ def _fetch_complete_sgb(
         progress=show_page,
     )
     if not result.reached_source_end:
-        raise ValueError(
+        raise _IncompleteSGBSnapshotError(
             "SGB page bound reached before the source end "
             f"after {result.pages_fetched} pages; increase --sgb-max-pages"
         )
@@ -141,9 +150,7 @@ def refresh_configured_sources(
             )
         )
     phishtank_app_key = (
-        phishtank_key.strip()
-        if phishtank_key and phishtank_key.strip()
-        else None
+        phishtank_key.strip() if phishtank_key and phishtank_key.strip() else None
     )
     jobs.append(
         (
@@ -166,9 +173,7 @@ def refresh_configured_sources(
     outcomes: list[CTIRefreshOutcome] = []
     for source, fetcher in jobs:
         source_stale_after = (
-            PHISHTANK_PUBLIC_REFRESH_INTERVAL
-            if source == "PhishTank"
-            else stale_after
+            PHISHTANK_PUBLIC_REFRESH_INTERVAL if source == "PhishTank" else stale_after
         )
         public_feed_fresh = source == "PhishTank" and not _source_is_stale(
             db_path,
@@ -214,18 +219,19 @@ def refresh_configured_sources(
                 refreshed_at=reference,
             )
         except Exception as error:
+            detail = _safe_failure_detail(error)
             _emit_progress(
                 progress,
                 source,
                 "failed",
-                f"{type(error).__name__}: {error}",
+                f"{type(error).__name__}: {detail}",
             )
             outcomes.append(
                 CTIRefreshOutcome(
                     source=source,
                     status="failed",
                     error_type=type(error).__name__,
-                    detail=str(error),
+                    detail=detail,
                 )
             )
             continue

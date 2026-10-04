@@ -66,6 +66,15 @@ release date is added only when the final tag/release is created.
 
 ### Changed
 
+- CTI refresh diagnostics no longer forward raw collector errors to callbacks,
+  outcome details or CLI logs; authenticated URLs/private response values are
+  omitted and the safe SGB pagination instruction is retained.
+- Secret-file paths (`.env`, Streamlit secrets and private-key containers) are
+  ignored and rejected by tracked-tree/history release auditing. First-run keys
+  remain caller-provided only, with no developer/shared credential fallback.
+  Follow-up verification: 818 local tests passed with 90% coverage, zero secret
+  audit findings and unchanged checksums for all 32 original local data files.
+
 - The privacy-profile caption now describes a session-only workspace; using
   shared-history privacy controls does not imply public hosting.
 

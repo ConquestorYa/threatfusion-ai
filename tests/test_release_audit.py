@@ -55,31 +55,36 @@ def test_release_audit_detects_local_user_paths() -> None:
         path="notes.txt",
     )
 
-    assert [finding.rule for finding in windows] == [
-        "local-windows-user-path"
-    ]
-    assert [finding.rule for finding in macos] == [
-        "local-macos-user-path"
-    ]
+    assert [finding.rule for finding in windows] == ["local-windows-user-path"]
+    assert [finding.rule for finding in macos] == ["local-macos-user-path"]
 
 
 def test_release_audit_allows_documented_placeholders() -> None:
-    text = '''
+    text = """
 $env:THREATFOX_AUTH_KEY="..."
 $env:URLHAUS_AUTH_KEY="..."
 $env:PHISHTANK_APP_KEY="YOUR_PHISHTANK_APP_KEY"
 OPENAI_API_KEY="<set-in-secret-manager>"
-'''
+"""
 
     assert scan_release_text(text, path="README.md") == ()
 
 
-@pytest.mark.parametrize("path", [
-    "data/models/model.bin", "data/snapshots/dataset.csv",
-    "data/evaluation/holdout.json", "data/deployment/runtime/cache.bin",
-    "data/demo/public_demo_cti.sqlite", "cache.sqlite-wal",
-    "cache.sqlite3-shm", "cache.db-journal", "model.joblib", "model.pkl",
-])
+@pytest.mark.parametrize(
+    "path",
+    [
+        "data/models/model.bin",
+        "data/snapshots/dataset.csv",
+        "data/evaluation/holdout.json",
+        "data/deployment/runtime/cache.bin",
+        "data/demo/public_demo_cti.sqlite",
+        "cache.sqlite-wal",
+        "cache.sqlite3-shm",
+        "cache.db-journal",
+        "model.joblib",
+        "model.pkl",
+    ],
+)
 def test_release_audit_rejects_local_data_artifact_paths(path):
     findings = scan_release_path(path, object_id="abc123")
     assert len(findings) == 1
@@ -89,8 +94,63 @@ def test_release_audit_rejects_local_data_artifact_paths(path):
 
 
 def test_release_audit_allows_code_docs_and_inert_fixtures():
-    for path in ("src/threatfusion/ml_artifact.py", "docs/ML_DATASET.md", "tests/fixtures/dns.csv"):
+    for path in (
+        "src/threatfusion/ml_artifact.py",
+        "docs/ML_DATASET.md",
+        "tests/fixtures/dns.csv",
+    ):
         assert scan_release_path(path) == ()
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        ".env",
+        "config/.env.production",
+        ".streamlit/secrets.toml",
+        "nested/secrets.toml",
+        "credential.key",
+        "credential.pem",
+        "credential.p12",
+        "credential.pfx",
+    ],
+)
+def test_release_audit_rejects_secret_files_even_without_recognizable_key(path):
+    findings = scan_release_path(path, object_id="abc123")
+    assert len(findings) == 1
+    assert findings[0].rule == "secret-file-path"
+    assert findings[0].object_id == "abc123"
+
+
+def test_release_audit_allows_only_env_example():
+    assert scan_release_path(".env.example") == ()
+    assert scan_release_path("config/.env.example") == ()
+
+
+def test_secret_file_is_rejected_in_both_tree_and_history(tmp_path):
+    subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
+    (tmp_path / ".env").write_text("TINY_TOKEN=fixture\n")
+    subprocess.run(["git", "add", "--force", ".env"], cwd=tmp_path, check=True)
+    findings, _ = audit_tracked_tree(tmp_path)
+    assert [finding.rule for finding in findings] == ["secret-file-path"]
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Test",
+            "-c",
+            "user.email=test@example.invalid",
+            "commit",
+            "-m",
+            "inert fixture",
+        ],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(["git", "rm", ".env"], cwd=tmp_path, check=True, capture_output=True)
+    findings, _ = audit_git_history(tmp_path)
+    assert any(finding.rule == "secret-file-path" for finding in findings)
 
 
 def test_release_audit_checks_binary_artifacts_in_tree_and_history(tmp_path):
@@ -99,9 +159,19 @@ def test_release_audit_checks_binary_artifacts_in_tree_and_history(tmp_path):
     artifact.write_bytes(b"SQLite\x00private fixture")
     subprocess.run(["git", "add", "cache.sqlite"], cwd=tmp_path, check=True)
     subprocess.run(
-        ["git", "-c", "user.name=Audit test", "-c", "user.email=audit@example.com",
-         "commit", "-m", "Synthetic audit fixture"],
-        cwd=tmp_path, check=True, capture_output=True,
+        [
+            "git",
+            "-c",
+            "user.name=Audit test",
+            "-c",
+            "user.email=audit@example.com",
+            "commit",
+            "-m",
+            "Synthetic audit fixture",
+        ],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
     )
     tree, scanned = audit_tracked_tree(tmp_path)
     assert scanned == 0
@@ -120,13 +190,25 @@ def test_history_audit_checks_removed_artifact_blob_alias(tmp_path):
 
     def commit(message):
         subprocess.run(
-            ["git", "-c", "user.name=Audit test", "-c", "user.email=audit@example.com",
-             "commit", "-m", message],
-            cwd=tmp_path, check=True, capture_output=True,
+            [
+                "git",
+                "-c",
+                "user.name=Audit test",
+                "-c",
+                "user.email=audit@example.com",
+                "commit",
+                "-m",
+                message,
+            ],
+            cwd=tmp_path,
+            check=True,
+            capture_output=True,
         )
 
     commit("Synthetic binary aliases")
-    subprocess.run(["git", "rm", "cache.sqlite"], cwd=tmp_path, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "rm", "cache.sqlite"], cwd=tmp_path, check=True, capture_output=True
+    )
     commit("Remove synthetic cache")
     assert audit_tracked_tree(tmp_path)[0] == ()
     findings, _ = audit_git_history(tmp_path)
@@ -140,17 +222,15 @@ def test_release_audit_detects_threatfusion_service_secret_assignments() -> None
         path=".env.example.bad",
     )
 
-    assert [finding.rule for finding in findings] == [
-        "threatfusion-service-secret"
-    ]
+    assert [finding.rule for finding in findings] == ["threatfusion-service-secret"]
 
 
 def test_release_audit_allows_service_secret_placeholders() -> None:
-    text = '''
+    text = """
 THREATFOX_AUTH_KEY="..."
 URLHAUS_AUTH_KEY="<set-in-secret-manager>"
 PHISHTANK_APP_KEY="YOUR_PHISHTANK_APP_KEY"
 RENDER_API_KEY="..."
-'''
+"""
 
     assert scan_release_text(text, path="README.md") == ()
