@@ -12,6 +12,11 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Local Ubuntu/KVM lab runbook and digest-pinned synthetic DNS/HTTP capture
+  smoke sources; three-client Zeek capture and ThreatFusion DNS ingestion were
+  verified. VM disks, credentials and traffic outputs remain local. RITA
+  comparison and behavior-detection validation remain pending.
+
 - User-scoped Linux applications-menu shortcut and `threatfusion-ai` command,
   with status/refresh/stop commands and supervised Ctrl+C/SIGTERM/SIGHUP cleanup.
 - Managed local CTI settings panel: real CTI default, explicit synthetic mode,

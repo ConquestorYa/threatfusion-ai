@@ -2,6 +2,29 @@
 
 Status date: 2026-10-04
 
+## Local network lab — first capture gate (2026-10-04)
+
+- Created a separate Ubuntu 24.04 QEMU/KVM user-session VM with four vCPUs,
+  16 GiB RAM, a sparse 250 GiB disk and localhost-only SSH management. Existing
+  Kali VM/networks are preserved; VM images, keys and telemetry remain outside
+  the repository. Docker and Compose are installed inside the guest.
+- Added reusable synthetic DNS/HTTP smoke sources in `scripts/lab/` and the
+  operational runbook in `docs/LOCAL_LAB.md`. Dedicated guest bridge capture,
+  internal Docker network, immutable image digests, offline unprivileged Zeek
+  analysis and cleanup were exercised. Fixed the image's offline plugin path
+  and output-ownership issues before recording passing results.
+- Three synthetic clients produced three DNS exchanges and three HTTP 200
+  responses; the real ThreatFusion Zeek reader accepted all three DNS events
+  with the correct fields. Related regression: 29 passed. This is capture and
+  ingestion evidence only, not detection efficacy or production-readiness.
+- Full regression: 850 passed with normal local socket permissions; Ruff,
+  Bash syntax and tracked-tree/history privacy audit passed. VM graceful
+  shutdown/restart and localhost SSH were verified; the VM is left shut down
+  with autostart disabled to release host RAM.
+- RITA installation/comparison and labeled behavior scenarios are the next
+  gate. ML artifacts, thresholds, holdouts and runtime promotion are unchanged.
+  No real CTI keys/data or private host traffic were used in the lab.
+
 ## Current user instructions — local development only
 
 This policy supersedes the earlier hosted-demo/release plan below. Continue
