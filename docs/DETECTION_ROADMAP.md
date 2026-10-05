@@ -26,7 +26,25 @@ context is not measured equivalent C2 detection.
 | Analyst operations | Local web investigation, bounded connection-start and device/domain DNS timelines, feedback, reports and expiring exact-endpoint declarations with CTI override | Independent analyst task validation and documented SIEM export contracts |
 | Operational readiness | Local test suite and bounded synthetic workload | Security review, installation/recovery checks and representative throughput/resource measurements |
 
-## Current increment: DNS investigation and collector reliability
+## Current increment: normal review workload and source integrity
+
+`review-workload-v1` freezes unchanged runtime policies before two new seeded
+two-hour packet replays and three newly selected official PCAPs. Both synthetic
+windows yield 5/7 normal TCP reviews and 3/5 simulated reviews; cache-limited DNS,
+shared resolver origins, wide jitter and sparse failures expose explicit gaps.
+One intact provider-described normal capture yields one TCP and one DNS review;
+two sources fail structural/Zeek checks and remain excluded. All three successful
+inputs reconcile complete offline/collector/timeline/restart/gzip outputs.
+Optional native RITA receives identical logs; its row/severity units are separate.
+See [protocol, aggregate results and reproduction](REVIEW_WORKLOAD.md).
+
+The independent real-source gate is partial, not completed representative
+validation. Next: predeclare analyst tasks/normal context with preserved original
+evidence, obtain several new intact permitted windows, then reserve inputs for
+any timing/sparse-failure change. No tuning, ML promotion, accuracy/parity or
+human efficacy claim follows from this measurement.
+
+## Previous increment: DNS investigation and collector reliability
 
 Device/domain selectors now offer bounded UTC query counts and response-code
 timelines for uploads and collection. Existing detector/ML thresholds remain.

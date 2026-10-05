@@ -29,6 +29,20 @@ Its portfolio value comes from combining:
 
 It is an educational prototype, not a production security product.
 
+## Latest measured position (2026-10-05)
+
+`review-workload-v1` adds repeatable private acquisition/generation, structural
+source rejection and separate normal-review/native-RITA units without changing
+runtime policies. Two new two-hour synthetic windows each put 5/7 normal TCP
+groups and 3/5 simulated groups in Review; cache/shared-resolver limits, wide
+jitter and sparse failures remain explicit. One new intact normal IoT capture
+also produces a TCP and a DNS review. Two preselected official PCAPs are truncated
+and excluded, so the independent real-source gate remains partial. All three
+successful sources reconcile full offline/collector/timeline/restart/gzip outputs.
+See `REVIEW_WORKLOAD.md`. Next work prioritizes measured analyst tasks/context and
+new intact permitted windows before separately declared detector changes. These
+results do not establish malware FPR/recall, RITA parity or analyst efficacy.
+
 ## Local network lab direction
 
 A separate local Ubuntu/KVM guest now runs synthetic three-client experiments.
@@ -56,7 +70,7 @@ Incremental active-log tailing and retroactive CTI investigation workflows remai
 future work. Completed-log collection is now
 implemented as described below.
 
-The next increment adds `cached-http-controls-v1`: isolated real packet capture
+An earlier increment added `cached-http-controls-v1`: isolated real packet capture
 with DNS TTL caching, HTTP persistence, variable browser response sizes and
 polling jitter. Three validated runs each observed five DNS queries, 78 HTTP
 requests and 61 TCP sessions; this remains a short synthetic lab workload.
@@ -114,9 +128,10 @@ upgrades only after a schema-1 backup; 100k shared records, 25k DNS names and
 isolated live recordings each reconcile 24 DNS transactions and two connections,
 with zero reviews and restart/gzip duplication checks. These synthetic operational
 contracts do not establish real benign FPR, tunneling coverage or RITA parity.
-See `DNS_COLLECTION.md`; longer mixed-log rotation/resource tests and device DNS
-timelines are next, while active-file tailing and independent analyst evidence
-remain open. No public service is authorized.
+See `DNS_COLLECTION.md`. Mixed-log rotation/resource controls and device DNS
+timelines are now implemented (`DNS_INVESTIGATION.md`); representative multi-day
+load, active-file tailing and independent analyst evidence remain open. No public
+service is authorized.
 
 ## Linux first-run flow
 

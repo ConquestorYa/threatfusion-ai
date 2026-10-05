@@ -2,6 +2,68 @@
 
 Status date: 2026-10-05
 
+## Normal review workload and same-source comparison (2026-10-05)
+
+- `review-workload-v1` was declared before traffic bodies/product results:
+  baseline `c82f8d21b6867915abda7a016a2e2a62811e32f1`, twelve profiles, two
+  represented two-hour seeds and three new official source identities. All 80
+  top-level runtime modules remain byte-identical. CTI/ML/expected declarations
+  are off, labels stay outside detector inputs, no threshold/ML policy change.
+- Added private repeatable method preparation, seeded packet generation, bounded
+  official acquisition, complete-PCAP structure validation, frozen input/tooling
+  verification and independent TCP/DNS/attempt/fallback/native CSV units. Packet
+  generation never transmits traffic. Offline Zeek uses no network/capabilities;
+  native RITA remains optional, not a product/runtime dependency.
+- Separate RITA configuration preserves previous configs/databases and upstream
+  scoring. Only declared provider internal subnet context and matching private
+  input-owner UID/GID are added; feeds/update checks stay off. The initial UID
+  import failure is retained, an absent fresh database verified before retry,
+  and successful Zeek outputs reused unchanged. No file permission relaxation.
+- New development/reserved packet replays yield 672/671 connection rows and 144
+  DNS transactions each, with eight TCP reviews among twelve groups and one DNS
+  review among eleven observed-client groups. Both have **5/7 normal TCP reviews**
+  versus **3/5 simulated TCP reviews**. Normal endpoint DNS reviews are 1/6,
+  simulations 0/4; shared resolver has a separate 16-query group and no endpoint
+  attribution. Wide jitter and sparse attempts remain uncovered. This is review
+  workload and observable-intent overlap, not malware FPR/recall.
+- New provider-described normal Somfy-02 PCAP yields 52 connection + 52 DNS rows,
+  one TCP Review/2 groups and one DNS Review/2 groups over 83,250.28138 seconds.
+  Somfy-03 and Trojan-42 raw acquisitions match declared byte lengths but contain
+  truncated final packets: Zeek and structural validation fail. Partial logs are
+  excluded, not repaired, scored as zero or replaced after results. The new
+  independent real-source gate is **partial**; no successful new malicious-source
+  comparison or representative enterprise normal coverage is claimed.
+- Native RITA on identical complete logs exports 23/23/1 rows. Development
+  Critical/High/Medium/Low = 6/5/2/10, reserved = 6/4/3/10, Somfy-02 = one High.
+  Native rows/severities and ThreatFusion queues have different units; synthetic
+  payloads/prevalence/time influence scoring. No RITA equivalence/ranking claim.
+- All three successful cases retain **1,735 mixed records** without rejection/
+  pruning and exactly reconcile offline connection/DNS findings, timelines and
+  attempts. Retrospective seven-day collector clocks preserve full inputs.
+  Each restart adds zero and two gzip copies duplicate. Complete method,
+  attribution, hashes, aggregate results and reproduction: `REVIEW_WORKLOAD.md`.
+  Raw PCAP/log/native CSV/evaluation/SQLite receipts remain private outside Git.
+- Validation: **1,132 tests / 91% coverage**, including thirteen new protocol
+  controls; Ruff/Bash/diff checks pass. Initial socket tests were sandbox-blocked
+  and rerun with loopback/Unix socket permission. A pre-existing public-directory
+  fixture now explicitly sets its mode so strict umask cannot silently make it
+  private; the complete suite also passes under umask 077. Staged-source and
+  reachable-history privacy auditing passed with zero findings.
+- All 34 original local data files and frozen runtime modules keep checksums.
+  Owned comparison backend stopped, no interactive guest users/remaining running
+  containers; VM restored shut off. Original ML artifact is still missing,
+  fresh-disjoint is not strict temporal, augmented promotion remains deferred.
+- Next: predeclare analyst tasks and scoped normal-activity context, preserve
+  original/CTI-conflicting evidence and measure workload. Actual analyst efficacy
+  requires participants. Select several new intact permitted normal/malicious
+  windows before separately scoped timing/sparse-failure changes; reserve new
+  untouched inputs. DNS tunneling/general UDP, multi-day/security/SIEM contract
+  gates remain open. Do not retune on these now-inspected sources.
+- Source-only main uses `[skip render]` with confirmed user-suspended service,
+  previews off and no Blueprint resource changes. Recheck all six CI jobs and
+  unchanged suspension/deployment history after publication; no public hosting
+  action is authorized.
+
 ## Device DNS investigation and collector reliability (2026-10-05)
 
 - Added `dns-device-timeline-v1` to uploaded device triage and collected DNS:

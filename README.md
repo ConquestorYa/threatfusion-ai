@@ -274,6 +274,10 @@ See [DNS workflow, migration and two new live controls](docs/DNS_COLLECTION.md).
 Select a device/domain for UTC query and response-code timelines; collection
 reports scan/rejection status and preserves selections while mappings match.
 See [investigation and rotation/recovery checks](docs/DNS_INVESTIGATION.md).
+The [review-workload comparison](docs/REVIEW_WORKLOAD.md) measures normal
+updates, caching, shared resolvers and timing gaps against optional native RITA.
+Normal traffic also enters review; two truncated official sources are explicitly
+excluded. These measurements do not establish malware accuracy or RITA parity.
 
 ---
 

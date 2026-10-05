@@ -13,6 +13,7 @@ This directory contains the technical documentation behind the portfolio-facing 
 | [DNS_COLLECTION.md](DNS_COLLECTION.md) | Automatic TCP/UDP DNS transaction collection, private state migration and live controls |
 | [DNS_INVESTIGATION.md](DNS_INVESTIGATION.md) | Device/domain query timelines, scan health and private rotation/recovery/resource protocol |
 | [NETWORK_EVALUATION.md](NETWORK_EVALUATION.md) | Independent official IoT-23 protocol, aggregate observations and detection gaps |
+| [REVIEW_WORKLOAD.md](REVIEW_WORKLOAD.md) | Normal review burden, caching/shared resolvers, same-source native RITA and excluded corrupt inputs |
 | [CONNECTION_INVESTIGATION.md](CONNECTION_INVESTIGATION.md) | Bounded connection timelines, analyst workflow and two isolated live termination controls |
 | [TCP_ATTEMPT_REVIEW.md](TCP_ATTEMPT_REVIEW.md) | Sliding-window TCP failure diversity/retry review, private workflow and reserved evidence |
 | [TCP_TERMINATION.md](TCP_TERMINATION.md) | Partial/reset TCP payload coverage, failed-attempt counts and reserved comparison |

@@ -187,6 +187,7 @@ def test_live_analyzer_preserves_existing_outputs_and_refuses_git_or_public_dire
         analyze_termination.analyze(checkout)
     public = tmp_path / "public"
     public.mkdir(mode=0o755)
+    public.chmod(0o755)  # Make the public fixture explicit even under umask 077.
     with pytest.raises(ValueError, match="owner-only"):
         analyze_termination.analyze(public)
     private = tmp_path / "private"

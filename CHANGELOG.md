@@ -12,6 +12,14 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Frozen normal-review workload protocol, private reproducible packet generation
+  and bounded official acquisition, strict complete-PCAP validation and separate
+  TCP/DNS/attempt/native-RITA metrics. Two new synthetic windows and one intact
+  normal IoT capture reconcile full offline/collector/timeline/restart/gzip paths;
+  two truncated sources are explicitly excluded. Measurements document normal
+  review burden, caching/shared-resolver and wide-jitter/sparse-failure gaps.
+  Runtime/ML policies stay unchanged; independent real-source gate remains partial.
+
 - Device/domain DNS investigation for uploads and collection: bounded UTC query
   and response-code timelines, explicit missing-time/gap limits, additive private
   exports and bilingual selectors. Collector scan/rejection health, idle analysis
