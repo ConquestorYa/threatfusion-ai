@@ -5,6 +5,7 @@ import pandas as pd
 import streamlit as st
 
 from .i18n import tr, translate_dataframe
+from .ui_review_guidance import render_connection_guidance
 
 
 def render_timeline(rows: list[dict[str, object]], timelines: dict, *, key: str, revision: str | None = None):
@@ -20,11 +21,16 @@ def render_timeline(rows: list[dict[str, object]], timelines: dict, *, key: str,
         # Never silently carry the previous selection into a different report.
         st.session_state[f"{key}_timeline_revision"] = revision
         st.session_state.pop(f"{key}_timeline_group", None)
-    def label(group):
-        row = by_group[group]
-        return f"{group}: {row['Originator']} → {row['Responder']}:{row.get('Responder port')} / {row.get('Protocol')}"
+    if st.session_state.get(f"{key}_timeline_group") not in by_group:
+        st.session_state.pop(f"{key}_timeline_group", None)
+    def host(value):
+        return tr("Host {number}", number=str(value)[5:]) if str(value).startswith("Host ") else value
+    # Resolve translations in the script context, not a later widget callback.
+    labels = {group: f"{group}: {host(row.get('Originator', ''))} → {host(row.get('Responder', ''))}:{row.get('Responder port')} / {row.get('Protocol')}"
+              for group, row in by_group.items()}
     group = st.selectbox(tr("Select a connection group"), options=list(by_group),
-                         format_func=label, key=f"{key}_timeline_group")
+                         format_func=lambda group: labels.get(group, str(group)), key=f"{key}_timeline_group")
+    render_connection_guidance(by_group[group])
     timeline = next((item for item in timelines.get("groups", []) if item["group"] == group), None)
     if timeline is None:
         st.info(tr("No timeline for this group. Timelines cover the first 200 groups, with Review groups first; the full findings remain available."))

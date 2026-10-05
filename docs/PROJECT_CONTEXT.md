@@ -31,6 +31,14 @@ It is an educational prototype, not a production security product.
 
 ## Latest measured position (2026-10-05)
 
+`analyst-guidance-v1` adds bilingual TCP/DNS next-check guidance and pre-filter
+TCP review/context counts, preserving original evidence. Two new synthetic
+packet replays retain eight reviews each while supplied lab inventory separates
+five; CTI/expiry restore visibility. Offline/collector/restart/gzip/context checks
+support the flow. This is not human efficacy, independent traffic accuracy or
+ML promotion. See `ANALYST_REVIEW.md`; independent permitted windows and actual
+analyst validation remain the next gates.
+
 `review-workload-v1` adds repeatable private acquisition/generation, structural
 source rejection and separate normal-review/native-RITA units without changing
 runtime policies. Two new two-hour synthetic windows each put 5/7 normal TCP

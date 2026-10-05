@@ -2,6 +2,38 @@
 
 Status date: 2026-10-05
 
+## Analyst guidance and preserved review context (2026-10-05)
+
+- `analyst-guidance-v1` freezes eight task families against main `450c958` before
+  implementation. Bilingual selected TCP/DNS guidance explains original evidence,
+  coverage and next checks, including CTI precedence, declaration/identity limits,
+  expiry/bounds and shared-resolver attribution. Guidance survives chart caps.
+- Pre-filter TCP counts distinguish original/declared/unexplained/CTI units; DNS
+  and attempt queues stay separate. Original findings/all-group exports remain;
+  expected filtering is reversible. Canonical selection mappings are preserved
+  across language changes; upload TCP mapping changes reset stale selections.
+  No automatic declarations, extra persistence, requests or keys.
+- Two new complete synthetic recordings (seeds 20261071/20261171) represent two
+  hours each and yield 675+143 and 670+144 mixed rows. All 1,632 reconcile complete
+  manifest/offline/collector/restart/gzip evidence without rejection/pruning.
+  Supplied inventory separates five of eight original reviews, leaving three.
+  A CTI fixture restores one; expiry restores all eight. Same-endpoint unrelated
+  processes can still match. No detector threshold change or inferred identity.
+- Fifteen new task/integrity tests; **1,147 tests / 91% coverage pass**. Ruff,
+  Bash/diff checks and 295-file tracked-tree privacy audit pass with zero findings.
+  Detailed reproduction,
+  hashes, units and limits: `ANALYST_REVIEW.md`. Raw traffic/rules/SQLite/evaluation
+  receipts stay outside Git. Seven existing UI/translation modules change; 73
+  frozen runtime modules and all 34 original local data files remain identical.
+- Human decisions/time and new independent normal/malicious windows remain open;
+  no accuracy/RITA parity/production claim. Previous truncated source exclusions
+  remain. Fresh-disjoint is not strict temporal; original model artifact remains
+  missing and augmented runtime promotion deferred. Owned offline lab work ends
+  with VM restored off; no public hosting action is authorized.
+- Source-only `[skip render]` main integration requires exact tested-tree/all-six
+  CI verification and unchanged user-suspended service, previews off and deploy
+  history. Hosting auto-deploy/Blueprint auto-sync are not claimed disabled.
+
 ## Ruff dependency PR #173 recovery (2026-10-05)
 
 - Old PR run failed before application validation: Ubuntu reported `No module

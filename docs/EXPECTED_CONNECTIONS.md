@@ -30,6 +30,10 @@ See [termination coverage](TCP_TERMINATION.md).
    expected ones. Endpoint addresses remain aliased by default; rule IDs and
    configuration are omitted even from the explicit IP export.
 
+Summary counts preserve original, declared and unexplained/CTI work before
+filters. Selected-group guidance covers evidence, limits and service verification.
+See [analyst tasks and measurements](ANALYST_REVIEW.md).
+
 For automation:
 
 ```bash
@@ -94,7 +98,7 @@ The dates below are illustrative, not an automatically renewed policy.
   originator-IP CTI lookup or inherit another client's DNS/domain evidence.
 
 The separate connection export now uses **schema version 2**. Its detection
-policy remains `zeek-connection-context-v1`; `expected-connection-context-v1`
+policy remains `zeek-connection-context-v2`; `expected-connection-context-v1`
 adds `Analyst context`, `CTI match`, `Declared expected` and `Context reason`,
 plus evaluation time and declaration count. Existing aggregate/domain and device
 reports retain their contracts. Keep all telemetry exports local.

@@ -6,6 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from .i18n import tr, translate_dataframe
+from .ui_review_guidance import render_dns_guidance
 
 
 def render_dns_timeline(rows, payload, *, key, revision):
@@ -21,8 +22,12 @@ def render_dns_timeline(rows, payload, *, key, revision):
         for suffix in ("device", "target"):
             st.session_state.pop(f"{key}_dns_{suffix}", None)
     devices = list(dict.fromkeys(row["Device"] for row in rows))
+    if st.session_state.get(f"{key}_dns_device") not in devices:
+        st.session_state.pop(f"{key}_dns_device", None)
+    device_labels = {value: tr("Device {number}", number=str(value)[7:])
+                     if str(value).startswith("Device ") else value for value in devices}
     device = st.selectbox(
-        tr("Select an observed device"), devices, key=f"{key}_dns_device"
+        tr("Select an observed device"), devices, format_func=lambda value: device_labels.get(value, value), key=f"{key}_dns_device"
     )
     selected = {row["Group"]: row for row in rows if row["Device"] == device}
     target_key = f"{key}_dns_target"
@@ -38,6 +43,7 @@ def render_dns_timeline(rows, payload, *, key, revision):
     )
     row = selected[group]
     st.caption(tr("Selected query evidence: {evidence}", evidence=row["Evidence"]))
+    render_dns_guidance(row)
     item = next((item for item in payload["groups"] if item["group"] == group), None)
     if item is None:
         st.info(

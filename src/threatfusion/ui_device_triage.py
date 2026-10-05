@@ -30,16 +30,17 @@ def render_device_triage(result: RuntimeAnalysisResult, *, public_mode: bool) ->
         value=False, key="device_triage_include_observe",
     )
     rows = device_finding_rows(result.device_findings, include_client_ips=include_ips)
-    for row in rows:
+    visible = rows if include_observe else [r for r in rows if r["Queue priority"] != "Observe"]
+    display = [dict(row) for row in visible[:500]]
+    for row in display:
         if str(row["Device"]).startswith("Device "):
             row["Device"] = tr("Device {number}", number=str(row["Device"])[7:])
         row["Coverage limits"] = "; ".join(
             tr(text) for text in str(row["Coverage limits"]).split("; ")
         )
-    visible = rows if include_observe else [r for r in rows if r["Queue priority"] != "Observe"]
     if visible:
         st.dataframe(
-            translate_dataframe(pd.DataFrame(visible[:500])),
+            translate_dataframe(pd.DataFrame(display)),
             hide_index=True, width="stretch",
         )
     else:

@@ -276,6 +276,11 @@ yükseltilmeden önce yedeklenir. DNS sorgusu bağlantı veya indirme kanıtı d
 Cihaz/domain seçerek UTC sorgu ve yanıt kodu zaman çizelgelerini inceleyebilirsin.
 Toplayıcı tarama/ret durumunu gösterir; grup eşlemeleri aynıysa seçimin korunur.
 [İnceleme ve rotasyon/kurtarma kontrolleri](docs/DNS_INVESTIGATION.md) belgelenmiştir.
+[Analist inceleme akışı](docs/ANALYST_REVIEW.md), seçilen TCP/DNS grubu için
+iki dilde kanıt ve sonraki kontrolleri, filtre öncesi asıl/bağlam sayılarını ve
+CTI önceliğiyle geri gösterilebilen beklenen etkinliği sunar. Tam sentetik kayıtlar
+beyan, süre sonu ve collector tutarlılığını doğrular; insanlara etkisi henüz ölçülmedi.
+
 [İnceleme yükü karşılaştırması](docs/REVIEW_WORKLOAD.md), normal güncelleme,
 DNS önbelleği, ortak resolver ve zamanlama açıklarını isteğe bağlı native RITA
 ile ölçer. Normal trafik de incelemeye girebilir; bozuk iki resmî kayıt açıkça

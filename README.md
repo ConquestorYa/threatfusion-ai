@@ -274,6 +274,11 @@ See [DNS workflow, migration and two new live controls](docs/DNS_COLLECTION.md).
 Select a device/domain for UTC query and response-code timelines; collection
 reports scan/rejection status and preserves selections while mappings match.
 See [investigation and rotation/recovery checks](docs/DNS_INVESTIGATION.md).
+The [analyst review workflow](docs/ANALYST_REVIEW.md) adds bilingual selected-group
+evidence and next checks, original/context counts before filters, and reversible
+expected activity with CTI precedence. Complete synthetic replays verify context,
+expiry and collector reconciliation; human effectiveness remains unmeasured.
+
 The [review-workload comparison](docs/REVIEW_WORKLOAD.md) measures normal
 updates, caching, shared resolvers and timing gaps against optional native RITA.
 Normal traffic also enters review; two truncated official sources are explicitly

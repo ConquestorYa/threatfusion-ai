@@ -12,6 +12,14 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Bilingual selected TCP/DNS investigation guidance, original/context workload
+  counts before filters and safe canonical selections with upload identity reset.
+  CTI remains visible, expected filtering reversible, reports retain original
+  evidence. Two new complete synthetic replays reconcile supplied context,
+  CTI override, expiry and collector/restart/gzip paths. Fifteen automated task/
+  integrity checks; detector/ML policies unchanged. Independent real recordings
+  and human analyst efficacy remain open.
+
 - Frozen normal-review workload protocol, private reproducible packet generation
   and bounded official acquisition, strict complete-PCAP validation and separate
   TCP/DNS/attempt/native-RITA metrics. Two new synthetic windows and one intact

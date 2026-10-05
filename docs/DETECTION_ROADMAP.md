@@ -26,7 +26,20 @@ context is not measured equivalent C2 detection.
 | Analyst operations | Local web investigation, bounded connection-start and device/domain DNS timelines, feedback, reports and expiring exact-endpoint declarations with CTI override | Independent analyst task validation and documented SIEM export contracts |
 | Operational readiness | Local test suite and bounded synthetic workload | Security review, installation/recovery checks and representative throughput/resource measurements |
 
-## Current increment: normal review workload and source integrity
+## Current increment: analyst tasks and preserved evidence
+
+Bilingual selected-group guidance and pre-filter workload counts support TCP/DNS
+upload and collector investigation. Two new complete synthetic replays preserve
+eight original reviews each; supplied lab inventory separates five, leaving
+three unexplained. CTI override and expiry restore visibility, with exact
+offline/collector/restart/gzip reconciliation. Fifteen automated task/integrity
+checks support the flow; human decisions/time remain unmeasured. See
+[workflow, protocol and limits](ANALYST_REVIEW.md). Detector/ML policies are
+unchanged. Next: intact independently selected permitted windows and participant
+tasks before separately declared timing/sparse-failure changes. Real-source
+validation remains partial; DNS tunneling, SIEM and security gates remain open.
+
+## Previous increment: normal review workload and source integrity
 
 `review-workload-v1` freezes unchanged runtime policies before two new seeded
 two-hour packet replays and three newly selected official PCAPs. Both synthetic

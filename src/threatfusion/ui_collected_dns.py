@@ -62,7 +62,8 @@ def render_collected_dns(block, *, revision=None):
         for row in block["report"]["findings"]
         if observations or row["Queue priority"] != "Observe"
     ]
-    for row in rows[:500]:
+    display = [dict(row) for row in rows[:500]]
+    for row in display:
         if row["Device"].startswith("Device "):
             row["Device"] = tr("Device {number}", number=row["Device"][7:])
         row["Coverage limits"] = "; ".join(
@@ -70,7 +71,7 @@ def render_collected_dns(block, *, revision=None):
         )
     if rows:
         st.dataframe(
-            translate_dataframe(pd.DataFrame(rows[:500])),
+            translate_dataframe(pd.DataFrame(display)),
             hide_index=True,
             width="stretch",
         )

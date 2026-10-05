@@ -18,6 +18,7 @@ from .ui_connection_attempts import render_attempts
 from .dns_collection import validate_dns_snapshot
 from .ui_collected_dns import render_collected_dns
 from .collector_health import validate_collector_health
+from .ui_review_guidance import render_review_summary
 
 MAX_SNAPSHOT_BYTES = 64 * 1024 * 1024
 
@@ -130,18 +131,20 @@ def render_collector(state_dir: Path | None, *, public_mode: bool):
             st.caption(tr("Rejected input types: {types}", types=", ".join(details)))
     if not status["cti_indicators"]:
         st.info(tr("Collector CTI is empty or disabled. These are behavior observations only."))
+    render_review_summary(payload["findings"])
     reviews = st.checkbox(tr("Show only connection reviews"), value=True, key="collector_reviews_only")
     expected = st.checkbox(tr("Include declared expected activity"), value=False, key="collector_show_expected")
     rows = [dict(row) for row in payload["findings"] if (not reviews or row["Queue priority"] == "Review" or row["CTI match"])
-            and (expected or not row["Declared expected"])]
-    for row in rows[:500]:
+            and (expected or not row["Declared expected"] or row["CTI match"])]
+    display = [dict(row) for row in rows[:500]]
+    for row in display:
         for key in ("Originator", "Responder"):
             if str(row[key]).startswith("Host "):
                 row[key] = tr("Host {number}", number=str(row[key])[5:])
         for key in ("Evidence", "Coverage limits", "Analyst context", "Context reason"):
             row[key] = "; ".join(tr(value) for value in str(row[key]).split("; "))
     if rows:
-        st.dataframe(translate_dataframe(pd.DataFrame(rows[:500])), hide_index=True, width="stretch")
+        st.dataframe(translate_dataframe(pd.DataFrame(display)), hide_index=True, width="stretch")
     else:
         st.info(tr("No unexplained connection reviews in this view."))
     if len(rows) > 500:
