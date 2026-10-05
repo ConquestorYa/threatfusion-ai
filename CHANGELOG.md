@@ -12,6 +12,17 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Linux atomic private completed-log preparation with bounded validated shards
+  and explicit raw incomplete-DNS quarantine. Collector verifies manifest/shard
+  integrity, exposes bilingual aggregate coverage and disables expected context
+  on rejected/quarantined/pending input. CLI/install checks and 30 new controls;
+  frozen known-source row conservation and offline/restart/gzip regressions.
+  Windows/IoT-8 original evidence stays; Linux retains 19,360 eligible + 49
+  quarantined rows. IoT-3 default diverse-target analysis remains excluded;
+  separate 20k arm processes 156,462 eligible rows with pruning disclosed.
+  First failures and all private data stay local; no threshold tuning, accuracy/
+  full-retention/parity claim, ML promotion or public site. `LOG_PREPARATION.md`.
+
 - Separately frozen connection compatibility replays and sixteen transport/
   persistence/scope contracts. All 39,957 existing connection rows reconcile;
   the mixed Linux/DNS failure and capacity exclusions stay explicit.

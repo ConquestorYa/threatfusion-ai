@@ -2,6 +2,39 @@
 
 Status date: 2026-10-05
 
+## Bounded preparation and incomplete-input coverage (2026-10-05)
+
+- Linux `threatfusion-ai prepare-logs` / package entry point atomically publishes
+  private validated completed TSV/gzip shards outside Git. Existing destinations
+  survive races; active/changing/invalid/budget-exhausted sources publish no prefix.
+  Bounds: raw/expanded 256 MiB, 500k rows, 256 KiB lines/headers, 8 MiB/25k-row
+  shards (at most 64), 64 MiB raw quarantine. Original rows/timestamps/UIDs stay.
+- Missing DNS query/type is strict by default. Explicit quarantine preserves
+  original bytes/reason privately; other metadata errors still fail closed.
+  Collector verifies inventory/content and exposes aggregate counts in both
+  languages. Rejection/quarantine/pending input disables expected declarations,
+  surviving restart and one ingestion window after removal. Original evidence,
+  shared 100k retention and detector/ML policies are unchanged.
+- A frozen known-source regression preserves first strict IoT-3 DNS and default
+  unique-target failures in separate roots. Final amended replay conserves all
+  rows: Windows 33,981; Linux 19,360 eligible + 49 quarantine; IoT-3 156,462
+  eligible + 6 quarantine; known IoT-8 10,403. Windows/IoT-8 original findings,
+  timelines/DNS remain identical. Successful arms reconcile retained offline/
+  collector/restart/gzip with zero rejection/pending/new-on-restart records.
+- **IoT-3 default analysis remains excluded** by the existing 25k unique-query
+  bound, also applied to connection destination IPs. Separately declared 20k
+  window imports eligible source rows, retains 20k, prunes 136,462 and discloses
+  coverage loss. It is not full retention or fresh detection efficacy. The
+  existing 64 MiB snapshot remains another bound. Next: declare safe diverse-
+  target/report-capacity behavior, then representative load/security and untouched
+  detection/analyst evidence. Reserved inputs remain unacquired.
+- **1,233 local tests / 91% coverage**; 30 new controls, Ruff/Bash/diff checks.
+  Linux black-box installer checks now exercise preparation and duplicate-free
+  recollection. Four existing runtime modules change; 77 other existing modules
+  and 34 original local data files remain identical. Method/tests/aggregates only
+  go to main with suspended-hosting guard; raw traffic/manifests/quarantine/SQLite/
+  receipts remain private. See `LOG_PREPARATION.md`. No public site or ML promotion.
+
 ## Official Zeek enum compatibility repair (2026-10-05)
 
 - A separately predeclared `unknown-transport-import-v1` permits only the exact

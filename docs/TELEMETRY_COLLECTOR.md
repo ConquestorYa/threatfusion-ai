@@ -57,6 +57,14 @@ and [ZeekControl rotation](https://github.com/zeek/zeekctl/blob/master/doc/main.
 Active-file incremental tailing remains future work. Do not add a close marker
 to a file Zeek is still writing.
 
+Large completed files can first be prepared with `threatfusion-ai prepare-logs`
+into private validated shards. Missing DNS query/type remains strict by default;
+explicit quarantine preserves raw rows privately and discloses counts in the
+dashboard. See [preparation, conservation and coverage limits](LOG_PREPARATION.md).
+Preparation does not enlarge the retained analysis window. Rejected, quarantined
+or pending prepared input disables expected declarations for one ingestion
+window after the cause disappears; original findings remain visible.
+
 ## Standalone and limits
 
 For a source checkout, use its environment:
@@ -81,6 +89,7 @@ even though its session/history privacy flag is enabled. Demo mode has no page.
 | Evidence window | 24 hours; configurable 1–168 hours |
 | Records | 100,000 shared connection/DNS maximum; `--max-records` may lower it |
 | DNS query names / exported groups | 25,000 normalized names / first 1,000 prioritized groups; omitted count disclosed |
+| Connection destination diversity | Existing runtime also limits destination-IP query names to 25,000; excess stops report generation |
 | File / expanded gzip | 16 MiB each |
 | Scan | 8,192 directory entries; up to 64 changed-file attempts per tick |
 | Checkpoint ledger | Up to 10,000 paths/hashes; missing paths expire after seven days |

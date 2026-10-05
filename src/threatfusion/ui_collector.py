@@ -118,6 +118,12 @@ def render_collector(state_dir: Path | None, *, public_mode: bool):
         st.warning(tr("The collector reached its record limit. Coverage is incomplete and expected-activity filtering is disabled temporarily."))
     if counts["rejected_files"]:
         st.warning(tr("Some logs were rejected. Check source format, completion and limits before trusting coverage."))
+    if status.get("input_coverage_loss"):
+        st.warning(tr("Input coverage is incomplete. Rejected, quarantined or pending records prevent expected-activity filtering."))
+    if status.get("preparation", {}).get("bundles"):
+        prepared = status["preparation"]
+        st.caption(tr("Prepared source rows: {total}; eligible: {accepted}; quarantined DNS rows: {quarantined}; pending files: {pending}.",
+                      total=prepared["source_rows"], accepted=prepared["accepted_rows"], quarantined=prepared["quarantined_rows"], pending=prepared["pending_files"]))
     if "scan" in status:
         scan = status["scan"]
         st.caption(tr("Last scan: {seconds} s; changed files checked: {checked}; candidates: {candidates}.",

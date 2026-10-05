@@ -31,6 +31,20 @@ It is an educational prototype, not a production security product.
 
 ## Latest measured position (2026-10-05)
 
+Bounded Linux completed-log preparation now conserves eligible rows across
+private shards, with strict-by-default and explicitly opted-in raw DNS quarantine.
+Collector/dashboard verify inventory and disclose incomplete-input coverage;
+expected declarations cannot hide groups when inputs are incomplete. Known-source
+replays retain Windows/IoT-8 original evidence and all 19,360 eligible Linux rows
+plus 49 private quarantine rows. IoT-3's 156,462 eligible rows import in a
+separately declared 20k window with pruning disclosed; default 100k analysis still
+fails the existing 25k unique-target bound. This is an explicit remaining product
+limit, not full retention/detection efficacy. All first failures remain preserved.
+Thirty new controls; 1,233 tests pass. Four existing runtime modules change and
+77 remain identical, alongside original local data and all detector/ML policies.
+See `LOG_PREPARATION.md`. Next: diverse-target/report-capacity behavior, then
+representative load/security and untouched detection/human validation. No public site.
+
 The official `unknown_transport` enum now imports/persists under a narrow parser
 exception while arbitrary overlong values and TCP eligibility stay unchanged.
 Predeclared repair contracts and full connection-only replays reconcile 39,957

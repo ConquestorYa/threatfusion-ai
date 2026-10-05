@@ -28,6 +28,7 @@ dependencies = [
 [project.scripts]
 threatfusion = "threatfusion.cli:main"
 threatfusion-collect = "threatfusion.telemetry_collector:main"
+threatfusion-prepare-logs = "threatfusion.log_preparation:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

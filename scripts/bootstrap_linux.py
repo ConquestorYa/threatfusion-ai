@@ -272,7 +272,7 @@ def main() -> int:
             ]
             launcher.write_text(
                 "#!/usr/bin/env bash\nset -e\nunset PYTHONHOME PYTHONPATH VIRTUAL_ENV CONDA_PREFIX\n"
-                + 'case "${1:-}" in\n  stop|status|refresh|collect) exec '
+                + 'case "${1:-}" in\n  stop|status|refresh|collect|prepare-logs) exec '
                 + shlex.join(
                     [
                         str(python),

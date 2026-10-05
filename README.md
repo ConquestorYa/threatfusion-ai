@@ -271,6 +271,10 @@ The **Collected DNS observations** section adds an independent client/domain
 queue, transaction-aware dedup/conflict coverage and bounded private exports.
 Schema-1 state is backed up before upgrading; DNS queries do not prove downloads.
 See [DNS workflow, migration and two new live controls](docs/DNS_COLLECTION.md).
+Large completed logs can be prepared locally with `threatfusion-ai prepare-logs`.
+Explicit incomplete-DNS quarantine preserves raw rows privately and shows coverage
+counts; it does not increase the 100k retained-record limit. See
+[safe preparation and current limits](docs/LOG_PREPARATION.md).
 Select a device/domain for UTC query and response-code timelines; collection
 reports scan/rejection status and preserves selections while mappings match.
 See [investigation and rotation/recovery checks](docs/DNS_INVESTIGATION.md).

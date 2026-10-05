@@ -144,7 +144,7 @@ def main() -> None:
     with tempfile.TemporaryDirectory() as temporary:
         source_logs = Path(temporary)
         (source_logs / "conn.fixture.log").write_text(
-            "#separator \\x09\n#fields\tts\tuid\tid.orig_h\tid.orig_p\tid.resp_h\tid.resp_p\tproto\tduration\torig_bytes\tresp_bytes\tconn_state\tmissed_bytes\n"
+            "#separator \\x09\n#path\tconn\n#fields\tts\tuid\tid.orig_h\tid.orig_p\tid.resp_h\tid.resp_p\tproto\tduration\torig_bytes\tresp_bytes\tconn_state\tmissed_bytes\n"
             f"{int(time.time())-4000}\tCfixture\t192.0.2.1\t40000\t198.51.100.1\t443\ttcp\t3600\t100\t200\tSF\t0\n#close\tfixture\n"
         )
         command = [str(root / "start"), "collect", "--input-dir", str(source_logs), "--once"]
@@ -156,6 +156,15 @@ def main() -> None:
         assert report["findings"][0]["Queue priority"] == "Review"
         assert report["privacy"]["endpoint_ips_included"] is False
         assert (root / "collector").stat().st_mode & 0o777 == 0o700
+        prepared = source_logs / "prepared"
+        result = subprocess.run([str(root / "start"), "prepare-logs", "--input", str(source_logs / "conn.fixture.log"),
+                                 "--output-dir", str(prepared)], check=True, capture_output=True, text=True)
+        assert json.loads(result.stdout)["accepted_rows"] == 1
+        assert prepared.stat().st_mode & 0o777 == 0o700
+        result = subprocess.run(command, check=True, capture_output=True, text=True)
+        assert json.loads(result.stdout)["new_records"] == 0
+        report = json.loads((root / "collector/connections.json").read_text())
+        assert report["collector"]["preparation"]["accepted_rows"] == 1
     subprocess.run(
         [str(root / "start"), "--mode", "demo", "--prepare-only"], check=True
     )

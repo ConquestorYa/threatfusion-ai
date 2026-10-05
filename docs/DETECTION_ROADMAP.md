@@ -26,7 +26,23 @@ context is not measured equivalent C2 detection.
 | Analyst operations | Local web investigation, bounded connection-start and device/domain DNS timelines, feedback, reports and expiring exact-endpoint declarations with CTI override | Independent analyst task validation and documented SIEM export contracts |
 | Operational readiness | Local test suite and bounded synthetic workload | Security review, installation/recovery checks and representative throughput/resource measurements |
 
-## Current increment: real-capture input compatibility
+## Current increment: bounded ingestion and incomplete coverage
+
+Completed large logs can be prepared into private validated shards; explicit
+missing-query/type DNS quarantine preserves raw evidence and aggregate counts.
+Collector integrity verification and incomplete-input guards preserve original
+findings/ML policies. Known-source regressions reconcile full Windows/IoT-8 and
+eligible Linux observations; strict/default failures remain in separate roots.
+All eligible IoT-3 rows import in a separately declared 20k window, with capacity
+loss explicit. Default 100k analysis still exceeds the runtime's 25k unique-target
+bound; report size is also bounded. See [method/results/limits](LOG_PREPARATION.md).
+This is ingestion reliability, not new accuracy, competitive parity or production
+readiness. Next: predeclare diverse-target/report-capacity behavior without
+silently dropping evidence, then multi-day load/recovery/security checks and
+untouched detection evidence. Reserved sources remain unacquired. Timing/sparse,
+DNS tunneling, SIEM and actual analyst validation remain open.
+
+## Previous increment: real-capture input compatibility
 
 New Windows/Linux website recordings and a new malicious IoT recording expose
 valid enum rejection and 16 MiB/100k capacity limits. Known IoT-8 is a replay of

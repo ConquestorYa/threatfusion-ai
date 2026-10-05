@@ -28,6 +28,7 @@ from .expected_connections import MAX_RULE_BYTES, parse_expected_connections
 from .network_telemetry import parse_zeek_conn_log_with_diagnostics
 from .reporting import build_connection_report
 from .runtime_analysis import analyze_dns_events
+from .log_preparation import MANIFEST, STAGING, prepared_context
 
 POLICY_ID = "closed-zeek-collector-v2"
 MAX_FILE_BYTES = 16 * 1024 * 1024
@@ -74,9 +75,9 @@ def _candidates(root: Path):
         scanned += len(dirs) + len(files)
         if scanned > MAX_SCAN_ENTRIES:
             raise ValueError("Collector directory exceeds the scan limit; select a smaller source")
-        dirs[:] = sorted(d for d in dirs if not (Path(directory) / d).is_symlink())
+        dirs[:] = sorted(d for d in dirs if not d.startswith(STAGING) and not (Path(directory) / d).is_symlink())
         for name in sorted(files):
-            if name.startswith(("conn.", "conn_", "conn-", "dns.", "dns_", "dns-")) and name.endswith((".log", ".log.gz")):
+            if name == MANIFEST or (name.startswith(("conn.", "conn_", "conn-", "dns.", "dns_", "dns-")) and name.endswith((".log", ".log.gz"))):
                 yield Path(directory) / name
 
 
@@ -138,6 +139,7 @@ class ZeekCollector:
         self.db = None
         self.analysis_cache = None
         self.cached_indicators = None
+        self.preparation_cache = {}
         try:
             import fcntl
             self.lock_fd = os.open(self.state / "collector.lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
@@ -239,7 +241,10 @@ class ZeekCollector:
                   "open_files": 0, "rejected_files": 0, "new_records": 0, "trimmed_records": 0,
                   "new_dns_records": 0, "new_connection_records": 0}
         # Finish directory validation before committing any file from this scan.
-        candidates = sorted(_candidates(self.root))
+        inventory = sorted(_candidates(self.root))
+        manifests = [path for path in inventory if path.name == MANIFEST]
+        candidates = [path for path in inventory if path.name != MANIFEST]
+        prepared_hashes, preparation = prepared_context(manifests, candidates, self.preparation_cache)
         rejections = {"format_or_limits": 0, "access": 0, "archive": 0, "encoding": 0}
         remaining = 0
         self.active_paths = {str(path.relative_to(self.root)) for path in candidates}
@@ -254,8 +259,10 @@ class ZeekCollector:
             relative = str(path.relative_to(self.root))
             try:
                 signature = _signature(path.lstat())
-                previous = self.db.execute("SELECT signature FROM paths WHERE path=?", (relative,)).fetchone()
+                previous = self.db.execute("SELECT signature,hash FROM paths WHERE path=?", (relative,)).fetchone()
                 if previous and previous[0] == signature:
+                    if path in prepared_hashes and previous[1] != prepared_hashes[path]:
+                        raise ValueError("Prepared shard checkpoint differs from inventory")
                     counts["unchanged_files"] += 1
                     continue
                 if attempts >= MAX_IMPORTS_PER_TICK:
@@ -269,6 +276,8 @@ class ZeekCollector:
                     counts["open_files"] += 1
                     continue
                 text, digest, signature = completed
+                if path in prepared_hashes and digest != prepared_hashes[path]:
+                    raise ValueError("Prepared shard content differs from inventory")
                 kind = "dns" if path.name.startswith(("dns.", "dns_", "dns-")) else "conn"
                 if any(line.startswith("#path") and line[len("#path"):].strip() != kind for line in text.splitlines()):
                     raise ValueError("Collector log name and declared path disagree")
@@ -347,9 +356,17 @@ class ZeekCollector:
         counts["attempt_review_groups"] = len(result.connection_attempts.findings)
         capacity = self.db.execute("SELECT value FROM meta WHERE key='capacity_loss_until'").fetchone()
         capacity_loss = bool(capacity and epoch < float(capacity[0]))
+        preparation["pending_files"] = sum(not self.db.execute("SELECT 1 FROM files WHERE hash=?", (digest,)).fetchone()
+                                           for digest in prepared_hashes.values())
+        with self.db:
+            if counts["rejected_files"] or preparation["quarantined_rows"] or preparation["pending_files"]:
+                self.db.execute("INSERT OR REPLACE INTO meta VALUES('input_loss_until',?)", (str(epoch + self.window),))
+        loss = self.db.execute("SELECT value FROM meta WHERE key='input_loss_until'").fetchone()
+        input_loss = bool(loss and epoch < float(loss[0]))
         status = {"schema_version": 1, "policy": POLICY_ID, "updated_at": now.isoformat(),
                   "window_seconds": self.window, "max_records": self.max_records, "counts": counts,
                   "ml_enabled": False, "cti_indicators": len(indicators), "capacity_coverage_loss": capacity_loss,
+                  "input_coverage_loss": input_loss, "preparation": preparation,
                   "limitations": ["Completed TSV connection and TCP/UDP DNS logs only; active files wait for #close.",
                                   "One source/sensor per private state; bounded event/ingestion window.",
                                   "UID deduplication/conflicts apply within retained evidence; dropped data is coverage loss.",
@@ -371,11 +388,13 @@ class ZeekCollector:
                           "remaining_candidates": remaining, "rejections": rejections,
                           "analysis_recomputed": bool(recomputed),
                           "analysis_elapsed_seconds": round(time.perf_counter()-started, 6)}
-        report = json.loads(build_connection_report(result, expected_rules=() if capacity_loss else rules, evaluated_at=now))
+        report = json.loads(build_connection_report(result, expected_rules=() if capacity_loss or input_loss else rules, evaluated_at=now))
         report["collector"] = status
         report["dns"] = dns_snapshot
         if capacity_loss:
             report["limitations"].append("Collector capacity dropped evidence; expected-activity declarations are disabled for one ingestion window.")
+        if input_loss:
+            report["limitations"].append("Rejected, quarantined or pending prepared input leaves incomplete coverage; expected-activity declarations are disabled.")
         content = json.dumps(report, indent=2) + "\n"
         if len(content.encode()) > 64 * 1024 * 1024:
             raise ValueError("Collector report exceeds 64 MiB; use a smaller record window")

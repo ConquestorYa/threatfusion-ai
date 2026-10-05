@@ -11,6 +11,7 @@ This directory contains the technical documentation behind the portfolio-facing 
 | [INSTALL_LINUX.md](INSTALL_LINUX.md) | One-command private Python/dependency install and localhost demo/CTI-only start |
 | [TELEMETRY_COLLECTOR.md](TELEMETRY_COLLECTOR.md) | Private automatic completed Zeek logs, restart/rotation, limits and local UI |
 | [DNS_COLLECTION.md](DNS_COLLECTION.md) | Automatic TCP/UDP DNS transaction collection, private state migration and live controls |
+| [LOG_PREPARATION.md](LOG_PREPARATION.md) | Bounded completed-log preparation, explicit private DNS quarantine and coverage accounting |
 | [DNS_INVESTIGATION.md](DNS_INVESTIGATION.md) | Device/domain query timelines, scan health and private rotation/recovery/resource protocol |
 | [NETWORK_EVALUATION.md](NETWORK_EVALUATION.md) | Independent official IoT-23 protocol, aggregate observations and detection gaps |
 | [REVIEW_WORKLOAD.md](REVIEW_WORKLOAD.md) | Normal review burden, caching/shared resolvers, same-source native RITA and excluded corrupt inputs |

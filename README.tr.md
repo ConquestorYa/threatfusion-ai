@@ -273,6 +273,10 @@ açıklanıyor. Bu akış kendi CTI cache'ini kullanır; ML modeli çalıştırm
 ayıklama, çelişkili kayıt sayıları ve sınırlı özel rapor sağlar. Eski state
 yükseltilmeden önce yedeklenir. DNS sorgusu bağlantı veya indirme kanıtı değildir.
 [DNS akışı, geçiş ve iki yeni canlı kontrol](docs/DNS_COLLECTION.md) belgelenmiştir.
+`threatfusion-ai prepare-logs` büyük kapanmış logları yerelde doğrulanmış
+parçalara hazırlar. Açık karantina seçeneği eksik DNS satırlarını özel dosyada
+korur ve kapsam sayılarını gösterir; tutulan 100 bin kayıt sınırını büyütmez.
+[Güvenli hazırlama ve mevcut sınırlar](docs/LOG_PREPARATION.md) belgelenmiştir.
 Cihaz/domain seçerek UTC sorgu ve yanıt kodu zaman çizelgelerini inceleyebilirsin.
 Toplayıcı tarama/ret durumunu gösterir; grup eşlemeleri aynıysa seçimin korunur.
 [İnceleme ve rotasyon/kurtarma kontrolleri](docs/DNS_INVESTIGATION.md) belgelenmiştir.

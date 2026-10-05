@@ -15,12 +15,15 @@ from threatfusion.local_workspace import load_settings, refresh_workspace, valid
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--install-dir", type=Path, required=True)
-    parser.add_argument("action", choices=("stop", "status", "refresh", "collect"))
+    parser.add_argument("action", choices=("stop", "status", "refresh", "collect", "prepare-logs"))
     args, extra = parser.parse_known_args()
-    if extra and args.action != "collect":
+    if extra and args.action not in ("collect", "prepare-logs"):
         parser.error("Unexpected command options")
     try:
         root = validate_root(args.install_dir)
+        if args.action == "prepare-logs":
+            from threatfusion.log_preparation import main as prepare
+            return prepare(extra)
         if args.action == "collect":
             if load_settings(root)["mode"] != "cti-only":
                 print("Toplama için yerel arayüzde gerçek CTI modunu seçin.")
