@@ -222,7 +222,11 @@ The dashboard defaults to **Auto-detect**.
 | <code>.capinfos</code> | ℹ️ | recognized as metadata; upload the original PCAP/PCAPNG instead |
 
 **Upload limit:** 100 MB  
-**Runtime safety bounds:** 100,000 events and 25,000 unique analysis targets.
+**Upload/runtime safety bounds:** 100,000 events and 25,000 unique analysis targets.
+The completed-log collector separately supports diverse connection IPs within
+its shared 100,000-record window. Large connection reports use a 1,000-group
+snapshot with exact omissions and a verified private full JSON.gz export.
+See [capacity and remaining limits](docs/CONNECTION_CAPACITY.md).
 
 Encrypted DNS such as DoH/DoT is not claimed to be recoverable from packet captures.
 

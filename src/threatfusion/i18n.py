@@ -14,6 +14,14 @@ _LANGUAGE_BY_OPTION = {
 }
 
 _TR: dict[str, str] = {
+    "Full report group": "Tam rapor grubu",
+    "Connection snapshot shows {shown} of {total} retained groups. Omitted: {omitted}; omitted reviews: {reviews}; omitted CTI groups: {cti}. The full gzip report retains every group.": "Bağlantı görünümü, tutulan {total} grubun {shown} tanesini gösteriyor. Gösterilmeyen: {omitted}; gösterilmeyen inceleme: {reviews}; gösterilmeyen CTI grubu: {cti}. Tam gzip raporu bütün grupları korur.",
+    "Showing the first 500 filtered snapshot groups. Use the full gzip report for all retained groups.": "Filtrelenmiş görünümde ilk 500 grup gösteriliyor. Tutulan bütün gruplar için tam gzip raporunu kullanın.",
+    "Full report changed or is unavailable. Refresh this page and retry; no unverified archive is served.": "Tam rapor değişti veya erişilemiyor. Sayfayı yenileyip tekrar deneyin; doğrulanmamış arşiv sunulmaz.",
+    "Full retained report generated at: {time}. Unchanged evidence reuses its verified archive.": "Tam raporun oluşturulma zamanı: {time}. Kanıt değişmediyse doğrulanmış arşiv tekrar kullanılır.",
+    "Download full retained connection JSON.gz": "Tutulan bütün bağlantı gruplarını JSON.gz indir",
+    "Download visible connection snapshot JSON": "Sınırlı bağlantı görünümünü JSON indir",
+    "Full gzip report retains all retained groups; snapshot JSON contains the bounded view only.": "Tam gzip raporu tutulan bütün grupları korur; görünüm JSON'u yalnızca sınırlı grupları içerir.",
     "Review guidance": "İnceleme rehberi",
     "Original TCP reviews": "Asıl TCP incelemeleri",
     "Declared expected reviews": "Beklentiye uyan incelemeler",

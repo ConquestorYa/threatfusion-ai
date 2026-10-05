@@ -15,20 +15,22 @@ import zlib
 import errno
 import uuid
 import copy
+import re
+from bisect import bisect_right
 from dataclasses import asdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from .connections import ConnectionRecord
 from .cti_cache import load_ioc_records
-from .dns import DNSEvent
 from .dns_zeek import parse_zeek_dns_transactions
 from .dns_collection import build_dns_snapshot, transaction_payload
 from .expected_connections import MAX_RULE_BYTES, parse_expected_connections
 from .network_telemetry import parse_zeek_conn_log_with_diagnostics
-from .reporting import build_connection_report
-from .runtime_analysis import analyze_dns_events
+from .reporting import connection_report_payload
+from .runtime_analysis import analyze_connection_records
 from .log_preparation import MANIFEST, STAGING, prepared_context
+from .collector_reports import MAX_GROUPS, SLOTS, project_snapshot, snapshot_group_ids, write_archive, prune_archives
 
 POLICY_ID = "closed-zeek-collector-v2"
 MAX_FILE_BYTES = 16 * 1024 * 1024
@@ -140,6 +142,9 @@ class ZeekCollector:
         self.analysis_cache = None
         self.cached_indicators = None
         self.preparation_cache = {}
+        self.report_cache = None
+        self.archive_signature = None
+        self.completion_epochs = ()
         try:
             import fcntl
             self.lock_fd = os.open(self.state / "collector.lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
@@ -205,6 +210,16 @@ class ZeekCollector:
 
     def __exit__(self, *args):
         self.close()
+
+    def _owned_archive_slots(self):
+        row = self.db.execute("SELECT value FROM meta WHERE key='report_archive_slots'").fetchone()
+        slots = json.loads(row[0]) if row else {}
+        if (not isinstance(slots, dict) or len(slots) > 2
+            or any(slot not in SLOTS or not isinstance(hashes, list) or not 1 <= len(hashes) <= 2
+                   or any(not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{64}", value) for value in hashes)
+                   for slot, hashes in slots.items())):
+            raise ValueError("Invalid managed archive slots")
+        return slots
 
     def _prune(self, epoch):
         latest = self.db.execute("SELECT MAX(timestamp) FROM records").fetchone()[0]
@@ -338,13 +353,20 @@ class ZeekCollector:
                 values = json.loads(payload)
                 values["timestamp"] = datetime.fromisoformat(values["timestamp"]) if values["timestamp"] else None
                 records.append(ConnectionRecord(**values))
-            events = [DNSEvent(r.responder_ip, r.timestamp, r.originator_ip, response_ip=r.responder_ip) for r in records]
-            result = analyze_dns_events(events, indicators, None, connections=records)
+            result = analyze_connection_records(records, indicators)
             dns_payloads = [r[0] for r in self.db.execute("SELECT payload FROM records WHERE kind='dns' ORDER BY timestamp, hash")]
             dns_identity = []
             dns_snapshot = build_dns_snapshot(dns_payloads, indicators, generated_at=now, selection_identity=dns_identity)
             self.analysis_cache = result, dns_snapshot, len(records), len(dns_payloads), dns_identity
             self.cached_indicators = copy.deepcopy(indicators)
+            completions = set()
+            for finding in result.connection_findings:
+                if finding.last_seen is not None and finding.max_duration_seconds is not None:
+                    try:
+                        completions.add((finding.last_seen + timedelta(seconds=finding.max_duration_seconds)).timestamp())
+                    except (OverflowError, ValueError):
+                        pass  # Unrepresentable ends cannot qualify as expected.
+            self.completion_epochs = tuple(sorted(completions))
         result, dns_snapshot, conn_count, dns_count, dns_identity = self.analysis_cache
         counts["retained_records"] = conn_count
         counts["retained_total_records"] = conn_count + dns_count
@@ -373,8 +395,31 @@ class ZeekCollector:
                                   "DNS transaction conflicts are excluded; raw identities remain private.",
                                   "Shared retention/capacity across log kinds; DNS queries do not prove connections or downloads.",
                                   "No live packet capture, feed updates or analyst efficacy claim."]}
+        effective_rules = () if capacity_loss or input_loss else rules
+        report_key = (id(result), id(dns_snapshot), tuple(effective_rules),
+                      tuple(rule.valid_from <= now < rule.valid_until for rule in effective_rules),
+                      bisect_right(self.completion_epochs, epoch) if effective_rules else 0, capacity_loss, input_loss)
+        partial = len(result.connection_findings) > MAX_GROUPS
+        if not partial:
+            self.report_cache = None
+            self.archive_signature = None
+        reused = bool(partial and self.report_cache is not None and self.report_cache[0] == report_key)
+        if reused:
+            try:
+                reused = _signature((self.state / self.report_cache[2]["file"]).lstat()) == self.archive_signature
+            except FileNotFoundError:
+                reused = False
+        if reused:
+            base_report, reference = self.report_cache[1:]
+        else:
+            base_report = connection_report_payload(result, expected_rules=effective_rules, generated_at=now, evaluated_at=now)
+            reference = None
+            if capacity_loss:
+                base_report["limitations"].append("Collector capacity dropped evidence; expected-activity declarations are disabled for one ingestion window.")
+            if input_loss:
+                base_report["limitations"].append("Rejected, quarantined or pending prepared input leaves incomplete coverage; expected-activity declarations are disabled.")
         identity = json.dumps({"connections": [(f.originator_ip, f.responder_ip, f.responder_port, f.protocol) for f in result.connection_findings],
-                               "dns": dns_identity}, separators=(",", ":"))
+                               "dns": dns_identity, "snapshot_groups": snapshot_group_ids(base_report["findings"])}, separators=(",", ":"))
         # Private identity hash stays in SQLite. Export a random epoch, never an
         # unsalted endpoint hash. Preserve selections only while group mappings match.
         digest = hashlib.sha256(identity.encode()).hexdigest()
@@ -387,19 +432,36 @@ class ZeekCollector:
         status["scan"] = {"candidate_files": len(candidates), "attempted_files": attempts,
                           "remaining_candidates": remaining, "rejections": rejections,
                           "analysis_recomputed": bool(recomputed),
+                          "report_recomputed": not reused, "archive_reused": reused,
                           "analysis_elapsed_seconds": round(time.perf_counter()-started, 6)}
-        report = json.loads(build_connection_report(result, expected_rules=() if capacity_loss or input_loss else rules, evaluated_at=now))
-        report["collector"] = status
-        report["dns"] = dns_snapshot
-        if capacity_loss:
-            report["limitations"].append("Collector capacity dropped evidence; expected-activity declarations are disabled for one ingestion window.")
-        if input_loss:
-            report["limitations"].append("Rejected, quarantined or pending prepared input leaves incomplete coverage; expected-activity declarations are disabled.")
+        full = dict(base_report, collector=status, dns=dns_snapshot)
+        if partial and reference is None:
+            owned_slots = self._owned_archive_slots()
+            def reserve(slot, hashes):
+                if hashes is None:
+                    owned_slots.pop(slot, None)
+                else:
+                    owned_slots[slot] = hashes
+                with self.db:
+                    self.db.execute("INSERT OR REPLACE INTO meta VALUES('report_archive_slots',?)", (json.dumps(owned_slots, sort_keys=True),))
+            reference = write_archive(self.state, full, owned_slots, reserve)
+            self.report_cache = report_key, base_report, reference
+            self.archive_signature = _signature((self.state / reference["file"]).lstat())
+        report = project_snapshot(full, reference)
+        if partial:
+            report["generated_at"] = now.isoformat()
+            report["context_evaluated_at"] = now.isoformat()
         content = json.dumps(report, indent=2) + "\n"
         if len(content.encode()) > 64 * 1024 * 1024:
             raise ValueError("Collector report exceeds 64 MiB; use a smaller record window")
         _atomic(self.state / "connections.json", content)
         _atomic(self.state / "status.json", json.dumps(status, indent=2) + "\n")
+        if not partial:
+            owned = self._owned_archive_slots()
+            if owned:
+                remaining = prune_archives(self.state, owned)
+                with self.db:
+                    self.db.execute("INSERT OR REPLACE INTO meta VALUES('report_archive_slots',?)", (json.dumps(remaining, sort_keys=True),))
         return status
 
 

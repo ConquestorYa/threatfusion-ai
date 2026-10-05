@@ -19,6 +19,7 @@ from .dns_collection import validate_dns_snapshot
 from .ui_collected_dns import render_collected_dns
 from .collector_health import validate_collector_health
 from .ui_review_guidance import render_review_summary
+from .collector_reports import read_archive, validate_projection
 
 MAX_SNAPSHOT_BYTES = 64 * 1024 * 1024
 
@@ -84,6 +85,7 @@ def read_snapshot(root: Path):
             or status["counts"]["dns_review_groups"] != sum(row["Queue priority"] != "Observe" for row in payload["dns"]["report"]["findings"])):
             raise ValueError("Inconsistent collected DNS counts")
     validate_collector_health(status)
+    validate_projection(payload)
     return payload
 
 
@@ -137,7 +139,12 @@ def render_collector(state_dir: Path | None, *, public_mode: bool):
             st.caption(tr("Rejected input types: {types}", types=", ".join(details)))
     if not status["cti_indicators"]:
         st.info(tr("Collector CTI is empty or disabled. These are behavior observations only."))
-    render_review_summary(payload["findings"])
+    coverage = payload.get("connection_coverage")
+    if coverage:
+        st.warning(tr("Connection snapshot shows {shown} of {total} retained groups. Omitted: {omitted}; omitted reviews: {reviews}; omitted CTI groups: {cti}. The full gzip report retains every group.",
+                      shown=coverage["snapshot_groups"], total=coverage["total_groups"], omitted=coverage["omitted_groups"],
+                      reviews=coverage["omitted_review_groups"], cti=coverage["omitted_cti_groups"]))
+    render_review_summary(payload["findings"], coverage)
     reviews = st.checkbox(tr("Show only connection reviews"), value=True, key="collector_reviews_only")
     expected = st.checkbox(tr("Include declared expected activity"), value=False, key="collector_show_expected")
     rows = [dict(row) for row in payload["findings"] if (not reviews or row["Queue priority"] == "Review" or row["CTI match"])
@@ -154,11 +161,25 @@ def render_collector(state_dir: Path | None, *, public_mode: bool):
     else:
         st.info(tr("No unexplained connection reviews in this view."))
     if len(rows) > 500:
-        st.caption(tr("Showing the first 500 groups. The download contains all retained groups."))
+        st.caption(tr("Showing the first 500 filtered snapshot groups. Use the full gzip report for all retained groups.") if coverage
+                   else tr("Showing the first 500 groups. The download contains all retained groups."))
     revision = status.get("selection_revision", status["updated_at"])
     render_timeline(rows[:500], payload.get("timelines", {}), key="collector", revision=revision)
     render_attempts(payload.get("attempts"))
     render_collected_dns(payload.get("dns"), revision=revision)
-    st.download_button(tr("Download collected connection JSON"), data=json.dumps(payload, indent=2),
-                       file_name="threatfusion_collected_connections.json", mime="application/json")
+    if coverage:
+        reference = dict(payload["full_report"])
+        failure_message = tr("Full report changed or is unavailable. Refresh this page and retry; no unverified archive is served.")
+        def download_full():
+            try:
+                return read_archive(state_dir, reference)
+            except (OSError, ValueError, TypeError):
+                raise RuntimeError(failure_message) from None
+        st.caption(tr("Full retained report generated at: {time}. Unchanged evidence reuses its verified archive.", time=reference["generated_at"]))
+        st.download_button(tr("Download full retained connection JSON.gz"), data=download_full,
+                           file_name="threatfusion_collected_connections.full.json.gz", mime="application/gzip",
+                           key="collector_full_" + reference["sha256"], on_click="ignore")
+    st.download_button(tr("Download visible connection snapshot JSON") if coverage else tr("Download collected connection JSON"),
+                       data=json.dumps(payload, indent=2), file_name="threatfusion_collected_connections.snapshot.json" if coverage else "threatfusion_collected_connections.json",
+                       mime="application/json")
     st.caption(tr("Collector history is bounded. Aliases are report-local and exports remain sensitive telemetry."))

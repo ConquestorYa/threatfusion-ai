@@ -222,7 +222,11 @@ Dashboard varsayılan olarak **Otomatik algıla** modunda çalışır.
 | <code>.capinfos</code> | ℹ️ | metadata olarak tanınır; orijinal PCAP/PCAPNG yüklenmelidir |
 
 **Dosya yükleme sınırı:** 100 MB  
-**Runtime güvenlik sınırları:** 100.000 event ve 25.000 benzersiz analiz hedefi.
+**Upload/runtime güvenlik sınırları:** 100.000 event ve 25.000 benzersiz analiz hedefi.
+Kapanmış logları toplayan collector, ortak 100.000 kayıt penceresinde bağlantı
+IP'lerini DNS isim sınırından bağımsız analiz eder. Büyük bağlantı raporları,
+eksik grup sayısını açıklayan 1.000 grupluk görünüm ve doğrulanmış özel tam
+JSON.gz çıktısı sunar. [Kapasite ve kalan sınırlar](docs/CONNECTION_CAPACITY.md).
 
 PCAP üzerinden DoH/DoT gibi şifreli DNS'ten domain çıkarıldığı iddia edilmez.
 

@@ -21,16 +21,16 @@ class AnalysisReport:
     generated_at: str
 
 
-def build_connection_report(
+def connection_report_payload(
     result: RuntimeAnalysisResult, *, include_ips: bool = False,
     generated_at: datetime | None = None,
     expected_rules: tuple[ExpectedConnectionRule, ...] = (), evaluated_at: datetime | None = None,
-) -> str:
+) -> dict:
     from .connection_timeline import timeline_report
     from .connection_attempts import attempt_report
 
     evaluated_at = evaluated_at or datetime.now(timezone.utc)
-    return json.dumps({
+    return {
         "schema_version": 2, "policy": CONNECTION_POLICY_ID,
         "generated_at": _generated_at_text(generated_at),
         "context_policy": EXPECTATION_POLICY_ID,
@@ -53,7 +53,17 @@ def build_connection_report(
             "Expected activity is an expiring analyst declaration, not verified software identity or safety.",
             "CTI conflicts override expected activity; original priorities and evidence are retained.",
         ],
-    }, indent=2, ensure_ascii=False) + "\n"
+    }
+
+
+def build_connection_report(
+    result: RuntimeAnalysisResult, *, include_ips: bool = False,
+    generated_at: datetime | None = None,
+    expected_rules: tuple[ExpectedConnectionRule, ...] = (), evaluated_at: datetime | None = None,
+) -> str:
+    payload = connection_report_payload(result, include_ips=include_ips, generated_at=generated_at,
+                                        expected_rules=expected_rules, evaluated_at=evaluated_at)
+    return json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
 
 
 def build_device_report(

@@ -12,6 +12,19 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Collector-only diverse connection analysis with unchanged DNS/legacy bounds,
+  global CTI/UID/conflict and detector policies. Bilingual prioritized 1,000-group
+  snapshots disclose omissions and full-retained counts; verified private full
+  JSON.gz retains all connection groups within 256/64 MiB budgets. Digest-owned
+  atomic generations, declaration/CTI/retention cache invalidation, race protection
+  and intact-archive cleanup preserve unrelated files and previous reports.
+  Frozen known-source default-100k regression and synthetic 100k target export/
+  actual SIGKILL/restart/gzip proofs pass; IoT-3 pruning stays explicit. Thirty-one
+  new controls, 1,264 total tests; installed Linux check adds full export. Prior
+  failures and all raw data stay local. No accuracy/parity/enterprise claim, ML
+  promotion or public site. See `docs/CONNECTION_CAPACITY.md`. Earlier entries
+  retain the limits/outcomes at their original implementation.
+
 - Linux atomic private completed-log preparation with bounded validated shards
   and explicit raw incomplete-DNS quarantine. Collector verifies manifest/shard
   integrity, exposes bilingual aggregate coverage and disables expected context

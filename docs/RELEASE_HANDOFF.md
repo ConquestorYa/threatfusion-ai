@@ -2,6 +2,43 @@
 
 Status date: 2026-10-05
 
+## Diverse connection capacity and private full reports (2026-10-05)
+
+- Collector-only connection analysis separates IP diversity from the unchanged
+  DNS 25k-name bound. Global UID/conflict handling, CTI and existing detector/
+  timeline/attempt behavior stay. Upload/legacy bounds remain; no IP-domain ML.
+- Above 1,000 connection groups, the bilingual dashboard uses a prioritized
+  snapshot with exact omissions and full-retained workload counts. Separate
+  deferred JSON.gz download verifies the exact private generation and retains
+  every connection group within retained evidence. Two digest-owned atomic slots
+  preserve previous publication on failures and avoid adopting unrelated files.
+  Expanded/compressed budgets are 256/64 MiB; other section bounds remain.
+- Frozen default-100k replay now completes IoT-3: 100,000 retained records,
+  56,462 pruned, 40,706 full groups / 1,000 visible, two attempt reviews and no
+  TCP reviews. Linux retains all 19,360 eligible rows, with 49 private quarantine
+  rows; Windows/known IoT-8 original evidence is identical. Offline independent
+  retained-payload/full-report/restart/gzip checks reconcile all arms.
+- Synthetic 100k diverse IPv6 targets produce 74,132,073 expanded report bytes
+  and 100k full groups, with 99k snapshot omissions. Actual own-writer SIGKILL
+  during encoding preserves old snapshot/archive; restart retains 100k with
+  zero new records. One private unpublished temporary remains, never served.
+  Large idle arms reuse archives. Peak evaluator RSS 1,092.3 MiB includes oracle/
+  source/report copies, not collector-only RSS or an enterprise guarantee.
+- First verifier tuple/JSON-array failure remains; separately frozen method-only
+  amendment corrects comparison. Earlier preparation strict/default exclusions
+  remain historical evidence. These are inspected-source engineering regressions,
+  not fresh detection accuracy or RITA parity. Reserved inputs remain unacquired.
+- **1,264 local tests / 91% coverage**, including 31 new capacity/security/recovery
+  controls; clean Linux installer check adds 1,002-group full export. Seven
+  existing runtime modules change, 75 of 82 stay identical, one module is added;
+  34 original local data files remain identical. Method/tests/aggregate docs only
+  go to main with the suspended-hosting guard. All raw data/SQLite/archives/
+  receipts stay private. No public site, thresholds change or ML promotion.
+- Next: representative multi-day load/resource/security/recovery protocol, then
+  untouched timing/sparse/tunneling evidence, SIEM and analyst validation. See
+  `CONNECTION_CAPACITY.md` for contracts, limits and reproduction. The older
+  sections below describe their original outcomes, not current collector limits.
+
 ## Bounded preparation and incomplete-input coverage (2026-10-05)
 
 - Linux `threatfusion-ai prepare-logs` / package entry point atomically publishes

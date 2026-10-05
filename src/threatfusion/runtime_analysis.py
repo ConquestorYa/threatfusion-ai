@@ -65,10 +65,7 @@ def is_ml_scoring_candidate(value: str) -> bool:
     return not normalized.endswith(_ML_EXCLUDED_SUFFIXES)
 
 
-def _validate_runtime_bounds(events: list[DNSEvent]) -> None:
-    if len(events) > MAX_DNS_EVENTS:
-        raise ValueError(f"DNS input exceeds the {MAX_DNS_EVENTS} event analysis limit")
-
+def _validate_event_metadata(events: list[DNSEvent]) -> None:
     for event in events:
         if not isinstance(event.query_name, str):
             raise ValueError("DNS query name must be text")
@@ -90,6 +87,11 @@ def _validate_runtime_bounds(events: list[DNSEvent]) -> None:
                     f"DNS {field_name} exceeds the safe analysis length limit"
                 )
 
+
+def _validate_runtime_bounds(events: list[DNSEvent]) -> None:
+    if len(events) > MAX_DNS_EVENTS:
+        raise ValueError(f"DNS input exceeds the {MAX_DNS_EVENTS} event analysis limit")
+    _validate_event_metadata(events)
     unique_names = {
         event.query_name.strip().casefold().removesuffix(".")
         for event in events
@@ -159,6 +161,29 @@ def analyze_dns_events(
         connection_findings=connection_findings,
         connection_timelines=build_timelines(connection_list, connection_findings),
         connection_attempts=analyze_attempts(connection_list),
+    )
+
+
+def analyze_connection_records(
+    connections: Iterable[ConnectionRecord], indicators: Iterable[IOCRecord] = (),
+) -> RuntimeAnalysisResult:
+    """Connection-only collector analysis, without applying DNS-domain limits.
+
+    All retained connections share one global UID/conflict index and unchanged
+    behavior policies. Destination CTI is matched against the existing IP-event
+    representation; IP targets do not receive domain behavior or ML assessments.
+    The event/metadata bounds remain, and no network activity is performed.
+    """
+    records = tuple(connections)
+    if len(records) > MAX_DNS_EVENTS:
+        raise ValueError("Connection input exceeds the event analysis limit")
+    events = [DNSEvent(r.responder_ip, r.timestamp, r.originator_ip, response_ip=r.responder_ip) for r in records]
+    _validate_event_metadata(events)
+    findings = analyze_connections(records)
+    return RuntimeAnalysisResult(
+        events=tuple(events), matches=tuple(match_dns_events(events, indicators)),
+        ml_scores={}, assessments=(), device_findings=(), connection_findings=findings,
+        connection_timelines=build_timelines(records, findings), connection_attempts=analyze_attempts(records),
     )
 
 

@@ -87,14 +87,19 @@ Data-provider attribution/redistribution constraints still apply.
 different. The collector retains at most 100k mixed records and 25k DNS names,
 within its event/ingestion window; older evidence can be pruned during import.
 The 64 MiB snapshot and 1,000 exported DNS groups remain separate bounds.
-Connection destination IPs also pass the existing runtime's 25k unique-query
-bound; diverse connection targets can exceed it before snapshot creation. A
-large number of connection groups can also exceed the snapshot limit; processing
-stops with an explicit error. Use a new state with a deliberately smaller
-`--max-records` window, keeping the earlier failure and the coverage limitation.
+The collector now analyzes connection IP diversity independently of the DNS
+25k-name bound. Above 1,000 connection groups, a bounded snapshot discloses
+omissions and a separate private gzip retains every connection group in retained
+evidence (256 MiB expanded / 64 MiB compressed budgets). Upload/legacy bounds
+remain unchanged. See [capacity contracts and recovery](CONNECTION_CAPACITY.md).
 This feature is bounded preparation, not active tailing or unlimited ingestion.
 
 ## Known-source regression protocol
+
+This section records the original preparation experiment and its failures.
+The later separately frozen [capacity replay](CONNECTION_CAPACITY.md) completes
+IoT-3 with the default 100k window, pruning 56,462 records explicitly; none of
+these original receipts were replaced or relabeled.
 
 `bounded-log-preparation-v1` seals main `e6da57b`, unchanged source hashes and
 contracts before implementation. The verifier seals candidate runtime/method/

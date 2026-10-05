@@ -8,35 +8,20 @@ from __future__ import annotations
 import streamlit as st
 
 from .i18n import tr
+from .collector_reports import review_counts
 
 
-def review_counts(rows):
-    """Count retained TCP groups before view filters; CTI overrides context."""
-    return {
-        "Original TCP reviews": sum(r.get("Queue priority") == "Review" for r in rows),
-        "Declared expected reviews": sum(
-            r.get("Queue priority") == "Review" and r.get("Declared expected") is True
-            and r.get("CTI match") is not True for r in rows
-        ),
-        "Unexplained / CTI groups": sum(
-            (r.get("Queue priority") == "Review" and r.get("Declared expected") is not True)
-            or r.get("CTI match") is True for r in rows
-        ),
-        "TCP CTI groups": sum(r.get("CTI match") is True for r in rows),
-    }
-
-
-def render_review_summary(rows):
+def render_review_summary(rows, coverage=None):
     columns = st.columns(4)
-    for column, (label, count) in zip(columns, review_counts(rows).items(), strict=True):
+    summary = coverage["review_counts"] if coverage else review_counts(rows)
+    for column, (label, count) in zip(columns, summary.items(), strict=True):
         column.metric(tr(label), count)
     st.caption(tr(
         "Before filters: {count} retained TCP groups. CTI groups are included in the unexplained queue even without a behavior Review; counts overlap. DNS and attempt queues are separate.",
-        count=len(rows),
+        count=coverage["total_groups"] if coverage else len(rows),
     ))
-    st.caption(tr(
-        "Declarations change review context, not original priority. Reveal expected activity with the checkbox; exports retain all groups."
-    ))
+    st.caption(tr("Full gzip report retains all retained groups; snapshot JSON contains the bounded view only.") if coverage else tr(
+        "Declarations change review context, not original priority. Reveal expected activity with the checkbox; exports retain all groups."))
 
 
 def connection_steps(row):

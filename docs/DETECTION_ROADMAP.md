@@ -26,7 +26,21 @@ context is not measured equivalent C2 detection.
 | Analyst operations | Local web investigation, bounded connection-start and device/domain DNS timelines, feedback, reports and expiring exact-endpoint declarations with CTI override | Independent analyst task validation and documented SIEM export contracts |
 | Operational readiness | Local test suite and bounded synthetic workload | Security review, installation/recovery checks and representative throughput/resource measurements |
 
-## Current increment: bounded ingestion and incomplete coverage
+## Current increment: connection diversity and complete retained export
+
+Collector connection targets no longer consume the DNS 25k-name bound. Original
+global findings/CTI/context remain; 1,000-group prioritized snapshots disclose
+omissions and full-retained counts, with a verified private full gzip archive.
+Default-100k IoT-3 analysis completes with 56,462 records pruned; synthetic 100k
+targets pass full export, restart/gzip and actual writer-kill recovery. Small
+Windows/known IoT-8 original evidence stays identical. See
+[contracts, measured results and limits](CONNECTION_CAPACITY.md). No new detection
+efficacy, RITA parity or production readiness is established. Next: freeze and
+run representative multi-day load/resource/security/recovery checks. Then untouched
+timing/sparse/tunneling evidence, SIEM contracts and analyst pilot remain.
+Reserved independent sources stay unacquired; ML policies/promotion stay frozen.
+
+## Previous increment: bounded ingestion and incomplete coverage
 
 Completed large logs can be prepared into private validated shards; explicit
 missing-query/type DNS quarantine preserves raw evidence and aggregate counts.

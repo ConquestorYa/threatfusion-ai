@@ -17,7 +17,10 @@ threatfusion-ai collect --input-dir /absolute/path/to/zeek/logs
 Open `threatfusion-ai` and select **Collected connections** in the sidebar.
 The English/Turkish view refreshes every ten seconds, warns about stale snapshots,
 rejected inputs, empty CTI and capacity loss, and defaults to unexplained reviews.
-Expected-activity filtering is reversible; the download retains all groups.
+Expected-activity filtering is reversible. Small JSON reports retain all connection
+groups; above 1,000 groups, JSON is a prioritized snapshot with explicit omissions
+and a separate verified full JSON.gz download. Summary counts cover every retained
+group before filtering. See [capacity and recovery limits](CONNECTION_CAPACITY.md).
 CTI conflicts remain visible even for Observe-priority groups.
 
 Ctrl+C stops the collector. Repeat the same command to resume from checkpoints;
@@ -89,11 +92,12 @@ even though its session/history privacy flag is enabled. Demo mode has no page.
 | Evidence window | 24 hours; configurable 1–168 hours |
 | Records | 100,000 shared connection/DNS maximum; `--max-records` may lower it |
 | DNS query names / exported groups | 25,000 normalized names / first 1,000 prioritized groups; omitted count disclosed |
-| Connection destination diversity | Existing runtime also limits destination-IP query names to 25,000; excess stops report generation |
+| Connection destination diversity | Collector IP analysis is separate from DNS-name bounds; shared 100k retained-record limit remains |
 | File / expanded gzip | 16 MiB each |
 | Scan | 8,192 directory entries; up to 64 changed-file attempts per tick |
 | Checkpoint ledger | Up to 10,000 paths/hashes; missing paths expire after seven days |
-| Snapshot | 64 MiB; table shows first 500 filtered groups, download contains all |
+| Snapshot | 64 MiB / 1,000 connection groups; table shows first 500 filtered groups; JSON omissions disclosed |
+| Full connection export | Private JSON.gz contains every retained connection group; 256 MiB expanded / 64 MiB compressed; other section bounds remain |
 
 The full-connection export remains complete within retained evidence; DNS exports
 are bounded separately as above. The watermark/window is shared across log kinds.

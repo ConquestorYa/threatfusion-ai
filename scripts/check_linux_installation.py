@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import hashlib
+import gzip
 import importlib.util
 import json
 import os
@@ -165,6 +166,21 @@ def main() -> None:
         assert json.loads(result.stdout)["new_records"] == 0
         report = json.loads((root / "collector/connections.json").read_text())
         assert report["collector"]["preparation"]["accepted_rows"] == 1
+        # Exercise the installed bounded view and complete private gzip export.
+        header = "\n".join((source_logs / "conn.fixture.log").read_text().splitlines()[:3]) + "\n"
+        timestamp = int(time.time()) - 4000
+        rows = [f"{timestamp}\tCdiverse{i}\t192.0.2.1\t40000\t2001:db8::{i+1:x}\t443\ttcp\t1\t100\t200\tSF\t0\n" for i in range(1001)]
+        (source_logs / "conn.diverse.log").write_text(header + "".join(rows) + "#close\tfixture\n")
+        result = subprocess.run(command, check=True, capture_output=True, text=True)
+        assert json.loads(result.stdout)["retained_records"] == 1002
+        report = json.loads((root / "collector/connections.json").read_text())
+        assert len(report["findings"]) == 1000 and report["connection_coverage"]["omitted_groups"] == 2
+        archive = root / "collector" / report["full_report"]["file"]
+        full = json.loads(gzip.decompress(archive.read_bytes()))
+        assert len(full["findings"]) == 1002 and archive.stat().st_mode & 0o777 == 0o600
+        assert "Cdiverse" not in json.dumps(full)
+        result = subprocess.run(command, check=True, capture_output=True, text=True)
+        assert json.loads(result.stdout)["new_records"] == 0
     subprocess.run(
         [str(root / "start"), "--mode", "demo", "--prepare-only"], check=True
     )

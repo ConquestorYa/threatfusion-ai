@@ -31,6 +31,21 @@ It is an educational prototype, not a production security product.
 
 ## Latest measured position (2026-10-05)
 
+Collector connection diversity is now independent of the DNS 25k-name bound.
+Above 1,000 connection groups, a prioritized bounded snapshot discloses omissions
+and full-retained counts; a private generation-verified gzip exports every retained
+connection group within 256 MiB expanded / 64 MiB compressed budgets. Global CTI,
+UID/conflict, detector/ML and section bounds remain; upload limits are unchanged.
+Default-100k IoT-3 now completes with 56,462 records pruned and coverage explicit.
+Four known cases plus synthetic 100k targets reconcile retained offline/export/
+restart/gzip evidence; an actual interrupted writer preserves previous publication
+and recovers without duplicates. Windows/known IoT-8 original evidence stays.
+1,264 tests pass; 31 new controls, 75 of 82 original runtime modules and 34 local
+data files stay identical. All first failures remain intact. See
+`CONNECTION_CAPACITY.md`. Next: predeclared multi-day load/resource/security/
+recovery checks, then untouched detection/SIEM/human gates. No public site or
+runtime ML promotion. Earlier paragraphs retain historical experiment outcomes.
+
 Bounded Linux completed-log preparation now conserves eligible rows across
 private shards, with strict-by-default and explicitly opted-in raw DNS quarantine.
 Collector/dashboard verify inventory and disclose incomplete-input coverage;

@@ -36,6 +36,9 @@ def validate_collector_health(status):
     scan = status.get("scan")
     if scan is None:
         return
+    for key in ("report_recomputed", "archive_reused"):
+        if key in scan and type(scan[key]) is not bool:
+            raise ValueError("Invalid collector report-cache state")
 
     def count(value, maximum):
         return type(value) is int and 0 <= value <= maximum
