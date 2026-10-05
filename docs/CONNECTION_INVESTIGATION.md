@@ -32,8 +32,11 @@ states in its [official connection script](https://github.com/zeek/zeek/blob/mas
   Missing/naive timestamps are counted as untimed and excluded from the chart.
   Unknown byte counts are never represented as complete known zero totals.
   Unrecognized state text becomes `unknown`; raw input state strings are omitted.
-- Both views render/select at most **500 filtered groups**. Exports retain all
-  groups. Collector snapshots retain the existing 64 MiB read limit; optional
+- Both views render/select at most **500 filtered groups**. Upload exports and
+  full collector exports retain all retained connection groups. Above 1,000
+  collector groups, visible JSON is a prioritized snapshot with exact omissions
+  and a separate verified full JSON.gz download; see
+  [capacity contracts](CONNECTION_CAPACITY.md). Snapshots retain the 64 MiB limit; optional
   timeline blocks validate bounds, UTC spacing and count reconciliation.
 - Schema **2** is extended additively with `Group` in each finding and a
   `timelines` block (`connection-start-timeline-v1`). Its `group` references the

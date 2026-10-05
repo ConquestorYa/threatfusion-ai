@@ -25,7 +25,10 @@ Zeek TSV/gzip archives → bounded typed SQLite evidence/checkpoints → existin
 separate connection and TCP/UDP DNS device analysis with the user's cached CTI → schema-v2 aliased atomic
 snapshot → local Collected connections fragment. Source and state are private,
 one sensor per state; ingestion does not visit destinations or collect CTI feeds.
-The web process reads snapshots only. ML is disabled on this path. See
+The web process reads the bounded snapshot and, on explicit full-download request,
+its exact hash-verified private gzip generation; it does not read raw logs or
+SQLite evidence. Large connection snapshots disclose omissions and full-retained
+counts. ML is disabled on this path. See
 [collector limits and lifetime](TELEMETRY_COLLECTOR.md).
 Private state schema 2 upgrades after a schema-1 backup. DNS reconciliation uses
 UID/transaction/time and full-row hash conflicts; it does not join hostnames to
@@ -217,12 +220,16 @@ does not persist raw rows or connection IDs in aggregate history. See
 
 The Streamlit upload limit is 100 MB.
 
-After parsing, runtime analysis enforces bounded workloads:
+After parsing, upload/legacy runtime analysis enforces bounded workloads:
 
 - maximum 100,000 events;
 - maximum 25,000 unique analysis targets.
 
 These bounds are independent of the browser upload limit.
+Collector connection IP analysis uses the shared 100k retained-record bound
+independently of the DNS 25k-name limit. Its connection snapshot holds 1,000
+groups; full JSON.gz is bounded to 256 MiB expanded / 64 MiB compressed. See
+[capacity contracts](CONNECTION_CAPACITY.md).
 
 ## Runtime analysis
 

@@ -26,9 +26,14 @@ See [termination coverage](TCP_TERMINATION.md).
 3. The default review view separates matching expected activity. Use **Include
    declared expected activity** to inspect it again. CTI conflicts stay visible
    even when the original connection priority is Observe.
-4. The connection download always contains **all** groups, including declared
+4. The upload connection download contains **all** groups, including declared
    expected ones. Endpoint addresses remain aliased by default; rule IDs and
    configuration are omitted even from the explicit IP export.
+
+For collection above 1,000 connection groups, the visible JSON is a bounded
+snapshot with omissions disclosed. Use its separate verified full JSON.gz
+download for all retained groups, including expected activity. Summary counts
+still cover all retained groups. See [collector capacity](CONNECTION_CAPACITY.md).
 
 Summary counts preserve original, declared and unexplained/CTI work before
 filters. Selected-group guidance covers evidence, limits and service verification.

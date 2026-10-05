@@ -27,9 +27,14 @@ rules. The table retains the canonical context reason.
 Reveal endpoint IPs explicitly when creating local rules and independently check
 ownership. Follow [expiring exact-endpoint declarations](EXPECTED_CONNECTIONS.md).
 No automatic rule creation, learning or persistence. **Include declared expected
-activity** reversibly reveals separated findings. Downloads retain all groups,
+activity** reversibly reveals separated findings. Upload JSON and the collector's
+full JSON.gz (small collector JSON otherwise) retain all retained connection groups,
 original statistics and reasons, while omitting rule IDs/configuration. CTI
 cannot be hidden by the expected filter.
+Above 1,000 collector groups, visible JSON and table are a prioritized snapshot;
+exact omissions are disclosed and summary counts cover the full retained window.
+Filters cannot inspect omitted groups. Use the separate full download; see
+[capacity limits and recovery](CONNECTION_CAPACITY.md).
 
 In **Device DNS investigation**, guidance first asks whether the observed address
 is an endpoint, shared resolver or NAT. Confirm with inventory/resolver logs;
