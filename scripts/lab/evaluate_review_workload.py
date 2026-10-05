@@ -260,9 +260,9 @@ def role_metrics(plan, conn_result, dns_result, native):
     }
 
 
-def validate_pcap(path):
+def validate_pcap(path, *, max_bytes=64 * 1024 * 1024):
     """Reject incomplete records rather than silently consuming a valid prefix."""
-    if path.stat().st_size > 64 * 1024 * 1024:
+    if path.stat().st_size > max_bytes:
         raise ValueError("PCAP exceeds declared acquisition bound")
     with path.open("rb") as file:
         header = file.read(24)

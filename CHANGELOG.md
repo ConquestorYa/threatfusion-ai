@@ -12,6 +12,13 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Frozen official Windows/Linux/IoT packet replay method, bounded complete PCAPNG
+  qualification and capture-family history guards. Complete baseline cases
+  reconcile 44,384 mixed rows. Valid unknown-transport import and large-log/window
+  limits are exposed as exclusions; an earlier inspected source is explicitly a
+  known replay. No truncated scoring, fresh-malicious success or RITA parity claim.
+  Method/tests/aggregate attribution only; raw outputs remain private.
+
 - Bilingual selected TCP/DNS investigation guidance, original/context workload
   counts before filters and safe canonical selections with upload identity reset.
   CTI remains visible, expected filtering reversible, reports retain original

@@ -26,7 +26,19 @@ context is not measured equivalent C2 detection.
 | Analyst operations | Local web investigation, bounded connection-start and device/domain DNS timelines, feedback, reports and expiring exact-endpoint declarations with CTI override | Independent analyst task validation and documented SIEM export contracts |
 | Operational readiness | Local test suite and bounded synthetic workload | Security review, installation/recovery checks and representative throughput/resource measurements |
 
-## Current increment: analyst tasks and preserved evidence
+## Current increment: real-capture input compatibility
+
+New Windows/Linux website recordings and a new malicious IoT recording expose
+valid enum rejection and 16 MiB/100k capacity limits. Known IoT-8 is a replay of
+earlier inspected traffic. Windows and known replay reconcile 44,384 full mixed
+rows; Windows produces one TCP/25 DNS reviews, with 143 DNS snapshot groups
+omitted. Native rows are separate units; no ranking or fresh malicious success.
+See [frozen protocol, corrections and exclusions](INDEPENDENT_REPLAY.md).
+Next: repair legitimate `unknown_transport` import with conservative contracts,
+then declare scalable ingestion/window coverage. Reserved sources stay untouched;
+sparse/timing, DNS tunneling, SIEM, security and human validation remain open.
+
+## Previous increment: analyst tasks and preserved evidence
 
 Bilingual selected-group guidance and pre-filter workload counts support TCP/DNS
 upload and collector investigation. Two new complete synthetic replays preserve

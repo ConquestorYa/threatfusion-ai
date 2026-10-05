@@ -31,6 +31,16 @@ It is an educational prototype, not a production security product.
 
 ## Latest measured position (2026-10-05)
 
+`independent-replay-v1` widens normal controls to real Windows/Linux website
+captures and exposes input compatibility/capacity defects without tuning. One
+new normal source fully reconciles; Linux has two legitimate unknown-transport
+fields rejected by the importer, and a new malicious source exceeds file/shared
+record bounds. IoT-8 is a known-source replay, not fresh evidence. Complete
+baseline cases retain 44,384 mixed rows; native units stay separate. PCAPNG and
+source-history guards preserve original evidence. See `INDEPENDENT_REPLAY.md`.
+Fixing valid enum import and declaring scalable ingestion precede new behavior
+coverage; independent malicious/enterprise/security/human gates remain open.
+
 `analyst-guidance-v1` adds bilingual TCP/DNS next-check guidance and pre-filter
 TCP review/context counts, preserving original evidence. Two new synthetic
 packet replays retain eight reviews each while supplied lab inventory separates

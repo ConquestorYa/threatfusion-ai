@@ -2,6 +2,29 @@
 
 Status date: 2026-10-05
 
+## Real-capture diagnostic replay (2026-10-05)
+
+- Four complete official packet acquisitions, frozen before native/detector
+  outcomes, retain unchanged runtime/ML policies. PCAPNG qualification was
+  explicitly amended before outcomes while preserving first receipts/bytes.
+- Normal-20 retains 33,981 mixed rows with one TCP and 25 DNS reviews; 143 DNS
+  groups exceed the snapshot group bound. Known IoT-8 retains 10,403 rows with
+  no TCP/attempt reviews; it is an earlier inspected source, not fresh evidence.
+  Both exactly reconcile offline/collector/restart/gzip paths.
+- Normal-21 is excluded by a legitimate 17-character `unknown_transport` enum
+  rejected by the 16-character importer bound. IoT-3 exceeds both 16 MiB/file
+  and 100k shared rows. Complete native processing does not repair product
+  exclusions. No post-outcome replacements, truncation or detector tuning.
+- Added bounded acquisition, conservative complete PCAPNG qualification, frozen
+  output reconciliation and capture-family history guard. Aggregate results,
+  hashes, reproduction, attribution and remaining gates: `INDEPENDENT_REPLAY.md`.
+  Raw traffic/native outputs/SQLite/evaluations remain private. Two further
+  source identities remain unacquired; new independent malicious gate is open.
+  Next: explicit unknown-transport compatibility repair, then scalable ingestion
+  contracts. Source-only integration uses suspended-hosting guard; no public site.
+- Baseline method validation: **1,186 tests / 91% coverage**, Ruff/Bash/diff checks
+  pass. The entire 81-module runtime stays identical to `cc38d32` at this point.
+
 ## Analyst guidance and preserved review context (2026-10-05)
 
 - `analyst-guidance-v1` freezes eight task families against main `450c958` before
