@@ -17,6 +17,7 @@ from .connection_attempts import validate_attempt_report
 from .ui_connection_attempts import render_attempts
 from .dns_collection import validate_dns_snapshot
 from .ui_collected_dns import render_collected_dns
+from .collector_health import validate_collector_health
 
 MAX_SNAPSHOT_BYTES = 64 * 1024 * 1024
 
@@ -81,6 +82,7 @@ def read_snapshot(root: Path):
             or status["counts"]["dns_omitted_groups"] != payload["dns"]["omitted_findings"]
             or status["counts"]["dns_review_groups"] != sum(row["Queue priority"] != "Observe" for row in payload["dns"]["report"]["findings"])):
             raise ValueError("Inconsistent collected DNS counts")
+    validate_collector_health(status)
     return payload
 
 
@@ -115,6 +117,17 @@ def render_collector(state_dir: Path | None, *, public_mode: bool):
         st.warning(tr("The collector reached its record limit. Coverage is incomplete and expected-activity filtering is disabled temporarily."))
     if counts["rejected_files"]:
         st.warning(tr("Some logs were rejected. Check source format, completion and limits before trusting coverage."))
+    if "scan" in status:
+        scan = status["scan"]
+        st.caption(tr("Last scan: {seconds} s; changed files checked: {checked}; candidates: {candidates}.",
+                      seconds=scan["analysis_elapsed_seconds"], checked=scan["attempted_files"], candidates=scan["candidate_files"]))
+        if scan["remaining_candidates"]:
+            st.warning(tr("{count} candidate files await checking because the scan budget was reached. They may be open or unchanged; this is not a count of ready logs.", count=scan["remaining_candidates"]))
+        labels = {"format_or_limits": "Format or safety limits", "access": "File access",
+                  "archive": "Invalid archive", "encoding": "Text encoding"}
+        details = [f"{tr(labels[name])}: {count}" for name, count in scan["rejections"].items() if count]
+        if details:
+            st.caption(tr("Rejected input types: {types}", types=", ".join(details)))
     if not status["cti_indicators"]:
         st.info(tr("Collector CTI is empty or disabled. These are behavior observations only."))
     reviews = st.checkbox(tr("Show only connection reviews"), value=True, key="collector_reviews_only")
@@ -133,9 +146,10 @@ def render_collector(state_dir: Path | None, *, public_mode: bool):
         st.info(tr("No unexplained connection reviews in this view."))
     if len(rows) > 500:
         st.caption(tr("Showing the first 500 groups. The download contains all retained groups."))
-    render_timeline(rows[:500], payload.get("timelines", {}), key="collector", revision=status["updated_at"])
+    revision = status.get("selection_revision", status["updated_at"])
+    render_timeline(rows[:500], payload.get("timelines", {}), key="collector", revision=revision)
     render_attempts(payload.get("attempts"))
-    render_collected_dns(payload.get("dns"))
+    render_collected_dns(payload.get("dns"), revision=revision)
     st.download_button(tr("Download collected connection JSON"), data=json.dumps(payload, indent=2),
                        file_name="threatfusion_collected_connections.json", mime="application/json")
     st.caption(tr("Collector history is bounded. Aliases are report-local and exports remain sensitive telemetry."))

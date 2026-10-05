@@ -12,6 +12,9 @@ import stat
 import tempfile
 import time
 import zlib
+import errno
+import uuid
+import copy
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -133,6 +136,8 @@ class ZeekCollector:
         self.active_paths = set()
         self.lock_fd = None
         self.db = None
+        self.analysis_cache = None
+        self.cached_indicators = None
         try:
             import fcntl
             self.lock_fd = os.open(self.state / "collector.lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
@@ -176,6 +181,11 @@ class ZeekCollector:
                     self.db.execute("PRAGMA user_version=2")
             else:
                 self.db.execute("PRAGMA user_version=2")
+            self.db.executescript("""
+                CREATE INDEX IF NOT EXISTS records_timestamp ON records(timestamp DESC, hash);
+                CREATE INDEX IF NOT EXISTS records_ingested ON records(ingested);
+                CREATE INDEX IF NOT EXISTS records_dns_names ON records(kind, query_key, timestamp);
+            """)
         except Exception:
             self.close()
             raise
@@ -197,7 +207,7 @@ class ZeekCollector:
     def _prune(self, epoch):
         latest = self.db.execute("SELECT MAX(timestamp) FROM records").fetchone()[0]
         previous = self.db.execute("SELECT value FROM meta WHERE key='watermark'").fetchone()
-        watermark = max(latest or float('-inf'), float(previous[0]) if previous else float('-inf'))
+        watermark = max(latest if latest is not None else float('-inf'), float(previous[0]) if previous else float('-inf'))
         trimmed = 0
         if watermark != float('-inf'):
             self.db.execute("INSERT OR REPLACE INTO meta VALUES('watermark',?)", (str(watermark),))
@@ -223,12 +233,15 @@ class ZeekCollector:
         if now.tzinfo is None or now.utcoffset() is None:
             raise ValueError("Collector clock must be aware")
         epoch = now.timestamp()
+        started = time.perf_counter()
         indicators = tuple(indicators)
         counts = {"imported_files": 0, "duplicate_files": 0, "unchanged_files": 0,
                   "open_files": 0, "rejected_files": 0, "new_records": 0, "trimmed_records": 0,
                   "new_dns_records": 0, "new_connection_records": 0}
         # Finish directory validation before committing any file from this scan.
         candidates = sorted(_candidates(self.root))
+        rejections = {"format_or_limits": 0, "access": 0, "archive": 0, "encoding": 0}
+        remaining = 0
         self.active_paths = {str(path.relative_to(self.root)) for path in candidates}
         with self.db:
             counts["trimmed_records"] += self._prune(epoch)
@@ -237,7 +250,7 @@ class ZeekCollector:
             later = [p for p in candidates if str(p.relative_to(self.root)) > cursor[0]]
             candidates = later + [p for p in candidates if str(p.relative_to(self.root)) <= cursor[0]]
         attempts = 0
-        for path in candidates:
+        for index, path in enumerate(candidates):
             relative = str(path.relative_to(self.root))
             try:
                 signature = _signature(path.lstat())
@@ -246,6 +259,7 @@ class ZeekCollector:
                     counts["unchanged_files"] += 1
                     continue
                 if attempts >= MAX_IMPORTS_PER_TICK:
+                    remaining = len(candidates)-index
                     break
                 attempts += 1
                 with self.db:
@@ -299,22 +313,33 @@ class ZeekCollector:
                 counts["new_dns_records" if kind == "dns" else "new_connection_records"] += inserted
                 counts["trimmed_records"] += trimmed
                 counts["imported_files"] += 1
-            except (ValueError, OSError, UnicodeError, EOFError, zlib.error):
+            except (ValueError, OSError, UnicodeError, EOFError, zlib.error) as error:
                 counts["rejected_files"] += 1
+                reason = ("archive" if isinstance(error, (gzip.BadGzipFile, EOFError, zlib.error))
+                          else "encoding" if isinstance(error, UnicodeError)
+                          else "access" if isinstance(error, OSError) else "format_or_limits")
+                rejections[reason] += 1
         with self.db:
             counts["trimmed_records"] += self._prune(epoch)
-        records = []
-        for (payload,) in self.db.execute("SELECT payload FROM records WHERE kind='conn' ORDER BY timestamp, hash"):
-            values = json.loads(payload)
-            values["timestamp"] = datetime.fromisoformat(values["timestamp"]) if values["timestamp"] else None
-            records.append(ConnectionRecord(**values))
-        events = [DNSEvent(r.responder_ip, r.timestamp, r.originator_ip, response_ip=r.responder_ip) for r in records]
-        result = analyze_dns_events(events, indicators, None, connections=records)
-        dns_payloads = [r[0] for r in self.db.execute("SELECT payload FROM records WHERE kind='dns' ORDER BY timestamp, hash")]
-        dns_snapshot = build_dns_snapshot(dns_payloads, indicators, generated_at=now)
-        counts["retained_records"] = len(records)
-        counts["retained_total_records"] = len(records) + len(dns_payloads)
-        counts["retained_dns_records"] = len(dns_payloads)
+        recomputed = (self.analysis_cache is None or counts["new_records"] or counts["trimmed_records"]
+                      or indicators != self.cached_indicators)
+        if recomputed:
+            records = []
+            for (payload,) in self.db.execute("SELECT payload FROM records WHERE kind='conn' ORDER BY timestamp, hash"):
+                values = json.loads(payload)
+                values["timestamp"] = datetime.fromisoformat(values["timestamp"]) if values["timestamp"] else None
+                records.append(ConnectionRecord(**values))
+            events = [DNSEvent(r.responder_ip, r.timestamp, r.originator_ip, response_ip=r.responder_ip) for r in records]
+            result = analyze_dns_events(events, indicators, None, connections=records)
+            dns_payloads = [r[0] for r in self.db.execute("SELECT payload FROM records WHERE kind='dns' ORDER BY timestamp, hash")]
+            dns_identity = []
+            dns_snapshot = build_dns_snapshot(dns_payloads, indicators, generated_at=now, selection_identity=dns_identity)
+            self.analysis_cache = result, dns_snapshot, len(records), len(dns_payloads), dns_identity
+            self.cached_indicators = copy.deepcopy(indicators)
+        result, dns_snapshot, conn_count, dns_count, dns_identity = self.analysis_cache
+        counts["retained_records"] = conn_count
+        counts["retained_total_records"] = conn_count + dns_count
+        counts["retained_dns_records"] = dns_count
         counts["analyzed_dns_events"] = dns_snapshot["coverage"]["analyzed_events"]
         counts["dns_review_groups"] = sum(row["Queue priority"] != "Observe" for row in dns_snapshot["report"]["findings"])
         counts["dns_omitted_groups"] = dns_snapshot["omitted_findings"]
@@ -331,6 +356,21 @@ class ZeekCollector:
                                   "DNS transaction conflicts are excluded; raw identities remain private.",
                                   "Shared retention/capacity across log kinds; DNS queries do not prove connections or downloads.",
                                   "No live packet capture, feed updates or analyst efficacy claim."]}
+        identity = json.dumps({"connections": [(f.originator_ip, f.responder_ip, f.responder_port, f.protocol) for f in result.connection_findings],
+                               "dns": dns_identity}, separators=(",", ":"))
+        # Private identity hash stays in SQLite. Export a random epoch, never an
+        # unsalted endpoint hash. Preserve selections only while group mappings match.
+        digest = hashlib.sha256(identity.encode()).hexdigest()
+        old = self.db.execute("SELECT value FROM meta WHERE key='selection_identity'").fetchone()
+        with self.db:
+            if old is None or old[0] != digest:
+                self.db.execute("INSERT OR REPLACE INTO meta VALUES('selection_identity',?)", (digest,))
+                self.db.execute("INSERT OR REPLACE INTO meta VALUES('selection_revision',?)", (str(uuid.uuid4()),))
+        status["selection_revision"] = self.db.execute("SELECT value FROM meta WHERE key='selection_revision'").fetchone()[0]
+        status["scan"] = {"candidate_files": len(candidates), "attempted_files": attempts,
+                          "remaining_candidates": remaining, "rejections": rejections,
+                          "analysis_recomputed": bool(recomputed),
+                          "analysis_elapsed_seconds": round(time.perf_counter()-started, 6)}
         report = json.loads(build_connection_report(result, expected_rules=() if capacity_loss else rules, evaluated_at=now))
         report["collector"] = status
         report["dns"] = dns_snapshot
@@ -375,7 +415,15 @@ def main(argv=None):
                 time.sleep(args.poll_seconds)
     except KeyboardInterrupt:
         return 0
-    except (ValueError, OSError, sqlite3.Error):
+    except OSError as error:
+        if error.errno == errno.ENOSPC:
+            parser.exit(1, "Collector stopped: local disk space is insufficient. Free space and restart collection.\n")
+        parser.exit(1, "Collector stopped: check private state, source limits and optional local files.\n")
+    except sqlite3.Error as error:
+        if getattr(error, "sqlite_errorcode", None) == sqlite3.SQLITE_FULL:
+            parser.exit(1, "Collector stopped: local disk space is insufficient. Free space and restart collection.\n")
+        parser.exit(1, "Collector stopped: check private state, source limits and optional local files.\n")
+    except ValueError:
         parser.exit(1, "Collector stopped: check private state, source limits and optional local files.\n")
     finally:
         signal.signal(signal.SIGTERM, previous_handler)

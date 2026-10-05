@@ -203,6 +203,7 @@ human analyst evaluation or production security/throughput claim. DNS tunneling
 still needs proper public-suffix aggregation, query-label/type/size evidence,
 benign CDN/telemetry controls and new reserved recordings. General UDP sessions
 and sparse TCP failure behavior remain separate uncovered scopes. Next operational
-gate: longer rotating mixed-log recordings, backlog/resource/recovery measurements
-and device DNS investigation timelines. ML artifacts/thresholds/promotion are
+increment: [rotating-log/recovery measurements and device DNS investigation
+timelines](DNS_INVESTIGATION.md). Representative multi-day operation remains open.
+ML artifacts/thresholds/promotion are
 unchanged; strict temporal evidence remains insufficient. Hosting stays suspended.

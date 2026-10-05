@@ -153,10 +153,11 @@ def device_finding_rows(
         "ip_target_not_dns_query": "IP target: DNS periodic review does not apply",
     }
     rows = []
-    for finding in findings:
+    for group, finding in enumerate(findings, 1):
         assessment = finding.assessment
         behavior = assessment.behavior
         rows.append({
+            "Group": group,
             "Device": (
                 finding.client_ip if include_client_ips and finding.client_ip
                 else aliases.get(finding.client_ip, "Unattributed")

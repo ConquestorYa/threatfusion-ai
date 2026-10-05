@@ -49,8 +49,11 @@ with bounded UTC/state/byte summaries and report-local aliases. Two isolated
 live reset/close controls each reconcile 72 starts across offline, collector and
 restart/gzip paths. This is plumbing evidence, not analyst efficacy or detection
 accuracy. See `CONNECTION_INVESTIGATION.md`.
-Device DNS timelines, incremental active-log tailing and retroactive CTI
-investigation workflows remain future work. Completed-log collection is now
+Device/domain DNS query timelines now complement connection-start charts, with
+bounded UTC/response summaries and stable selection while mappings match.
+Rotating-log/recovery/resource contracts are documented in `DNS_INVESTIGATION.md`.
+Incremental active-log tailing and retroactive CTI investigation workflows remain
+future work. Completed-log collection is now
 implemented as described below.
 
 The next increment adds `cached-http-controls-v1`: isolated real packet capture

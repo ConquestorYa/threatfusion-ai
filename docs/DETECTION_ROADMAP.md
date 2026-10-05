@@ -22,11 +22,26 @@ context is not measured equivalent C2 detection.
 | TCP attempt behavior | S0/REJ sliding-window failed port/host diversity and dense retry review; constructed/live controls; one new official capture produces none | New independent benign/sparse-failure controls and reserved inputs; operational review burden |
 | Beaconing | Sustained successful TCP timing review plus DNS regularity; no C2 accuracy claim | Robust timing/size analysis and jitter/retry/idle controls on independent permitted windows |
 | DNS tunneling | Hostname shape context only | Registrable-domain aggregation with proper suffix handling, unique-label/size/type evidence, benign CDN/telemetry controls and independent recordings |
-| Continuous collection | Completed TSV/gzip connection + TCP/UDP DNS collector, transaction-aware private state, backup/upgrade and local bounded queues | Active-file latency, longer mixed-log rotation, representative resource/recovery tests |
-| Analyst operations | Local web investigation, bounded connection-start timelines, feedback, reports and expiring exact-endpoint declarations with CTI override | Independent analyst workload validation, device DNS timelines and documented SIEM export contracts |
+| Continuous collection | Completed TSV/gzip mixed-log collector, transaction-aware private state, scan health, idle cache and declared rotation/recovery/capacity checks | Active-file tailing decision, representative multi-day load/recovery/security checks |
+| Analyst operations | Local web investigation, bounded connection-start and device/domain DNS timelines, feedback, reports and expiring exact-endpoint declarations with CTI override | Independent analyst task validation and documented SIEM export contracts |
 | Operational readiness | Local test suite and bounded synthetic workload | Security review, installation/recovery checks and representative throughput/resource measurements |
 
-## Current increment: automatic DNS collection
+## Current increment: DNS investigation and collector reliability
+
+Device/domain selectors now offer bounded UTC query counts and response-code
+timelines for uploads and collection. Existing detector/ML thresholds remain.
+Scan/rejection categories and idle-cache reuse improve operational visibility;
+rule expiry and CTI changes still apply. The declared private protocol includes
+20-minute real synthetic mixed-log rotation, owned-process shutdown/kill/restart
+and pause, exact offline reconciliation and a 120k-record capacity workload.
+See [workflow, protocol, aggregate receipts and limits](DNS_INVESTIGATION.md).
+Closed-file latency includes rotation and delivery; active tailing is deferred.
+The next acceptance gate is independent permitted benign/update/resolver controls
+and realistic analyst tasks. DNS tunneling/general UDP and sparse-failure changes
+require separately declared controls and new reserved recordings. These checks
+do not establish accuracy, enterprise FPR, RITA parity or production readiness.
+
+## Previous increment: automatic DNS collection
 
 Completed TCP/UDP DNS transactions now populate the existing client/domain
 triage alongside independent original connection reports. Private schema-1 state
@@ -36,7 +51,8 @@ captures each reconcile 24 DNS transactions on two UIDs plus two connection rows
 no reviews, restart adds zero and gzip copies count as two duplicates. These are
 short synthetic plumbing controls, not real benign FPR or tunneling detection.
 See [workflow, limits and receipts](DNS_COLLECTION.md). Next operational gate:
-longer rotating mixed-log latency/backlog/recovery tests and device DNS timelines.
+the subsequent rotating-log/recovery and device DNS investigation increment
+documented above; representative multi-day operation remains open.
 DNS tunneling/general UDP behavior need separately predeclared new evidence;
 sparse TCP failures and independent benign/analyst efficacy remain open.
 

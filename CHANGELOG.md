@@ -12,6 +12,14 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Device/domain DNS investigation for uploads and collection: bounded UTC query
+  and response-code timelines, explicit missing-time/gap limits, additive private
+  exports and bilingual selectors. Collector scan/rejection health, idle analysis
+  reuse with CTI/retention invalidation, stable mapping selection epochs and safe
+  disk-full guidance. Declared private rotating-log recovery and 120k-record
+  capacity protocols preserve original verdicts and disclose pruning/latency
+  limits; no new detector, ML promotion, production accuracy or public site.
+
 - Automatic completed TCP/UDP Zeek DNS collection alongside independent original
   connection results, transaction-aware copy/conflict handling, bounded bilingual
   client/domain snapshot queue and explicit shared retention/name/group limits.

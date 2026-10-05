@@ -21,7 +21,9 @@ def transaction_payload(record: ZeekDNSTransaction) -> str:
     return json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
 
-def build_dns_snapshot(payloads: list[str], indicators, *, generated_at: datetime):
+def build_dns_snapshot(
+    payloads: list[str], indicators, *, generated_at: datetime, selection_identity=None
+):
     by_key = {}
     conflicts = set()
     for text in payloads:
@@ -45,6 +47,12 @@ def build_dns_snapshot(payloads: list[str], indicators, *, generated_at: datetim
         transports[payload["protocol"]] += 1
     result = analyze_dns_events(events, indicators, None)
     total = len(result.device_findings)
+    if selection_identity is not None:
+        # Caller-private mapping; never add raw clients to the snapshot envelope.
+        selection_identity.extend(
+            (f.client_ip, f.assessment.domain)
+            for f in result.device_findings[:MAX_FINDINGS]
+        )
     report = json.loads(
         build_device_report(
             replace(result, device_findings=result.device_findings[:MAX_FINDINGS]),
@@ -171,3 +179,7 @@ def validate_dns_snapshot(block):
                     raise ValueError("Ambiguous DNS evidence time")
     if observed > analyzed:
         raise ValueError("DNS findings exceed evidence")
+    if "timelines" in report:
+        from .dns_timeline import validate_dns_timelines
+
+        validate_dns_timelines(report["timelines"], rows)

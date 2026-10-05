@@ -126,7 +126,8 @@ claim. Independent checks are recorded in [network evaluation](NETWORK_EVALUATIO
 
 The local collected view now offers bounded connection-start timelines, states
 and known/unknown bytes for selected groups. Reports extend schema 2 additively;
-old snapshots still render. New snapshots reset the selected report-local group.
+old snapshots still render. Current snapshots retain selections while ordered
+group mappings match; mapping changes reset the selected report-local group.
 See [workflow, bounds and live controls](CONNECTION_INVESTIGATION.md). No SQLite
 migration, raw-row web access, external requests or public listener is added.
 
@@ -148,3 +149,12 @@ DNS tunneling claim. Private state now upgrades to schema 2 after an owner-only
 schema-1 backup; the earlier TCP-attempt increment required no migration itself.
 Old v1 snapshots stay readable. See [identity, migration, live evidence and
 DNS limits](DNS_COLLECTION.md). No API keys, sensor or new listener are added.
+
+## DNS investigation and operational status
+
+Select a device/domain for bounded UTC query/response charts. Current snapshots
+also expose scan budget/categorized rejection metadata and reuse unchanged
+analysis while reevaluating declaration expiry. See
+[DNS investigation, rotation/recovery protocol and resource evidence](DNS_INVESTIGATION.md).
+Scan timing excludes report publication; remaining candidates are not a count of
+ready files. Active logs still wait for closure.

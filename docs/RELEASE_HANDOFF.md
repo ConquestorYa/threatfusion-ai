@@ -2,6 +2,66 @@
 
 Status date: 2026-10-05
 
+## Device DNS investigation and collector reliability (2026-10-05)
+
+- Added `dns-device-timeline-v1` to uploaded device triage and collected DNS:
+  select a device/domain for UTC query-count and response-code charts, existing
+  evidence and explicit untimed/gap/coverage limits. First 200 eligible groups,
+  48 adaptive >=60-second buckets; first 500 visible selectors/table groups.
+  Additive optional schema-1 device report block; old snapshots readable.
+  Unknown clients/IP fallback targets have no DNS chart. Default aliases omit
+  raw client/answer addresses; existing explicit local upload IP toggle remains.
+  Original detector priorities, aggregate history and ML gates are unchanged.
+- Current collector retains selections while ordered connection/DNS mappings
+  match, using a random exported epoch. Raw comparison identities/hash stay
+  private in SQLite. Idle evidence/CTI reuse analysis, CTI mutations/pruning/new
+  rows invalidate it; declaration expiry still reevaluates each scan. Additive
+  timestamp/ingestion/name indexes, bounded scan/rejection metadata and safe
+  disk-full diagnostics retain SQLite schema 2 and completion policy v2.
+- Private `collector-reliability-v1` plan preceded implementation; a frozen
+  source bundle precedes the new 20-minute rotating capture. The protocol
+  includes real mixed DNS/connection logs, 30-second rotation, SIGTERM/SIGKILL
+  restart and a 45-second pause, plus exact offline/state/report reconciliation.
+  Initial sensor capability/policy-read setup failures remain private receipts.
+  Successful 30-second preflight: 72 queries/six connections, no reported drops,
+  exact offline/collector/restart/gzip match. Evaluation initially omitted final
+  `dns.log`/`conn.log`; tooling was corrected without changing records/runtime.
+- Actual unreadable/repaired files, malformed gzip, fair scan quota, snapshot
+  ENOSPC with preserved committed evidence, SQLite-full diagnostics, mutable CTI,
+  retention and idle-rule expiry have regression controls. Disk-full injection
+  does not establish real filesystem/power-loss recovery. A 120-file/120k-record
+  mixed backlog attempts 64 then 56, discloses 20k capacity pruning, retains
+  40k connection + 60k DNS rows and reuses idle analysis without resurrection.
+  Full tick walls 8.611/12.293/0.103 s, sampled RSS 456,998,912 bytes and owned
+  state 82,087,782 bytes (50 ms samples, fixture creation excluded). One sizing
+  run, not representative throughput/guaranteed peak or complete retention.
+- Workflow, live/capacity aggregate receipts and reproduction:
+  `DNS_INVESTIGATION.md`. Raw logs/PCAP/evaluation/SQLite remain private outside
+  Git. Active-file tailing is deferred; closure/delivery/polling latency is
+  explicit. No new listener/API credential/deployment or ML promotion.
+- New `rotation-live-20261004T231339Z`: 1,200-second capture, observer 1,195.19 s/
+  115 snapshot ticks, 84 closed files, 2,880 DNS (UDP/TCP 1,440/1,440) and 240
+  connection rows. All offline connection/DNS findings/timelines/attempts match;
+  SQLite integrity ok, no rejection/pruning/tcpdump-reported drops. Clean restart
+  adds zero; two gzip copies duplicate. Planned kill/restart/pause recovers all
+  3,120 rows. Closed-mtime-proxy/delivery p95 5.012 s; delivery/snapshot-observation
+  p95 10.658 s, max 44.852 s including pause. Rotation latency is additional.
+  Sampled RSS 217,874,432 bytes/state 2,564,349 bytes (1-second observations).
+  Zero short-window reviews is not FPR/recall or behavior-gate validation.
+- Frozen live evaluation passed before a final UI-only device-switch fix:
+  multi-domain targets now reset safely and format stale widget state. Frozen
+  bundle/delta receipts preserved; collector/analysis hashes unchanged. Actual
+  live-snapshot EN/TR selection and **1,119 tests / 91% coverage** pass; Ruff/
+  Bash/diff/source audit pass. All 34 original data files unchanged. Own test
+  containers/network cleaned, no interactive guest sessions, VM restored stopped.
+  Original ML artifact still missing, strict temporal insufficient, augmented
+  promotion deferred. Source-only main uses `[skip render]`; verify all CI and
+  unchanged user-suspended Render/previews/deploy history after publication.
+- Next: independent permitted benign updater/cache/resolver controls and an
+  actual analyst task study; representative multi-day recovery/load/security
+  checks. Predeclare tunneling/general UDP and sparse-failure changes separately
+  with new reserved evidence. No FPR/recall/RITA parity/analyst-time claim.
+
 ## Automatic DNS collection increment (2026-10-05)
 
 - `closed-zeek-collector-v2` consumes completed TSV/gzip connection and TCP/UDP

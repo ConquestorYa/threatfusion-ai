@@ -65,6 +65,8 @@ def build_device_report(
     Domain names and timestamps are still telemetry. Device aliases are local
     to this report and are not anonymization or stable asset identities.
     """
+    from .dns_timeline import build_dns_timelines
+
     return json.dumps({
         "schema_version": 1,
         "policy": POLICY_ID,
@@ -72,6 +74,7 @@ def build_device_report(
         "findings": device_finding_rows(
             result.device_findings, include_client_ips=include_client_ips,
         ),
+        "timelines": build_dns_timelines(result.events, result.device_findings),
         "privacy": {
             "client_ip_values_included": include_client_ips,
             "response_ip_values_included": False,

@@ -6,9 +6,10 @@ import pandas as pd
 import streamlit as st
 
 from .i18n import tr, translate_dataframe
+from .ui_dns_timeline import render_dns_timeline
 
 
-def render_collected_dns(block):
+def render_collected_dns(block, *, revision=None):
     if block is None:
         st.caption(tr("Restart the updated collector to include DNS logs."))
         return
@@ -81,6 +82,7 @@ def render_collected_dns(block):
                 "Showing the first 500 DNS groups. Download includes all snapshot groups, subject to the 1,000-group cap."
             )
         )
+    render_dns_timeline(rows[:500], block["report"].get("timelines"), key="collector", revision=revision)
     st.caption(
         tr(
             "Sustained periodic DNS enters Review after at least 20 distinct, fully timestamped observations over 30 minutes. Legitimate updates may also qualify."

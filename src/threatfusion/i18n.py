@@ -14,6 +14,26 @@ _LANGUAGE_BY_OPTION = {
 }
 
 _TR: dict[str, str] = {
+    "Device DNS investigation": "Cihaz DNS incelemesi",
+    "Restart the updated collector to generate DNS timelines.": "DNS zaman çizelgeleri için güncel toplayıcıyı yeniden başlat.",
+    "Select an observed device": "Gözlenen bir cihaz seç",
+    "Select a queried domain": "Sorgulanan bir domain seç",
+    "Selected query evidence: {evidence}": "Seçilen sorgunun kanıtı: {evidence}",
+    "No DNS timeline for this group. At most 200 eligible client/domain groups are charted; unknown clients and IP fallback targets are excluded.": "Bu grubun DNS zaman çizelgesi yok. En fazla 200 uygun cihaz/domain grubu çizilir; kimliği belirsiz istemciler ve IP hedefleri dışlanır.",
+    "UTC query buckets: {seconds} seconds. Queries do not prove connections, downloads or execution.": "UTC sorgu aralıkları: {seconds} saniye. Sorgular bağlantı, indirme veya çalıştırma kanıtı değildir.",
+    "Zero buckets mean no retained query records, not proof that DNS traffic was absent.": "Sıfır, tutulan sorgu kayıtlarında gözlem yok demektir; DNS trafiğinin olmadığını kanıtlamaz.",
+    "{count} queries have missing or ambiguous time and are excluded from the chart.": "{count} sorgunun zamanı eksik veya belirsiz; grafiğe dahil edilmedi.",
+    "No comparable query timestamps for this group.": "Bu grup için karşılaştırılabilir sorgu zamanı yok.",
+    "DNS queries": "DNS sorguları",
+    "DNS response categories": "DNS yanıt kategorileri",
+    "Showing the first 500 device groups. The device download contains all groups.": "İlk 500 cihaz grubu gösteriliyor. Cihaz raporu bütün grupları içerir.",
+    "Last scan: {seconds} s; changed files checked: {checked}; candidates: {candidates}.": "Son tarama: {seconds} sn; kontrol edilen değişmiş dosya: {checked}; aday dosya: {candidates}.",
+    "{count} candidate files await checking because the scan budget was reached. They may be open or unchanged; this is not a count of ready logs.": "Tarama sınırına ulaşıldığı için {count} aday dosya kontrol edilmeyi bekliyor. Açık veya değişmemiş olabilirler; bu sayı hazır kayıt sayısı değildir.",
+    "Rejected input types: {types}": "Reddedilen girdi türleri: {types}",
+    "Format or safety limits": "Biçim veya güvenli sınırlar",
+    "File access": "Dosya erişimi",
+    "Invalid archive": "Geçersiz arşiv",
+    "Text encoding": "Metin kodlaması",
     "Restart the updated collector to include DNS logs.": "DNS kayıtlarını dahil etmek için güncel toplayıcıyı yeniden başlat.",
     "Collected DNS observations": "Toplanan DNS gözlemleri",
     "No completed DNS records in the retained window. This does not prove absence of DNS traffic.": "Tutulan zaman aralığında kapanmış DNS kaydı yok. Bu, DNS trafiğinin olmadığını kanıtlamaz.",
@@ -663,6 +683,8 @@ _TR: dict[str, str] = {
 }
 
 _COLUMN_TR = {
+    "DNS queries": "DNS sorguları",
+    "DNS response categories": "DNS yanıt kategorileri",
     "Pattern": "Örüntü",
     "Window (s)": "Pencere (sn)",
     "Failed attempts": "Başarısız denemeler",

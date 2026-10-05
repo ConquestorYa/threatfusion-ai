@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
+import json
+import hashlib
 
 from .dashboard import device_finding_rows
 from .i18n import tr, translate_dataframe
 from .reporting import build_device_report
 from .runtime_analysis import RuntimeAnalysisResult
+from .ui_dns_timeline import render_dns_timeline
 
 
 def render_device_triage(result: RuntimeAnalysisResult, *, public_mode: bool) -> None:
@@ -36,7 +39,7 @@ def render_device_triage(result: RuntimeAnalysisResult, *, public_mode: bool) ->
     visible = rows if include_observe else [r for r in rows if r["Queue priority"] != "Observe"]
     if visible:
         st.dataframe(
-            translate_dataframe(pd.DataFrame(visible)),
+            translate_dataframe(pd.DataFrame(visible[:500])),
             hide_index=True, width="stretch",
         )
     else:
@@ -44,9 +47,15 @@ def render_device_triage(result: RuntimeAnalysisResult, *, public_mode: bool) ->
     st.caption(tr(
         "Sustained periodic DNS enters Review after at least 20 distinct, fully timestamped observations over 30 minutes. Legitimate updates may also qualify."
     ))
+    report = json.loads(build_device_report(result, include_client_ips=include_ips))
+    identity = [(finding.client_ip, finding.assessment.domain) for finding in result.device_findings]
+    revision = hashlib.sha256(json.dumps([identity, include_ips]).encode()).hexdigest()
+    render_dns_timeline(visible[:500], report["timelines"], key="upload", revision=revision)
+    if len(visible) > 500:
+        st.caption(tr("Showing the first 500 device groups. The device download contains all groups."))
     st.download_button(
         tr("Download device triage JSON"),
-        data=build_device_report(result, include_client_ips=include_ips),
+        data=json.dumps(report, indent=2),
         file_name="threatfusion_device_triage.json", mime="application/json",
         key="device_triage_download",
     )
