@@ -168,6 +168,10 @@ release date is added only when the final tag/release is created.
 
 ### Changed
 
+- CI installs development dependencies explicitly on Ubuntu and Windows, so
+  lockfile regeneration cannot silently remove Ruff/pytest from checks. Ruff
+  advances to 0.16.9 while preserving unrelated locked dependency versions.
+
 - Integrated verified Linux first-run and credential privacy work into `main`
   at the user's request; both README download commands and the installer's
   default ref use `main`. The existing Render demo remains user-suspended;

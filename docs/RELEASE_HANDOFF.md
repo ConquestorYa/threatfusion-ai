@@ -2,6 +2,24 @@
 
 Status date: 2026-10-05
 
+## Ruff dependency PR #173 recovery (2026-10-05)
+
+- Old PR run failed before application validation: Ubuntu reported `No module
+  named ruff`, Windows `No module named pytest`. Dependabot had regenerated
+  `requirements.txt` without development tools, while CI installed only that
+  file. This does not contradict the successful six-job main run at `fd8f87e`.
+- Ubuntu/Windows CI now install `requirements-dev.in` explicitly alongside the
+  tested lockfile. Ruff is consistently pinned to 0.16.9 in both declarations;
+  unrelated locked dependencies are preserved. The repaired existing PR includes
+  current main rather than replaying old project state. No runtime/ML/data or
+  hosting change is part of this update.
+- Local validation: Ruff 0.16.9 passes, pip's combined-requirement dry run resolves
+  without conflicts, **1,132 tests / 91% coverage** pass in a separate worktree.
+  A timed-out automatic approval review was retried successfully for existing
+  loopback/Unix socket tests. Keep raw logs/private data outside Git; verify the
+  repaired PR and merged main's complete CI plus the unchanged suspended hosting
+  guard before reporting integration complete.
+
 ## Normal review workload and same-source comparison (2026-10-05)
 
 - `review-workload-v1` was declared before traffic bodies/product results:
