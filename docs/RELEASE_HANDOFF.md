@@ -2,6 +2,31 @@
 
 Status date: 2026-10-05
 
+## Official Zeek enum compatibility repair (2026-10-05)
+
+- A separately predeclared `unknown-transport-import-v1` permits only the exact
+  official 17-character `unknown_transport` enum through the existing 16-character
+  protocol bound. Other overlong values/metadata limits stay rejected; unknown
+  traffic remains ineligible for TCP long/timing/attempt review. Only parser
+  module changes; all 80 other runtime modules and original local data stay.
+- The full mixed-source compatibility replay remains failed: Normal-21 DNS has
+  eight missing queries and 49 missing type values. No rows filtered/invented or
+  original exclusions overwritten. An explicit connection-only amendment then
+  reconciles all 39,957 existing connection rows across offline/collector/timeline/
+  restart/gzip, with zero rejected/pruned/new-on-restart records. Linux's 10,662
+  rows and two unknown groups survive; unknown reviews remain zero. Windows and
+  known IoT-8 original full connection evidence is unchanged.
+- **1,203 tests / 91% coverage** pass, including sixteen new enum/eligibility/
+  persistence/scope controls. Ruff/Bash/diff checks pass. Source-only main carries
+  method/tests/aggregates; all raw traffic, caches and failed/successful receipts
+  remain private. A separate private Unix exclusion test leaves portable
+  acquisition checks enabled on Windows. Reproduction and strict scope:
+  `INDEPENDENT_REPLAY.md`.
+- Next: bounded large-log ingestion/window coverage and malformed/missing DNS
+  identity handling; mixed Linux/new malicious gates still open. This repair is
+  input compatibility, not increased recall or RITA parity. Reserved sources,
+  frozen ML policies and deferred runtime promotion remain. No public site.
+
 ## Real-capture diagnostic replay (2026-10-05)
 
 - Four complete official packet acquisitions, frozen before native/detector

@@ -168,9 +168,9 @@ def parse_zeek_conn_log_with_diagnostics(content: str) -> DNSParseResult:
             except (ValueError, OverflowError):
                 invalid.append(name)
                 return None
-        def bounded_text(name, maximum):
+        def bounded_text(name, maximum, *, allowed=()):
             text = _optional_text(row.get(name))
-            if text is not None and len(text) > maximum:
+            if text is not None and text not in allowed and len(text) > maximum:
                 invalid.append(name)
                 return None
             return text
@@ -185,7 +185,9 @@ def parse_zeek_conn_log_with_diagnostics(content: str) -> DNSParseResult:
             originator_ip=source, responder_ip=destination,
             originator_port=number("id.orig_p", maximum=65535, integer=True),
             responder_port=number("id.resp_p", maximum=65535, integer=True),
-            protocol=bounded_text("proto", 16),
+            # Zeek's official enum is 17 characters. Keep the exact value;
+            # unknown transport must never be inferred as TCP or UDP.
+            protocol=bounded_text("proto", 16, allowed=("unknown_transport",)),
             duration_seconds=number("duration", maximum=365 * 86400),
             originator_bytes=number("orig_bytes", maximum=2**63 - 1, integer=True),
             responder_bytes=number("resp_bytes", maximum=2**63 - 1, integer=True),

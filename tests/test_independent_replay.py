@@ -80,12 +80,19 @@ def test_streamed_acquisition_never_scores_a_truncated_prefix_or_overwrites(tmp_
         assert (root / "acquisition.json").stat().st_mode & 0o077 == 0
     if broken:
         assert "Truncated" in status["reason"]
-        monkeypatch.setattr(module, "analyze_zeek_conn_log_with_diagnostics", lambda *a: pytest.fail("Excluded data scored"))
-        result = module.evaluate_case(tmp_path, source, {"scenario.pcap": hashlib.sha256(raw).hexdigest()})
-        assert result["status"] == "excluded" and "tcp_review_groups" not in result
     with pytest.raises(FileExistsError):
         module.acquire_case(tmp_path, source)
     assert (root / "scenario.pcap").read_bytes() == raw
+
+
+@pytest.mark.skipif(not hasattr(os, "getuid"), reason="Private Unix replay evaluator")
+def test_excluded_acquisition_never_reaches_private_detector_evaluation(tmp_path, monkeypatch):
+    root = tmp_path / "sample"
+    root.mkdir(mode=0o700)
+    module.write_new(root / "acquisition.json", {"status": "excluded", "reason": "Truncated capture", "sha256": "fixture"})
+    monkeypatch.setattr(module, "analyze_zeek_conn_log_with_diagnostics", lambda *a: pytest.fail("Excluded data scored"))
+    result = module.evaluate_case(tmp_path, {"name": "sample"}, {})
+    assert result["status"] == "excluded" and "tcp_review_groups" not in result
 
 
 def test_acquisition_bound_is_separate_from_complete_packet_structure(tmp_path):

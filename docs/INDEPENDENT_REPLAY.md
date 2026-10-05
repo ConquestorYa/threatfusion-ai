@@ -128,7 +128,7 @@ already observed in the earlier log experiment; it is not increased recall.
 
 ## Reproduce privately
 
-Use the **baseline-method commit before the parser repair** for identical runtime
+Use the [baseline-method commit before the parser repair](https://github.com/ConquestorYa/threatfusion-ai/commit/dcabb94ece6eaef3fefa4c7b12729aa0dc4ffae6) for identical runtime
 fingerprints. Later source changes require a separately named experiment, never
 relabel the frozen baseline. Install normal project dependencies, then:
 
@@ -169,7 +169,70 @@ native CSV, models/caches/SQLite and evaluation receipts stay outside Git; only
 method, tests, attribution and aggregate observations are published. Freeze and
 all four source exclusions/results remain intact after later fixes.
 
-## Decision
+## Separate compatibility repair
+
+`unknown-transport-import-v1` sealed contracts/source hashes before changing only
+`network_telemetry.py`. The exact official `unknown_transport` value now survives
+import and private persistence. The general 16-character protocol bound remains;
+arbitrary longer/prefix/suffix values still fail. Other field/row/file bounds and
+all 80 other runtime modules remain identical. Unknown records are never coerced
+to TCP/UDP or made eligible for TCP long-session/timing/attempt review.
+
+The first mixed-log repair replay is retained as **failed**: after valid
+connection import, Normal-21 DNS transactions fail required identity/type
+checks. Its 8,747 DNS rows include eight missing queries and 49 missing both type
+name/numeric value (overlapping categories). No missing identity is invented,
+rows discarded, or malformed DNS file represented as successfully empty.
+Baseline source exclusions and this failed plan/candidate/method receipt remain.
+
+An explicit `unknown-transport-connection-only-v1` amendment then froze the
+**full connection files only**, before its replay. DNS is outside that scope,
+reported as unevaluated/null, not zero. All **39,957 connection rows** reconcile
+offline/collector/timeline/restart/gzip with no rejection/pruning; each gzip copy
+is one duplicate and each restart adds zero:
+
+| Existing source | Full connection rows | TCP reviews / groups | Unknown groups / reviews |
+| --- | ---: | ---: | ---: |
+| Normal-20 | 18,892 | 1 / 806 | 0 / 0 |
+| Normal-21 | 10,662 | 0 / 1,325 | 2 / 0 |
+| Known IoT-8 | 10,403 | 0 / 3 | 0 / 0 |
+
+Normal-20 and IoT-8 full connection report evidence matches the baseline exactly,
+apart from report clocks explicitly ignored when conn-only clocks differ from
+mixed-log clocks. Original bounded queues/timelines stay; retained records are
+not uncapped visible groups. These are inspected-source compatibility checks,
+not new independent detection evidence. Linux's mixed-source/DNS gate remains
+excluded; the large malicious source still exceeds capacity.
+
+Sixteen new automated controls cover official enum retention, arbitrary overlong
+values, other metadata bounds, long/periodic/failed unknown traffic, known TCP
+priority, UID conflicts, private collector restart/gzip/rejection and scope
+tampering. A separate private Unix exclusion test leaves portable acquisition
+checks running on Windows. Final validation: **1,203 tests / 91% coverage**,
+Ruff/Bash/diff checks.
+No detector threshold, ML artifact, context, file limit or retention change.
+
+To reproduce compatibility, first generate the private baseline using its linked
+method commit. In a current source checkout, create a NEW owner-only root,
+copy unchanged `conn.log` files for Normal-20/21 and IoT-8 into `case/zeek/`, and
+write `plan.json`/`plan.sha256` before evaluation. Required plan fields are:
+protocol `unknown-transport-connection-only-v1`, `baseline_runtime` from the
+baseline's `runtime-freeze.json`, `permitted_change` containing only
+`src/threatfusion/network_telemetry.py`, and `sources` mapping the three case
+names to `zeek/conn.log` SHA-256 values from baseline frozen evidence. Keep DNS
+files out of this explicitly connection-only root. Then:
+
+```bash
+python -m scripts.lab.verify_unknown_transport \
+  --root /absolute/private/connection-compatibility \
+  --baseline-root /absolute/private/replay
+```
+
+It rejects changed plan/input fingerprints, changes outside the parser, unexpected
+input scope and existing evaluation state; candidate/tool/test identities freeze
+before analysis. Original private sources/failed roots are never overwritten.
+
+## Next decision
 
 The new independent malicious-source gate remains **open**: IoT-3 cannot fit the
 current product, and IoT-8 is known. Normal coverage is wider but not an enterprise
@@ -177,8 +240,8 @@ benchmark. No malware FPR/recall, RITA parity, analyst time benefit, production
 security or strict-temporal ML result follows. Original model identity/thresholds
 and deferred augmented runtime promotion remain unchanged.
 
-Priority: repair legitimate unknown-transport import under explicit contracts;
-then declare bounded large-log ingestion/window coverage before changing behavior
-detection. Reserved sources remain untouched for separately scoped work. Sparse
+Legitimate unknown-transport connection import is repaired. Next declare bounded
+large-log ingestion/window coverage and handling of quarantined DNS files before
+changing behavior detection. Reserved sources remain untouched. Sparse
 failure/timing, DNS tunneling, SIEM, participant and multi-day security gates
 remain open. Source-history checks must precede future acquisition.

@@ -12,6 +12,10 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Separately frozen connection compatibility replays and sixteen transport/
+  persistence/scope contracts. All 39,957 existing connection rows reconcile;
+  the mixed Linux/DNS failure and capacity exclusions stay explicit.
+
 - Frozen official Windows/Linux/IoT packet replay method, bounded complete PCAPNG
   qualification and capture-family history guards. Complete baseline cases
   reconcile 44,384 mixed rows. Valid unknown-transport import and large-log/window
@@ -180,6 +184,13 @@ release date is added only when the final tag/release is created.
   build/health checks, and public-release tracked-tree/Git-history auditing.
 - `SECURITY.md`, MIT `LICENSE`, data-source attribution notes, and release
   readiness documentation.
+
+### Fixed
+
+- Legitimate Zeek `unknown_transport` fields no longer make a completed connection
+  file invalid solely because the official enum has 17 characters. A narrow
+  exception preserves the original value; arbitrary oversized fields still fail,
+  and unknown traffic never becomes eligible for TCP/UDP behavior detection.
 
 ### Changed
 

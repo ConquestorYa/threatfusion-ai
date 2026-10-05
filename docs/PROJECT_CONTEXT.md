@@ -31,6 +31,15 @@ It is an educational prototype, not a production security product.
 
 ## Latest measured position (2026-10-05)
 
+The official `unknown_transport` enum now imports/persists under a narrow parser
+exception while arbitrary overlong values and TCP eligibility stay unchanged.
+Predeclared repair contracts and full connection-only replays reconcile 39,957
+rows, including all 10,662 Linux rows. The first mixed-log replay still fails on
+missing DNS identity/type; this is preserved, not filtered into success. Only
+one runtime module changes; sixteen new controls and 1,203 total tests pass.
+See `INDEPENDENT_REPLAY.md`. Next is bounded scalable ingestion and DNS quarantine
+handling; independent malicious/enterprise/security/human gates remain open.
+
 `independent-replay-v1` widens normal controls to real Windows/Linux website
 captures and exposes input compatibility/capacity defects without tuning. One
 new normal source fully reconciles; Linux has two legitimate unknown-transport

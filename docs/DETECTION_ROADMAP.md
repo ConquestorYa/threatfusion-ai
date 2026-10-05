@@ -34,8 +34,11 @@ earlier inspected traffic. Windows and known replay reconcile 44,384 full mixed
 rows; Windows produces one TCP/25 DNS reviews, with 143 DNS snapshot groups
 omitted. Native rows are separate units; no ranking or fresh malicious success.
 See [frozen protocol, corrections and exclusions](INDEPENDENT_REPLAY.md).
-Next: repair legitimate `unknown_transport` import with conservative contracts,
-then declare scalable ingestion/window coverage. Reserved sources stay untouched;
+The exact official `unknown_transport` enum is now repaired under separate
+contracts; 39,957 full connection-only rows reconcile without rejection/pruning.
+The mixed Linux replay still fails missing DNS identity/type; it remains recorded.
+Next: declare scalable ingestion/window coverage and quarantined DNS handling.
+Reserved sources stay untouched;
 sparse/timing, DNS tunneling, SIEM, security and human validation remain open.
 
 ## Previous increment: analyst tasks and preserved evidence
