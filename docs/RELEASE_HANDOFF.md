@@ -25,6 +25,8 @@ Status date: 2026-10-05
   hashes, units and limits: `ANALYST_REVIEW.md`. Raw traffic/rules/SQLite/evaluation
   receipts stay outside Git. Seven existing UI/translation modules change; 73
   frozen runtime modules and all 34 original local data files remain identical.
+  Three owner-only Unix lab-directory controls are explicitly Unix-only; portable
+  UI/task contracts still run on Windows. No product test is bypassed.
 - Human decisions/time and new independent normal/malicious windows remain open;
   no accuracy/RITA parity/production claim. Previous truncated source exclusions
   remain. Fresh-disjoint is not strict temporal; original model artifact remains

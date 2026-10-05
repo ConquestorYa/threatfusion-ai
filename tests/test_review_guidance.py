@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
@@ -163,6 +164,7 @@ def test_collector_filters_keep_cti_and_do_not_translate_snapshot_in_place(monke
 
 
 @pytest.mark.parametrize("filename", ["development/rules.json", "reserved/scenario.pcap", "plan.json"])
+@pytest.mark.skipif(not hasattr(os, "getuid"), reason="Private Unix lab directory")
 def test_task_protocol_refuses_changed_inputs_before_scoring(tmp_path, filename):
     from scripts.lab.evaluate_analyst_tasks import prepare, evaluate
     root = tmp_path / "private-tasks"
