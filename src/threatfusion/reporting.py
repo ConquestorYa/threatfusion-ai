@@ -6,7 +6,11 @@ import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from .dashboard import ml_tier_label, reason_label, verdict_label
+from .dashboard import contextual_connection_rows, device_finding_rows, ml_tier_label, reason_label, verdict_label
+from .expected_connections import POLICY_ID as EXPECTATION_POLICY_ID
+from .expected_connections import ExpectedConnectionRule
+from .connections import POLICY_ID as CONNECTION_POLICY_ID
+from .device_triage import POLICY_ID
 from .runtime_analysis import RuntimeAnalysisResult
 
 
@@ -15,6 +19,76 @@ class AnalysisReport:
     json_text: str
     csv_text: str
     generated_at: str
+
+
+def build_connection_report(
+    result: RuntimeAnalysisResult, *, include_ips: bool = False,
+    generated_at: datetime | None = None,
+    expected_rules: tuple[ExpectedConnectionRule, ...] = (), evaluated_at: datetime | None = None,
+) -> str:
+    from .connection_timeline import timeline_report
+    from .connection_attempts import attempt_report
+
+    evaluated_at = evaluated_at or datetime.now(timezone.utc)
+    return json.dumps({
+        "schema_version": 2, "policy": CONNECTION_POLICY_ID,
+        "generated_at": _generated_at_text(generated_at),
+        "context_policy": EXPECTATION_POLICY_ID,
+        "context_evaluated_at": _generated_at_text(evaluated_at),
+        "declaration_count": len(expected_rules),
+        "findings": contextual_connection_rows(result, expected_rules, include_ips=include_ips, evaluated_at=evaluated_at),
+        "timelines": timeline_report(result.connection_timelines, len(result.connection_findings)),
+        "attempts": attempt_report(result.connection_attempts, result.connection_findings, include_ips=include_ips),
+        "privacy": {"endpoint_ips_included": include_ips, "raw_connection_rows_included": False,
+                    "connection_uids_included": False, "host_alias_scope": "this_report_only",
+                    "rule_ids_and_configuration_included": False},
+        "limitations": [
+            "Review priority is not proof of C2, malware, downloads or execution.",
+            "Observation direction is originator to responder, not inferred inbound/outbound.",
+            "No DNS hostname association is inferred from shared IPs.",
+            "Legitimate updates and long-lived services can also enter review.",
+            "Aliases do not anonymize timestamps, ports and traffic statistics.",
+            "Timeline bytes/states are assigned to connection start buckets, not transfer time; unknown bytes are counted separately.",
+            "Timelines cover at most 200 groups and 48 buckets per group; absent buckets are not proof of absent network traffic.",
+            "Expected activity is an expiring analyst declaration, not verified software identity or safety.",
+            "CTI conflicts override expected activity; original priorities and evidence are retained.",
+        ],
+    }, indent=2, ensure_ascii=False) + "\n"
+
+
+def build_device_report(
+    result: RuntimeAnalysisResult, *, include_client_ips: bool = False,
+    generated_at: datetime | None = None,
+) -> str:
+    """Explicit separate export; original aggregate export stays unchanged.
+
+    Domain names and timestamps are still telemetry. Device aliases are local
+    to this report and are not anonymization or stable asset identities.
+    """
+    from .dns_timeline import build_dns_timelines
+
+    return json.dumps({
+        "schema_version": 1,
+        "policy": POLICY_ID,
+        "generated_at": _generated_at_text(generated_at),
+        "findings": device_finding_rows(
+            result.device_findings, include_client_ips=include_client_ips,
+        ),
+        "timelines": build_dns_timelines(result.events, result.device_findings),
+        "privacy": {
+            "client_ip_values_included": include_client_ips,
+            "response_ip_values_included": False,
+            "raw_dns_rows_included": False,
+            "device_alias_scope": "this_report_only",
+        },
+        "limitations": [
+            "Queue priority is an engineering heuristic, not proof of compromise.",
+            "DNS queries do not prove connections, downloads or execution.",
+            "Observed clients may be resolvers or NAT addresses, not endpoints.",
+            "Aliases do not anonymize domain names, timestamps or other evidence.",
+            "Periodicity review does not distinguish legitimate updates from C2.",
+        ],
+    }, indent=2, ensure_ascii=False) + "\n"
 
 
 def _generated_at_text(value: datetime | None) -> str:

@@ -17,6 +17,8 @@ dist/
 .env.*
 !.env.example
 **/secrets.toml
+**/credentials.json
+**/control.sock
 *.pem
 *.key
 *.p12
@@ -71,3 +73,10 @@ data/deployment/
 
 # Local final evaluation reports
 data/evaluation/
+
+# Local analyst endpoint declarations (contain private topology)
+data/analyst/
+expected-connections*.json
+
+# Private automatically collected telemetry/state/snapshots
+data/collector/

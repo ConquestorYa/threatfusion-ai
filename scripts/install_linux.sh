@@ -14,16 +14,18 @@ PORT=""
 PREPARE_ONLY=0
 NO_BROWSER=0
 REFRESH_CTI=0
+NO_INTEGRATIONS=0
 
 usage() {
     cat <<'EOF'
 ThreatFusion AI — Linux local installer
   --install-dir PATH    Dedicated installation directory (no sudo)
-  --mode demo|cti-only   Synthetic demo by default; real CTI has no ML
+  --mode demo|cti-only   Real CTI by default (ML disabled); demo is optional
   --refresh-cti         Explicitly fetch feeds in cti-only mode
   --port NUMBER         Local port; default finds a free port from 8501
   --prepare-only        Install/check everything without starting the server
   --no-browser          Print the localhost URL without opening a browser
+  --no-integrations     Skip applications-menu and terminal command registration
   --ref REF             Repository branch or immutable commit to install
   --source-dir PATH     Developer/test option: use a local checkout
   --help                Show this help
@@ -42,6 +44,7 @@ while [[ $# -gt 0 ]]; do
         --prepare-only) PREPARE_ONLY=1; shift ;;
         --no-browser) NO_BROWSER=1; shift ;;
         --refresh-cti) REFRESH_CTI=1; shift ;;
+        --no-integrations) NO_INTEGRATIONS=1; shift ;;
         --help|-h) usage; exit 0 ;;
         *) fail "Unknown option: $1" ;;
     esac
@@ -139,6 +142,7 @@ args=(--install-dir "$INSTALL_DIR" --uv "$uv" "${source_args[@]}")
 [[ "$PREPARE_ONLY" == 0 ]] || args+=(--prepare-only)
 [[ "$NO_BROWSER" == 0 ]] || args+=(--no-browser)
 [[ "$REFRESH_CTI" == 0 ]] || args+=(--refresh-cti)
+[[ "$NO_INTEGRATIONS" == 0 ]] || args+=(--no-integrations)
 flock -u 9
 exec 9>&-
 "$python" "$helper" "${args[@]}"

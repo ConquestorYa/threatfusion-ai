@@ -213,7 +213,7 @@ Dashboard varsayılan olarak **Otomatik algıla** modunda çalışır.
 | CSV / TSV / TXT | ✅ | ayraç, encoding ve DNS sütunları otomatik tahmin edilir |
 | XLSX / XLS | ✅ | worksheet ve yaygın DNS sütunları otomatik algılanır |
 | Zeek <code>dns.log</code> | ✅ | standart <code>#fields</code> parser |
-| Zeek <code>conn.log</code> | ✅ | hedef-IP CTI analizi; veri setindeki hazır etiketler kullanılmaz |
+| Zeek <code>conn.log</code> | ✅ | hedef-IP CTI, bağlantı bilgileri ve temkinli inceleme; hazır veri etiketleri kullanılmaz |
 | PCAP / PCAPNG / CAP | ✅ | klasik UDP/53 DNS çıkarımı |
 | Suricata EVE JSON / JSONL | ✅ | DNS öncelikli, hedef-IP fallback |
 | Pi-hole FTL SQLite | ✅ | query veritabanı bellekte işlenir |
@@ -225,6 +225,61 @@ Dashboard varsayılan olarak **Otomatik algıla** modunda çalışır.
 **Runtime güvenlik sınırları:** 100.000 event ve 25.000 benzersiz analiz hedefi.
 
 PCAP üzerinden DoH/DoT gibi şifreli DNS'ten domain çıkarıldığı iddia edilmez.
+
+**Cihaz incelemesi** sekmesi, gözlemlenen istemcileri ve hedefleri ayrı
+değerlendirir; CTI kanıtını ilgili istemciyle ilişkilendirir ve uzun süreli
+düzenli DNS davranışını inceleme kuyruğuna ekler. Düzenlilik tek başına zararlı
+yazılım kararı üretmez. IP adresleri varsayılan olarak gizlidir; isteğe bağlı
+cihaz raporu rapora özel takma adlar kullanır.
+[Tespit yol haritası ve kanıt sınırları](docs/DETECTION_ROADMAP.md) ile
+[yerel lab kontrollerine](docs/LOCAL_LAB.md) bakabilirsin. RITA'ya yakın temel
+yetenekler geliştirme hedefidir; mevcut doğruluk veya eşdeğerlik iddiası değildir.
+
+**Bağlantı etkinliği** sekmesi, standart Zeek TSV kayıtlarından süre, gözlem
+yönü, veri miktarları ve düzenli başarılı TCP bağlantılarını gösterir. Uzun veya
+düzenli bağlantılar zararsız da olabilir; kuyruk C2 veya indirme kanıtı değildir.
+Ayrı bağlantı raporunda iki uçtaki IP'ler de varsayılan olarak gizlidir.
+CLI için `--format zeek-conn --connection-json-output /repo/disinda/inceleme.json`
+seçeneklerini kullanabilirsin.
+
+V2 kuralları, kapanışı eksik kalan veya reset ile biten TCP oturumlarının çift
+yönlü verisini de hesaba katar; başarısız/yarım açık denemeleri ayrı sayar. Süre ve
+düzenlilik koşulları geçerlidir. [Kapsam ve yeni değerlendirme](docs/TCP_TERMINATION.md)
+sonuçlarında, gerçek kayıtlardaki inceleme sayısının önceki sürümle aynı olduğu da açıklanır.
+
+**Bağlantı incelemesi** ile bir grubu seçip UTC zaman çizelgesini, Zeek durumlarını
+ve bilinen/eksik bayt sayılarını görebilirsin. Dosya yüklemede ve otomatik toplayıcıda
+çalışır; bütün bulgular raporda kalır. [Kullanım, gizlilik sınırları ve iki gerçek
+paket kontrolü](docs/CONNECTION_INVESTIGATION.md) belgelenmiştir.
+
+**TCP denemesi incelemeleri**, beş dakikalık kayan pencerede farklı port/hedeflere
+başarısız denemeleri ve yoğun tekrarları bir araya getirir. Meşru envanter taraması
+ve servis kesintisi de inceleme oluşturabilir. [Kurallar, gerçek paket kontrolleri
+ve gerçek kayıtlarda kalan kapsam eksikliği](docs/TCP_ATTEMPT_REVIEW.md) belgelenmiştir.
+
+İsteğe bağlı [beklenen bağlantı beyanları](docs/EXPECTED_CONNECTIONS.md), analistin
+kontrol ettiği operasyonel beklentileri açıklanamayan incelemelerden ayırır.
+Kesin bağlantı uçları, trafik sınırları ve son geçerlilik tarihi gerekir; CTI
+çelişkileri görünür kalır. Yazılım kimliğini doğrulamaz, önceki kanıtları silmez.
+
+Linux kurulumunda **kapanmış** Zeek TSV bağlantı ve TCP/UDP DNS kayıtlarını otomatik almak için
+`threatfusion-ai collect --input-dir /tam/yol/zeek/logs` çalıştırabilirsin.
+**Toplanan bağlantılar** sayfası yerelde yenilenir; yeniden başlatınca kaldığı
+yerden devam eder, döndürülmüş/sıkıştırılmış kopyaları tekrar saymaz. Açık dosyalar
+kapanmayı bekler. [Kurulum ve sınırlar](docs/TELEMETRY_COLLECTOR.md) ile
+[bağımsız IoT-23 sonuçlarında](docs/NETWORK_EVALUATION.md) kaçırılan senaryolar da
+açıklanıyor. Bu akış kendi CTI cache'ini kullanır; ML modeli çalıştırmaz.
+**Toplanan DNS gözlemleri** bölümü cihaz/domain kuyruğu, işlem kimliğine göre tekrar
+ayıklama, çelişkili kayıt sayıları ve sınırlı özel rapor sağlar. Eski state
+yükseltilmeden önce yedeklenir. DNS sorgusu bağlantı veya indirme kanıtı değildir.
+[DNS akışı, geçiş ve iki yeni canlı kontrol](docs/DNS_COLLECTION.md) belgelenmiştir.
+Cihaz/domain seçerek UTC sorgu ve yanıt kodu zaman çizelgelerini inceleyebilirsin.
+Toplayıcı tarama/ret durumunu gösterir; grup eşlemeleri aynıysa seçimin korunur.
+[İnceleme ve rotasyon/kurtarma kontrolleri](docs/DNS_INVESTIGATION.md) belgelenmiştir.
+[İnceleme yükü karşılaştırması](docs/REVIEW_WORKLOAD.md), normal güncelleme,
+DNS önbelleği, ortak resolver ve zamanlama açıklarını isteğe bağlı native RITA
+ile ölçer. Normal trafik de incelemeye girebilir; bozuk iki resmî kayıt açıkça
+dışlandı. Bu ölçüm zararlı tespit doğruluğu veya RITA ile eşdeğerlik kanıtı değildir.
 
 ---
 
@@ -302,21 +357,30 @@ ve yaklaşık 2 GB boş disk alanı önerilir.
 bash -c 'set -e; f=$(mktemp /tmp/threatfusion-install.XXXXXXXX); trap "rm -f -- \"$f\"" EXIT; u=https://raw.githubusercontent.com/ConquestorYa/threatfusion-ai/main/scripts/install_linux.sh; if command -v curl >/dev/null; then curl --proto "=https" --proto-redir "=https" -fsSL --retry 3 --connect-timeout 20 --max-time 300 "$u" -o "$f"; elif command -v wget >/dev/null; then wget --https-only --timeout=30 --tries=3 -qO "$f" "$u"; else echo "curl veya wget gerekli" >&2; exit 1; fi; bash "$f" "$@"' --
 ```
 
-Komut özel **Python 3.12.14** ortamını ve gerekli 49 kütüphaneyi SHA-256
-kontrolüyle kurar, kaynak kodu indirir ve sentetik demo verisini oluşturur.
-Sonunda tarayıcıda **http://127.0.0.1:8501** açılır; port doluysa sıradaki boş
-local port kullanılır. **Ctrl+C** ile kapatılır. Hosted servis oluşturulmaz.
+Komut özel **Python 3.12.14**, hash doğrulamalı 49 kütüphane, kaynak kod,
+uygulamalar menüsü kısayolu ve `threatfusion-ai` terminal komutunu kurar.
+Tarayıcıda **http://127.0.0.1:8501** (veya sıradaki boş local port) açılır.
+Yeni kurulum gerçek CTI modundadır; **ML kapalıdır** ve ilk cache boştur.
+Yan çubuktaki **Yerel kurulum ve CTI güncellemeleri** panelinden kendi API
+anahtarlarını girip kaynakları güncelle ve isteğe bağlı 6/12/24 saatlik otomatik
+kontrolü aç. SGB ve public PhishTank anahtarsız denenebilir; ThreatFox/URLhaus
+kendi anahtarlarını gerektirir. Veriler ilk güncelleme talebinden sonra indirilir.
 
-Daha sonra tekrar açmak için:
+Tekrar açmak için uygulamalar menüsündeki **ThreatFusion AI** veya yeni terminal:
 
 ```bash
-"${XDG_DATA_HOME:-$HOME/.local/share}/threatfusion-ai/start"
+threatfusion-ai
+threatfusion-ai status
+threatfusion-ai stop
 ```
 
-Gerçek CTI toplamak için bu başlatıcıya `--mode cti-only --refresh-cti` ekle.
-Bu modda **ML kapalıdır**; ilk kez kaynaklardan kendi cache'ini oluşturur.
-Geliştirme cache'i, model dosyaları ve değerlendirmeler kopyalanmaz veya
-paylaşılmaz. API anahtarları, offline başlatma ve hata çözümü için
+Ctrl+C veya web panelindeki kapatma düğmesi sunucuyu ve scheduler'ı durdurur.
+Yalnızca tarayıcı sekmesini kapatmak sunucuyu kapatmaz. Otomatik yenileme
+uygulama çalışırken yapılır; kaçırılan kontrol sonraki açılışta gerçekleştirilir.
+Anahtarlar varsayılan olarak tarayıcı oturumundadır. Açıkça seçersen özel 0600
+izinli, şifrelenmemiş local dosyaya kaydedilir. Sentetik demo isteğe bağlıdır:
+`threatfusion-ai --mode demo`. Geliştirme cache'i, model ve değerlendirmeler
+kopyalanmaz. Ayrıntılar ve alternatif başlatıcı yolu için
 [Linux kurulum rehberine](docs/INSTALL_LINUX.md) bak.
 
 Komut güncel `main` sürümünü kurar. Local kurulum, hosted servis oluşturmaz

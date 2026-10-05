@@ -23,3 +23,6 @@
 **/*.sqlite-*
 **/*.sqlite3-*
 **/*.db-*
+
+**/credentials.json
+**/control.sock

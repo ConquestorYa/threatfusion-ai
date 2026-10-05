@@ -52,12 +52,16 @@ from threatfusion.ui_components import (
     render_source_status,
 )
 from threatfusion.ui_evaluation import _show_model_evaluation
+from threatfusion.ui_device_triage import render_device_triage
+from threatfusion.ui_connections import render_connections
+from threatfusion.ui_collector import render_collector
 from threatfusion.ui_history import _show_history
 from threatfusion.ui_investigation import _show_domain_detail
 from threatfusion.ui_quick_lookup import (
     render_quick_lookup_empty_state,
     render_quick_lookup_result,
 )
+from threatfusion.ui_local_settings import resolve_managed_config, render_local_settings
 from threatfusion.ui_theme import (
     THEME_OPTIONS,
     canonical_theme_name,
@@ -167,6 +171,7 @@ def _show_analysis_result(
     db_path: Path,
     *,
     history_enabled: bool,
+    public_mode: bool = False,
 ) -> None:
     summary = summarize_runtime_result(result)
 
@@ -279,9 +284,11 @@ def _show_analysis_result(
         )
     )
 
-    findings_tab, investigation_tab, matches_tab, campaign_tab, export_tab = st.tabs(
+    findings_tab, device_tab, connection_tab, investigation_tab, matches_tab, campaign_tab, export_tab = st.tabs(
         [
             tr("Domain findings"),
+            tr("Device triage"),
+            tr("Connection activity"),
             tr("Domain investigation"),
             tr("IOC evidence"),
             tr("Related activity"),
@@ -290,6 +297,12 @@ def _show_analysis_result(
     )
     with findings_tab:
         render_findings_table(assessment_rows(result), key="live_findings")
+
+    with device_tab:
+        render_device_triage(result, public_mode=public_mode)
+
+    with connection_tab:
+        render_connections(result, public_mode=public_mode)
 
     with investigation_tab:
         all_rows = assessment_rows(result)
@@ -557,9 +570,9 @@ def main() -> None:
     )
 
     try:
-        config = load_app_config()
-    except ValueError as error:
-        st.error(tr("Application configuration is invalid: {error}", error=error))
+        config, local_root = resolve_managed_config(load_app_config())
+    except (OSError, TypeError, ValueError):
+        st.error(tr("Application configuration is invalid. Check runtime paths and private file permissions."))
         return
 
     db_path = config.db_path
@@ -578,6 +591,12 @@ def main() -> None:
     if "telemetry_format" in st.session_state:
         st.session_state["telemetry_format"] = st.session_state["telemetry_format"]
 
+    if local_root is not None:
+        try:
+            render_local_settings(local_root)
+        except (OSError, ValueError, TypeError):
+            st.sidebar.error(tr("Local settings could not be read. Check private file permissions."))
+
     navigation = st.sidebar.container()
     _show_system_status(
         db_path,
@@ -592,6 +611,9 @@ def main() -> None:
         "Analysis history",
         "Model evaluation",
     ]
+    collector_available = not config.public_mode or (local_root is not None and config.cti_only)
+    if collector_available:
+        pages.append("Collected connections")
     if not config.history_enabled:
         pages.remove("Analysis history")
 
@@ -627,6 +649,10 @@ def main() -> None:
             st.session_state["workspace_nav"] = "Model evaluation"
             st.rerun()
         st.caption(tr("Primary tools are available in the main workspace."))
+        if collector_available:
+            if st.button(tr("Collected connections"), key="nav_collector", width="stretch"):
+                st.session_state["workspace_nav"] = "Collected connections"
+                st.rerun()
 
     _render_primary_workspace_launcher(page)
     if config.cti_only:
@@ -635,6 +661,12 @@ def main() -> None:
             "available DNS behavior only. A missing match does not establish "
             "that a target is benign. Shared history is disabled in this mode."
         ))
+
+    if page == "Collected connections":
+        render_app_header("Collected connections", "Inspect automatically collected local Zeek connection activity.")
+        render_collector(local_root / "collector" if local_root else config.collector_state_dir,
+                         public_mode=not collector_available)
+        return
 
     if page == "Quick lookup":
         render_app_header(
@@ -1069,6 +1101,7 @@ def main() -> None:
             artifact,
             db_path,
             history_enabled=config.history_enabled,
+            public_mode=config.public_mode,
         )
 
     else:

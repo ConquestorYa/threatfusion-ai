@@ -3,6 +3,7 @@ from __future__ import annotations
 import ipaddress
 import io
 import json
+import math
 import re
 import socket
 from datetime import datetime, timezone
@@ -10,6 +11,7 @@ from datetime import datetime, timezone
 import dpkt
 
 from .dns import DNSEvent, DNSParseDiagnostics, DNSParseResult
+from .connections import ConnectionRecord
 from .normalization import normalize_domain_name
 
 
@@ -84,6 +86,8 @@ def parse_zeek_conn_log_with_diagnostics(content: str) -> DNSParseResult:
     skipped = 0
     invalid_timestamps = 0
     invalid_ips = 0
+    invalid_connection_fields = 0
+    connections = []
     cell_count = 0
 
     for raw_line in io.StringIO(content):
@@ -149,6 +153,46 @@ def parse_zeek_conn_log_with_diagnostics(content: str) -> DNSParseResult:
                 response_ip=destination,
             )
         )
+        invalid = []
+        def number(name, *, maximum, integer=False):
+            text = _optional_text(row.get(name))
+            if text is None:
+                return None
+            try:
+                if len(text) > 32:
+                    raise ValueError
+                value = int(text) if integer else float(text)
+                if not math.isfinite(value) or not 0 <= value <= maximum:
+                    raise ValueError
+                return value
+            except (ValueError, OverflowError):
+                invalid.append(name)
+                return None
+        def bounded_text(name, maximum):
+            text = _optional_text(row.get(name))
+            if text is not None and len(text) > maximum:
+                invalid.append(name)
+                return None
+            return text
+        source = _optional_text(row.get("id.orig_h"))
+        try:
+            source = str(ipaddress.ip_address(source)) if source else None
+        except ValueError:
+            source = None
+            invalid.append("id.orig_h")
+        connections.append(ConnectionRecord(
+            uid=bounded_text("uid", 128), timestamp=timestamp,
+            originator_ip=source, responder_ip=destination,
+            originator_port=number("id.orig_p", maximum=65535, integer=True),
+            responder_port=number("id.resp_p", maximum=65535, integer=True),
+            protocol=bounded_text("proto", 16),
+            duration_seconds=number("duration", maximum=365 * 86400),
+            originator_bytes=number("orig_bytes", maximum=2**63 - 1, integer=True),
+            responder_bytes=number("resp_bytes", maximum=2**63 - 1, integer=True),
+            state=bounded_text("conn_state", 16),
+            missed_bytes=number("missed_bytes", maximum=2**63 - 1, integer=True),
+        ))
+        invalid_connection_fields += len(invalid)
 
     if fields is None:
         raise ValueError("Zeek conn.log is missing a #fields header")
@@ -166,7 +210,9 @@ def parse_zeek_conn_log_with_diagnostics(content: str) -> DNSParseResult:
             skipped_missing_query_name=skipped,
             invalid_timestamps=invalid_timestamps,
             invalid_response_ips=invalid_ips,
+            invalid_connection_fields=invalid_connection_fields,
         ),
+        connections=tuple(connections),
     )
 
 

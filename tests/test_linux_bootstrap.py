@@ -197,3 +197,19 @@ def test_failed_download_or_checksum_preserves_existing_files(tmp_path, download
     assert preserved.read_text() == "existing user data"
     assert not (root / "installation.json").exists()
     assert not list(root.glob(".bootstrap-*"))
+
+
+def test_settings_import_requires_only_standard_library():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-S",
+            "-c",
+            "import sys; sys.path.insert(0, 'src'); import threatfusion.local_workspace; "
+            "import threatfusion.local_integration; assert 'requests' not in sys.modules",
+        ],
+        cwd=SOURCE,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr

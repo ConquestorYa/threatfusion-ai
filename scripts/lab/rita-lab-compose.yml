@@ -1,0 +1,24 @@
+name: tf-rita-lab
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server@sha256:01e7e0649effc174327c73582e7b4ed05499f71ba67e4ce0bc1e97b465844024
+    restart: "no"
+    networks: [analysis]
+    volumes:
+      - database:/var/lib/clickhouse
+    healthcheck:
+      test: [CMD-SHELL, "wget -q -O - http://127.0.0.1:8123/ping | grep -q Ok"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    mem_limit: 4g
+    ulimits:
+      nofile:
+        soft: 131070
+        hard: 131070
+networks:
+  analysis:
+    name: tf-rita-analysis
+    internal: true
+volumes:
+  database:

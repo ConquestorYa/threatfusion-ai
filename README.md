@@ -213,7 +213,7 @@ The dashboard defaults to **Auto-detect**.
 | CSV / TSV / TXT | ✅ | delimiter, encoding and DNS columns inferred automatically |
 | XLSX / XLS | ✅ | worksheet and common DNS columns detected automatically |
 | Zeek <code>dns.log</code> | ✅ | standard <code>#fields</code> parsing |
-| Zeek <code>conn.log</code> | ✅ | destination-IP CTI analysis; dataset labels are ignored |
+| Zeek <code>conn.log</code> | ✅ | destination-IP CTI, typed connection metadata and conservative review; dataset labels are ignored |
 | PCAP / PCAPNG / CAP | ✅ | classic UDP/53 DNS extraction |
 | Suricata EVE JSON / JSONL | ✅ | DNS preferred, destination-IP fallback |
 | Pi-hole FTL SQLite | ✅ | query database parsed in memory |
@@ -225,6 +225,59 @@ The dashboard defaults to **Auto-detect**.
 **Runtime safety bounds:** 100,000 events and 25,000 unique analysis targets.
 
 Encrypted DNS such as DoH/DoT is not claimed to be recoverable from packet captures.
+
+The **Device triage** tab separately evaluates observed clients and targets,
+scopes CTI evidence to the matching client, and adds sustained DNS regularity to
+a review queue without declaring malware. IP addresses are hidden by default;
+the explicit device report uses report-local aliases. See the
+[detection roadmap and evidence limits](docs/DETECTION_ROADMAP.md) and
+[local lab controls](docs/LOCAL_LAB.md). Competitive RITA coverage is a development
+goal, not a current accuracy or parity claim.
+
+**Connection activity** adds duration, observation direction, byte totals and
+successful TCP timing review from standard Zeek TSV. Long/periodic connections
+can also be legitimate; this queue does not prove C2 or downloads. Both endpoint
+IPs are hidden by default in its separate export. The CLI accepts
+`--format zeek-conn --connection-json-output /path/outside/repo/review.json`.
+
+Policy v2 also retains bidirectional payload from incomplete TCP closes and
+reset endings, and separately shows failed/half-open attempt counts. Existing
+duration/timing gates still apply. See [termination coverage and reserved
+comparison](docs/TCP_TERMINATION.md); new real-source Review counts match baseline.
+
+**Connection investigation** lets you select a group and inspect bounded UTC
+connection-start timelines, Zeek states and known/unknown byte counts. Available
+for uploads and the automatic collector; all findings remain in exports. See
+[workflow, privacy limits and two live packet controls](docs/CONNECTION_INVESTIGATION.md).
+
+**TCP attempt reviews** now groups failed attempts across ports/responders and
+repeated failures within a sliding five-minute window. Benign inventory scans
+and outages can also match. [Rules, live controls and remaining real-source
+coverage gap](docs/TCP_ATTEMPT_REVIEW.md) explain the scope.
+
+Optional [expected connection declarations](docs/EXPECTED_CONNECTIONS.md) separate
+locally verified operational expectations from unexplained reviews. Exact
+endpoints, traffic limits and expiry are required; CTI conflicts stay visible.
+This context does not verify software identity or remove original evidence.
+
+Linux installations can continuously import **completed** Zeek TSV connection
+and TCP/UDP DNS logs with `threatfusion-ai collect --input-dir /absolute/path/to/zeek/logs`.
+**Collected connections** refreshes locally; checkpoints survive restarts and
+rotation/gzip copies are deduplicated. Active files wait for closure/rotation.
+See [collector setup and limits](docs/TELEMETRY_COLLECTOR.md) and
+[independent IoT-23 coverage results](docs/NETWORK_EVALUATION.md), including
+missed scenarios. This path uses your existing CTI cache and no ML model.
+The **Collected DNS observations** section adds an independent client/domain
+queue, transaction-aware dedup/conflict coverage and bounded private exports.
+Schema-1 state is backed up before upgrading; DNS queries do not prove downloads.
+See [DNS workflow, migration and two new live controls](docs/DNS_COLLECTION.md).
+Select a device/domain for UTC query and response-code timelines; collection
+reports scan/rejection status and preserves selections while mappings match.
+See [investigation and rotation/recovery checks](docs/DNS_INVESTIGATION.md).
+The [review-workload comparison](docs/REVIEW_WORKLOAD.md) measures normal
+updates, caching, shared resolvers and timing gaps against optional native RITA.
+Normal traffic also enters review; two truncated official sources are explicitly
+excluded. These measurements do not establish malware accuracy or RITA parity.
 
 ---
 
@@ -301,22 +354,29 @@ Allow approximately 2 GB of free disk space and an internet connection for insta
 bash -c 'set -e; f=$(mktemp /tmp/threatfusion-install.XXXXXXXX); trap "rm -f -- \"$f\"" EXIT; u=https://raw.githubusercontent.com/ConquestorYa/threatfusion-ai/main/scripts/install_linux.sh; if command -v curl >/dev/null; then curl --proto "=https" --proto-redir "=https" -fsSL --retry 3 --connect-timeout 20 --max-time 300 "$u" -o "$f"; elif command -v wget >/dev/null; then wget --https-only --timeout=30 --tries=3 -qO "$f" "$u"; else echo "curl veya wget gerekli" >&2; exit 1; fi; bash "$f" "$@"' --
 ```
 
-This installs a private **Python 3.12.14** and all 49 runtime dependencies with
-SHA-256 verification, downloads an immutable source revision, prepares a clearly
-synthetic demo and opens **http://127.0.0.1:8501** (or the next available local
-port). Stop it with **Ctrl+C**. It creates no hosted service.
+The command installs private **Python 3.12.14**, 49 hashed runtime dependencies,
+source code, an applications-menu shortcut and the `threatfusion-ai` command.
+It opens **http://127.0.0.1:8501** (or the next free port) in real CTI mode,
+with **ML disabled**. The sidebar's **Local setup & CTI updates** panel lets you
+enter your own API keys, update feeds and enable optional 6/12/24-hour updates.
+SGB and public PhishTank can be attempted without keys; ThreatFox/URLhaus need
+your own keys. The first cache is empty until you request collection.
 
-Restart without downloading dependencies:
+Reopen from the applications menu or a new terminal:
 
 ```bash
-"${XDG_DATA_HOME:-$HOME/.local/share}/threatfusion-ai/start"
+threatfusion-ai
+threatfusion-ai status
+threatfusion-ai stop
 ```
 
-Real CTI collection is optional and separate: run the launcher with
-`--mode cti-only --refresh-cti`. This mode has **ML disabled** and initially needs
-to collect its own feeds. Your developer cache, models and evaluation files are
-not copied or published. See [Linux installation](docs/INSTALL_LINUX.md) for
-API keys, offline restart, supported systems and troubleshooting.
+Ctrl+C or the web panel's stop button also stops the server/scheduler. Closing
+only the browser tab leaves it running. Automatic refresh runs only while the
+app is running and catches up on restart. Keys stay session-only unless you
+explicitly save them in a private 0600 plaintext file. Demo is optional via
+`threatfusion-ai --mode demo`; its synthetic model is not measured performance.
+See [Linux installation](docs/INSTALL_LINUX.md) for privacy, source access,
+upgrades and the fallback full launcher path. Your developer data is not copied.
 
 The command installs the current `main` revision. The local installer does not
 create or resume a hosted service.

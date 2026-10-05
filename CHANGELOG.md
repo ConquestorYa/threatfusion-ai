@@ -12,6 +12,105 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Frozen normal-review workload protocol, private reproducible packet generation
+  and bounded official acquisition, strict complete-PCAP validation and separate
+  TCP/DNS/attempt/native-RITA metrics. Two new synthetic windows and one intact
+  normal IoT capture reconcile full offline/collector/timeline/restart/gzip paths;
+  two truncated sources are explicitly excluded. Measurements document normal
+  review burden, caching/shared-resolver and wide-jitter/sparse-failure gaps.
+  Runtime/ML policies stay unchanged; independent real-source gate remains partial.
+
+- Device/domain DNS investigation for uploads and collection: bounded UTC query
+  and response-code timelines, explicit missing-time/gap limits, additive private
+  exports and bilingual selectors. Collector scan/rejection health, idle analysis
+  reuse with CTI/retention invalidation, stable mapping selection epochs and safe
+  disk-full guidance. Declared private rotating-log recovery and 120k-record
+  capacity protocols preserve original verdicts and disclose pruning/latency
+  limits; no new detector, ML promotion, production accuracy or public site.
+
+- Automatic completed TCP/UDP Zeek DNS collection alongside independent original
+  connection results, transaction-aware copy/conflict handling, bounded bilingual
+  client/domain snapshot queue and explicit shared retention/name/group limits.
+  Private schema-1 state is backed up before schema-2 migration; old snapshots
+  remain readable. Two new isolated 24-DNS/2-connection captures reconcile offline,
+  collector and restart/gzip paths. 22 declared contracts pass; existing DNS/ML
+  policy is unchanged. No tunneling, real benign FPR or public deployment claim.
+
+- Separate bounded TCP-attempt review queue for sliding-window failed port/host
+  diversity and repeated S0/REJ failures, explicit coverage and dedup/conflicts,
+  bilingual upload/collector views and additive private schema-v2 exports.
+  Predeclared controls and a real isolated 120-record workload pass; a new
+  official 10,403-record capture exposes a sparse-failure coverage gap without
+  increased recall. Original connection/domain/ML verdicts remain unchanged.
+
+- Bounded connection-start investigation charts and state/known-byte/missing-byte
+  summaries for uploaded and automatically collected groups, bilingual local
+  views, report-local group references and additive schema-v2 timeline exports.
+  UID conflicts/dedup match existing findings; detector/ML policies are unchanged.
+  Two predeclared isolated real TCP termination captures each reconcile 72 starts
+  across offline/collector/restart/gzip paths. No analyst efficacy claim.
+
+- Zeek connection policy v2 includes bidirectional payload from incomplete TCP
+  closes/reset endings under existing long/timing gates, explicit payload/reset/
+  partial/failed-attempt counts and bilingual private reports/collector views.
+  Expected declarations retain conservative SF/S1 coverage. Predeclared controls
+  and three new official captures document added evidence and remaining gaps;
+  real-source review counts do not increase. No ML or accuracy promotion.
+
+- Linux completed Zeek TSV/gzip collector with private bounded SQLite evidence,
+  crash/restart checkpoints, rotation/content deduplication, fair bounded scans,
+  capacity-loss handling and SIGTERM cleanup. Installed `threatfusion-ai collect`,
+  standalone `threatfusion-collect` and bilingual local refreshing snapshot view;
+  active files wait for closure. No packet capture, public listener or autostart.
+- Immutable four-capture official IoT-23 connection evaluation protocol and
+  aggregate results/coverage gaps; labels excluded, no threshold tuning or ML
+  promotion. Private collector imports reproduce offline results after restart
+  and gzip duplication. Raw data, cache and outputs remain external/ignored.
+
+- Optional expiring exact-endpoint connection declarations with upload-wide
+  count/duration/byte limits, scoped CTI override and reversible local expected
+  activity filtering. Schema-v2 connection exports retain original evidence and
+  all groups, omitting declaration configuration/IDs. Eleven frozen context
+  controls explicitly cover the same-endpoint software-identity limitation.
+
+- Typed Zeek TSV connection metadata and independent originator/responder/port
+  review for long bidirectional TCP sessions and sustained successful timing;
+  duplicate/conflicting UID handling, missing-data limits, bilingual connection
+  view and separate owner-only CLI export with endpoint aliases by default.
+- Real isolated cache/persistent-HTTP/jitter workload capture and immutable
+  synthetic connection workload controls measuring benign review burden.
+  Shared-log RITA comparison retains its native scoring; no C2 accuracy,
+  production parity, private telemetry upload or ML promotion claim.
+
+- Client/target triage with independent CTI/behavior evidence, a separate
+  sustained-periodic DNS review queue, coverage limits, bilingual local device
+  view and explicit private device JSON export. Existing domain verdicts,
+  aggregate export privacy and frozen ML thresholds remain unchanged.
+- Immutable external synthetic device controls (12 types, two fixed seeds),
+  client-evidence/privacy/UI regressions and a measured-capability roadmap for
+  the intended Zeek/RITA alternative. No production accuracy or parity claim.
+
+- Frozen three-client periodic-control protocol with real short live capture,
+  deterministic checksum-valid synthetic-day replay, isolated pinned RITA lab
+  setup and native-output comparison reporting. Records inputs/limitations and
+  preserves legitimate periodic traffic as a negative control. No CTI/ML
+  promotion or production efficacy claim; generated/downloaded data stays local.
+
+- Local Ubuntu/KVM lab runbook and digest-pinned synthetic DNS/HTTP capture
+  smoke sources; three-client Zeek capture and ThreatFusion DNS ingestion were
+  verified. VM disks, credentials and traffic outputs remain local. RITA
+  comparison and behavior-detection validation remain pending.
+
+- User-scoped Linux applications-menu shortcut and `threatfusion-ai` command,
+  with status/refresh/stop commands and supervised Ctrl+C/SIGTERM/SIGHUP cleanup.
+- Managed local CTI settings panel: real CTI default, explicit synthetic mode,
+  masked user-owned keys, session-only use or opt-in private plaintext storage,
+  manual source refresh and optional 6/12/24-hour updates while the app runs.
+- Serialized refresh attempts, safe aggregate status, failed-source cache
+  preservation and startup catch-up without a system service or hidden autostart.
+- Release audit/ignore protection for saved local credentials, plus local UI,
+  ownership/permission, scheduling, command/shortcut and shutdown regression tests.
+
 - Refreshed the three README interface screenshots from the current local UI,
   using only an isolated synthetic runtime and reserved demo telemetry.
 
@@ -68,6 +167,10 @@ release date is added only when the final tag/release is created.
   readiness documentation.
 
 ### Changed
+
+- CI installs development dependencies explicitly on Ubuntu and Windows, so
+  lockfile regeneration cannot silently remove Ruff/pytest from checks. Ruff
+  advances to 0.16.9 while preserving unrelated locked dependency versions.
 
 - Integrated verified Linux first-run and credential privacy work into `main`
   at the user's request; both README download commands and the installer's

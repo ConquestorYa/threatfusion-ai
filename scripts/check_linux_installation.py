@@ -66,7 +66,17 @@ def check_running(root: Path, mode: str, port: int, *, auto_port: bool = False) 
                 [str(root / "start"), "--prepare-only"], capture_output=True, text=True
             )
             assert duplicate.returncode == 1 and "zaten çalışıyor" in duplicate.stdout
-            process.send_signal(signal.SIGINT if mode == "demo" else signal.SIGTERM)
+            status = subprocess.run(
+                [str(root / "start"), "status"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            assert json.loads(status.stdout) == {"running": True, "url": url}
+            if mode == "demo":
+                process.send_signal(signal.SIGINT)
+            else:
+                subprocess.run([str(root / "start"), "stop"], check=True)
             assert process.wait(timeout=25) == 0
             time.sleep(0.3)
             with socket.socket() as client:
@@ -90,6 +100,16 @@ def main() -> None:
     assert root != Path.home() and (root / ".threatfusion-install").is_file()
     assert sys.version_info[:3] == (3, 12, 14)
     source = Path(json.loads((root / "installation.json").read_text())["source"])
+    # Default is a real, initially empty CTI workspace. Demo remains optional.
+    assert (root / "workspace.json").is_file()
+    assert (Path.home() / ".local/bin/threatfusion-ai").is_file()
+    assert (
+        Path.home()
+        / ".local/share/applications/io.github.ConquestorYa.ThreatFusionAI.desktop"
+    ).is_file()
+    subprocess.run(
+        [str(root / "start"), "--mode", "demo", "--prepare-only"], check=True
+    )
     model = root / "runtime/demo/bundle/models/development-001/model.joblib"
     demo_db = root / "runtime/demo/bundle/threatfusion.sqlite"
     identity = (digest(model), digest(demo_db))
@@ -120,13 +140,29 @@ def main() -> None:
         [IOCRecord("fixture.example", IOCType.DOMAIN, "Installer Test")],
     )
     check_running(root, "cti-only", 18511)
+    # Exercise the installed launcher, not just the module entry point.
+    with tempfile.TemporaryDirectory() as temporary:
+        source_logs = Path(temporary)
+        (source_logs / "conn.fixture.log").write_text(
+            "#separator \\x09\n#fields\tts\tuid\tid.orig_h\tid.orig_p\tid.resp_h\tid.resp_p\tproto\tduration\torig_bytes\tresp_bytes\tconn_state\tmissed_bytes\n"
+            f"{int(time.time())-4000}\tCfixture\t192.0.2.1\t40000\t198.51.100.1\t443\ttcp\t3600\t100\t200\tSF\t0\n#close\tfixture\n"
+        )
+        command = [str(root / "start"), "collect", "--input-dir", str(source_logs), "--once"]
+        for attempt in range(2):
+            result = subprocess.run(command, check=True, capture_output=True, text=True)
+            counts = json.loads(result.stdout)
+            assert counts["retained_records"] == 1 and counts["new_records"] == (1 if attempt == 0 else 0)
+        report = json.loads((root / "collector/connections.json").read_text())
+        assert report["findings"][0]["Queue priority"] == "Review"
+        assert report["privacy"]["endpoint_ips_included"] is False
+        assert (root / "collector").stat().st_mode & 0o777 == 0o700
     subprocess.run(
         [str(root / "start"), "--mode", "demo", "--prepare-only"], check=True
     )
     assert [item.value for item in load_ioc_records(db)] == ["fixture.example"]
     assert (digest(model), digest(demo_db)) == identity
     print(
-        "Linux installation verified: Python, hashed packages, repeat runs, both modes, private data preserved"
+        "Linux installation verified: Python, hashed packages, repeat runs, both modes, installed collector restart, private data preserved"
     )
 
 

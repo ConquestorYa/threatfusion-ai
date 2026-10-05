@@ -15,6 +15,9 @@ from .persistence import (
     PersistedDomainAssessment,
 )
 from .runtime_analysis import RuntimeAnalysisResult
+from .device_triage import DeviceFinding
+from .connections import ConnectionFinding
+from .expected_connections import ExpectedConnectionRule, connection_contexts
 
 
 @dataclass(frozen=True)
@@ -109,6 +112,7 @@ _RELATION_PENALTY_LABELS = {
 }
 
 _REASON_LABELS = {
+    "sustained_periodic_dns": "Sustained periodic DNS; inspect expected software activity",
     "known_ioc_match": "Exact known-domain IOC match",
     "url_hostname_ioc_context": "Hostname appears in a malicious URL IOC",
     "response_ip_ioc_context": "Response IP matches known threat infrastructure",
@@ -132,6 +136,110 @@ _REASON_LABELS = {
     "random_like_hostname": "Hostname appears algorithmically random",
     "periodic_query_pattern": "Periodic repeated query timing pattern",
 }
+
+
+def device_finding_rows(
+    findings: tuple[DeviceFinding, ...], *, include_client_ips: bool = False,
+) -> list[dict[str, object]]:
+    """Report-local aliases by default; IP identity is an explicit local choice."""
+    clients = sorted({f.client_ip for f in findings if f.client_ip is not None})
+    aliases = {client: f"Device {index:03d}" for index, client in enumerate(clients, 1)}
+    coverage_labels = {
+        "missing_or_invalid_client_ip": "Client identity unavailable",
+        "missing_timestamps": "Some timestamps are missing",
+        "ambiguous_timestamp_timezone": "Timestamp timezone is ambiguous",
+        "insufficient_distinct_timestamps": "Fewer than 20 distinct timestamps",
+        "insufficient_observed_span": "Less than 30 minutes of comparable observations",
+        "ip_target_not_dns_query": "IP target: DNS periodic review does not apply",
+    }
+    rows = []
+    for group, finding in enumerate(findings, 1):
+        assessment = finding.assessment
+        behavior = assessment.behavior
+        rows.append({
+            "Group": group,
+            "Device": (
+                finding.client_ip if include_client_ips and finding.client_ip
+                else aliases.get(finding.client_ip, "Unattributed")
+            ),
+            "Target": assessment.domain,
+            "Queue priority": finding.priority.title(),
+            "Verdict": verdict_label(assessment.verdict.value),
+            "Telemetry events": behavior.event_count,
+            "First observed": behavior.first_seen.isoformat() if behavior.first_seen else None,
+            "Last observed": behavior.last_seen.isoformat() if behavior.last_seen else None,
+            "Observed span (s)": behavior.observed_span_seconds,
+            "Distinct timestamps": finding.distinct_timestamps,
+            "Periodic interval (s)": behavior.periodic_interval_seconds,
+            "Periodicity score": behavior.periodicity_score,
+            "NXDOMAIN ratio": behavior.nxdomain_ratio,
+            "ML score": assessment.ml_score,
+            "Known CTI sources": ", ".join(assessment.known_ioc_sources),
+            "Evidence": _evidence_text(finding.reasons),
+            "Coverage limits": "; ".join(coverage_labels[value] for value in finding.limitations),
+        })
+    return rows
+
+
+def connection_finding_rows(
+    findings: tuple[ConnectionFinding, ...], *, include_ips: bool = False,
+) -> list[dict[str, object]]:
+    hosts = sorted({ip for f in findings for ip in (f.originator_ip, f.responder_ip) if ip})
+    aliases = {ip: f"Host {index:03d}" for index, ip in enumerate(hosts, 1)}
+    def host(ip):
+        return ip if include_ips and ip else aliases.get(ip, "Unattributed")
+    reasons = {
+        "long_bidirectional_tcp_session": "Long bidirectional TCP session (at least 1 hour)",
+        "sustained_periodic_connections": "Sustained periodic successful TCP connections",
+        "sustained_periodic_payload_connections": "Sustained periodic bidirectional TCP with incomplete or reset termination",
+    }
+    limits = {
+        "missing_connection_uid": "Connection identity unavailable",
+        "conflicting_connection_uid": "Conflicting connection identities excluded",
+        "incomplete_endpoint_metadata": "Endpoint metadata incomplete",
+        "missing_connection_timestamps": "Some timestamps are missing",
+        "ambiguous_connection_timezone": "Timestamp timezone is ambiguous",
+        "insufficient_connection_timing": "Insufficient connection timing coverage",
+        "unconfirmed_or_incomplete_sessions": "Some sessions are unconfirmed or incomplete",
+        "missing_connection_duration": "Some session durations are missing",
+        "reset_terminated_sessions": "Some TCP sessions ended with a reset",
+        "partially_closed_sessions": "Some TCP sessions have an incomplete close",
+        "failed_or_half_open_attempts": "Some TCP attempts failed or were half open",
+    }
+    return [{
+        "Group": index,
+        "Originator": host(f.originator_ip), "Responder": host(f.responder_ip),
+        "Responder port": f.responder_port, "Protocol": f.protocol,
+        "Queue priority": f.priority.title(), "Connections": f.connection_count,
+        "Confirmed sessions": f.confirmed_session_count,
+        "Bidirectional payload sessions": f.payload_session_count,
+        "Reset endings": f.reset_session_count,
+        "Incomplete closes": f.partial_close_count,
+        "Failed or half-open attempts": f.failed_attempt_count,
+        "Duplicate rows excluded": f.duplicate_rows, "Conflicting UIDs": f.conflicting_uids,
+        "First observed": f.first_seen.isoformat() if f.first_seen else None,
+        "Last observed": f.last_seen.isoformat() if f.last_seen else None,
+        "Max duration (s)": f.max_duration_seconds,
+        "Originator bytes": f.originator_bytes, "Responder bytes": f.responder_bytes,
+        "Periodic interval (s)": f.interval_seconds, "Periodicity score": f.periodicity_score,
+        "Evidence": "; ".join(reasons[r] for r in f.reasons),
+        "Coverage limits": "; ".join(limits[r] for r in f.limitations),
+    } for index, f in enumerate(findings, 1)]
+
+
+def contextual_connection_rows(
+    result: RuntimeAnalysisResult, rules: tuple[ExpectedConnectionRule, ...] = (),
+    *, include_ips: bool = False, evaluated_at: datetime | None = None,
+) -> list[dict[str, object]]:
+    rows = connection_finding_rows(result.connection_findings, include_ips=include_ips)
+    statuses = {"declared_expected": "Declared expected", "cti_conflict": "CTI conflict",
+                "review": "Needs review", "observe": "Observation"}
+    for row, context in zip(rows, connection_contexts(result, rules, evaluated_at=evaluated_at), strict=True):
+        row["Analyst context"] = statuses[context.status]
+        row["CTI match"] = context.cti_matched
+        row["Declared expected"] = context.expected
+        row["Context reason"] = context.reason
+    return rows
 
 
 def build_relationship_graph(

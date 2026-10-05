@@ -4,7 +4,33 @@ ThreatFusion AI is a local-first educational cyber threat-analysis platform that
 
 The runtime is intentionally passive: suspicious URLs and domains are treated as data and are not visited or resolved during analysis.
 
+Expected connection context is a separate presentation/export layer after
+detection. A bounded local JSON declaration must match exact endpoints, complete
+session evidence, validity and traffic limits; scoped CTI overrides it. It does
+not mutate runtime findings, thresholds or persisted history. The UI hides
+matching expected groups only through a reversible view filter. All groups stay
+in schema-v2 connection exports, with rule configuration/IDs omitted. See
+[expected connection contracts](EXPECTED_CONNECTIONS.md).
+
+Connection policy v2 retains additional S2/S3/RSTO/RSTR payload evidence with
+existing long/timing gates, while preserving SF/S1 confirmed-session semantics
+for analyst declarations. Additive report columns expose payload eligibility,
+reset/incomplete endings and failed/half-open attempts; raw record/state schemas
+remain compatible. See [coverage and reserved evaluation](TCP_TERMINATION.md).
+
 ## System overview
+
+An optional local Linux collector provides a second ingestion path: completed
+Zeek TSV/gzip archives → bounded typed SQLite evidence/checkpoints → existing
+separate connection and TCP/UDP DNS device analysis with the user's cached CTI → schema-v2 aliased atomic
+snapshot → local Collected connections fragment. Source and state are private,
+one sensor per state; ingestion does not visit destinations or collect CTI feeds.
+The web process reads snapshots only. ML is disabled on this path. See
+[collector limits and lifetime](TELEMETRY_COLLECTOR.md).
+Private state schema 2 upgrades after a schema-1 backup. DNS reconciliation uses
+UID/transaction/time and full-row hash conflicts; it does not join hostnames to
+flows. DNS snapshots cap prioritized groups independently and disclose omissions.
+See [DNS collection](DNS_COLLECTION.md).
 
 ~~~mermaid
 flowchart LR
@@ -176,6 +202,16 @@ Packet-capture support extracts classic UDP/53 DNS observations. ThreatFusion do
 ### Zeek conn.log boundary
 
 Connection logs do not contain DNS query names. ThreatFusion maps destination IP observations into passive CTI analysis targets. Any dataset-provided benign/malicious labels are ignored by the detector.
+
+The standard TSV adapter also retains typed UID, endpoint ports, observation
+direction, duration, payload-byte counts, state and capture-gap metadata.
+`connections.py` groups originator/responder/protocol/responder-port separately,
+excludes repeated/conflicting UIDs and exposes a conservative Review queue for
+long bidirectional TCP or sustained successful connection timing. It does not
+infer DNS hostnames, inbound/outbound direction, file transfers or malware.
+The separate connection view/export defaults to report-local host aliases and
+does not persist raw rows or connection IDs in aggregate history. See
+`DETECTION_ROADMAP.md` for policy and measured coverage limits.
 
 ### Resource bounds
 

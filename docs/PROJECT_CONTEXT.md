@@ -29,21 +29,143 @@ Its portfolio value comes from combining:
 
 It is an educational prototype, not a production security product.
 
+## Latest measured position (2026-10-05)
+
+`review-workload-v1` adds repeatable private acquisition/generation, structural
+source rejection and separate normal-review/native-RITA units without changing
+runtime policies. Two new two-hour synthetic windows each put 5/7 normal TCP
+groups and 3/5 simulated groups in Review; cache/shared-resolver limits, wide
+jitter and sparse failures remain explicit. One new intact normal IoT capture
+also produces a TCP and a DNS review. Two preselected official PCAPs are truncated
+and excluded, so the independent real-source gate remains partial. All three
+successful sources reconcile full offline/collector/timeline/restart/gzip outputs.
+See `REVIEW_WORKLOAD.md`. Next work prioritizes measured analyst tasks/context and
+new intact permitted windows before separately declared detector changes. These
+results do not establish malware FPR/recall, RITA parity or analyst efficacy.
+
+## Local network lab direction
+
+A separate local Ubuntu/KVM guest now runs synthetic three-client experiments.
+`periodic-controls-v1` has a real short live capture and a deterministic packet
+replay representing a synthetic day, compared with RITA v5.1.2 using identical
+Zeek records. Both CTI and ML are disabled for the behavior comparison. It shows
+why periodicity alone cannot distinguish legitimate update checks from a
+suspicious simulation; the current ThreatFusion verdict also does not elevate
+these patterns by itself. RITA is an optional comparison tool, not a runtime
+dependency or an integrated detector. See `LOCAL_LAB.md` for measured outputs,
+artificial-traffic limitations and reproducible protocol. No production or ML
+promotion claim follows. Client/target triage now evaluates devices independently,
+exposes sustained DNS periodicity as review work without a malware verdict,
+and provides a local privacy-controlled device view/export. See
+`DETECTION_ROADMAP.md` for coverage gates and the intended RITA-alternative scope.
+Connection-start timelines are now available for uploaded and collected groups,
+with bounded UTC/state/byte summaries and report-local aliases. Two isolated
+live reset/close controls each reconcile 72 starts across offline, collector and
+restart/gzip paths. This is plumbing evidence, not analyst efficacy or detection
+accuracy. See `CONNECTION_INVESTIGATION.md`.
+Device/domain DNS query timelines now complement connection-start charts, with
+bounded UTC/response summaries and stable selection while mappings match.
+Rotating-log/recovery/resource contracts are documented in `DNS_INVESTIGATION.md`.
+Incremental active-log tailing and retroactive CTI investigation workflows remain
+future work. Completed-log collection is now
+implemented as described below.
+
+An earlier increment added `cached-http-controls-v1`: isolated real packet capture
+with DNS TTL caching, HTTP persistence, variable browser response sizes and
+polling jitter. Three validated runs each observed five DNS queries, 78 HTTP
+requests and 61 TCP sessions; this remains a short synthetic lab workload.
+`zeek-connection-context-v1` now retains UID/ports/duration/bytes/state and
+offers conservative long-session/sustained-timing review in a separate tab and
+CLI report. Constructed longer controls produced nine benign reviews out of
+33 benign groups, plus three simulated heartbeat reviews; this is review burden,
+not malware FPR/recall. Native RITA on the same short cached capture emitted
+High/beacon 1 for updater and heartbeat, with no browser row or modifiers.
+Longer independent recordings and expected-software context are still needed.
+
+`expected-connection-context-v1` now provides optional local, expiring exact-pair
+analyst declarations with duration/count/byte limits. It separates declared
+expected activity reversibly and keeps original connection priority/evidence.
+Client/destination CTI conflicts override declarations; incomplete evidence cannot
+qualify. Schema-v2 connection reports retain all groups and omit declaration
+IDs/configuration. Eleven constructed controls include an identical heartbeat
+that also matches: software identity and safety remain unverified. See
+`EXPECTED_CONNECTIONS.md`.
+
+`iot23-connection-coverage-v1` now evaluates four preselected official real-device
+logs (1.91–23.98-hour observed spans), keeping labels outside detector input and
+CTI/ML/context disabled. Benign connection reviews were 0/16 and 0/176; malicious
+capture reviews were 1/10 and 0/41. The missed capture and two separate benign
+domain/IP fallback Review verdicts explicitly limit efficacy claims. See
+`NETWORK_EVALUATION.md`; enterprise representativeness and analyst usefulness
+remain unmeasured.
+
+`closed-zeek-collector-v1` adds a foreground Linux consumer for completed TSV
+connection logs/gzip archives, a private SQLite checkpoint/evidence window and
+atomic aliased snapshots. Rotation/restarts/content copies are deduplicated;
+active files wait for closure. CTI reloads from the user's existing cache, rules
+expire/recheck each scan, and capacity loss disables expected filtering. The
+local web Collected connections view refreshes without uploads. Installed
+`threatfusion-ai collect` and standalone `threatfusion-collect` expose automation;
+no public listener, packet sensor or system autostart is introduced. See
+`TELEMETRY_COLLECTOR.md`. Four isolated real-source imports reproduced the frozen
+offline results and survived restart/gzip duplication. This is operational
+contract evidence, not calibrated C2 detection or production sizing.
+
+`tcp-attempt-review-v1` adds a separate bounded five-minute S0/REJ review
+queue for failed port/host diversity and dense retries. Benign inventory scans
+and service outages can also match. All 64 predeclared contract checks pass;
+a new isolated live 120-record run produces three scoped patterns. A new official
+8-1 capture imports 10,403 rows but produces no attempt review: sparse failures
+remain uncovered. Original findings/verdicts and ML policy are preserved. See
+`TCP_ATTEMPT_REVIEW.md`; no increased malware recall or analyst efficacy claim.
+
+`closed-zeek-collector-v2` now also consumes completed TCP/UDP DNS archives into
+an independent device/domain queue, retaining multiple transactions per UID and
+excluding same-identity full-row conflicts. The original connection outputs,
+DNS review thresholds and ML policy stay unchanged. Private SQLite schema 2
+upgrades only after a schema-1 backup; 100k shared records, 25k DNS names and
+1000 exported/500 visible DNS groups keep explicit coverage limits. Two new
+isolated live recordings each reconcile 24 DNS transactions and two connections,
+with zero reviews and restart/gzip duplication checks. These synthetic operational
+contracts do not establish real benign FPR, tunneling coverage or RITA parity.
+See `DNS_COLLECTION.md`. Mixed-log rotation/resource controls and device DNS
+timelines are now implemented (`DNS_INVESTIGATION.md`); representative multi-day
+load, active-file tailing and independent analyst evidence remain open. No public
+service is authorized.
+
 ## Linux first-run flow
 
-The READMEs provide a single copy-paste command for Linux x86_64/glibc 2.28+.
-It installs private Python 3.12.14 and hashed runtime dependencies, fetches an
-immutable source revision and starts the synthetic demo on 127.0.0.1. Debian 12
-and Ubuntu 24.04 clean installations are tested without Python/Git prerequisites.
-The saved user-scoped launcher restarts offline and preserves existing data.
+Connection policy v2 now includes eligible bidirectional payload from incomplete
+close/reset endings while preserving SF/S1 confirmed counts and existing timing/
+duration gates. Four new aliased report/UI fields expose payload, resets, partial
+closes and failed/half-open attempts. Expected declarations cannot hide these
+partial/reset groups. Predeclared controls pass; three new independent captures
+add 1,637 payload sessions in one capture but do not increase Review groups.
+Another malicious capture still produces none. See `TCP_TERMINATION.md` for
+protocol, source identities and coverage limits; no field efficacy or ML change
+is claimed. Collector records remain compatible and snapshots recompute on restart.
 
-Real CTI is an explicit separate `cti-only --refresh-cti` path, with optional
-user-provided feed keys and ML disabled. No developer cache, model or holdout
-is copied, distributed or automatically promoted. First-run telemetry is
-session-local; shared persistent analyst history is disabled. This installer
-creates no hosted service. See `INSTALL_LINUX.md`. The user requested integration
-into `main`; installer downloads and its default ref now use `main`. The existing
-Render demo is confirmed user-suspended and must not be resumed by source updates.
+The READMEs provide a single copy-paste command for Linux x86_64/glibc 2.28+.
+It installs private Python 3.12.14 and hashed runtime dependencies, immutable
+source, the `threatfusion-ai` command and an applications-menu shortcut. New
+installations open real CTI mode (ML disabled), with an initially empty cache.
+Debian 12/Ubuntu 24.04 clean installations are tested without Python/Git.
+
+The local-only sidebar panel accepts the user's own masked API keys, applies
+session-only credentials by default, offers explicit optional 0600 plaintext
+storage inside the 0700 installation, and can refresh source caches manually.
+Opt-in 6/12/24-hour automatic refresh runs during the application's lifetime,
+uses saved keys/public sources and catches up at next launch. Refreshes are
+serialized; upstream failures preserve old source data and show safe aggregate
+status. CLI status/refresh/stop and a web stop button control this installation.
+Closing the browser does not stop the server; Ctrl+C/SIGTERM/SIGHUP do.
+
+Demo is an explicit separate mode; its reserved synthetic cache/model never
+enter real CTI scoring. Existing installations retain their selected mode on
+upgrade. No developer cache, model, key or holdout is copied, distributed or
+promoted. First-run telemetry is session-local and shared history is disabled.
+See `INSTALL_LINUX.md`. Source updates target `main` with the hosting guard in
+`AGENTS.md`; the Render demo remains user-suspended and must not be resumed.
 
 ## Intended users
 

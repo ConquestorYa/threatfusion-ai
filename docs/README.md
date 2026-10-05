@@ -9,6 +9,14 @@ This directory contains the technical documentation behind the portfolio-facing 
 | Document | Use it for |
 | --- | --- |
 | [INSTALL_LINUX.md](INSTALL_LINUX.md) | One-command private Python/dependency install and localhost demo/CTI-only start |
+| [TELEMETRY_COLLECTOR.md](TELEMETRY_COLLECTOR.md) | Private automatic completed Zeek logs, restart/rotation, limits and local UI |
+| [DNS_COLLECTION.md](DNS_COLLECTION.md) | Automatic TCP/UDP DNS transaction collection, private state migration and live controls |
+| [DNS_INVESTIGATION.md](DNS_INVESTIGATION.md) | Device/domain query timelines, scan health and private rotation/recovery/resource protocol |
+| [NETWORK_EVALUATION.md](NETWORK_EVALUATION.md) | Independent official IoT-23 protocol, aggregate observations and detection gaps |
+| [REVIEW_WORKLOAD.md](REVIEW_WORKLOAD.md) | Normal review burden, caching/shared resolvers, same-source native RITA and excluded corrupt inputs |
+| [CONNECTION_INVESTIGATION.md](CONNECTION_INVESTIGATION.md) | Bounded connection timelines, analyst workflow and two isolated live termination controls |
+| [TCP_ATTEMPT_REVIEW.md](TCP_ATTEMPT_REVIEW.md) | Sliding-window TCP failure diversity/retry review, private workflow and reserved evidence |
+| [TCP_TERMINATION.md](TCP_TERMINATION.md) | Partial/reset TCP payload coverage, failed-attempt counts and reserved comparison |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Current data flow, trust boundaries, runtime components and design principles |
 | [DATA_SOURCES.md](DATA_SOURCES.md) | CTI sources, attribution, redistribution boundaries and telemetry privacy |
 | [ML_DATASET.md](ML_DATASET.md) | Dataset construction, evaluation methodology, holdouts and model limitations |

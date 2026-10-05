@@ -1,6 +1,6 @@
-# Direct development/quality tools.
-# CI intentionally installs pytest-cov and pip-audit separately because they
-# are CI tooling rather than application runtime dependencies.
+# Direct development/quality tools installed explicitly by CI.
+# Application packaging uses requirements-runtime.txt; these tools stay out of
+# managed runtime environments and Docker images.
 
 pytest==9.1.1
 ruff==0.16.9

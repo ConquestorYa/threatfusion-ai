@@ -202,6 +202,9 @@ def test_browser_waits_for_health_and_child_is_stopped(tmp_path, monkeypatch, he
         def is_set(self):
             return False
 
+        def set(self):
+            pass
+
     class Response(io.BytesIO):
         status = 200
 
@@ -238,3 +241,45 @@ def test_browser_waits_for_health_and_child_is_stopped(tmp_path, monkeypatch, he
             local_setup.run_local_server(tmp_path, {}, readiness_timeout=0)
         assert "browser" not in calls
     assert calls[-2:] == ["stop", "wait"]
+
+
+@pytest.mark.skipif(
+    __import__("sys").platform != "linux", reason="Linux Unix socket control"
+)
+def test_local_control_stops_only_the_managed_application():
+    import tempfile
+    import threading
+
+    with tempfile.TemporaryDirectory(prefix="tf-ctl-") as temporary:
+        root = Path(temporary)
+        (root / ".threatfusion-install").write_text("1\n")
+        stop = threading.Event()
+        control = local_setup.create_local_control(root, stop, "http://127.0.0.1:18501")
+        try:
+            assert (root / "control.sock").stat().st_mode & 0o777 == 0o600
+            assert local_setup.request_local_control(root, "status") == {
+                "running": True,
+                "url": "http://127.0.0.1:18501",
+            }
+            assert local_setup.request_local_control(root, "stop")["stopping"]
+            assert stop.wait(2)
+        finally:
+            stop.set()
+            control.close()
+            (root / "control.sock").unlink()
+        assert local_setup.request_local_control(root, "status") == {"running": False}
+
+
+@pytest.mark.skipif(
+    __import__("sys").platform != "linux", reason="Linux Unix socket control"
+)
+def test_local_control_preserves_unexpected_user_files(tmp_path):
+    import threading
+
+    keep = tmp_path / "control.sock"
+    keep.write_text("unrelated user data")
+    with pytest.raises(ValueError, match="preserved"):
+        local_setup.create_local_control(
+            tmp_path, threading.Event(), "http://127.0.0.1:18501"
+        )
+    assert keep.read_text() == "unrelated user data"

@@ -1,169 +1,198 @@
-# Linux first installation
+# Linux local installation
 
-The one-command installer in the [English README](../README.md) and
-[Turkish README](../README.tr.md) prepares Python, dependencies, source and a
-synthetic runtime, then opens a loopback-only web interface. It runs as your
-normal user: no sudo, system Python changes, Git, compiler, shell activation,
-Docker or cloud account are required.
+The one command in the [English README](../README.md) or
+[Turkish README](../README.tr.md) installs Python, dependencies, the application,
+an applications-menu shortcut and the `threatfusion-ai` terminal command.
+It runs as your normal user: no sudo, system Python changes, Git, compiler,
+Docker or cloud account are required. The browser interface binds only to
+**127.0.0.1**. This does not create or resume a public website.
 
 ## Supported systems
 
-This first version supports **Linux x86_64, glibc 2.28 or newer**. The complete
-flow is tested on fresh **Debian 12** and **Ubuntu 24.04** images containing no
-Python or Git. Other compatible desktop distributions may work; ARM, Alpine/
-musl, macOS and Windows are not supported by this installer.
+**Linux x86_64, glibc 2.28+**, tested on clean Debian 12 and Ubuntu 24.04 images
+without Python or Git. ARM, Alpine/musl, Windows and macOS are not supported by
+this installer. The OS must provide Bash, curl or wget, working HTTPS CA
+certificates, tar, coreutils and util-linux (`flock`, `getconf`). Installation
+requires internet access to GitHub/PyPI and approximately 2 GB free space, plus
+space for downloaded CTI. On a headless machine append `--no-browser`.
 
-The OS must already provide Bash, curl **or** wget, working HTTPS CA
-certificates, tar, coreutils (`sha256sum`, `mktemp`, `install`) and util-linux
-(`flock`, `getconf`). These are OS prerequisites, not Python dependencies. The
-installer checks them and reports an actionable error rather than silently
-using sudo. An internet connection to GitHub and PyPI is required for a fresh
-installation. Approximately 2 GB free space is recommended; real CTI can need
-additional space. No browser is installed: an existing desktop browser opens
-after the server is healthy. On a headless machine, use `--no-browser`.
+## First use: real intelligence, your own keys
 
-## What happens
+New installations open in **real CTI mode with ML disabled**. The cache is
+initially empty; an empty cache or a missing match does not establish safety.
+The **Local setup & CTI updates** panel in the sidebar opens on first use:
 
-1. The copy-paste command downloads the complete bootstrap to a unique temporary
-   file before executing it. Failed downloads are not executed.
-2. uv **0.12.23** is fetched from its official GitHub release with a fixed archive
-   SHA-256. uv installs a private managed **Python 3.12.14** without adding a
-   global executable or changing PATH.
-3. The selected repository ref is resolved once to an immutable commit. The
-   helper and source archive use that same identity. Archive traversal, links,
-   special files and excessive entry/size counts are rejected before extraction.
-4. `requirements-linux.lock` installs all 49 pinned runtime packages using
-   required hashes and binary wheels from PyPI. Compatibility and imports are
-   checked. uv/package-manager override variables are cleared during bootstrap.
-5. Separate synthetic CTI and demo ML files are generated locally. A model pin
-   outside the model bundle is checked on every start. Damaged existing files
-   are refused, not silently regenerated or overwritten.
-6. Streamlit binds **127.0.0.1** only. The default free port is selected from
-   8501–8600; `--port` selects a specific unprivileged port and fails if busy.
-   Health is checked before opening the browser. Ctrl+C/SIGTERM stop child
-   processes; a second launcher cannot start the same installation concurrently.
+1. Enter your own ThreatFox and URLhaus API keys if you have them. PhishTank's
+   key is optional. SGB and public PhishTank can be attempted without keys.
+2. Choose **Apply keys**. By default keys stay in the current browser session.
+3. Click **Update CTI now**. Each source updates independently. Failures retain
+   its previous cache; the panel shows skipped sources, failures and safe counts.
+4. Run Quick Lookup or upload telemetry. After a cache update, run the analysis
+   again: previously displayed results are snapshots.
 
-Default storage is `${XDG_DATA_HOME:-$HOME/.local/share}/threatfusion-ai`, with
-private directory/file permissions. Tools, Python, cached downloads, immutable
-source releases, hashed virtual environments and runtime data live there.
-`installation.json` records source path, private Python and selected mode; it
-contains no API keys. The existing development checkout and its `.venv`/`data`
-are not modified. Alternate locations must be absolute, dedicated directories;
-unrecognized nonempty directories are refused.
+Source access and availability are not guaranteed. In particular, a public
+PhishTank download may be blocked upstream. The application does not visit IOC
+destinations. Downloading permitted feeds does not grant redistribution rights;
+see [DATA_SOURCES.md](DATA_SOURCES.md).
 
-## Restart and installer options
+**Save keys on this computer** is optional and unchecked by default. It writes
+an owner-only **0600 plaintext** `credentials.json` inside the private **0700**
+installation directory. This is access-controlled storage, not encryption.
+Saved keys are never populated back into browser password fields, added to
+command arguments, logged, exported, copied to GitHub or included in Docker
+images. **Forget saved and session keys** removes this application's saved file
+and the current browser session's key selection. Other open browser sessions
+have their own memory; close those tabs to discard their session selections.
+No developer key, `.env`, Streamlit secret or private development cache is used
+as a fallback. Existing standalone developer CLI environment options remain
+separate from the managed installation.
+
+## Automatic updates
+
+Updates are manual until you enable **Automatic updates while the app is
+running** and save an interval: **6, 12 or 24 hours**. The launcher supervises
+this scheduler independently of browser reruns/tabs. It uses **only saved keys
+and public sources**, not another browser session's unsaved credentials.
+
+- Collection starts when due, including on the next app start after missed time.
+- Fresh sources are skipped; PhishTank has a minimum 24-hour refresh cadence.
+- Attempts are recorded even on failure to avoid tight retry loops while offline.
+- Manual, CLI and automatic refresh share a nonblocking process lock.
+- Closing a browser tab leaves the local server/scheduler running. Stopping the
+  app stops both. No cron, login autostart or system background service is added;
+  nothing is downloaded while the app is stopped.
+
+The settings and status files contain configuration/aggregate counts, not API
+keys or uploaded telemetry. CTI caches remain local and are never bundled in
+repository releases. Synthetic demo data and real CTI use separate databases.
+
+## Reopen and stop
+
+Choose **ThreatFusion AI** in the desktop applications menu, or open a new
+terminal and run:
+
+```bash
+threatfusion-ai
+```
+
+The shortcut opens a terminal supervising the local app and then your browser.
+It does not reinstall dependencies or need internet to use the existing cache.
+The selected operating mode is remembered. Supported management commands:
+
+```bash
+threatfusion-ai status    # running state and localhost URL
+threatfusion-ai refresh   # real CTI using saved keys/public sources
+threatfusion-ai stop      # stop this installation's server and scheduler
+```
+
+You can also use **Stop local application** in the web panel, Ctrl+C, or close
+the supervising terminal. Ctrl+C/SIGTERM/SIGHUP clean up child processes. A
+private Unix socket controls only this installation; stale PID files are not
+used to kill processes. Duplicate launches are refused without affecting an
+existing server or a port occupied by another application.
+
+The full launcher path is always available, including in an already open
+terminal whose PATH has not refreshed:
 
 ```bash
 "${XDG_DATA_HOME:-$HOME/.local/share}/threatfusion-ai/start"
 ```
 
-The saved launcher uses its installed source and private interpreter; it needs
-no internet to restart demo or already cached CTI. The last selected mode is
-remembered. Re-running the original install command checks dependencies and
-can fetch a newer revision of the selected branch; it preserves existing CTI
-and demo data. It is a foreground app, not an automatic login/system service.
+The installer registers `~/.local/bin/threatfusion-ai` and an XDG `.desktop`
+entry. When needed it appends a marked PATH line to the user's profile and
+Bash/Zsh startup file (or a Fish conf.d file); existing content is preserved.
+Unrelated commands, desktop entries and symlinked startup files are not replaced.
+If an existing unrelated shortcut blocks registration, use the printed full
+launcher path. `--no-integrations` skips command/menu/shell registration.
 
-The copy-paste command ends in `--`; append options after it. Examples:
+## Runtime model and demo
+
+Real CTI operation does **not** substitute the synthetic demo model for a
+measured detector or promote the experimental augmented candidate. A trusted
+production ML artifact is not distributed in the installer. See
+[ML_DATASET.md](ML_DATASET.md) for the original missing artifact, fresh-disjoint
+results and strict-temporal limitation.
+
+Use the operating-mode selector to choose **Synthetic demo** for offline
+interface exploration, or:
+
+```bash
+threatfusion-ai --mode demo
+```
+
+The demo generates four reserved example indicators and a checksum-pinned,
+synthetic-only model. Try `known-threat.example`. Its score is not measured
+malware detection performance. Switching modes clears stale UI results and
+preserves both databases. Returning to real mode disables ML again.
+
+## Installation details and upgrades
+
+Default location: `${XDG_DATA_HOME:-$HOME/.local/share}/threatfusion-ai`.
+Private Python **3.12.14**, uv **0.12.23** (fixed archive checksum), 49 hashed
+runtime wheels, immutable source releases and runtime data live there.
+The original development checkout, virtual environment, models and data are
+not modified. Source archive traversal/links/special files and excessive sizes
+are rejected. Inherited Python/package-manager overrides are cleared.
+
+Rerun the original installation command to install the latest `main` source;
+existing CTI, settings and optional saved credentials are preserved. Run this
+upgrade after stopping the current installation. Offline restarts keep the
+installed source identity; they do not silently download code updates.
+
+Append options to the README command after its final `--`:
 
 ```text
---prepare-only                    # install and validate; do not run the server
---no-browser                      # run server; print local URL
---install-dir "/absolute/path"     # dedicated user-owned installation
---port 18501                      # fixed local port; no killing a port owner
---ref <full-commit-sha>            # explicitly install an immutable source revision
+--prepare-only                 # install/check, without starting the server
+--no-browser                   # print localhost URL, no browser opening
+--no-integrations              # no desktop/terminal/shell changes
+--install-dir "/absolute/path"  # dedicated user-owned installation
+--mode demo                    # explicitly request synthetic first use
+--port 18501                   # fixed unprivileged loopback port; fail if busy
+--ref <full-commit-sha>         # fixed source revision
 ```
 
-The launcher supports `--mode`, `--refresh-cti`, `--port`, `--prepare-only` and
-`--no-browser`. Installation options `--ref` and `--source-dir` are not launcher
-options. `--source-dir` is for developers/CI only; the normal user command
-downloads source and requires no checkout.
+`--refresh-cti` with `--mode cti-only` requests a launch-time refresh using saved
+keys/public sources. The normal interactive panel is recommended. Launcher
+flags also include `--mode`, `--port`, `--prepare-only` and `--no-browser`.
+Installation-only flags `--ref`, `--source-dir` and `--no-integrations` are not
+normal launcher options. `--source-dir` is for developers/CI only.
 
-## Real CTI is an explicit second step
+The first run picks a free port from 8501–8600 and checks health before opening
+the browser. A failed source refresh never promotes an ML artifact or tunes a
+threshold. History/telemetry stay session-local in this managed profile; the
+`THREATFUSION_PUBLIC_MODE` privacy flag does not imply public network exposure.
 
-The default **demo** is deliberately synthetic, with a demo-only model and four
-example IOC records. Try `known-threat.example`. It does not claim measured ML
-performance and never collects external CTI automatically.
+## Automatic Zeek connections and DNS
 
-To collect real intelligence into a separate initially empty SQLite cache:
+In real CTI mode, use a separate terminal:
 
 ```bash
-"${XDG_DATA_HOME:-$HOME/.local/share}/threatfusion-ai/start" --mode cti-only --refresh-cti
+threatfusion-ai collect --input-dir /absolute/path/to/zeek/logs
 ```
 
-In **CTI-only** mode ML is disabled. It does not select a developer/experimental
-artifact and does not change the deferred runtime-promotion decision. Switching
-between modes preserves both datasets. A missing match is not evidence that a
-target is safe. Shared persistent analyst history is disabled in this first-run
-profile; telemetry analysis remains session-local. The existing
-`THREATFUSION_PUBLIC_MODE` flag is reused for this privacy policy, not network
-exposure: the server is still loopback-only.
+The local **Collected connections** page refreshes from private state.
+Completed TSV logs/archives are imported once; open logs wait for closure.
+TCP/UDP `dns.log` archives populate **Collected DNS observations** on that page;
+queries are kept separate from connection evidence. Schema-1 collector state is
+privately backed up before upgrading. See [DNS migration and limits](DNS_COLLECTION.md).
+Ctrl+C stops collection; repeating the command resumes without duplicates.
+The web app and collector have separate lifetimes. No background system service
+is installed. Rules, limits and standalone operation are documented in
+[TELEMETRY_COLLECTOR.md](TELEMETRY_COLLECTOR.md).
 
-ThreatFox and URLhaus require your own `THREATFOX_AUTH_KEY` and
-`URLHAUS_AUTH_KEY`. Missing keys are clearly reported and those feeds are skipped.
-PhishTank (optionally `PHISHTANK_APP_KEY`) and SGB are attempted; upstream access
-restrictions can prevent a refresh. Each feed is refreshed independently, with
-existing cache preserved on source failure. Output omits credential-bearing
-URLs/details. No IOC destination is visited. Refresh must be requested again
-for later updates; the app does not silently schedule collection.
+Uploaded telemetry remains session-local. Opting into this collector persists
+typed connection/DNS evidence privately in the installation's `collector/` directory,
+with bounded retention. Nothing is uploaded or added to shared analyst history.
 
-To enter keys without placing their values in shell history:
+## Troubleshooting
 
-```bash
-read -rsp 'ThreatFox key: ' THREATFOX_AUTH_KEY; printf '\n'; export THREATFOX_AUTH_KEY
-read -rsp 'URLhaus key: ' URLHAUS_AUTH_KEY; printf '\n'; export URLHAUS_AUTH_KEY
-"${XDG_DATA_HOME:-$HOME/.local/share}/threatfusion-ai/start" --mode cti-only --refresh-cti
-unset THREATFOX_AUTH_KEY URLHAUS_AUTH_KEY
-```
-
-The installer does not persist credentials and removes feed keys from the
-Streamlit child environment. CTI caches, model binaries, domain snapshots,
-CESNET samples, holdout files and private telemetry remain local. Downloading
-your own feed data does not grant redistribution rights; see
-[DATA_SOURCES.md](DATA_SOURCES.md). Fresh-disjoint aggregate results and the
-strict-temporal limitation remain documented in [ML_DATASET.md](ML_DATASET.md).
-
-There is no bundled developer key or shared fallback credential. Each caller
-must supply their own credentials in their own environment. `.env`, Streamlit
-`secrets.toml` and private-key files are ignored and rejected by the release
-audit, including Git history. Refresh failures expose safe diagnostics rather
-than raw HTTP/parser messages that might contain authenticated URLs or private
-values; this applies to the standalone refresh CLI as well as the local launcher.
-
-## Troubleshooting and reproducibility
-
-- **No network / failed download:** fix access to GitHub/PyPI and rerun the
-  same command. Download/hash/package failures stop setup. Do not disable TLS
-  verification. Previously generated runtime data is preserved.
-- **Unsupported OS, architecture or glibc:** use a supported Linux system;
-  system Python is not a fallback for this pinned installer.
-- **Busy installation:** stop its existing foreground terminal with Ctrl+C,
-  then restart. No installer kills another running application.
-- **Damaged model/pin or unfamiliar directory:** setup fails and preserves it.
-  Choose a new dedicated `--install-dir` for a fresh installation; inspect the
-  old files separately.
-- **Browser missing:** the app still prints its local URL. On a remote/headless
-  machine the loopback interface is on that machine; this flow opens no tunnel.
-- **CTI-only shows no data:** explicitly refresh, check API-key availability and
-  source status; an empty cache is never presented as a current global database.
-
-To update dependencies deliberately, regenerate the lock from the runtime
-requirements, review version/hash changes and rerun clean-install CI:
-
-```bash
-uv pip compile requirements-runtime.txt --python-version 3.12.14 \
-  --python-platform x86_64-manylinux_2_28 --only-binary :all: --generate-hashes \
-  --no-annotate --no-header --output-file requirements-linux.lock
-```
-
-CI installs twice on both supported test distributions, then verifies Python
-and packages, immutable demo files, real Streamlit WebSocket rendering, a busy
-port, loopback binding, duplicate-launch exclusion, CTI/demo data separation
-and Ctrl+C/SIGTERM cleanup. These tests use generated `.example` fixtures, not
-the developer cache, live feed credentials or private telemetry.
-
-The installer downloads from `main` and resolves that ref to an immutable source
-revision. The user requested integrating the verified development work into
-`main`. The existing Render service is user-suspended with previews disabled;
-the integration commit uses `[skip render]` and retains manual-deploy Blueprint
-settings. This source update does not resume hosting. Future hosted deployment
-still requires an explicit user request.
+- Command missing in the current terminal: open a new terminal or use the full
+  launcher path. An unrelated existing command is deliberately preserved.
+- Source skipped: enter your own key and Apply; save it only if automatic/CLI
+  collection should use it. No key is necessary to explore the synthetic demo.
+- Refresh failed: check network/source access and key validity. Existing cache
+  survives source failure; status never prints raw key-bearing HTTP errors.
+- Permission error: managed files must belong to your user and be private.
+  Do not loosen credentials to 0644 or run the installation as root.
+- Already running: use `threatfusion-ai status` for the URL or stop it first.
+- Busy fixed port: select another `--port`; the application never kills its owner.
