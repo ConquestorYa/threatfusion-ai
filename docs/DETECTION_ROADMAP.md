@@ -1,5 +1,19 @@
 # Detection development and comparison gates
 
+The current overall work order is in [PRODUCT_PLAN.md](PRODUCT_PLAN.md).
+This document retains capability/evaluation gates and dated increments; their
+older “Next” notes are historical, not a competing task queue.
+
+## Current checkpoint: correctness repairs, manual acceptance pending
+
+Runtime `35423bc` repairs DNS attribution/all-answer coverage, report privacy,
+local identity, state migration/legacy disclosure, SQLite cleanup, matching
+bounds/retry, IPv6 lookup, IDNA details and malformed JSON validation. See
+[repair contracts](SOURCE_REVIEW_REPAIRS.md). These changes do not establish
+new accuracy or performance results for older frozen experiments. User manual
+testing, a real bounded wall-clock soak and independent analyst/traffic gates
+remain open; SIEM connectors and DNS tunneling detection remain planned.
+
 ## Goal
 
 Build a useful local Zeek/CTI investigation option with competitive core
@@ -26,7 +40,7 @@ context is not measured equivalent C2 detection.
 | Analyst operations | Local web investigation, bounded connection-start and device/domain DNS timelines, feedback, reports and expiring exact-endpoint declarations with CTI override | Independent analyst task validation and documented SIEM export contracts |
 | Operational readiness | Local test suite and bounded synthetic workload | Security review, installation/recovery checks and representative throughput/resource measurements |
 
-## Current increment: accelerated multi-day operational contracts
+## Previous increment: accelerated multi-day operational contracts
 
 The declared 72-event-hour mixed rotation protocol measures own collector RSS,
 state size, idle latency and steady-state ratios separately from fixture/offline

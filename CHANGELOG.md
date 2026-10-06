@@ -12,6 +12,13 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Current product plan/AI continuation guide with implemented capability status,
+  ordered milestones and acceptance gates, current checkpoint, document reading
+  order and copyable resume prompt. AGENTS, both READMEs, context/handoff and
+  docs index use this entry point. Corrected stale portfolio-only feature-complete/
+  public-demo-next wording and operational schema-3/all-answer references;
+  historical experiments remain attributed to their original source. Docs only.
+
 - Predeclared accelerated 72-event-hour mixed collector protocol: 144 immutable
   synthetic logs, 360k base observations plus 120 late-closed rows, independent
   retained SQL-window modeling and eight offline/full-export checkpoints. Separate

@@ -2,6 +2,28 @@
 
 Status date: 2026-10-06
 
+## Current product plan and continuation (2026-10-06)
+
+- [PRODUCT_PLAN.md](PRODUCT_PLAN.md) is now the entry point for target product,
+  capability/status inventory, latest verified runtime, ordered milestones,
+  evidence gates, deferred ideas and a copyable Turkish continuation prompt.
+  AGENTS, both READMEs and the docs index point to it. Historical “Next” notes
+  are preserved as dated results, not an active queue.
+- Replaced the stale “feature-complete / public demo next” framing with the
+  local analyst workbench direction: manual acceptance, operational confidence,
+  independent analyst/traffic evidence, focused detection, one SIEM pilot
+  contract and a private pilot/release. Web UI/Linux automation remain; RITA
+  stays external. Wazuh/SIEM integration and tunneling detection are not delivered.
+- Current runtime stays `35423bc`: 1,321 local tests, approximately 91% coverage,
+  six successful CI jobs. User manual acceptance is pending. No runtime code,
+  ML identity/threshold, local data, hosting or authorization changes are made
+  by this documentation update. Operational schema/answer references now link
+  to schema-3 repair contracts; older measurements retain their source scope.
+- Documentation verification: 168 relative file links resolve, staged diff
+  checks and tracked-tree/reachable-history privacy audits pass. Runtime/test/
+  script/data files are unchanged; no extra local runtime test run is claimed.
+
+
 ## Pre-manual-test correctness and privacy repairs (2026-10-06)
 
 - Reviewed the complete source/test/installation/reporting paths against main

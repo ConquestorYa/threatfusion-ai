@@ -591,6 +591,9 @@ threatfusion-ai/
 
 | Document | Purpose |
 | --- | --- |
+| **[Product plan & AI continuation](docs/PRODUCT_PLAN.md)** | Target product, implemented features, current checkpoint and ordered roadmap |
+| **[Project context](docs/PROJECT_CONTEXT.md)** | Current state and dated engineering history |
+| **[Release handoff](docs/RELEASE_HANDOFF.md)** | Latest completed work, checks and remaining limitations |
 | **[Documentation hub](docs/README.md)** | Start here for all technical docs |
 | **[Architecture](docs/ARCHITECTURE.md)** | Data flow, components and trust boundaries |
 | **[Data sources](docs/DATA_SOURCES.md)** | Attribution, source scope and redistribution notes |
@@ -602,15 +605,17 @@ threatfusion-ai/
 
 ## 🎯 Project status
 
-**v0.1.0 is feature-complete as a university / portfolio project.**
+**Active local development: a network investigation workbench with a web
+analyst workspace and Linux automation.** Manual acceptance, operational
+confidence and independent evidence precede wider detection and SIEM integration.
 
-Remaining release work is intentionally narrow:
+Use the [product plan](docs/PRODUCT_PLAN.md) for the current feature inventory,
+ordered roadmap and instructions for continuing with another AI. Quick Lookup
+supports the telemetry workflow. RITA parity and production readiness remain
+unmeasured. ML promotion is deferred; CTI-only use remains available.
 
-- decide whether to begin a new ML development iteration;
-- hosted public-mode demo;
-- final release checklist and GitHub release/tag.
-
-No new v1 detection family or major feature expansion is planned before release.
+No public site or hosted preview is authorized. A verified GitHub source update
+does not authorize deployment, and hosting is not required for local release.
 
 ---
 

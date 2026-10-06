@@ -1,5 +1,27 @@
 # ThreatFusion AI — Project Context
 
+For the current target product and active work order, start with
+[PRODUCT_PLAN.md](PRODUCT_PLAN.md). This file also preserves dated development
+history; earlier “Next” notes are superseded by that plan's current queue.
+
+## Current checkpoint (2026-10-06)
+
+Verified runtime main `35423bc` fixes nine reviewed correctness/privacy problems
+and failed-analysis retry: DNS client attribution/all IP answers, literal-IP
+report privacy/counts, private local identity controls, schema-3 legacy coverage,
+SQLite maintenance, match/work limits, IPv6 lookup, IDNA details and JSON validation.
+**1,321 local tests / approximately 91% coverage and six CI jobs passed.**
+The 34 original local data hashes remain unchanged. See
+[repair contracts](SOURCE_REVIEW_REPAIRS.md) and the newest
+[handoff](RELEASE_HANDOFF.md) for exact scope and limitations.
+
+The goal is a useful local network investigation workbench with the web UI and
+Linux automation, not merely a URL checker. Manual user acceptance is pending;
+next priorities are operational confidence, measured analyst usefulness and
+independent traffic evidence, focused detector coverage, then a versioned SIEM
+pilot integration. Wazuh and other SIEM adapters are planned, not delivered.
+No public site is authorized; trusted ML availability/promotion remains unchanged.
+
 ## Problem
 
 Public threat feeds answer **what is known to be malicious**, but they do not directly answer **what appeared in a user's environment** or **what should be reviewed first**.
@@ -29,7 +51,7 @@ Its portfolio value comes from combining:
 
 It is an educational prototype, not a production security product.
 
-## Latest measured position (2026-10-06)
+## Earlier measured position (2026-10-06, before runtime repairs)
 
 The accelerated multi-day operational gate freezes all 83 runtime modules and
 detector/ML policies. Three event days of hourly mixed rotation, independent

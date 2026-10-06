@@ -1,7 +1,12 @@
 # Automatic Zeek DNS investigation
 
-Status date: 2026-10-05. This increment closes the completed-file DNS ingestion
+Status date: 2026-10-06. This increment closes the completed-file DNS ingestion
 gap; it does not introduce a DNS tunneling detector or general UDP beaconing.
+
+Current schema/answer/identity repairs are specified in
+[SOURCE_REVIEW_REPAIRS.md](SOURCE_REVIEW_REPAIRS.md). Earlier live measurements
+below retain their original source scope; use [PRODUCT_PLAN.md](PRODUCT_PLAN.md)
+for current priorities.
 
 ## Local workflow
 
@@ -57,9 +62,11 @@ manual upload parser remains permissive and unchanged in its supported scope.
 Collection requires a query/query type, valid timestamp, bounded UID, transaction
 ID 0–65,535, valid source/resolver IPs, ports 1–65,535, TCP/UDP protocol, unique
 header fields and complete row width. Missing response code/answers are allowed:
-unanswered queries stay observations. The existing DNS parser retains the first
-IP answer, not every answer, CNAME/TTL evidence or query/response pairing details.
-Do not interpret the typed event as complete DNS response coverage.
+unanswered queries stay observations. The current parser retains all bounded
+valid IP answers, capped at 1,024 source entries, without multiplying queries.
+It does not retain complete CNAME/TTL or packet-level response evidence. Old
+retained first-answer events are disclosed as legacy coverage; discarded
+additional answers require the original logs and cannot be invented.
 
 Names must identify their log kind; conflicting `#path` headers are rejected.
 Completed standard TSV only, final `#close` required; active files wait for
@@ -68,18 +75,21 @@ marker to an actively written log. There is no new packet sensor or listener.
 
 ## State migration and bounds
 
-Collector policy is now `closed-zeek-collector-v2`; private SQLite schema is 2.
-Schema-1 state is automatically backed up into an owner-only
-`collector.schema1-*.sqlite` inside the private state directory before migration.
+Collector policy is `closed-zeek-collector-v2`; private SQLite schema is 3.
+Schema-1/2 state is automatically backed up into an owner-only
+`collector.schema1-*.sqlite` or `collector.schema2-*.sqlite` inside the private
+state directory before migration.
 Old connection rows/hashes/checkpoints/source binding are preserved. Old software
-rejects schema 2; it cannot silently discard DNS state. For a deliberate rollback,
-stop collection and restore a preserved schema-1 backup to a **separate** private
+rejects schema 3; it cannot silently misread the additional-answer state. For a deliberate rollback,
+stop collection and restore a preserved pre-migration backup to a **separate** private
 state location for the same source/limits. The backup is outside active retention;
 manage/delete it explicitly under your organization's local data policy.
 
 Directory mode remains 0700, files 0600, one writer and atomic snapshots. Old
 v1 JSON snapshots remain readable; restart an updated collector to produce DNS.
-The web process reads only the bounded private JSON, not the SQLite database.
+The web process reads bounded private JSON, not the SQLite database. Explicit
+local IP display additionally reads a separate generation-bound private identity
+sidecar; downloaded collector reports keep aliases.
 Public/demo profiles still hide the collector.
 
 The existing 100,000-record cap and event/ingestion window are **shared** between

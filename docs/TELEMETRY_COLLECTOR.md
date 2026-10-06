@@ -163,10 +163,17 @@ Completed TCP/UDP `dns.log` files now enter an independent client/domain queue
 under **Collected DNS observations** on the same page. Identity uses connection
 UID + transaction ID + timestamp, with exact-copy dedup and explicit conflict
 exclusions. CTI/behavior policy is unchanged; there is no hostname/flow join or
-DNS tunneling claim. Private state now upgrades to schema 2 after an owner-only
-schema-1 backup; the earlier TCP-attempt increment required no migration itself.
+DNS tunneling claim. Current private state upgrades to schema 3 after an owner-only
+schema-1/2 backup; the earlier TCP-attempt increment required no migration itself.
 Old v1 snapshots stay readable. See [identity, migration, live evidence and
 DNS limits](DNS_COLLECTION.md). No API keys, sensor or new listener are added.
+
+Current correctness/privacy repairs retain every bounded valid DNS answer IP,
+disclose legacy first-answer coverage and enable an explicit local endpoint
+view through a private generation-bound mapping. Collector downloads keep
+aliases. CTI records are reused between polls until cache files change; failed
+analysis preserves the published snapshot and retries committed evidence.
+See [repair contracts](SOURCE_REVIEW_REPAIRS.md).
 
 ## DNS investigation and operational status
 

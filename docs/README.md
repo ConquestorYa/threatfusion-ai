@@ -6,8 +6,15 @@ This directory contains the technical documentation behind the portfolio-facing 
 
 ## Start here
 
+**Continuing development in a new chat or with another AI? Read
+[PRODUCT_PLAN.md](PRODUCT_PLAN.md) first.** It defines the target product,
+implemented capability inventory, current checkpoint, ordered roadmap and a
+copyable continuation prompt. Read [AGENTS.md](../AGENTS.md) for operating rules.
+
 | Document | Use it for |
 | --- | --- |
+| [PRODUCT_PLAN.md](PRODUCT_PLAN.md) | Current product target, feature status, ordered work queue and AI continuation guide |
+| [SOURCE_REVIEW_REPAIRS.md](SOURCE_REVIEW_REPAIRS.md) | Latest correctness/privacy repairs, schema-3 migration and manual-test implications |
 | [INSTALL_LINUX.md](INSTALL_LINUX.md) | One-command private Python/dependency install and localhost demo/CTI-only start |
 | [TELEMETRY_COLLECTOR.md](TELEMETRY_COLLECTOR.md) | Private automatic completed Zeek logs, restart/rotation, limits and local UI |
 | [DNS_COLLECTION.md](DNS_COLLECTION.md) | Automatic TCP/UDP DNS transaction collection, private state migration and live controls |

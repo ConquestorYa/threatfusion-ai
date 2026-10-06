@@ -1,5 +1,19 @@
 # Project working instructions
 
+## Product direction and continuation
+
+- Start new development sessions with `docs/PRODUCT_PLAN.md`, then
+  `docs/PROJECT_CONTEXT.md`, the newest `docs/RELEASE_HANDOFF.md` section and
+  the relevant feature/ML/data contracts. The product plan is the current
+  ordered work queue; older experiment "Next" notes are historical.
+- Keep the local web analyst workspace and Linux automation interface. Focus
+  on useful explainable Zeek/CTI client-level triage; Quick Lookup is supporting.
+  RITA is an external comparison baseline, not an integrated runtime dependency.
+- Preserve user changes and check actual source/local assets before resuming.
+  Update plan/checkpoint/context/handoff/changelog after completed increments.
+  Do not mark manual acceptance, detection efficacy or a planned integration
+  complete from synthetic/unit checks alone.
+
 ## Local development and publication
 
 - Develop and test locally. Bind development servers and previews to loopback

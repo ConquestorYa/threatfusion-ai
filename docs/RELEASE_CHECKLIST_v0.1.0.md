@@ -2,6 +2,11 @@
 
 Use this checklist before creating the `v0.1.0` portfolio release.
 
+This is a dated checklist, not the current work queue. Follow
+[PRODUCT_PLAN.md](PRODUCT_PLAN.md) for ongoing local-product development.
+Checked engineering gates do not imply manual user acceptance, full security
+qualification or permission to host a site.
+
 ## 1) Repository and legal readiness
 
 - [x] **License decision confirmed** and MIT `LICENSE` file added.
@@ -40,6 +45,9 @@ Use this checklist before creating the `v0.1.0` portfolio release.
 - [x] Fast demo path validated with inert demo data only.
 
 ## 6) Final manual verification
+
+- [ ] User manual local workflow acceptance recorded (install/start/reopen,
+  CTI refresh, collected DNS/connections, identity and reports).
 
 - [x] Threat IOC values are handled as inert data only (no IOC browsing/resolution behavior introduced).
 - [x] Public-mode behavior verified (`THREATFUSION_PUBLIC_MODE=1`).

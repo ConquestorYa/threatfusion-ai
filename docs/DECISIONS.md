@@ -1,5 +1,9 @@
 # Architecture Decision Log
 
+Decisions below are dated history and may be superseded. Current user/AGENTS
+constraints and [PRODUCT_PLAN.md](PRODUCT_PLAN.md) control ongoing work; earlier
+hosted-demo/release plans do not authorize public deployment.
+
 ## DEC-001: Multi-source rather than USOM-only
 
 **Decision:** Build a multi-source CTI workflow rather than recreate a single public feed.
@@ -841,4 +845,26 @@ in front of Streamlit. Keep health checks independent of visitor limits.
 **Reason:** Local CTI, ML snapshots and telemetry must not enter the deployment
 context. Anonymous presentation needs transport security and resource limits
 without live-feed credentials or third-party data redistribution. Actual hosted
-HTTPS and ingress verification remain required before the final release tag.
+HTTPS and ingress verification would apply to a hosted release only if the user
+explicitly requests it. Hosting is currently suspended and is not a requirement
+for the local product's release.
+
+## DEC-085: Maintain a current product plan for continuation
+
+**Decision (2026-10-06):** Keep `PRODUCT_PLAN.md` as the entry point for target
+users/value, implemented versus planned capability, the current checkpoint,
+ordered milestones and new-chat/AI continuation. Keep web investigation and
+Linux automation, with Zeek/CTI triage as the core and Quick Lookup as support.
+Record detailed behavior/evidence in linked contracts and dated handoffs.
+
+**Reason:** Chronological experiment “Next” notes and older portfolio-only
+release plans can misdirect another AI after context loss. One maintained
+current queue preserves the user's goal of a useful open-source product while
+keeping evidence, privacy, ML promotion and hosting constraints explicit.
+
+**Consequences:** Every completed increment updates the plan/checkpoint/context/
+handoff/changelog as appropriate. Manual acceptance and independent evidence
+remain pending until actually obtained. RITA stays external; SIEM integration
+is a gated future increment, not a delivered capability. This supersedes the
+old “feature-complete / public demo next” README framing without deleting prior
+experiment results or authorizing hosting.

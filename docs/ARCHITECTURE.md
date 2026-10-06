@@ -30,10 +30,19 @@ its exact hash-verified private gzip generation; it does not read raw logs or
 SQLite evidence. Large connection snapshots disclose omissions and full-retained
 counts. ML is disabled on this path. See
 [collector limits and lifetime](TELEMETRY_COLLECTOR.md).
-Private state schema 2 upgrades after a schema-1 backup. DNS reconciliation uses
+Private state schema 3 upgrades after a private schema-1/2 backup. DNS reconciliation uses
 UID/transaction/time and full-row hash conflicts; it does not join hostnames to
 flows. DNS snapshots cap prioritized groups independently and disclose omissions.
 See [DNS collection](DNS_COLLECTION.md).
+
+The updated parser retains all bounded valid IP answers without multiplying
+query events. Legacy first-answer coverage is disclosed. A separate ignored
+0600 generation-bound identity sidecar supports explicit local device/host
+display; shared reports retain aliases. IP-valued aggregate/device targets are
+aliased by default, matching has hard work/evidence budgets and a failed
+collector analysis retries committed records. See
+[current repair contracts](SOURCE_REVIEW_REPAIRS.md) and
+[product direction](PRODUCT_PLAN.md).
 
 ~~~mermaid
 flowchart LR

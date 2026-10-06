@@ -596,6 +596,9 @@ threatfusion-ai/
 
 | Belge | İçerik |
 | --- | --- |
+| **[Ürün planı ve AI devam rehberi](docs/PRODUCT_PLAN.md)** | Hedef ürün, mevcut özellikler, kaldığımız nokta ve öncelikli yol haritası |
+| **[Proje bağlamı](docs/PROJECT_CONTEXT.md)** | Güncel durum ve tarihli geliştirme geçmişi |
+| **[Geliştirme handoff'u](docs/RELEASE_HANDOFF.md)** | En son tamamlanan işler, kontroller ve kalan sınırlar |
 | **[Dokümantasyon merkezi](docs/README.md)** | Teknik belgeler için başlangıç noktası |
 | **[Mimari](docs/ARCHITECTURE.md)** | Veri akışı, bileşenler ve güven sınırları |
 | **[Veri kaynakları](docs/DATA_SOURCES.md)** | Attribution, kaynak kapsamı ve redistribution notları |
@@ -607,15 +610,18 @@ threatfusion-ai/
 
 ## 🎯 Proje durumu
 
-**v0.1.0, üniversite / portföy projesi olarak feature-complete durumdadır.**
+**Yerel geliştirme sürüyor: hedefimiz web analist arayüzü ve Linux otomasyonu
+olan bir ağ inceleme aracı.** Manuel kabul, işletim güvenilirliği ve bağımsız
+kanıtlar; daha geniş tespit yetenekleri ve SIEM entegrasyonundan önce geliyor.
 
-Release için kalan işler bilinçli olarak dar tutulmuştur:
+Güncel özellikler, öncelik sırası ve başka bir AI ile devam talimatları için
+[ürün planını](docs/PRODUCT_PLAN.md) oku. Quick Lookup, telemetri incelemesini
+destekler. RITA ile eşdeğerlik ve production yeterliliği henüz ölçülmüş değildir.
+ML runtime promotion ertelenmiştir; CTI-only kullanım mümkündür.
 
-- yeni bir ML development iterasyonuna başlanıp başlanmayacağına karar vermek;
-- hosted public-mode demo;
-- final release checklist ve GitHub release/tag.
-
-Release öncesinde yeni bir v1 model ailesi veya büyük özellik genişletmesi planlanmamaktadır.
+Public site veya hosted preview açılması için izin verilmemiştir. Doğrulanmış
+kodun GitHub'a yüklenmesi deployment izni değildir; yerel release için hosting
+gerekmiyor.
 
 ---
 
