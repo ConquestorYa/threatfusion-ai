@@ -2,6 +2,44 @@
 
 Status date: 2026-10-06
 
+## P1 fault matrix, collector repairs and wall-clock soak (2026-10-07)
+
+- Started P1 from verified main `8d93abe` (docs-only after runtime `35423bc`;
+  1,321 tests re-run on HEAD, 34 local data hashes unchanged). Lab VM is shut
+  off (the lab README's "left open" note is stale); Kali/system VMs untouched.
+- `operational-faults-v1`: nine collector CLI cases declared before outcomes.
+  Five runs, all receipts preserved: original 0/9 (method error, which also left
+  that run's own collectors running; stopped by PID), amendment 1 7/9 (real CTI
+  lock defect; unreadable-directory byte check was a method race), amendment 2
+  8/9 (repair + method fix; Linux directory-move method error), amendment 3 9/9,
+  amendment 4 on the final candidate 9/9 with zero orphaned processes.
+- Repairs in `d006771`: busy/locked CTI reads keep the last complete indicator
+  view, set `cti_reload_deferred` and show a bilingual dashboard warning; a busy
+  first read waits (or `--once` exits 1) and never scans as empty. The analysis
+  cache keeps a shared immutable indicator field view instead of
+  `copy.deepcopy` (~430 MiB / ~7 s per recompute with the 616k cache), still
+  detecting in-place changes. Seven new tests; six fail on the unrepaired source.
+- `wallclock-soak-v1` (6 real hours, collector CLI + local Streamlit with an
+  emulated persistent and periodic fresh tabs, private copy of the developer CTI
+  cache, 115,200 synthetic observations, CTI change at hour 3) is declared with
+  fixed acceptance. Two method smokes preceded it (not evidence): the first
+  exposed the deep-copy cost; the second showed a one-time ~1.2 GiB reload
+  high-water, so the growth check may fail — the limit was not changed. The first
+  full run was interrupted ~45 min in by a Claude Code restart (receipt kept); a
+  detached rerun with the same candidate is in progress. No soak result yet.
+- Developer tooling (not runtime): `CLAUDE.md` imports AGENTS; project skill
+  `lab-experiment` encodes this protocol; `.claude/hooks/publish_guard.sh` blocks
+  commits/pushes carrying private data and pushes failing Ruff/pytest/privacy
+  audit. It loads only when Claude Code starts in this repository and does not
+  verify Render.
+- Hosting before publication: user confirmed the Render service is "Suspended by
+  you", the last deploy was 2026-10-04, the Blueprint shows only manual sync.
+  Auto-Deploy is still "After CI Checks Pass"; source-only commits use
+  `[skip render]`. Previews were not visible; no PR is used.
+- Verification: 1,328 local tests, ~91% coverage, Ruff clean. Manual acceptance
+  (P0) remains pending and is not replaced by these checks.
+
+
 ## Current product plan and continuation (2026-10-06)
 
 - [PRODUCT_PLAN.md](PRODUCT_PLAN.md) is now the entry point for target product,

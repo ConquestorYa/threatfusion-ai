@@ -4,7 +4,17 @@ For the current target product and active work order, start with
 [PRODUCT_PLAN.md](PRODUCT_PLAN.md). This file also preserves dated development
 history; earlier “Next” notes are superseded by that plan's current queue.
 
-## Current checkpoint (2026-10-06)
+## Current checkpoint (2026-10-07)
+
+P1 operational confidence has started. A predeclared fault matrix against the
+real collector CLI fixed two defects: CTI cache locks longer than SQLite's busy
+timeout no longer stop collection (last complete indicators, disclosed as
+`cti_reload_deferred`), and the cached-analysis comparison no longer deep-copies
+a 616k-indicator cache. The final candidate passes all nine cases; 1,328 local
+tests pass. The 6-hour wall-clock soak is rerunning after an operator restart.
+See [OPERATIONAL_CONFIDENCE.md](OPERATIONAL_CONFIDENCE.md).
+
+### Previous checkpoint (2026-10-06)
 
 Verified runtime main `35423bc` fixes nine reviewed correctness/privacy problems
 and failed-analysis retry: DNS client attribution/all IP answers, literal-IP

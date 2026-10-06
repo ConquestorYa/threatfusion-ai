@@ -12,6 +12,13 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- P1 operational confidence methods: predeclared nine-case collector CLI fault
+  matrix (CTI refresh/lock, read-only state, unreadable file/directory, corrupt
+  state, truncated gzip, missing declarations, SIGTERM) and a real wall-clock
+  collector+web soak with a private CTI cache copy. Receipts stay private.
+  Developer tooling: `CLAUDE.md`, `lab-experiment` project skill and a
+  commit/push privacy/test guard hook. See `docs/OPERATIONAL_CONFIDENCE.md`.
+
 - Current product plan/AI continuation guide with implemented capability status,
   ordered milestones and acceptance gates, current checkpoint, document reading
   order and copyable resume prompt. AGENTS, both READMEs, context/handoff and
@@ -232,6 +239,12 @@ release date is added only when the final tag/release is created.
   readiness documentation.
 
 ### Fixed
+
+- Collector no longer stops when the CTI cache is busy/locked beyond the SQLite
+  busy timeout; it keeps the last complete indicators, discloses
+  `cti_reload_deferred` in status and the dashboard, and never scans a busy
+  first read as an empty cache. The analysis cache no longer deep-copies every
+  indicator (~430 MiB / ~7 s per recompute with a 616k-indicator cache).
 
 - Source-review correctness/privacy repairs: PCAP reply direction and bounded
   transaction pairing; all DNS IP answers in Zeek/AdGuard/Suricata/CSV/PCAP;

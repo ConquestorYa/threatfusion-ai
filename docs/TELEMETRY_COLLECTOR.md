@@ -36,6 +36,14 @@ CTI cache without collecting feeds or using API credentials. Cache refresh is
 configured separately in Local setup & CTI updates; the next collector scan
 reloads the cache. Check that panel for source freshness and upstream failures.
 An empty cache still permits behavior analysis. ML is disabled on this path.
+If the cache is busy or locked by a refresh/maintenance writer beyond SQLite's
+5 s busy timeout, the scan keeps the last complete indicator view, records
+`cti_reload_deferred` and the dashboard warns; the next poll retries. A busy
+first read waits rather than scanning as an empty cache (`--once` exits 1).
+Other CTI read errors still stop the collector. The collector holds every active
+indicator in memory: the 616k-indicator developer cache used about 0.86 GiB RSS
+at steady state and about 1.2 GiB after a reload in the
+[operational protocol](OPERATIONAL_CONFIDENCE.md).
 
 Optional local declarations are reevaluated on every scan:
 

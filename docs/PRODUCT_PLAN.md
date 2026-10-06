@@ -1,6 +1,6 @@
 # Product plan and AI continuation guide
 
-Updated: 2026-10-06. Latest verified runtime: `35423bc`.
+Updated: 2026-10-07. Latest verified runtime: `d006771` (P1 repairs).
 This is the **current product direction and ordered work queue**, not a record
 of future features already delivered. Start here when continuing in a new chat.
 
@@ -63,13 +63,21 @@ linked documents rather than being copied into this plan.
 | Connection triage | Typed TCP sessions, long/periodic review, partial/reset payload coverage and a separate failed-attempt diversity/retry queue | Broad beaconing, jitter, sparse failures and UDP coverage still incomplete. [Termination](TCP_TERMINATION.md), [attempts](TCP_ATTEMPT_REVIEW.md) |
 | Analyst investigation | Bilingual tables, bounded DNS/connection timelines, next-check guidance, pre-filter counts, expiring expected declarations with CTI override | Reversible presentation context preserves original evidence; human time/usefulness not measured. [Analyst review](ANALYST_REVIEW.md), [context](EXPECTED_CONNECTIONS.md) |
 | History and reports | Aggregate history/feedback/suppression in eligible trusted-model local mode, explicit IP opt-ins, report aliases and spreadsheet-safe CSV | Managed CTI/demo history stays disabled. Aliases are not anonymization or stable assets. [Repairs](SOURCE_REVIEW_REPAIRS.md) |
-| Operational safeguards | Private state/schema-3 backups, local generation-bound identity display, all IP answers, explicit work/match budgets, failed-analysis retry, release privacy audit | 1,321 local tests and six CI jobs passed for `35423bc`; complete security and enterprise qualification remain open. [Repairs](SOURCE_REVIEW_REPAIRS.md) |
+| Operational safeguards | Private state/schema-3 backups, local generation-bound identity display, all IP answers, explicit work/match budgets, failed-analysis retry, release privacy audit | 1,328 local tests for `d006771` (CI per newest handoff); CTI busy reads keep the last complete indicators with disclosure; complete security and enterprise qualification remain open. [Repairs](SOURCE_REVIEW_REPAIRS.md) |
 | Lab and comparison | Isolated local Zeek/RITA experiments, declared independent source/retention/recovery/resource methods and aggregate results | Some inspected sources are incomplete/missed; accelerated event days are not a wall-clock soak. [Lab](LOCAL_LAB.md), [replay](INDEPENDENT_REPLAY.md), [multi-day](MULTIDAY_COLLECTION.md) |
 | ML | Local lexical domain-model development/evaluation, provenance, trusted artifacts and explicit CTI-only operation | Original runtime artifact absent; augmented candidate experimental; collector ML disabled. [ML](ML_DATASET.md), [handoff](RELEASE_HANDOFF.md) |
 | Packaging/CI | Docker health, isolated synthetic public-mode/proxy tests, Linux/Windows quality/dependency checks | Packaging exists; no public site or hosted preview is authorized. [Deployment reference](DEPLOYMENT.md) |
 
 ## Current checkpoint
 
+- **P1 first increment (2026-10-07):** predeclared nine-case fault matrix on the
+  real collector CLI found and fixed two defects — a CTI lock above the 5 s busy
+  timeout stopped collection, and a deep copy of every indicator cost ~430 MiB /
+  ~7 s per recompute with the 616k-indicator cache. Final candidate passes 9/9;
+  every earlier failing run is preserved. 1,328 local tests, ~91% coverage. A
+  declared 6-hour real wall-clock collector+web soak was interrupted by a Claude
+  Code restart and is rerunning; no soak outcome is claimed yet. See
+  [OPERATIONAL_CONFIDENCE.md](OPERATIONAL_CONFIDENCE.md).
 - Runtime repairs are merged to main at `35423bc`; 45 added regression cases,
   1,321 local tests and approximately 91% coverage. Six CI jobs passed at
   [run 37455481084](https://github.com/ConquestorYa/threatfusion-ai/actions/runs/37455481084).
@@ -97,7 +105,7 @@ Historical “Next” paragraphs in experiment documents are not this active que
 | Order / status | Work | Completion gate |
 | --- | --- | --- |
 | P0 — next, pending user | Manual local workflow acceptance | User exercises install/start/stop/reopen, own-key CTI refresh/offline failure, completed conn/DNS collection, local identity/timelines and alias/IP exports. Record reproducible defects and fixes; do not mark passed without user results. |
-| P1 — planned | Operational confidence on the repaired source | Freeze this candidate; declare a bounded real wall-clock soak and broader permission/IO/database/resource faults before outcomes. Measure collector **and** web/representative CTI resources, exact retained counts, stale/coverage warnings, old-report preservation and recovery. No private data redistribution or physical host-disk exhaustion. |
+| P1 — in progress | Operational confidence on the repaired source | Freeze this candidate; declare a bounded real wall-clock soak and broader permission/IO/database/resource faults before outcomes. Measure collector **and** web/representative CTI resources, exact retained counts, stale/coverage warnings, old-report preservation and recovery. No private data redistribution or physical host-disk exhaustion. |
 | P2 — partial evidence, more work planned | Analyst usefulness and independent traffic validation | Predeclare actual investigation tasks on permitted independent benign/suspicious windows. Measure review burden, missed cases, correct evidence interpretation, time/task success and effects of normal context. Compare native RITA on identical inputs/configuration with separate output units; preserve negative results. |
 | P3 — planned, evidence-gated | Focused detection coverage | Prioritize observed gaps in timing/size/jitter/retry/idle/sparse failures. Develop proper registrable-domain DNS tunneling aggregation and benign CDN/update/telemetry controls. Separate development from newly reserved evaluation inputs; regress old CTI/context behavior. Each new detector needs measured incremental usefulness. |
 | P4 — planned, no connector implemented | Versioned integration contract, then one pilot adapter | Define structured findings/coverage/provenance, stable event IDs and deduplication, time/source identity, privacy opt-in, authentication, backpressure/retry and schema compatibility. Select Wazuh or a generic SIEM/log destination from pilot needs; validate end-to-end delivery. Do not build many integrations before proving one. |
