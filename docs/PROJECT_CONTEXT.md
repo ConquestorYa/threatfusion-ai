@@ -29,7 +29,26 @@ Its portfolio value comes from combining:
 
 It is an educational prototype, not a production security product.
 
-## Latest measured position (2026-10-05)
+## Latest measured position (2026-10-06)
+
+The accelerated multi-day operational gate freezes all 83 runtime modules and
+detector/ML policies. Three event days of hourly mixed rotation, independent
+retained-window modeling, own worker RSS/state/latency measurements and declared
+restart/open-close/gzip/CTI/expiry/ledger cleanup contracts exercise 360,000 base
+observations plus 120 late-closed rows. A monitor race probe and method-only
+amendment preserve the original run and acceptance, with ten new controls.
+Two further real SQLite page-budget exhaustion controls prove per-file rollback,
+old report preservation and exact-once repair/restart in owned synthetic state.
+Both full runs pass predeclared limits. Amended worker RSS is 648.5 MiB, sampled
+state 131.7 MiB, maximum scan 7.181 s, warm idle median/p95 0.304/0.347 s;
+steady-state ratios remain near 1.003. All 83 runtime and 34 original local data
+files stay byte-identical. Scope excludes web/large CTI cache/input/parent memory.
+All 1,276 local tests pass (approximately 91% coverage); twelve new controls.
+This is operational engineering evidence, not a 72-hour wall-clock soak, fresh
+accuracy, RITA parity or enterprise qualification. See `MULTIDAY_COLLECTION.md`.
+Next: actual bounded wall-clock soak and broader filesystem/database faults,
+representative site/security checks, then untouched detector/SIEM/analyst gates.
+The earlier cancelled capacity CI passes all six jobs on retry; no public site.
 
 Collector connection diversity is now independent of the DNS 25k-name bound.
 Above 1,000 connection groups, a prioritized bounded snapshot discloses omissions

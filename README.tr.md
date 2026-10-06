@@ -227,6 +227,8 @@ Kapanmış logları toplayan collector, ortak 100.000 kayıt penceresinde bağla
 IP'lerini DNS isim sınırından bağımsız analiz eder. Büyük bağlantı raporları,
 eksik grup sayısını açıklayan 1.000 grupluk görünüm ve doğrulanmış özel tam
 JSON.gz çıktısı sunar. [Kapasite ve kalan sınırlar](docs/CONNECTION_CAPACITY.md).
+[Çok günlük test protokolü](docs/MULTIDAY_COLLECTION.md), hızlandırılmış sentetik
+zamanla log rotasyonunu, kayıt saklamayı, kaynak tüketimini ve toparlanmayı ölçer.
 
 PCAP üzerinden DoH/DoT gibi şifreli DNS'ten domain çıkarıldığı iddia edilmez.
 

@@ -134,3 +134,7 @@ identities, fresh-disjoint/strict-temporal distinctions and deferred promotion
 remain. Next: predeclare representative multi-day load/resource/security/recovery
 checks; then untouched timing/sparse/tunneling evidence, SIEM contracts and an
 analyst pilot. Reserved independent sources remain unacquired. No public site.
+
+The subsequent [multi-day protocol](MULTIDAY_COLLECTION.md) records accelerated
+rotation, retention, collector-only resource and recovery checks separately from
+this capacity run. Original receipts and resource measurement scopes remain.

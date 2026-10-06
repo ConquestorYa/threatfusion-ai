@@ -1,6 +1,60 @@
 # v0.1.0 Release Handoff
 
-Status date: 2026-10-05
+Status date: 2026-10-06
+
+## Accelerated multi-day collection and own-process resources (2026-10-06)
+
+- `multiday-collector-v1` freezes main `36b1823` and all 83 runtime modules before
+  outcomes, permitting no runtime/detector/ML changes. Three accelerated event
+  days rotate 144 completed conn/DNS logs, 360,000 base observations plus 120
+  late-closed rows. This is not a 72-hour wall-clock soak or new detection evidence.
+- Independent hash/event/ingestion/capacity modeling reconciles retained SQL
+  payloads every ordinary/idle hour scan. Eight predeclared full-export checkpoints
+  match offline findings/timelines/attempt/DNS calculation. Parsing is shared;
+  retained-policy modeling is independent. The 100k window and pruning remain.
+- Two own idle-worker SIGKILL/restarts preserve the published snapshot and
+  selection, add zero old records, defer open logs and import their 60 rows once
+  after closure. Rename/gzip copies are duplicates. Synthetic CTI changes
+  invalidate caches. Eight/further-eight-day jumps prove expiry/no resurrection
+  and empty record/file/path ledgers plus intact managed archive cleanup.
+- Resource collection separates the long-lived worker from parent fixture/oracle
+  computation. OS RSS high-water plus 50ms samples and state logical bytes measure
+  warm idle latency and steady-state ratios against limits declared beforehand.
+  Prior evaluator-only memory measurements retain their original scope.
+- Both original and method-amended runs pass all predeclared limits. Amended
+  collector RSS high-water 648.5 MiB, peak sampled state 131.7 MiB, maximum hour
+  scan 7.181 s, warm idle median/p95 0.304/0.347 s. Last-day RSS/state ratios
+  1.0030/1.0031. Final hour exports 63,981 groups / 1,000 visible within the
+  100k mixed record window; expiry/cleanup state is 60,843 bytes. This host/
+  two-indicator synthetic scope excludes web/cache/input/evaluator memory and
+  does not establish enterprise throughput or a product performance improvement.
+- First full run succeeds; a separate deterministic monitor temporary-file race
+  is preserved with the frozen original method. A method-only amendment uses
+  single non-following stat/disappearance handling and final declaration/source/
+  candidate byte recheck, repeating unchanged source bytes and acceptance in a
+  new private root. Ten new retention/process/security/freeze controls pass.
+- Two separately declared real SQLite page-budget cases (3/1,001 original +
+  1,200 new connections) produce `SQLITE_FULL` without filling host disk. Failed
+  file payload/checkpoint rollback, preserved original snapshot/full archive,
+  integrity and exact-once retry/restart/full export all pass. Only owned
+  synthetic state is used; physical IO/corruption faults remain open.
+- Prior capacity CI run `37364427665`, cancelled during the Actions incident,
+  passes all six jobs on attempt 2 for exact main `36b1823`. Hosting remains
+  user-suspended, previews off and deploy history unchanged. All generated logs,
+  SQLite, snapshots, archives, sources/receipts remain private; only method/tests/
+  documentation go to main with the suspended-hosting guard. No public site.
+- See `MULTIDAY_COLLECTION.md` for acceptance, measurements and reproduction.
+  Next: an actual bounded wall-clock soak and broader filesystem/database faults,
+  representative permitted traffic/security review, then untouched timing/sparse/
+  tunneling evidence, SIEM contracts and analyst pilot. Reserved sources and all
+  frozen ML/promotion decisions remain.
+- All 83 runtime modules and 34 original local data files remain byte-identical;
+  both runs use identical 144-source hashes. First method/test copies, successful
+  receipts and deterministic monitor failure probe stay privately preserved.
+- **1,276 local tests / approximately 91% coverage**, twelve new controls; Ruff,
+  Bash/diff and public tree/history audits pass. A first sandbox-bound suite
+  records two EPERM socket denials; the authorized local socket run passes all.
+
 
 ## Diverse connection capacity and private full reports (2026-10-05)
 

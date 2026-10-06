@@ -13,6 +13,7 @@ This directory contains the technical documentation behind the portfolio-facing 
 | [DNS_COLLECTION.md](DNS_COLLECTION.md) | Automatic TCP/UDP DNS transaction collection, private state migration and live controls |
 | [LOG_PREPARATION.md](LOG_PREPARATION.md) | Bounded completed-log preparation, explicit private DNS quarantine and coverage accounting |
 | [CONNECTION_CAPACITY.md](CONNECTION_CAPACITY.md) | Diverse collector targets, bounded snapshots, verified private full exports and recovery evidence |
+| [MULTIDAY_COLLECTION.md](MULTIDAY_COLLECTION.md) | Accelerated multi-day rotation, independent retention, own-process resources and recovery protocol |
 | [DNS_INVESTIGATION.md](DNS_INVESTIGATION.md) | Device/domain query timelines, scan health and private rotation/recovery/resource protocol |
 | [NETWORK_EVALUATION.md](NETWORK_EVALUATION.md) | Independent official IoT-23 protocol, aggregate observations and detection gaps |
 | [REVIEW_WORKLOAD.md](REVIEW_WORKLOAD.md) | Normal review burden, caching/shared resolvers, same-source native RITA and excluded corrupt inputs |

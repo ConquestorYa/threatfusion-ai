@@ -12,6 +12,21 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Predeclared accelerated 72-event-hour mixed collector protocol: 144 immutable
+  synthetic logs, 360k base observations plus 120 late-closed rows, independent
+  retained SQL-window modeling and eight offline/full-export checkpoints. Separate
+  own-worker RSS/state/idle measurements, two idle SIGKILL/restart proofs,
+  open-close/rename/gzip/CTI/expiry and ledger/archive cleanup preserve all 83
+  runtime modules and detector/ML policies. Ten new process/retention/privacy/
+  freeze controls; deterministic temporary-file sampling race repaired under
+  method-only amendment with original successful receipts and unchanged acceptance.
+  Two real SQLite page-exhaustion controls prove file/checkpoint rollback, old
+  report preservation and exact-once budget repair/restart without host disk fill.
+  Prior interrupted CI passes six jobs on retry. Methods/tests/docs only; all
+  generated traffic/state/receipts stay private. Not a real 72-hour soak, accuracy/
+  parity/security/enterprise claim or ML promotion. No public site. See
+  `docs/MULTIDAY_COLLECTION.md`.
+
 - Collector-only diverse connection analysis with unchanged DNS/legacy bounds,
   global CTI/UID/conflict and detector policies. Bilingual prioritized 1,000-group
   snapshots disclose omissions and full-retained counts; verified private full

@@ -7,6 +7,11 @@ process, separate from the local web application and CTI feed updater.
 
 ## Installed application
 
+The [multi-day engineering protocol](MULTIDAY_COLLECTION.md) qualifies rotating
+mixed inputs, bounded retention, own-process resource measurements and restart/
+expiry behavior. Accelerated event hours do not establish a wall-clock soak or
+enterprise capacity.
+
 Upgrade with the README installation command after stopping the app. Select
 real CTI mode, then run in a second terminal:
 

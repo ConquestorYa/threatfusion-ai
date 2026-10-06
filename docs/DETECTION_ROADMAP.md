@@ -26,7 +26,22 @@ context is not measured equivalent C2 detection.
 | Analyst operations | Local web investigation, bounded connection-start and device/domain DNS timelines, feedback, reports and expiring exact-endpoint declarations with CTI override | Independent analyst task validation and documented SIEM export contracts |
 | Operational readiness | Local test suite and bounded synthetic workload | Security review, installation/recovery checks and representative throughput/resource measurements |
 
-## Current increment: connection diversity and complete retained export
+## Current increment: accelerated multi-day operational contracts
+
+The declared 72-event-hour mixed rotation protocol measures own collector RSS,
+state size, idle latency and steady-state ratios separately from fixture/offline
+evaluation. Independent retained payload reconciliation, eight full-export
+checkpoints, two terminations/restarts of the owned idle collector, open-log closure,
+rename/gzip/CTI/expiry and ledger/archive cleanup preserve all runtime/detector/
+ML policies. A deterministic monitor race and method-only amendment retain
+original receipts and acceptance. See [contracts and measurements](MULTIDAY_COLLECTION.md).
+This is accelerated engineering evidence, not a real 72-hour wall-clock soak,
+enterprise load/security or new detection efficacy. Next: actual bounded
+wall-clock soak and broader filesystem/database faults, then representative
+permitted traffic/security review, untouched timing/sparse/tunneling recordings,
+SIEM and analyst pilot. Reserved independent sources stay unacquired.
+
+## Previous increment: connection diversity and complete retained export
 
 Collector connection targets no longer consume the DNS 25k-name bound. Original
 global findings/CTI/context remain; 1,000-group prioritized snapshots disclose

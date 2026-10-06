@@ -227,6 +227,8 @@ The completed-log collector separately supports diverse connection IPs within
 its shared 100,000-record window. Large connection reports use a 1,000-group
 snapshot with exact omissions and a verified private full JSON.gz export.
 See [capacity and remaining limits](docs/CONNECTION_CAPACITY.md).
+The [multi-day protocol](docs/MULTIDAY_COLLECTION.md) separately checks rotation,
+retention, collector resource use and recovery using accelerated synthetic time.
 
 Encrypted DNS such as DoH/DoT is not claimed to be recoverable from packet captures.
 
