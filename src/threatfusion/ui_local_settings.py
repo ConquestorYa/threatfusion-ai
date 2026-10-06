@@ -233,6 +233,9 @@ def _render_refresh_status(root: Path) -> None:
         )
     for item in status.get("outcomes", []):
         source, result = item["source"], item["status"]
+        if source == "Cache maintenance" and result == "failed":
+            st.warning(tr("Cache cleanup failed; completed source updates remain available. Retry maintenance later."))
+            continue
         if result == "failed":
             st.warning(
                 tr(

@@ -12,6 +12,7 @@ from .expected_connections import ExpectedConnectionRule
 from .connections import POLICY_ID as CONNECTION_POLICY_ID
 from .device_triage import POLICY_ID
 from .runtime_analysis import RuntimeAnalysisResult
+from .target_privacy import target_aliases, target_type
 
 
 @dataclass(frozen=True)
@@ -87,7 +88,8 @@ def build_device_report(
         "timelines": build_dns_timelines(result.events, result.device_findings),
         "privacy": {
             "client_ip_values_included": include_client_ips,
-            "response_ip_values_included": False,
+            "response_ip_values_included": include_client_ips and any(target_type(f.assessment.domain) != "domain" for f in result.device_findings),
+            "target_ip_values_included": include_client_ips,
             "raw_dns_rows_included": False,
             "device_alias_scope": "this_report_only",
         },
@@ -120,8 +122,9 @@ def _verdict_counts(result: RuntimeAnalysisResult) -> dict[str, int]:
     return counts
 
 
-def _finding_rows(result: RuntimeAnalysisResult) -> list[dict[str, object]]:
+def _finding_rows(result: RuntimeAnalysisResult, *, include_target_ips=False) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
+    aliases = target_aliases(a.domain for a in result.assessments)
 
     for assessment in sorted(
         result.assessments,
@@ -130,7 +133,8 @@ def _finding_rows(result: RuntimeAnalysisResult) -> list[dict[str, object]]:
         behavior = assessment.behavior
         rows.append(
             {
-                "domain": assessment.domain,
+                "domain": assessment.domain if include_target_ips else aliases.get(assessment.domain, assessment.domain),
+                "target_type": target_type(assessment.domain),
                 "verdict": verdict_label(assessment.verdict.value),
                 "ml_score": assessment.ml_score,
                 "ml_tier": ml_tier_label(
@@ -165,6 +169,7 @@ def _csv_text(rows: list[dict[str, object]]) -> str:
     output = io.StringIO(newline="")
     fieldnames = [
         "domain",
+        "target_type",
         "verdict",
         "ml_score",
         "ml_tier",
@@ -200,13 +205,14 @@ def build_analysis_report(
     *,
     model_name: str,
     generated_at: datetime | None = None,
+    include_target_ips: bool = False,
 ) -> AnalysisReport:
     """Build privacy-conscious JSON and CSV reports from aggregate findings."""
     if not isinstance(model_name, str) or not model_name.strip():
         raise ValueError("model_name must be a non-empty string")
 
     generated_text = _generated_at_text(generated_at)
-    rows = _finding_rows(result)
+    rows = _finding_rows(result, include_target_ips=include_target_ips)
     counts = _verdict_counts(result)
 
     payload = {
@@ -214,7 +220,9 @@ def build_analysis_report(
         "model_name": model_name.strip(),
         "summary": {
             "dns_events": len(result.events),
-            "unique_domains": len(result.assessments),
+            "unique_domains": sum(target_type(a.domain) == "domain" for a in result.assessments),
+            "unique_targets": len(result.assessments),
+            "ip_targets": sum(target_type(a.domain) != "domain" for a in result.assessments),
             "known_ioc_matches": len(result.matches),
             "known_threat": counts["known_threat"],
             "high_risk": counts["high_risk"],
@@ -225,7 +233,8 @@ def build_analysis_report(
         "privacy": {
             "raw_dns_rows_included": False,
             "client_ip_values_included": False,
-            "response_ip_values_included": False,
+            "response_ip_values_included": include_target_ips and any(target_type(a.domain) != "domain" for a in result.assessments),
+            "target_ip_values_included": include_target_ips,
         },
     }
 

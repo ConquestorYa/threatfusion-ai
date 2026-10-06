@@ -51,7 +51,8 @@ def test_hosted_and_developer_runtime_cannot_access_local_settings(monkeypatch):
 
 def test_real_mode_works_without_ml_and_can_switch_to_isolated_demo(managed):
     config, root = ui.resolve_managed_config(load_app_config({}))
-    assert root == managed and config.cti_only and config.public_mode
+    assert root == managed and config.cti_only and not config.public_mode
+    assert not config.history_enabled
     assert config.db_path == managed / "runtime/cti/threatfusion.sqlite"
     app = local_app(managed)
     assert not app.exception

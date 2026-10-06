@@ -49,6 +49,13 @@ separate from the managed installation.
 
 ## Automatic updates
 
+Real managed CTI mode enables private local endpoint controls while analyst
+history stays disabled. In the collector view, **Show observed endpoint IPs
+locally; downloads keep aliases** reads an owner-only local mapping; it does
+not include that mapping in downloaded reports. Restart an updated collector
+to create this mapping. See [source review repairs](SOURCE_REVIEW_REPAIRS.md)
+for schema backups, legacy DNS-answer coverage and export opt-ins.
+
 Updates are manual until you enable **Automatic updates while the app is
 running** and save an interval: **6, 12 or 24 hours**. The launcher supervises
 this scheduler independently of browser reruns/tabs. It uses **only saved keys

@@ -107,7 +107,7 @@ def scan_release_path(
     model = filename.endswith((".joblib", ".pkl", ".pickle"))
     if secret_file:
         return (ReleaseAuditFinding("secret-file-path", path, object_id),)
-    if local_data or database or model:
+    if local_data or database or model or filename == "collector-identities.json":
         return (ReleaseAuditFinding("local-data-artifact", path, object_id),)
     return ()
 

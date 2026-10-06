@@ -143,7 +143,7 @@ def connection_contexts(
         if match.match_type not in {"response_ip", "response_ip_network"}:
             continue
         try:
-            target = _ip(match.event.response_ip)
+            target = _ip(match.matched_ip or match.event.response_ip)
         except ValueError:
             continue
         try:

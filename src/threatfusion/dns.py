@@ -16,6 +16,48 @@ class DNSEvent:
     query_type: str | None = None
     response_ip: str | None = None
     response_code: str | None = None
+    # Additional IP answers. The legacy first response_ip remains compatible.
+    response_ips: tuple[str, ...] = ()
+
+    def __post_init__(self):
+        if isinstance(self.response_ips, list):
+            self.response_ips = tuple(self.response_ips)
+
+
+MAX_RESPONSE_IPS = 1024
+
+
+def response_ip_addresses(event: DNSEvent) -> tuple[str, ...]:
+    """Return the bounded canonical IP answer set, never extra DNS queries."""
+    if not isinstance(event.response_ips, tuple) or len(event.response_ips) >= MAX_RESPONSE_IPS:
+        raise ValueError("DNS answer IPs exceed the safe answer limit")
+    addresses = set()
+    for value in (event.response_ip, *event.response_ips):
+        if value is None:
+            continue
+        if not isinstance(value, str) or len(value) > 64:
+            raise ValueError("DNS answer IP exceeds the safe analysis length limit or is not text")
+        try:
+            addresses.add(str(ipaddress.ip_address(value)))
+        except ValueError:
+            continue  # Preserve permissive legacy response_ip handling.
+    return tuple(sorted(addresses))
+
+
+def parse_response_ips(values) -> tuple[str, ...]:
+    """Bound raw answer entries, retain valid unique IPs in source order."""
+    result = dict()
+    for index, value in enumerate(values):
+        if index >= MAX_RESPONSE_IPS:
+            raise ValueError("DNS answers exceed the safe answer limit")
+        if not isinstance(value, str):
+            continue
+        try:
+            address = str(ipaddress.ip_address(value.strip()))
+        except ValueError:
+            continue
+        result[address] = None
+    return tuple(result)
 
 
 @dataclass(frozen=True)
@@ -26,6 +68,9 @@ class DNSParseDiagnostics:
     invalid_timestamps: int
     invalid_response_ips: int
     invalid_connection_fields: int = 0
+    packet_dns_queries: int = 0
+    packet_paired_queries: int = 0
+    packet_response_only: int = 0
 
 
 @dataclass(frozen=True)
@@ -223,6 +268,14 @@ def _parse_response_ip(value: object) -> str | None:
             continue
         return str(address)
     return None
+
+
+def _parse_all_response_ips(value: object) -> tuple[str, ...]:
+    text = _as_optional_text(value)
+    if text is None:
+        return ()
+    return parse_response_ips(candidate.strip("[](){}'\"")
+                              for candidate in re.split(r"[\s,;|]+", text) if candidate)
 
 
 def _parse_response_code(value: object) -> str | None:
@@ -489,7 +542,8 @@ def parse_dns_csv_with_diagnostics(content: str) -> DNSParseResult:
             if response_ip_key
             else None
         )
-        response_ip = _parse_response_ip(response_ip_text)
+        addresses = _parse_all_response_ips(response_ip_text)
+        response_ip = addresses[0] if addresses else None
         if response_ip_text is not None and response_ip is None:
             invalid_response_ips += 1
 
@@ -503,6 +557,7 @@ def parse_dns_csv_with_diagnostics(content: str) -> DNSParseResult:
             ),
             query_type=None,
             response_ip=response_ip,
+            response_ips=addresses[1:],
             response_code=(
                 _parse_response_code(row.get(response_code_key))
                 if response_code_key

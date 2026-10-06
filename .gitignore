@@ -80,3 +80,4 @@ expected-connections*.json
 
 # Private automatically collected telemetry/state/snapshots
 data/collector/
+**/collector-identities.json

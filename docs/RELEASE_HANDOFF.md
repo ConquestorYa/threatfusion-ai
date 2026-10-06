@@ -2,6 +2,55 @@
 
 Status date: 2026-10-06
 
+## Pre-manual-test correctness and privacy repairs (2026-10-06)
+
+- Reviewed the complete source/test/installation/reporting paths against main
+  `4b37123`, with original findings and owned synthetic probes privately preserved.
+  Fixed nine confirmed problems: PCAP client direction/query pairing, discarded
+  additional DNS IP answers, literal IP leakage/misleading report counts, managed
+  local identity controls, SQLite cleanup variable limits/maintenance reporting,
+  unbounded CTI match fanout, cached IPv6 prefix lookup, IDNA evidence details and
+  malformed AdGuard JSON exception handling. No ML threshold/model promotion.
+- Collector schema 3 preserves schema-1/2 private backups and old checkpoints;
+  legacy first-answer coverage is disclosed. Reimport of an identical original
+  row reconciles old/new representations; changed source rows still conflict.
+  Reports alias literal IP targets by default; explicit local exports describe
+  their IP inclusion. New history rows alias IP targets; existing history is
+  preserved. Aggregate CSV adds `target_type`; JSON distinguishes domain/IP/
+  total target counts. CLI aggregate report files are written atomically as 0600.
+- A separate ignored 0600 identity mapping bound to the selection generation
+  enables explicit local host/device display. Shared snapshots/full archives
+  retain aliases. Real managed CTI mode no longer needs public-mode restrictions
+  to disable history; demo/public profiles retain their restrictions.
+- Matching fails explicitly above 250k evidence objects or one million lookup
+  operations; no partial success/truncated evidence. IPv6 prefix membership is
+  indexed and idle collector polls reuse CTI data until DB/WAL changes. Failed
+  analysis preserves the published report and retries committed rows, including
+  on the next idle tick. This is a safety bound, not enterprise-scale proof.
+- PCAP pairing is Ethernet/classic UDP DNS only, within 120 seconds and matching
+  client/resolver/ports/ID/name/type; most recent eligible query is paired. Query
+  retransmissions and unmatched replies remain separate observations, with
+  visible diagnostics; encrypted DNS/TCP reconstruction is not added. Supported
+  single-question Suricata detailed/grouped v2/v3 exports retain every IP answer;
+  missing endpoint direction evidence remains unattributed.
+- See [SOURCE_REVIEW_REPAIRS.md](SOURCE_REVIEW_REPAIRS.md) for contracts and
+  migration/manual-test implications. Earlier frozen collector measurements
+  describe earlier source identities and are not new performance evidence for
+  this revision. Wall-clock soak, broader faults, representative permitted
+  traffic, detection efficacy and analyst pilot remain open. Reserved evidence
+  and original 34 artifact/cache/data files stay local and unchanged.
+- Verification: **1,321 local tests passed / approximately 91% coverage**,
+  including 45 added regression cases; Ruff, 12 Bash syntax checks and diff
+  validation pass. Original 34 data hashes and the predeclared repair scope
+  remain intact. Owned probes confirm 32,767-row cleanup above the actual
+  32,766 SQLite variable limit, all-answer order invariance, IDNA evidence,
+  contextual IPv6 lookup, correct PCAP client and working managed local controls.
+  A 1,000-event/1,000-URL same-host probe fails explicitly at the production
+  match bound, without returning partial evidence; not whole-product sizing.
+  Source-only publication uses `[skip render]` after user-suspended hosting/
+  preview-off verification; no hosted resources or deployment are added.
+
+
 ## Accelerated multi-day collection and own-process resources (2026-10-06)
 
 - `multiday-collector-v1` freezes main `36b1823` and all 83 runtime modules before

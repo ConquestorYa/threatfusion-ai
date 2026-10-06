@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import timedelta
@@ -17,10 +18,11 @@ class AppConfig:
     cti_stale_hours_by_source: tuple[tuple[str, float], ...]
     cti_only: bool = False
     collector_state_dir: Path | None = None
+    history_allowed: bool = True
 
     @property
     def history_enabled(self) -> bool:
-        return not self.public_mode and not self.cti_only
+        return self.history_allowed and not self.public_mode and not self.cti_only
 
     @property
     def cti_stale_after_by_source(self) -> dict[str, timedelta]:
@@ -84,7 +86,7 @@ def _positive_float(
         value = float(raw.strip())
     except ValueError as error:
         raise ValueError(f"{name} must be a positive number") from error
-    if value <= 0:
+    if not math.isfinite(value) or value <= 0:
         raise ValueError(f"{name} must be a positive number")
     return value
 
@@ -125,6 +127,7 @@ def load_app_config(
         public_mode=public_mode,
         model_sha256=model_sha256,
         cti_only=cti_only,
+        history_allowed=_parse_bool(values.get("THREATFUSION_HISTORY_ENABLED"), default=True),
         collector_state_dir=(Path(values["THREATFUSION_COLLECTOR_STATE_DIR"])
                              if not public_mode and values.get("THREATFUSION_COLLECTOR_STATE_DIR") else None),
         cti_stale_hours_by_source=(

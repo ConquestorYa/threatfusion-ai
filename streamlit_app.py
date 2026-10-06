@@ -411,9 +411,13 @@ def _show_analysis_result(
             )
 
     with export_tab:
+        include_target_ips = False
+        if not public_mode:
+            include_target_ips = st.checkbox(tr("Include literal IP targets in aggregate exports"), value=False, key="aggregate_export_ips")
         report = build_analysis_report(
             result,
             model_name=artifact.metadata.model_name if artifact else "cti_only_ml_disabled",
+            include_target_ips=include_target_ips,
         )
         export_columns = st.columns(2)
         export_columns[0].download_button(
@@ -1095,6 +1099,10 @@ def main() -> None:
                     ips=diagnostics.invalid_response_ips,
                 )
             )
+            if diagnostics.packet_dns_queries or diagnostics.packet_response_only:
+                st.caption(tr("Packet DNS: {queries} query observations; {paired} paired replies; {orphan} response-only observations. Unpaired replies remain separate; queries without replies have no response code.",
+                              queries=diagnostics.packet_dns_queries, paired=diagnostics.packet_paired_queries,
+                              orphan=diagnostics.packet_response_only))
     if result is not None:
         _show_analysis_result(
             result,

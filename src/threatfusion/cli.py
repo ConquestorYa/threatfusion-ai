@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import tempfile
 from collections.abc import Sequence
 from datetime import datetime, timezone
 from pathlib import Path
@@ -57,6 +58,8 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Optional CSV findings output path",
     )
+    parser.add_argument("--include-target-ips", action="store_true",
+                        help="Include literal IP targets in explicit aggregate JSON/CSV exports")
     parser.add_argument(
         "--device-json-output", type=Path,
         help="Separate client/domain triage report (report-local device aliases)",
@@ -75,8 +78,16 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _write_text(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    fd, temporary = tempfile.mkstemp(dir=path.parent, prefix=".threatfusion-report-")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as file:
+            file.write(content)
+        if path.is_symlink():
+            raise ValueError("Report output cannot be a symlink")
+        os.replace(temporary, path)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
 
 
 def _write_private(path: Path, content: str) -> None:
@@ -95,6 +106,8 @@ def _load_input(path: Path, telemetry_format: str) -> str | bytes:
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.include_target_ips and args.json_output is None and args.csv_output is None:
+        parser.error("--include-target-ips requires --json-output or --csv-output")
     if args.include_client_ips and args.device_json_output is None:
         parser.error("--include-client-ips requires --device-json-output")
     if args.include_connection_ips and args.connection_json_output is None:
@@ -148,6 +161,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     report = build_analysis_report(
         result,
         model_name=artifact.metadata.model_name if artifact else "cti_only_ml_disabled",
+        include_target_ips=args.include_target_ips,
     )
 
     if args.json_output is not None:

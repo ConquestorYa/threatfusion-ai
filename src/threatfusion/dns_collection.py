@@ -17,6 +17,7 @@ MAX_FINDINGS = 1000
 
 def transaction_payload(record: ZeekDNSTransaction) -> str:
     payload = asdict(record)
+    payload["answer_coverage"] = "all-ip-answers-v1"
     payload["event"]["timestamp"] = record.event.timestamp.isoformat()
     return json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
@@ -26,8 +27,30 @@ def build_dns_snapshot(
 ):
     by_key = {}
     conflicts = set()
-    for text in payloads:
-        payload = json.loads(text)
+    decoded = [json.loads(text) for text in payloads]
+    superseded = set()
+    representatives = {}
+    for index, payload in enumerate(decoded):
+        # A schema-2 and schema-3 representation of the very same source row
+        # must not become two queries or a fictitious transaction conflict.
+        identity = (payload["uid"], payload["transaction_id"], payload["event"]["timestamp"], payload.get("source_row_hash"))
+        old_index = representatives.get(identity)
+        if old_index is not None and identity[-1]:
+            old = decoded[old_index]
+            old_core = {k: v for k, v in old.items() if k != "answer_coverage"}
+            new_core = {k: v for k, v in payload.items() if k != "answer_coverage"}
+            old_core["event"] = {k: v for k, v in old["event"].items() if k != "response_ips"}
+            new_core["event"] = {k: v for k, v in payload["event"].items() if k != "response_ips"}
+            if old_core == new_core and old.get("answer_coverage") != payload.get("answer_coverage"):
+                keep_new = payload.get("answer_coverage") == "all-ip-answers-v1"
+                superseded.add(old_index if keep_new else index)
+                if keep_new:
+                    representatives[identity] = index
+                continue
+        representatives[identity] = index
+    for index, payload in enumerate(decoded):
+        if index in superseded:
+            continue
         key = (payload["uid"], payload["transaction_id"], payload["event"]["timestamp"])
         if key in by_key and by_key[key] != payload:
             conflicts.add(key)
@@ -35,8 +58,11 @@ def build_dns_snapshot(
     events = []
     transports = {"tcp": 0, "udp": 0}
     excluded = 0
-    for text in payloads:
-        payload = json.loads(text)
+    legacy = 0
+    for index, payload in enumerate(decoded):
+        if index in superseded:
+            excluded += 1
+            continue
         key = (payload["uid"], payload["transaction_id"], payload["event"]["timestamp"])
         if key in conflicts:
             excluded += 1
@@ -44,6 +70,7 @@ def build_dns_snapshot(
         values = payload["event"]
         values["timestamp"] = datetime.fromisoformat(values["timestamp"])
         events.append(DNSEvent(**values))
+        legacy += payload.get("answer_coverage") != "all-ip-answers-v1"
         transports[payload["protocol"]] += 1
     result = analyze_dns_events(events, indicators, None)
     total = len(result.device_findings)
@@ -66,6 +93,8 @@ def build_dns_snapshot(
             "analyzed_events": len(events),
             "conflicting_transactions": len(conflicts),
             "excluded_records": excluded,
+            "legacy_first_answer_events": legacy,
+            "superseded_representations": len(superseded),
             "transports": transports,
         },
         "total_findings": total,
@@ -97,12 +126,15 @@ def validate_dns_snapshot(block):
         )
     )
     transports = coverage.get("transports")
+    legacy = count(coverage.get("legacy_first_answer_events", 0))
+    superseded = count(coverage.get("superseded_representations", 0))
     if (
         not isinstance(transports, dict)
         or set(transports) != {"tcp", "udp"}
         or sum(count(value) for value in transports.values()) != analyzed
         or retained != analyzed + excluded
         or conflicts * 2 > excluded
+        or legacy > analyzed or superseded > excluded
     ):
         raise ValueError("Inconsistent DNS coverage")
     total, omitted = (
@@ -166,6 +198,9 @@ def validate_dns_snapshot(block):
         ):
             raise ValueError("Invalid DNS findings")
         events = count(row["Telemetry events"])
+        from .target_privacy import target_type
+        if target_type(row["Target"]) != "domain":
+            raise ValueError("Unaliased IP target in private-by-default DNS report")
         if events < 1 or count(row["Distinct timestamps"]) > events:
             raise ValueError("Invalid DNS evidence counts")
         observed += events

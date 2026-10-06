@@ -66,7 +66,8 @@ def prepare_local_environment(
         values.pop(key, None)
     values.update(
         {
-            "THREATFUSION_PUBLIC_MODE": "1",
+            "THREATFUSION_PUBLIC_MODE": "1" if mode == "demo" else "0",
+            "THREATFUSION_HISTORY_ENABLED": "0",
             "THREATFUSION_CTI_ONLY": "1" if mode == "cti-only" else "0",
             "THREATFUSION_DB_PATH": str(db),
             "THREATFUSION_MODEL_DIR": str(model),

@@ -14,6 +14,14 @@ _LANGUAGE_BY_OPTION = {
 }
 
 _TR: dict[str, str] = {
+    "IPv6 network context": "IPv6 ağ eşleşmesi bağlamı",
+    "Show observed client and IP target addresses in this view and device export": "Bu görünüm ve cihaz raporunda gözlenen istemci ve IP hedef adreslerini göster",
+    "Packet DNS: {queries} query observations; {paired} paired replies; {orphan} response-only observations. Unpaired replies remain separate; queries without replies have no response code.": "Paket DNS: {queries} sorgu gözlemi; {paired} eşleştirilen yanıt; {orphan} yalnızca yanıt içeren gözlem. Eşleşmeyen yanıtlar ayrı kalır; yanıtsız sorguların yanıt kodu yoktur.",
+    "Show observed endpoint IPs locally; downloads keep aliases": "Gözlenen cihaz IP'lerini yerelde göster; indirmeler takma adları korur",
+    "Private identity mapping is unavailable or changed. Restart the updated collector; aliases remain visible.": "Özel kimlik eşleştirmesi yok veya değişti. Güncel toplayıcıyı yeniden başlat; takma adlar görünmeye devam eder.",
+    "{count} retained DNS events were parsed by an older collector; additional answer IPs cannot be recovered without the original logs.": "Tutulan {count} DNS kaydı eski toplayıcıyla işlendi; asıl loglar olmadan ek yanıt IP'leri geri getirilemez.",
+    "Cache cleanup failed; completed source updates remain available. Retry maintenance later.": "Önbellek temizliği başarısız; tamamlanan kaynak güncellemeleri kullanılabilir. Bakımı daha sonra yeniden dene.",
+    "Include literal IP targets in aggregate exports": "Toplu raporlara IP adresi olan hedefleri dahil et",
     "Full report group": "Tam rapor grubu",
     "Connection snapshot shows {shown} of {total} retained groups. Omitted: {omitted}; omitted reviews: {reviews}; omitted CTI groups: {cti}. The full gzip report retains every group.": "Bağlantı görünümü, tutulan {total} grubun {shown} tanesini gösteriyor. Gösterilmeyen: {omitted}; gösterilmeyen inceleme: {reviews}; gösterilmeyen CTI grubu: {cti}. Tam gzip raporu bütün grupları korur.",
     "Showing the first 500 filtered snapshot groups. Use the full gzip report for all retained groups.": "Filtrelenmiş görünümde ilk 500 grup gösteriliyor. Tutulan bütün gruplar için tam gzip raporunu kullanın.",

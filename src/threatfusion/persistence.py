@@ -365,12 +365,14 @@ def save_runtime_analysis(
         run_id = int(cursor.lastrowid)
 
         rows = []
+        from .target_privacy import target_aliases
+        aliases = {value: f"{alias} (run {run_id})" for value, alias in target_aliases(a.domain for a in result.assessments).items()}
         for assessment in result.assessments:
             behavior = assessment.behavior
             rows.append(
                 (
                     run_id,
-                    assessment.domain,
+                    aliases.get(assessment.domain, assessment.domain),
                     assessment.verdict.value,
                     assessment.ml_score,
                     assessment.ml_tier,
@@ -1108,4 +1110,3 @@ def get_active_analyst_suppressions(
         )
         for row in rows
     }
-

@@ -91,6 +91,7 @@ def _match_type_label(value: str) -> str:
         "exact_ip": "Exact IP",
         "query_domain": "Exact domain",
         "url_hostname": "URL hostname context",
+        "response_ip_network": "IPv6 network context",
     }
     return tr(labels.get(value, value.replace("_", " ").title()))
 

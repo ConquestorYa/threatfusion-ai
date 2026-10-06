@@ -22,6 +22,8 @@ def render_collected_dns(block, *, revision=None):
         )
         return
     coverage = block["coverage"]
+    if coverage.get("legacy_first_answer_events"):
+        st.warning(tr("{count} retained DNS events were parsed by an older collector; additional answer IPs cannot be recovered without the original logs.", count=coverage["legacy_first_answer_events"]))
     columns = st.columns(3)
     columns[0].metric(tr("Analyzed DNS transactions"), coverage["analyzed_events"])
     columns[1].metric(
@@ -39,7 +41,7 @@ def render_collected_dns(block, *, revision=None):
             "DNS device aliases and connection host aliases are independent within this snapshot."
         )
     )
-    if coverage["excluded_records"]:
+    if coverage["conflicting_transactions"]:
         st.warning(
             tr(
                 "Conflicting DNS transaction records were excluded. Check source integrity before trusting coverage."

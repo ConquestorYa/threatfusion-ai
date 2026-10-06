@@ -7,7 +7,7 @@ import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from .dns import DNSEvent, DNSParseDiagnostics, DNSParseResult
+from .dns import DNSEvent, DNSParseDiagnostics, DNSParseResult, parse_response_ips
 
 
 _MAX_ZEEK_FIELDS = 512
@@ -205,15 +205,15 @@ def _parse_zeek_dns_log(
         if query_type is None:
             query_type = _optional_zeek_text(row.get("qtype"))
 
+        answers = _optional_zeek_text(row.get("answers"))
+        addresses = parse_response_ips(answers.split(set_separator)) if answers else ()
         event = DNSEvent(
             query_name=query_name,
             timestamp=timestamp,
             client_ip=_optional_zeek_text(row.get("id.orig_h")),
             query_type=query_type.upper() if query_type else None,
-            response_ip=_first_response_ip(
-                row.get("answers"),
-                set_separator,
-            ),
+            response_ip=addresses[0] if addresses else None,
+            response_ips=addresses[1:],
             response_code=_response_code(row),
         )
         events.append(event)

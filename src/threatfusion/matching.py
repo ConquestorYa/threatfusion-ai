@@ -6,9 +6,12 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from urllib.parse import urlsplit
 
-from .dns import DNSEvent
+from .dns import DNSEvent, response_ip_addresses
 from .models import IOCRecord, IOCType
 from .normalization import normalize_ioc_value
+
+MAX_IOC_MATCHES = 250_000
+MAX_MATCH_LOOKUPS = 1_000_000
 
 
 def _safe_normalize_ioc_value(value: str, ioc_type: IOCType) -> str | None:
@@ -25,6 +28,7 @@ class DNSIOCMatch:
     event: DNSEvent
     indicator: IOCRecord
     match_type: str
+    matched_ip: str | None = None
 
 
 def _hostname_from_url(value: str) -> str | None:
@@ -68,9 +72,9 @@ def match_dns_events(
     url_hostname_index: dict[str, list[IOCRecord]] = defaultdict(list)
     ipv4_index: dict[str, list[IOCRecord]] = defaultdict(list)
     ipv6_index: dict[str, list[IOCRecord]] = defaultdict(list)
-    ipv6_networks: list[tuple[ipaddress.IPv6Network, IOCRecord]] = []
+    ipv6_networks = defaultdict(list)
 
-    for indicator in indicators:
+    for order, indicator in enumerate(indicators):
         if indicator.ioc_type is IOCType.DOMAIN:
             normalized = _safe_normalize_ioc_value(indicator.value, IOCType.DOMAIN)
             if normalized:
@@ -95,59 +99,51 @@ def match_dns_events(
                 IOCType.IPV6_NETWORK,
             )
             if normalized:
-                ipv6_networks.append(
-                    (ipaddress.IPv6Network(normalized), indicator)
-                )
+                network = ipaddress.IPv6Network(normalized)
+                ipv6_networks[(network.prefixlen, int(network.network_address))].append((order, indicator))
 
     matches: list[DNSIOCMatch] = []
+    prefixes = sorted({prefix for prefix, _ in ipv6_networks})
+    network_cache = {}
+    lookups = 0
+
+    def budget(amount=1):
+        nonlocal lookups
+        lookups += amount
+        if lookups > MAX_MATCH_LOOKUPS:
+            raise ValueError("IOC matching exceeds its work budget; use a smaller telemetry window")
+
+    def add(event, records, kind, matched_ip=None):
+        if len(matches) + len(records) > MAX_IOC_MATCHES:
+            raise ValueError("IOC evidence exceeds the 250000 match limit; use a smaller telemetry window")
+        matches.extend(DNSIOCMatch(event, record, kind, matched_ip) for record in records)
 
     for event in events:
+        budget()
         query_name = event.query_name.strip() if isinstance(event.query_name, str) else ""
         if query_name:
             normalized_query = normalize_ioc_value(query_name, IOCType.DOMAIN)
             if normalized_query:
-                for indicator in domain_index.get(normalized_query, []):
-                    matches.append(
-                        DNSIOCMatch(
-                            event=event,
-                            indicator=indicator,
-                            match_type="query_domain",
-                        )
-                    )
-                for indicator in url_hostname_index.get(normalized_query, []):
-                    matches.append(
-                        DNSIOCMatch(
-                            event=event,
-                            indicator=indicator,
-                            match_type="url_hostname",
-                        )
-                    )
+                add(event, domain_index.get(normalized_query, []), "query_domain")
+                add(event, url_hostname_index.get(normalized_query, []), "url_hostname")
 
-        response_ip_data = _normalized_event_ip(event)
-        if response_ip_data is None:
-            continue
-
-        normalized_ip, ip_version = response_ip_data
-        target_index = ipv4_index if ip_version == "ipv4" else ipv6_index
-        for indicator in target_index.get(normalized_ip, []):
-            matches.append(
-                DNSIOCMatch(
-                    event=event,
-                    indicator=indicator,
-                    match_type="response_ip",
-                )
-            )
-
-        if ip_version == "ipv6":
-            address = ipaddress.IPv6Address(normalized_ip)
-            for network, indicator in ipv6_networks:
-                if address in network:
-                    matches.append(
-                        DNSIOCMatch(
-                            event=event,
-                            indicator=indicator,
-                            match_type="response_ip_network",
-                        )
-                    )
+        first = _normalized_event_ip(event)
+        for normalized_ip in response_ip_addresses(event):
+            budget()
+            address = ipaddress.ip_address(normalized_ip)
+            matched_ip = None if first and first[0] == normalized_ip else normalized_ip
+            target_index = ipv4_index if address.version == 4 else ipv6_index
+            add(event, target_index.get(normalized_ip, []), "response_ip", matched_ip)
+            if address.version == 6:
+                if normalized_ip not in network_cache:
+                    budget(len(prefixes))
+                    found = []
+                    for prefix in prefixes:
+                        key = (prefix, int(address) >> (128 - prefix) << (128 - prefix))
+                        found.extend(ipv6_networks.get(key, ()))
+                        if len(found) > MAX_IOC_MATCHES:
+                            raise ValueError("IOC network evidence exceeds the safe match limit")
+                    network_cache[normalized_ip] = [record for _, record in sorted(found, key=lambda pair: pair[0])]
+                add(event, network_cache[normalized_ip], "response_ip_network", matched_ip)
 
     return matches

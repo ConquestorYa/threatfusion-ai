@@ -22,7 +22,7 @@ def render_device_triage(result: RuntimeAnalysisResult, *, public_mode: bool) ->
     include_ips = False
     if not public_mode:
         include_ips = st.checkbox(
-            tr("Show observed client IPs in this view and device export"),
+            tr("Show observed client and IP target addresses in this view and device export"),
             value=False, key="device_triage_include_ips",
         )
     include_observe = st.checkbox(

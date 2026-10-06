@@ -145,9 +145,16 @@ def render_collector(state_dir: Path | None, *, public_mode: bool):
                       shown=coverage["snapshot_groups"], total=coverage["total_groups"], omitted=coverage["omitted_groups"],
                       reviews=coverage["omitted_review_groups"], cti=coverage["omitted_cti_groups"]))
     render_review_summary(payload["findings"], coverage)
+    view = payload
+    if st.checkbox(tr("Show observed endpoint IPs locally; downloads keep aliases"), value=False, key="collector_local_ips"):
+        from .collector_identity import local_identity_view
+        try:
+            view = local_identity_view(state_dir, payload)
+        except (OSError, ValueError, TypeError, KeyError):
+            st.warning(tr("Private identity mapping is unavailable or changed. Restart the updated collector; aliases remain visible."))
     reviews = st.checkbox(tr("Show only connection reviews"), value=True, key="collector_reviews_only")
     expected = st.checkbox(tr("Include declared expected activity"), value=False, key="collector_show_expected")
-    rows = [dict(row) for row in payload["findings"] if (not reviews or row["Queue priority"] == "Review" or row["CTI match"])
+    rows = [dict(row) for row in view["findings"] if (not reviews or row["Queue priority"] == "Review" or row["CTI match"])
             and (expected or not row["Declared expected"] or row["CTI match"])]
     display = [dict(row) for row in rows[:500]]
     for row in display:
@@ -165,8 +172,8 @@ def render_collector(state_dir: Path | None, *, public_mode: bool):
                    else tr("Showing the first 500 groups. The download contains all retained groups."))
     revision = status.get("selection_revision", status["updated_at"])
     render_timeline(rows[:500], payload.get("timelines", {}), key="collector", revision=revision)
-    render_attempts(payload.get("attempts"))
-    render_collected_dns(payload.get("dns"), revision=revision)
+    render_attempts(view.get("attempts"))
+    render_collected_dns(view.get("dns"), revision=revision)
     if coverage:
         reference = dict(payload["full_report"])
         failure_message = tr("Full report changed or is unavailable. Refresh this page and retry; no unverified archive is served.")

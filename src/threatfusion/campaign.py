@@ -7,6 +7,7 @@ from datetime import datetime
 from .hybrid_assessment import HybridVerdict
 from .models import IOCType
 from .normalization import normalize_ioc_value
+from .dns import response_ip_addresses
 from .runtime_analysis import RuntimeAnalysisResult
 
 MAX_RELATED_ACTIVITY_DOMAINS = 500
@@ -293,8 +294,7 @@ def find_related_activity(
             continue
         if event.client_ip is not None:
             clients[domain].add(event.client_ip)
-        if event.response_ip is not None:
-            response_ips[domain].add(event.response_ip)
+        response_ips[domain].update(response_ip_addresses(event))
         if event.timestamp is not None:
             timestamps[domain].append(event.timestamp)
 

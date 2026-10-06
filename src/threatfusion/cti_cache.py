@@ -13,6 +13,35 @@ from .models import IOCRecord, IOCType
 from .normalization import normalize_domain_name, normalize_ioc_value
 
 
+class CTICacheReader:
+    """Reuse active indicators between polls; notice DB replacement and WAL writes."""
+
+    def __init__(self, path: Path):
+        self.path = Path(path)
+        self.signature = None
+        self.records = None
+
+    def _signature(self):
+        values = []
+        for path in (self.path, Path(str(self.path) + "-wal"), Path(str(self.path) + "-journal")):
+            try:
+                info = path.stat()
+                values.append((info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns))
+            except FileNotFoundError:
+                values.append(None)
+        return tuple(values)
+
+    def read(self):
+        signature = self._signature()
+        if self.records is None or signature != self.signature:
+            self.records = load_ioc_records(self.path)
+            # Initialization may write schema metadata. Concurrent later changes
+            # force another read rather than marking an older view as current.
+            after = self._signature()
+            self.signature = after if signature == after or signature[0] is None else signature
+        return self.records
+
+
 @dataclass(frozen=True)
 class CTICacheStatus:
     source: str
@@ -532,6 +561,13 @@ def lookup_ioc_records(
         ip_type = "ipv4" if address.version == 4 else "ipv6"
         clauses.append("(ioc_type = ? AND normalized_value = ?)")
         parameters.extend([ip_type, normalized_host])
+        if address.version == 6:
+            # At most 129 indexed keys, rather than scanning every network IOC.
+            networks = [str(ipaddress.IPv6Network((address, prefix), strict=False))
+                        for prefix in range(129)]
+            clauses.append("(ioc_type = 'ipv6_network' AND normalized_value IN ("
+                           + ",".join("?" for _ in networks) + "))")
+            parameters.extend(networks)
 
     clauses.append("(ioc_type = 'url' AND url_hostname = ?)")
     parameters.append(normalized_host)
@@ -575,27 +611,27 @@ def prune_inactive_records(
 
     initialize_cti_cache(db_path)
     with _connect(Path(db_path)) as connection:
-        rows = connection.execute(
+        cursor = connection.execute(
             """
             SELECT id, last_seen_in_refresh
             FROM cti_records
             WHERE active = 0
               AND last_seen_in_refresh IS NOT NULL
             """
-        ).fetchall()
-        ids_to_delete: list[int] = []
-        for row_id, last_seen_in_refresh in rows:
-            parsed = _parse_datetime(str(last_seen_in_refresh))
-            if parsed is not None and parsed.timestamp() < cutoff:
-                ids_to_delete.append(int(row_id))
-        if not ids_to_delete:
-            return 0
-        placeholders = ",".join("?" for _ in ids_to_delete)
-        connection.execute(
-            f"DELETE FROM cti_records WHERE id IN ({placeholders})",
-            ids_to_delete,
         )
-    return len(ids_to_delete)
+        batch_size = min(1000, connection.getlimit(sqlite3.SQLITE_LIMIT_VARIABLE_NUMBER))
+        deleted = 0
+        while rows := cursor.fetchmany(batch_size):
+            batch = []
+            for row_id, last_seen in rows:
+                parsed = _parse_datetime(str(last_seen))
+                if parsed is not None and parsed.timestamp() < cutoff:
+                    batch.append(int(row_id))
+            if batch:
+                placeholders = ",".join("?" for _ in batch)
+                connection.execute(f"DELETE FROM cti_records WHERE id IN ({placeholders})", batch)
+                deleted += len(batch)
+    return deleted
 
 
 def list_cti_lifecycle_records(

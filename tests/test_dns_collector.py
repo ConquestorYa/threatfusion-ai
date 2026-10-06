@@ -206,7 +206,7 @@ def test_v1_state_upgrade_backs_up_and_preserves_evidence_and_checkpoints(paths)
     (source / "dns.log").write_text(log(cases(5)[0]["rows"][:1]))
     with module.ZeekCollector(source, state) as collector:
         status = collector.tick(now=NOW)
-        assert collector.db.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert collector.db.execute("PRAGMA user_version").fetchone()[0] == 3
         assert (
             collector.db.execute(
                 "SELECT hash,timestamp,ingested,payload FROM records WHERE kind='conn'"

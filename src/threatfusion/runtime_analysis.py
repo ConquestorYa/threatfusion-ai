@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 
-from .dns import DNSEvent, DNSParseDiagnostics, parse_dns_csv_with_diagnostics
+from .dns import DNSEvent, DNSParseDiagnostics, parse_dns_csv_with_diagnostics, response_ip_addresses
 from .device_triage import DeviceFinding, build_device_findings
 from .connections import ConnectionFinding, ConnectionRecord, analyze_connections
 from .connection_timeline import ConnectionTimeline, build_timelines
@@ -66,7 +66,14 @@ def is_ml_scoring_candidate(value: str) -> bool:
 
 
 def _validate_event_metadata(events: list[DNSEvent]) -> None:
+    answer_count = 0
     for event in events:
+        if not isinstance(event.response_ips, tuple):
+            raise ValueError("DNS additional answers must be a tuple")
+        answer_count += len(event.response_ips) + bool(event.response_ip)
+        if answer_count > 1_000_000:
+            raise ValueError("DNS input exceeds the total answer analysis limit")
+        response_ip_addresses(event)
         if not isinstance(event.query_name, str):
             raise ValueError("DNS query name must be text")
         if len(event.query_name) > MAX_QUERY_NAME_CHARS:

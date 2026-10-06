@@ -206,7 +206,7 @@ def analyze_quick_lookup(
     input_type, domain, normalized_url, normalized_ip = _parse_lookup_input(value)
     indicator_list = list(indicators)
 
-    event = DNSEvent(query_name=domain)
+    event = DNSEvent(query_name=domain, response_ip=normalized_ip)
     matches = match_dns_events([event], indicator_list)
 
     exact_url_indicators: list[IOCRecord] = []
@@ -242,6 +242,7 @@ def analyze_quick_lookup(
             match.match_type == "url_hostname"
             and id(match.indicator) in exact_url_ids
         )
+        and not (normalized_ip is not None and match.match_type == "response_ip")
     ]
     evidence.extend(
         QuickLookupEvidence(
@@ -303,6 +304,8 @@ def analyze_quick_lookup(
         reasons.append("known_ioc_match")
     if "url_hostname" in match_types:
         reasons.append("url_hostname_ioc_context")
+    if "response_ip_network" in match_types:
+        reasons.append("response_ip_network_ioc_context")
     if tier is not None:
         reasons.append(f"ml_{tier}_confidence")
     if (
@@ -323,7 +326,7 @@ def analyze_quick_lookup(
         verdict = HybridVerdict.KNOWN_THREAT
     elif tier == "high" and ml_high_corroborated:
         verdict = HybridVerdict.HIGH_RISK
-    elif "url_hostname" in match_types or tier in {"high", "medium", "low"}:
+    elif {"url_hostname", "response_ip_network"} & match_types or tier in {"high", "medium", "low"}:
         verdict = HybridVerdict.REVIEW
     else:
         verdict = HybridVerdict.LOW

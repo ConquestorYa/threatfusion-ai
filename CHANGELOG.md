@@ -226,6 +226,18 @@ release date is added only when the final tag/release is created.
 
 ### Fixed
 
+- Source-review correctness/privacy repairs: PCAP reply direction and bounded
+  transaction pairing; all DNS IP answers in Zeek/AdGuard/Suricata/CSV/PCAP;
+  literal IP target aliases and truthful export counts/privacy; explicit private
+  collector identity display; bounded transactional SQLite history cleanup with
+  separate maintenance failure status; hard match fanout/work limits and indexed
+  IPv6 membership; cached IPv6-prefix lookup; IDNA detail normalization; safe
+  malformed JSON validation. Failed collector analysis now retries committed
+  records rather than reusing stale evidence. Schema-3 backup/migration exposes
+  legacy first-answer coverage and reconciles identical old/new source rows.
+  Original ML policies/private data are preserved; no public deployment.
+  See `docs/SOURCE_REVIEW_REPAIRS.md`.
+
 - Legitimate Zeek `unknown_transport` fields no longer make a completed connection
   file invalid solely because the official enum has 17 characters. A narrow
   exception preserves the original value; arbitrary oversized fields still fail,

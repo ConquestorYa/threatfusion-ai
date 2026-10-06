@@ -22,7 +22,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from .connections import ConnectionRecord
-from .cti_cache import load_ioc_records
+from .cti_cache import CTICacheReader
 from .dns_zeek import parse_zeek_dns_transactions
 from .dns_collection import build_dns_snapshot, transaction_payload
 from .expected_connections import MAX_RULE_BYTES, parse_expected_connections
@@ -31,6 +31,7 @@ from .reporting import connection_report_payload
 from .runtime_analysis import analyze_connection_records
 from .log_preparation import MANIFEST, STAGING, prepared_context
 from .collector_reports import MAX_GROUPS, SLOTS, project_snapshot, snapshot_group_ids, write_archive, prune_archives
+from .collector_identity import IDENTITY_FILE, identity_payload
 
 POLICY_ID = "closed-zeek-collector-v2"
 MAX_FILE_BYTES = 16 * 1024 * 1024
@@ -161,7 +162,7 @@ class ZeekCollector:
             self.db = sqlite3.connect(path, timeout=5)
             self.db.execute("PRAGMA auto_vacuum=FULL")
             version = self.db.execute("PRAGMA user_version").fetchone()[0]
-            if version not in (0, 1, 2):
+            if version not in (0, 1, 2, 3):
                 raise ValueError("Unsupported collector state schema")
             self.db.executescript("""
                 CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -175,19 +176,21 @@ class ZeekCollector:
                 raise ValueError("Collector state is bound to its original source and limits")
             with self.db:
                 self.db.execute("INSERT OR IGNORE INTO meta VALUES('binding',?)", (binding,))
-            if version == 1:
+            if version in (1, 2):
                 # Keep a private pre-migration copy. Never overwrite an older
                 # receipt or silently make DNS state readable to a v1 collector.
-                descriptor, backup_name = tempfile.mkstemp(dir=self.state, prefix="collector.schema1-", suffix=".sqlite")
+                descriptor, backup_name = tempfile.mkstemp(dir=self.state, prefix=f"collector.schema{version}-", suffix=".sqlite")
                 os.close(descriptor)
                 with sqlite3.connect(backup_name) as backup:
                     self.db.backup(backup)
                 with self.db:
-                    self.db.execute("ALTER TABLE records ADD COLUMN kind TEXT NOT NULL DEFAULT 'conn'")
-                    self.db.execute("ALTER TABLE records ADD COLUMN query_key TEXT")
-                    self.db.execute("PRAGMA user_version=2")
+                    self.db.execute("BEGIN IMMEDIATE")
+                    if version == 1:
+                        self.db.execute("ALTER TABLE records ADD COLUMN kind TEXT NOT NULL DEFAULT 'conn'")
+                        self.db.execute("ALTER TABLE records ADD COLUMN query_key TEXT")
+                    self.db.execute("PRAGMA user_version=3")
             else:
-                self.db.execute("PRAGMA user_version=2")
+                self.db.execute("PRAGMA user_version=3")
             self.db.executescript("""
                 CREATE INDEX IF NOT EXISTS records_timestamp ON records(timestamp DESC, hash);
                 CREATE INDEX IF NOT EXISTS records_ingested ON records(ingested);
@@ -348,6 +351,9 @@ class ZeekCollector:
         recomputed = (self.analysis_cache is None or counts["new_records"] or counts["trimmed_records"]
                       or indicators != self.cached_indicators)
         if recomputed:
+            # Imports are already committed. Failed analysis must force retry;
+            # the previous published snapshot remains intact until success.
+            self.analysis_cache = None
             records = []
             for (payload,) in self.db.execute("SELECT payload FROM records WHERE kind='conn' ORDER BY timestamp, hash"):
                 values = json.loads(payload)
@@ -454,6 +460,7 @@ class ZeekCollector:
         content = json.dumps(report, indent=2) + "\n"
         if len(content.encode()) > 64 * 1024 * 1024:
             raise ValueError("Collector report exceeds 64 MiB; use a smaller record window")
+        _atomic(self.state / IDENTITY_FILE, json.dumps(identity_payload(result, dns_identity, status["selection_revision"])))
         _atomic(self.state / "connections.json", content)
         _atomic(self.state / "status.json", json.dumps(status, indent=2) + "\n")
         if not partial:
@@ -481,6 +488,7 @@ def main(argv=None):
     def stop(*args):
         raise KeyboardInterrupt
     previous_handler = signal.signal(signal.SIGTERM, stop)
+    cti_reader = CTICacheReader(args.db) if args.db else None
     try:
         with ZeekCollector(args.input_dir, args.state_dir, window_seconds=args.window_hours * 3600, max_records=args.max_records) as collector:
             while True:
@@ -488,7 +496,7 @@ def main(argv=None):
                 if args.expected_connections:
                     with args.expected_connections.open("rb") as file:
                         rules = parse_expected_connections(file.read(MAX_RULE_BYTES + 1))
-                indicators = load_ioc_records(args.db) if args.db else []
+                indicators = cti_reader.read() if cti_reader else []
                 status = collector.tick(indicators=indicators, rules=rules)
                 print(json.dumps(status["counts"]), flush=True)
                 if args.once:

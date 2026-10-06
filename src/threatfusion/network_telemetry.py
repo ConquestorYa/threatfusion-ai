@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 
 import dpkt
 
-from .dns import DNSEvent, DNSParseDiagnostics, DNSParseResult
+from .dns import DNSEvent, DNSParseDiagnostics, DNSParseResult, parse_response_ips
 from .connections import ConnectionRecord
 from .normalization import normalize_domain_name
 
@@ -21,6 +21,7 @@ _MAX_ZEEK_CELLS = 5_000_000
 _MAX_SURICATA_RECORDS = 100_000
 _MAX_PCAP_PACKETS = 500_000
 _MAX_PCAP_DNS_EVENTS = 100_000
+_MAX_PCAP_PAIR_CHECKS = 1_000_000
 _MAX_DNSTOP_ROWS = 100_000
 
 
@@ -224,37 +225,52 @@ def _suricata_dns_event(record: dict[str, object]) -> DNSEvent | None:
         return None
 
     rrname = _optional_text(dns.get("rrname"))
+    queries = dns.get("queries", dns.get("query"))
+    if isinstance(queries, list) and len(queries) > 1:
+        raise ValueError("Suricata multi-question DNS records are not supported; use a single-question export")
+    question = queries[0] if isinstance(queries, list) and queries and isinstance(queries[0], dict) else {}
     if rrname is None:
-        query = dns.get("query")
-        if isinstance(query, list) and query and isinstance(query[0], dict):
-            rrname = _optional_text(query[0].get("rrname"))
+        rrname = _optional_text(question.get("rrname"))
     if rrname is None:
         return None
 
-    rrtype = _optional_text(dns.get("rrtype") or dns.get("type"))
+    rrtype = _optional_text(dns.get("rrtype") or question.get("rrtype"))
     rcode = _optional_text(dns.get("rcode"))
 
-    response_ip = None
+    raw_addresses = []
     answers = dns.get("answers")
     if isinstance(answers, list):
-        for answer in answers:
-            if not isinstance(answer, dict):
-                continue
-            rdata = _optional_text(answer.get("rdata"))
-            if rdata is None:
-                continue
-            try:
-                response_ip = str(ipaddress.ip_address(rdata))
-                break
-            except ValueError:
-                continue
+        if len(answers) > 1024:
+            raise ValueError("Suricata DNS answers exceed the safe answer limit")
+        raw_addresses.extend(_optional_text(answer.get("rdata"))
+                             if isinstance(answer, dict) else None for answer in answers)
+    grouped = dns.get("grouped")
+    if isinstance(grouped, dict):
+        for kind in ("A", "AAAA"):
+            values = grouped.get(kind, [])
+            if not isinstance(values, list) or len(values) > 1024:
+                raise ValueError("Suricata grouped DNS answers exceed the safe answer limit")
+            raw_addresses.extend(values)
+    if dns.get("rdata") is not None:
+        raw_addresses.append(_optional_text(dns.get("rdata")))
+    addresses = parse_response_ips(raw_addresses)
+    kind = str(dns.get("type", "")).lower()
+    if record.get("src_port") == 53 and record.get("dest_port") != 53:
+        client = _optional_text(record.get("dest_ip"))
+    elif record.get("dest_port") == 53 and record.get("src_port") != 53:
+        client = _optional_text(record.get("src_ip"))
+    else:
+        # Some exporters keep flow direction on answers. Without ports, do
+        # not guess whether src_ip is a resolver or an actual client.
+        client = _optional_text(record.get("src_ip")) if kind in ("query", "request") else None
 
     return DNSEvent(
         query_name=rrname,
         timestamp=_iso_timestamp(record.get("timestamp")),
-        client_ip=_optional_text(record.get("src_ip")),
+        client_ip=client,
         query_type=rrtype.upper() if rrtype else None,
-        response_ip=response_ip,
+        response_ip=addresses[0] if addresses else None,
+        response_ips=addresses[1:],
         response_code=rcode.upper() if rcode else None,
     )
 
@@ -285,13 +301,15 @@ def parse_suricata_eve_with_diagnostics(content: str) -> DNSParseResult:
     if stripped.startswith("["):
         try:
             parsed = json.loads(stripped)
-        except json.JSONDecodeError as error:
+        except (json.JSONDecodeError, RecursionError) as error:
             raise ValueError("Suricata EVE JSON is malformed") from error
         if not isinstance(parsed, list):
             raise ValueError("Suricata EVE JSON array is invalid")
         if len(parsed) > _MAX_SURICATA_RECORDS:
             raise ValueError("Suricata EVE exceeds the safe record import limit")
-        records = [item for item in parsed if isinstance(item, dict)]
+        if any(not isinstance(item, dict) for item in parsed):
+            raise ValueError("Suricata EVE array must contain event objects")
+        records = parsed
     else:
         for line in io.StringIO(content):
             if not line.strip():
@@ -300,10 +318,11 @@ def parse_suricata_eve_with_diagnostics(content: str) -> DNSParseResult:
                 raise ValueError("Suricata EVE exceeds the safe record import limit")
             try:
                 item = json.loads(line)
-            except json.JSONDecodeError as error:
+            except (json.JSONDecodeError, RecursionError) as error:
                 raise ValueError("Suricata EVE JSONL contains a malformed line") from error
-            if isinstance(item, dict):
-                records.append(item)
+            if not isinstance(item, dict):
+                raise ValueError("Suricata EVE JSONL must contain event objects")
+            records.append(item)
 
     dns_events = [
         event
@@ -341,7 +360,7 @@ def _ip_text(address_bytes: bytes) -> str | None:
     return None
 
 
-def _dns_events_from_packet(timestamp: float, packet: bytes) -> list[DNSEvent]:
+def _dns_events_from_packet(timestamp: float, packet: bytes, *, identity=None) -> list[DNSEvent]:
     try:
         ethernet = dpkt.ethernet.Ethernet(packet)
         ip_packet = ethernet.data
@@ -356,20 +375,28 @@ def _dns_events_from_packet(timestamp: float, packet: bytes) -> list[DNSEvent]:
     except (dpkt.UnpackError, ValueError):
         return []
 
-    client_ip = _ip_text(ip_packet.src)
+    reply = bool(dns.qr)
+    client_ip = _ip_text(ip_packet.dst if reply else ip_packet.src)
+    resolver_ip = _ip_text(ip_packet.src if reply else ip_packet.dst)
+    if identity is not None:
+        identity.extend((reply, client_ip, transport.dport if reply else transport.sport,
+                         resolver_ip, transport.sport if reply else transport.dport, dns.id))
     timestamp_value = datetime.fromtimestamp(timestamp, tz=timezone.utc)
     events: list[DNSEvent] = []
 
     questions = list(getattr(dns, "qd", ()) or ())
     answers = list(getattr(dns, "an", ()) or ())
-    response_ip = None
+    if len(questions) > 1024 or len(answers) > 1024:
+        raise _TelemetryResourceLimitError("DNS packet exceeds the safe question/answer limit")
+    addresses = []
     for answer in answers:
         answer_type = getattr(answer, "type", None)
         rdata = getattr(answer, "rdata", b"")
         if answer_type in {dpkt.dns.DNS_A, dpkt.dns.DNS_AAAA}:
-            response_ip = _ip_text(rdata)
-            if response_ip:
-                break
+            address = _ip_text(rdata)
+            if address:
+                addresses.append(address)
+    addresses = parse_response_ips(addresses)
 
     for question in questions:
         name = _optional_text(getattr(question, "name", None))
@@ -392,8 +419,9 @@ def _dns_events_from_packet(timestamp: float, packet: bytes) -> list[DNSEvent]:
                 timestamp=timestamp_value,
                 client_ip=client_ip,
                 query_type=qtype_name,
-                response_ip=response_ip,
-                response_code=str(getattr(dns, "rcode", "")) or None,
+                response_ip=addresses[0] if reply and addresses else None,
+                response_ips=addresses[1:] if reply else (),
+                response_code=str(dns.rcode) if reply else None,
             )
         )
     return events
@@ -413,8 +441,14 @@ def parse_pcap_dns_with_diagnostics(content: bytes) -> DNSParseResult:
     except (ValueError, dpkt.UnpackError) as error:
         raise ValueError("packet capture is not a readable PCAP/PCAPNG file") from error
 
+    if reader.datalink() != dpkt.pcap.DLT_EN10MB:
+        raise ValueError("Only Ethernet packet captures are supported for DNS import")
+
     events: list[DNSEvent] = []
+    pending = {}
+    queries = paired = response_only = 0
     packet_count = 0
+    pair_checks = 0
     try:
         for timestamp, packet in reader:
             packet_count += 1
@@ -422,14 +456,46 @@ def parse_pcap_dns_with_diagnostics(content: bytes) -> DNSParseResult:
                 raise _TelemetryResourceLimitError(
                     "packet capture exceeds the safe packet import limit"
                 )
-            events.extend(_dns_events_from_packet(float(timestamp), packet))
+            identity = []
+            observed = _dns_events_from_packet(float(timestamp), packet, identity=identity)
+            for event in observed:
+                reply = identity[0]
+                key = (*identity[1:], normalize_domain_name(event.query_name), event.query_type)
+                if reply:
+                    candidates = pending.get(key, [])
+                    # Most recent preceding query, same endpoints/ports/ID/name,
+                    # within two minutes. Never join different clients or reuse
+                    # an old transaction ID without a bounded timing match.
+                    index = None
+                    position = None
+                    for position in range(len(candidates) - 1, -1, -1):
+                        pair_checks += 1
+                        if pair_checks > _MAX_PCAP_PAIR_CHECKS:
+                            raise _TelemetryResourceLimitError("DNS transaction pairing exceeds the safe work limit")
+                        candidate = candidates[position]
+                        if 0 <= (event.timestamp - events[candidate].timestamp).total_seconds() <= 120:
+                            index = candidate
+                            break
+                    if index is not None:
+                        query = events[index]
+                        query.response_ip = event.response_ip
+                        query.response_ips = event.response_ips
+                        query.response_code = event.response_code
+                        candidates.pop(position)
+                        paired += 1
+                        continue
+                    response_only += 1
+                else:
+                    queries += 1
+                    pending.setdefault(key, []).append(len(events))
+                events.append(event)
             if len(events) > _MAX_PCAP_DNS_EVENTS:
                 raise _TelemetryResourceLimitError(
                     "packet capture exceeds the safe DNS event import limit"
                 )
     except _TelemetryResourceLimitError:
         raise
-    except (ValueError, dpkt.UnpackError) as error:
+    except (ValueError, OverflowError, OSError, dpkt.UnpackError) as error:
         raise ValueError("packet capture contains malformed packet data") from error
 
     if not events:
@@ -446,6 +512,9 @@ def parse_pcap_dns_with_diagnostics(content: bytes) -> DNSParseResult:
             skipped_missing_query_name=max(0, packet_count - len(events)),
             invalid_timestamps=0,
             invalid_response_ips=0,
+            packet_dns_queries=queries,
+            packet_paired_queries=paired,
+            packet_response_only=response_only,
         ),
     )
 

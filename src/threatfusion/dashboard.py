@@ -17,6 +17,7 @@ from .persistence import (
 from .runtime_analysis import RuntimeAnalysisResult
 from .device_triage import DeviceFinding
 from .connections import ConnectionFinding
+from .normalization import normalize_domain_name
 from .expected_connections import ExpectedConnectionRule, connection_contexts
 
 
@@ -144,6 +145,8 @@ def device_finding_rows(
     """Report-local aliases by default; IP identity is an explicit local choice."""
     clients = sorted({f.client_ip for f in findings if f.client_ip is not None})
     aliases = {client: f"Device {index:03d}" for index, client in enumerate(clients, 1)}
+    from .target_privacy import target_aliases
+    targets = target_aliases(f.assessment.domain for f in findings)
     coverage_labels = {
         "missing_or_invalid_client_ip": "Client identity unavailable",
         "missing_timestamps": "Some timestamps are missing",
@@ -162,7 +165,7 @@ def device_finding_rows(
                 finding.client_ip if include_client_ips and finding.client_ip
                 else aliases.get(finding.client_ip, "Unattributed")
             ),
-            "Target": assessment.domain,
+            "Target": assessment.domain if include_client_ips else targets.get(assessment.domain, assessment.domain),
             "Queue priority": finding.priority.title(),
             "Verdict": verdict_label(assessment.verdict.value),
             "Telemetry events": behavior.event_count,
@@ -573,12 +576,11 @@ def domain_match_rows(
     domain: str,
 ) -> list[dict[str, object]]:
     """Return IOC evidence rows associated with one normalized query domain."""
-    normalized = domain.strip().casefold().removesuffix(".")
+    normalized = normalize_domain_name(domain)
     return [
         row
         for match, row in zip(result.matches, match_rows(result), strict=True)
-        if match.event.query_name.strip().casefold().removesuffix(".")
-        == normalized
+        if normalize_domain_name(match.event.query_name) == normalized
     ]
 
 

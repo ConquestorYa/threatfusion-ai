@@ -4,6 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import sqlite3
 
 from .collectors.phishtank import PhishTankCollector
 from .collectors.sgb import SGBCollector
@@ -250,5 +251,14 @@ def refresh_configured_sources(
             )
         )
 
-    prune_inactive_records(db_path, older_than_days=90, now=reference)
+    try:
+        prune_inactive_records(db_path, older_than_days=90, now=reference)
+    except (OSError, sqlite3.Error, ValueError):
+        # Source snapshots have already committed independently. Maintenance
+        # failure must not mislabel those updates as failed/preserved snapshots.
+        outcomes.append(CTIRefreshOutcome(
+            source="Cache maintenance", status="failed",
+            detail="Inactive-history cleanup failed; completed source updates remain available.",
+        ))
+        _emit_progress(progress, "Cache maintenance", "failed", outcomes[-1].detail)
     return tuple(outcomes)

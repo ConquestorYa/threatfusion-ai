@@ -8,7 +8,7 @@ from datetime import datetime
 from itertools import pairwise
 from statistics import pstdev
 
-from .dns import DNSEvent
+from .dns import DNSEvent, response_ip_addresses
 from .models import IOCType
 from .normalization import normalize_ioc_value
 
@@ -100,9 +100,7 @@ def _domain_shape_metrics(
 
 
 def _response_ip_churn_rate(domain_events: list[DNSEvent]) -> float | None:
-    response_ip_observations = [
-        event.response_ip for event in domain_events if event.response_ip is not None
-    ]
+    response_ip_observations = [ip for event in domain_events for ip in response_ip_addresses(event)]
     if not response_ip_observations:
         return None
     return len(set(response_ip_observations)) / len(response_ip_observations)
@@ -158,11 +156,7 @@ def aggregate_dns_behavior(events: Iterable[DNSEvent]) -> list[DomainBehavior]:
             for event in domain_events
             if event.client_ip is not None
         }
-        response_ips = {
-            event.response_ip
-            for event in domain_events
-            if event.response_ip is not None
-        }
+        response_ips = {ip for event in domain_events for ip in response_ip_addresses(event)}
         query_types = {
             event.query_type
             for event in domain_events
