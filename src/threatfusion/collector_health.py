@@ -11,6 +11,8 @@ REJECTIONS = frozenset({"format_or_limits", "access", "archive", "encoding"})
 def validate_collector_health(status):
     if "input_coverage_loss" in status and type(status["input_coverage_loss"]) is not bool:
         raise ValueError("Invalid input coverage state")
+    if "cti_reload_deferred" in status and type(status["cti_reload_deferred"]) is not bool:
+        raise ValueError("Invalid CTI reload state")
     prepared = status.get("preparation")
     if prepared is not None:
         def bounded(value, maximum=4_096_000_000):

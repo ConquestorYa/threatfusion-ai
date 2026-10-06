@@ -137,6 +137,8 @@ def render_collector(state_dir: Path | None, *, public_mode: bool):
         details = [f"{tr(labels[name])}: {count}" for name, count in scan["rejections"].items() if count]
         if details:
             st.caption(tr("Rejected input types: {types}", types=", ".join(details)))
+    if status.get("cti_reload_deferred"):
+        st.warning(tr("The CTI cache was busy during this scan. Results use the previously loaded indicators; recent CTI changes appear on a later scan."))
     if not status["cti_indicators"]:
         st.info(tr("Collector CTI is empty or disabled. These are behavior observations only."))
     coverage = payload.get("connection_coverage")

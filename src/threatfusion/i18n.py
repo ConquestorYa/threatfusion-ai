@@ -146,6 +146,7 @@ _TR: dict[str, str] = {
     "Input coverage is incomplete. Rejected, quarantined or pending records prevent expected-activity filtering.": "Girdi kapsamı eksik. Reddedilen, karantinadaki veya bekleyen kayıtlar nedeniyle beklenen etkinlik filtresi kapalı.",
     "Prepared source rows: {total}; eligible: {accepted}; quarantined DNS rows: {quarantined}; pending files: {pending}.": "Hazırlanan kaynak satırları: {total}; uygun: {accepted}; karantinadaki DNS satırları: {quarantined}; bekleyen dosyalar: {pending}.",
     "Some logs were rejected. Check source format, completion and limits before trusting coverage.": "Bazı kayıtlar reddedildi. Kapsama güvenmeden önce kaynak biçimini, kapanışı ve sınırları kontrol et.",
+    "The CTI cache was busy during this scan. Results use the previously loaded indicators; recent CTI changes appear on a later scan.": "Bu taramada CTI önbelleği meşguldü. Sonuçlar daha önce yüklenen göstergeleri kullanıyor; son CTI değişiklikleri sonraki bir taramada görünür.",
     "Collector CTI is empty or disabled. These are behavior observations only.": "Toplayıcı CTI verisi boş veya kapalı. Bunlar yalnızca davranış gözlemleridir.",
     "Showing the first 500 groups. The download contains all retained groups.": "İlk 500 grup gösteriliyor. İndirilen rapor tutulan bütün grupları içerir.",
     "Download collected connection JSON": "Toplanan bağlantıların JSON raporunu indir",

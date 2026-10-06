@@ -9,19 +9,21 @@ import os
 import signal
 import sqlite3
 import stat
+import sys
 import tempfile
 import time
 import zlib
 import errno
 import uuid
-import copy
 import re
 from bisect import bisect_right
+from operator import attrgetter
 from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from .connections import ConnectionRecord
+from .models import IOCRecord
 from .cti_cache import CTICacheReader
 from .dns_zeek import parse_zeek_dns_transactions
 from .dns_collection import build_dns_snapshot, transaction_payload
@@ -41,6 +43,20 @@ MAX_SCAN_ENTRIES = 8192
 MAX_IMPORTS_PER_TICK = 64
 LEDGER_SECONDS = 7 * 86400
 MAX_LEDGER_FILES = 10_000
+
+
+_INDICATOR_LISTS = tuple(name for name, value in IOCRecord.__dataclass_fields__.items() if value.default_factory is list)
+_INDICATOR_VALUES = attrgetter(*(name for name in IOCRecord.__dataclass_fields__ if name not in _INDICATOR_LISTS))
+
+
+def _indicator_state(indicators):
+    """Immutable field view of the indicators used by the cached analysis.
+
+    Detects replaced and in-place changed records without deep-copying a real
+    several-hundred-thousand-record cache; strings/datetimes stay shared.
+    """
+    return (tuple(map(_INDICATOR_VALUES, indicators)),
+            tuple(tuple(tuple(getattr(record, name)) for name in _INDICATOR_LISTS) for record in indicators))
 
 
 def _atomic(path: Path, content: str):
@@ -248,7 +264,7 @@ class ZeekCollector:
             self.db.execute(f"DELETE FROM {table} WHERE rowid IN (SELECT rowid FROM {table} ORDER BY ingested DESC LIMIT -1 OFFSET ?)", (MAX_LEDGER_FILES,))
         return trimmed + capacity
 
-    def tick(self, *, indicators=(), rules=(), now: datetime | None = None):
+    def tick(self, *, indicators=(), rules=(), now: datetime | None = None, cti_reload_deferred=False):
         now = now or datetime.now(timezone.utc)
         if now.tzinfo is None or now.utcoffset() is None:
             raise ValueError("Collector clock must be aware")
@@ -348,8 +364,9 @@ class ZeekCollector:
                 rejections[reason] += 1
         with self.db:
             counts["trimmed_records"] += self._prune(epoch)
+        indicator_state = _indicator_state(indicators)
         recomputed = (self.analysis_cache is None or counts["new_records"] or counts["trimmed_records"]
-                      or indicators != self.cached_indicators)
+                      or indicator_state != self.cached_indicators)
         if recomputed:
             # Imports are already committed. Failed analysis must force retry;
             # the previous published snapshot remains intact until success.
@@ -364,7 +381,7 @@ class ZeekCollector:
             dns_identity = []
             dns_snapshot = build_dns_snapshot(dns_payloads, indicators, generated_at=now, selection_identity=dns_identity)
             self.analysis_cache = result, dns_snapshot, len(records), len(dns_payloads), dns_identity
-            self.cached_indicators = copy.deepcopy(indicators)
+            self.cached_indicators = indicator_state
             completions = set()
             for finding in result.connection_findings:
                 if finding.last_seen is not None and finding.max_duration_seconds is not None:
@@ -395,6 +412,7 @@ class ZeekCollector:
                   "window_seconds": self.window, "max_records": self.max_records, "counts": counts,
                   "ml_enabled": False, "cti_indicators": len(indicators), "capacity_coverage_loss": capacity_loss,
                   "input_coverage_loss": input_loss, "preparation": preparation,
+                  "cti_reload_deferred": bool(cti_reload_deferred),
                   "limitations": ["Completed TSV connection and TCP/UDP DNS logs only; active files wait for #close.",
                                   "One source/sensor per private state; bounded event/ingestion window.",
                                   "UID deduplication/conflicts apply within retained evidence; dropped data is coverage loss.",
@@ -472,6 +490,10 @@ class ZeekCollector:
         return status
 
 
+def _cti_busy(error):
+    return getattr(error, "sqlite_errorcode", None) in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input-dir", type=Path, required=True)
@@ -496,8 +518,23 @@ def main(argv=None):
                 if args.expected_connections:
                     with args.expected_connections.open("rb") as file:
                         rules = parse_expected_connections(file.read(MAX_RULE_BYTES + 1))
-                indicators = cti_reader.read() if cti_reader else []
-                status = collector.tick(indicators=indicators, rules=rules)
+                deferred = False
+                try:
+                    indicators = cti_reader.read() if cti_reader else []
+                except sqlite3.OperationalError as error:
+                    # A long CTI refresh/maintenance lock must not stop collection.
+                    # Keep the last complete indicator view and retry next poll;
+                    # never analyze as if the user's cache were empty.
+                    if not _cti_busy(error):
+                        raise
+                    if cti_reader.records is None:
+                        if args.once:
+                            parser.exit(1, "Collector stopped: the CTI cache is busy. Retry after the CTI update finishes.\n")
+                        print("CTI cache is busy; waiting before the first scan.", file=sys.stderr, flush=True)
+                        time.sleep(args.poll_seconds)
+                        continue
+                    indicators, deferred = cti_reader.records, True
+                status = collector.tick(indicators=indicators, rules=rules, cti_reload_deferred=deferred)
                 print(json.dumps(status["counts"]), flush=True)
                 if args.once:
                     return 0
