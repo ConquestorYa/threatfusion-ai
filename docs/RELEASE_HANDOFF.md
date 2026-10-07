@@ -2,6 +2,20 @@
 
 Status date: 2026-10-06
 
+## Manual acceptance checklist review (2026-10-07)
+
+- At the user's request every checklist step was checked against the product.
+  The old collection sample (`results/periodic-live-…`) imports 234 records but
+  yields zero review groups, so default views would be empty; replaced by the
+  synthetic development set `analyst-guidance-v1/traffic/development/zeek`
+  (verified in a temporary state: 818 records, 8 connection / 1 DNS review
+  groups; export contains only aliases, zero literal IPv4). Reserved sets are
+  explicitly excluded. Corrected labels (Turkish button names, IP toggle,
+  JSON-only collector export), and the offline step now uses the force option.
+- Quick lookup validation errors were English inside the Turkish UI; ten
+  messages are translated (test ensures each raised message has a translation;
+  the length-limit f-string remains English).
+
 ## P0 round-3 feedback: update result clarity and SGB speed (2026-10-07)
 
 - User reports: offline update showed only "started"; SGB sat at 79% for a

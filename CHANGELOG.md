@@ -254,6 +254,14 @@ release date is added only when the final tag/release is created.
 
 ### Fixed
 
+- Quick lookup input-validation details are translated in the Turkish UI.
+- Manual acceptance checklist reviewed end to end: the collection step used a
+  sample that yields no review groups (empty default tables); it now uses the
+  synthetic `analyst-guidance-v1` development set (818 records, 8 connection and
+  1 DNS review group, verified). Removed a non-existent CSV export, corrected
+  control names, made the offline test possible via the force option, and
+  consolidated rounds into one ordered list while keeping the user's marks.
+
 - CTI update UX from user P0 feedback: after a background update the sidebar
   button stayed disabled until another interaction and the result toast was
   easy to miss. Completion now reruns the whole page, shows a two-minute result

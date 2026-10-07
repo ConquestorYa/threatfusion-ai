@@ -768,7 +768,7 @@ def main() -> None:
                         )
                 except (TypeError, ValueError) as error:
                     st.session_state.pop("quick_lookup_result", None)
-                    st.error(tr("Lookup input could not be analyzed: {error}", error=error))
+                    st.error(tr("Lookup input could not be analyzed: {error}", error=tr(str(error))))
 
         lookup_result = st.session_state.get("quick_lookup_result")
         if lookup_result is not None:

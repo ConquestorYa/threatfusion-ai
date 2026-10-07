@@ -235,3 +235,12 @@ def test_offline_failures_do_not_blame_phishtank_or_keys(managed, monkeypatch):
     assert "Check your internet connection or source availability" in text
     assert "your key" not in text
     assert not any("public keyless feed" in str(i.value) for i in app.info)
+
+
+def test_lookup_validation_messages_have_turkish_translations():
+    import re
+    from pathlib import Path
+    from threatfusion.i18n import _TR
+    sources = "".join(Path("src/threatfusion", name).read_text() for name in ("quick_lookup.py", "normalization.py"))
+    messages = set(re.findall(r'raise ValueError\("([^"]+)"\)', sources))
+    assert len(messages) >= 10 and not messages - set(_TR)

@@ -6,108 +6,141 @@ geçmez. Her maddeyi işaretle. Bir sorun görürsen altına şu üç satırı y
 
 > **Ne yaptım:** … **Ne bekledim:** … **Ne oldu:** … (varsa ekran görüntüsü)
 
-Başlamadan önce: bilgisayarda başka bir ölçüm (soak) çalışmıyor olmalı ve test
-etmek istediğin düzeltmeler GitHub `main`'e gönderilmiş olmalı. Kurulum her zaman
-`main`'deki güncel sürümü kurar.
+`[evet]` olan maddeler tamamlandı; tekrar yapman gerekmiyor. "Sohbetten
+aktarıldı" notlu olanları sen sohbette bildirdin, Claude işaretledi. Sırayla
+**boş `[ ]` maddeleri** yap. Arayüz Türkçe ise düğme adları parantez içindeki
+Türkçe karşılıklarıyla görünür.
+
+## 0. Başlamadan önce: en son sürüme güncelle
+
+Düzeltmeler GitHub `main`'e gönderildikten sonra:
+
+```bash
+threatfusion-ai stop
+```
+
+Ardından [README.tr.md](../README.tr.md) içindeki **aynı tek satırlık kurulum
+komutunu** tekrar çalıştır. Silip yeniden kurman gerekmez; CTI verileri,
+ayarlar ve kayıtlı anahtarlar korunur. Uygulama tarayıcıda açılır. Adres
+`http://127.0.0.1:` veya `http://localhost:` ile başlamalı (port 8501, 8502…
+olabilir); başka adreslerle güvenlik gereği boş sayfa görünür.
 
 ## 1. Kurulum
 
-- [evet] Normal kullanıcıyla (**sudo olmadan**) [README.tr.md](../README.tr.md)
-      içindeki "Linux — tek komutla local kurulum" komutunu çalıştırdım.
-- [evet] Kurulum hatasız bitti ve tarayıcıda `http://127.0.0.1:8501` (veya
-      sıradaki boş port) açıldı.
+- [evet] Normal kullanıcıyla (**sudo olmadan**) README.tr.md içindeki
+      "Linux — tek komutla local kurulum" komutunu çalıştırdım.
+- [evet] Kurulum hatasız bitti ve tarayıcıda uygulama açıldı.
 - [evet] Uygulamalar menüsünde **ThreatFusion AI** kısayolu var.
 - [evet] Yeni bir terminalde `threatfusion-ai` komutu bulunuyor.
+- [evet — sohbetten aktarıldı] Aynı komutu tekrar çalıştırınca güncellendi;
+      CTI verileri ve kayıtlı anahtarlar korundu. (Omarchy/Arch üzerinde.)
 
 ## 2. Açma, kapatma, yeniden açma
 
 - [evet] `threatfusion-ai status` çalışan sunucuyu gösteriyor.
 - [evet] Tarayıcı sekmesini kapattım; `status` sunucunun hâlâ çalıştığını gösteriyor.
 - [evet] `threatfusion-ai stop` sunucuyu durdurdu; `status` bunu doğruluyor.
-- [evet] Menüden veya `threatfusion-ai` ile tekrar açtım; önceki ayarlar duruyor.
-  - **Tur 2 — yeniden test et (madde netleştirildi):** "Ayarlar" şunlar demek:
-    - [evet] Yan çubuktaki mod seçimi (gerçek CTI / demo) kapatmadan önceki gibi.
-    - [] "Otomatik güncelleme" kutusu ve güncelleme aralığı (değiştirdiysen)
-          kapatmadan önceki gibi.
-    - [ ] Güncellediğin CTI kaynaklarının kayıt sayıları ve son güncelleme zamanı
-          hâlâ görünüyor (veriler silinmemiş).
-    - Dil seçimi bilerek kalıcı değildir; yeniden açınca varsayılana dönmesi normal.
+- [evet] Menüden veya `threatfusion-ai` ile tekrar açtım; önceki ayarlar duruyor:
+  - [evet] Yan çubuktaki mod seçimi (gerçek CTI / demo) aynı.
+  - [evet — sohbetten aktarıldı] CTI kayıt sayıları ve "son güncelleme" zamanı
+        korunuyor (yeniden açınca kaynaklar "Fresh" göründü).
+  - [ ] **"Uygulama çalışırken otomatik güncelle"** kutusunu işaretle, aralığı
+        12 saat seç, **"Güncelleme ayarlarını kaydet"**e bas. Uygulamayı kapatıp
+        aç: kutu işaretli ve aralık 12 saat kalmalı. (Sonra istediğin gibi geri al.)
+  - Dil seçimi bilerek kalıcı değildir; yeniden açınca varsayılana dönmesi normal.
 - [evet] Web panelindeki **Yerel uygulamayı kapat** düğmesi de sunucuyu durduruyor.
 
 ## 3. CTI anahtarları ve güncelleme
 
-- [evet] Yan çubukta **Yerel kurulum ve CTI güncellemeleri** panelini buldum.
+Hepsi yan çubuktaki **Yerel kurulum ve CTI güncellemeleri** panelinde.
+ThreatFox ve URLhaus **senin anahtarını** ister; SGB ve PhishTank anahtarsızdır.
+
+Tamamlananlar:
+
+- [evet] Paneli buldum.
 - [evet] Kendi ThreatFox ve URLhaus anahtarlarımı girip uyguladım.
-- [Update CTI now tuşuna basınca güncelliyor. Ama aynı tuşa tekrar basınca durduruyor galiba orda hata var mı bak (ayrıca güncelleme kısmında bar veya %71 gibi bir değer ekle çünkü uzun sürüyor ve sadece dönüp duran küçük bir ikon var. pop up gibi ortada çıkabilir güncelleniyor diye)] Kaynakları güncelledim; kaynak durumu "güncel" ve kayıt sayıları görünüyor.
-  - **Tur 2 — düzeltildi, yeniden test et:** Hata doğrulandı: güncelleme
-    sürerken herhangi bir tıklama güncellemeyi yarıda kesiyordu. Artık arka
-    planda çalışıyor.
-    - [ ] "Update CTI now"a basınca sağ üstte "güncelleme başladı" bildirimi çıktı.
-    - [evet — sohbetten aktarıldı: kısa süre göründü; kaynaklar hâlâ güncel
-      olduğu için güncelleme hemen bitti] Sayfanın üstünde ilerleme çubuğu var: "x/y tamamlandı · %..., kaynak
-          adı, aşama". Yüzde tamamlanan kaynakları sayar (indirme boyutu
-          önceden bilinmez); SGB sayfalarında ara değerler görünür.
-    - [ ] Güncelleme sürerken düğme pasif (gri) ve tıklanamıyor.
-    - [ ] Güncelleme sürerken başka sayfaya geçtim / dili değiştirdim; güncelleme
-          durmadı, çubuk ilerlemeye devam etti.
-    - [evet — sohbetten aktarıldı: onay bildirimi çıktı, çubuk kayboldu;
-      PhishTank dışındaki kaynaklar "Fresh"] Bitince "CTI güncellemesi
-          tamamlandı" bildirimi çıktı, çubuk kayboldu ve kaynak kayıt sayıları göründü.
-  - **Tur 3 — düzeltildi, yeniden test et:**
-    - [ ] İnternet kapalıyken güncelleyince birkaç saniye içinde "Hiçbir CTI
-          kaynağına ulaşılamadı. İnternet bağlantını kontrol et" mesajı çıktı ve
-          düğme yeniden tıklanabilir oldu.
-    - [ ] Kaynaklar güncelken basınca "CTI zaten güncel" mesajı çıktı; yan
-          panelde "sonraki indirme yaklaşık … saat sonra" yazıyor.
-    - [ ] "Kaynaklar güncel olsa da yeniden indir" kutusunu işaretleyip basınca
-          gerçek bir indirme başladı ve SGB'de "… / … kayıt" sayacı ilerledi.
-    - [ ] SGB eskisine göre belirgin şekilde daha hızlı bitti (yaklaşık süre: …).
-- [evet] SGB ve PhishTank anahtarsız güncellendi.
-  - **Tur 2 notu:** Kontrol ettim: PhishTank'tan hiç kayıt gelmemiş (SGB,
-    ThreatFox ve URLhaus verisi var). Sebep PhishTank'ın kendisi: anahtarsız
-    public indirme adresi şu an kaldırılmış/çalışmıyor. Bu senin hatan değil.
-    Artık uygulama bunu sarı uyarı yerine mavi bilgi notu olarak gösteriyor.
-    - [ ] Güncellemeden sonra PhishTank için "anahtarsız public kaynak şu an
-          alınamıyor; senin tarafında düzeltilecek bir şey yok" notu çıktı ve
-          güncelleme bildirimi "sorunlarla bitti" yerine "tamamlandı" dedi.
 - [evet] Anahtarı **kaydetmeden** uygulamayı kapatıp açtım; anahtar hatırlanmadı
       (beklenen davranış).
 - [evet — sohbetten aktarıldı] Anahtarı açıkça kaydetmeyi seçtim; yeniden açınca hatırlandı.
-- [ ] İnterneti kestim ve tekrar güncellemeyi denedim: anlaşılır bir hata
-      gördüm ve **önceki veriler silinmedi**.
-- [ ] İnterneti açıp tekrar güncelleyince düzeldi.
+- [evet] SGB ve PhishTank anahtarsız güncellendi.
+  - Not: PhishTank'tan aslında hiç kayıt gelmedi. Sebep PhishTank'ın kendisi:
+    anahtarsız public indirme adresi şu an çalışmıyor. Bu senin hatan değil.
 
-## 4. Quick Lookup
+Yapılacaklar (sırayla):
 
-- [ ] Bilinen zararsız bir alan adı sorguladım (ör. `wikipedia.org`); sonuç ve
-      gerekçesi anlaşılır.
-- [ ] Bir IP adresi sorguladım; sonuç anlaşılır.
-- [ ] Hatalı bir girdi denedim (ör. `abc def`); uygulama çökmeden açıklayıcı bir
-      hata verdi.
+- [ ] **Zaten güncel durumu:** Kutuyu işaretlemeden **Update CTI now**
+      (**CTI verilerini şimdi güncelle**) düğmesine bas. Birkaç saniye içinde
+      "CTI zaten güncel; indirilecek bir şey yoktu" mesajı çıkmalı ve düğme
+      tekrar tıklanabilir olmalı. Panelde "Kaynaklar güncel; sonraki indirme
+      yaklaşık … saat sonra" yazmalı.
+- [ ] **Gerçek indirme:** **"Kaynaklar güncel olsa da yeniden indir"** kutusunu
+      işaretle ve düğmeye bas. Kontrol et:
+  - [ ] Köşede "CTI güncellemesi başladı" bildirimi çıktı.
+  - [ ] Sayfanın üstünde ilerleme çubuğu var: "x/y tamamlandı · %…, kaynak,
+        aşama". SGB sırasında "… / … kayıt" sayacı ilerliyor. Yüzde tamamlanan
+        kaynakları sayar (indirme boyutları önceden bilinmez).
+  - [ ] Güncelleme sürerken düğme ve kutu gri/tıklanamaz.
+  - [ ] Güncelleme sürerken başka sayfaya geçtim ve dili değiştirdim; çubuk
+        durmadan devam etti.
+  - [ ] Bitince "CTI güncellemesi tamamlandı: … kaynak indirildi" mesajı çıktı,
+        düğme tekrar aktif oldu, kayıt sayıları güncellendi.
+  - [ ] Panelde PhishTank için **mavi** bilgi notu var ("anahtarsız public kaynak
+        şu an alınamıyor; senin tarafında düzeltilecek bir şey yok").
+  - [ ] Toplam süre: … dakika (SGB eskisine göre daha kısa sürmeli).
+- [ ] **İnternetsiz:** Wi-Fi'ı kapat, kutuyu işaretli bırak ve düğmeye bas.
+      Birkaç saniye içinde "Hiçbir CTI kaynağına ulaşılamadı. İnternet
+      bağlantını kontrol et; mevcut veriler korunuyor" mesajı çıkmalı, düğme
+      tekrar aktif olmalı ve **kayıt sayıları değişmemeli**. Panelde
+      "anahtarını kontrol et" yazmamalı.
+- [ ] Wi-Fi'ı aç, kutu işaretliyken tekrar bas: güncelleme başarıyla bitti.
+
+## 4. Hızlı sorgu (Quick lookup)
+
+Ana sayfadaki **Hızlı sorgu** alanını kullan. Hiçbir sorgu hedef siteye
+bağlanmaz; yalnızca yerel CTI verisine bakılır.
+
+- [ ] `wikipedia.org` sorguladım: eşleşme olmadığı ve bunun "kesin güvenli"
+      anlamına gelmediği anlaşılır biçimde yazıyor.
+- [ ] Bir IP adresi sorguladım (ör. `8.8.8.8`); sonuç anlaşılır.
+- [ ] Hatalı bir girdi denedim (ör. `abc def`): uygulama çökmedi, Türkçe bir
+      hata çıktı ("Girdi analiz edilemedi: alan adı en az iki bölümden oluşmalı…").
 
 ## 5. Zeek log toplama
 
-İkinci bir terminalde lab'ın ürettiği sentetik Zeek loglarından birini ver:
+Bu adım için lab'daki **sentetik** veri setini kullan (gerçek trafik değil,
+inceleme gerektiren örnekler içerir). Uygulama açıkken **ikinci bir
+terminalde** çalıştır:
 
 ```bash
-threatfusion-ai collect --input-dir /home/yahya/Work/threatfusion-lab/results/periodic-live-20261004T144348Z
+threatfusion-ai collect --input-dir /home/yahya/Work/threatfusion-lab/analyst-guidance-v1/traffic/development/zeek
 ```
 
-- [ ] Komut hatasız çalıştı ve logları işledi.
-- [ ] Web'de **Toplanan bağlantılar** sayfası bağlantı gruplarını gösteriyor.
-- [ ] **Toplanan DNS gözlemleri** bölümü DNS sorgularını gösteriyor.
-- [ ] Bir cihaz/hedef seçince zaman çizelgesi ve "neden incelenmeli" açıklaması
+Testte başka bir klasör verme (her toplayıcı durumu tek bir kaynağa
+bağlıdır). `reserved` adlı klasörleri kullanma; onlar değerlendirme için
+ayrılmıştır.
+
+- [ ] Komut hatasız çalıştı. Terminalde ilk satırda `"new_records": 818` ve
+      `"review_groups": 8` görünüyor; sonraki satırlarda `"new_records": 0`.
+- [ ] Yan çubukta **İkincil görünümler → Toplanan bağlantılar** sayfasını açtım;
+      tabloda 8 inceleme grubu var. Uçlar `Sistem 001` gibi takma adlarla görünüyor.
+- [ ] Bir grubu seçtim; zaman çizelgesi ve **İnceleme rehberi** (neden incelenmeli, sonra neye bakılmalı) bölümü
       anlaşılır.
-- [ ] Ctrl+C ile durdurup aynı komutu tekrar çalıştırdım; aynı kayıtlar
-      **ikinci kez eklenmedi**.
+- [ ] Aynı sayfadaki **Toplanan DNS gözlemleri** bölümünde 1 inceleme grubu
+      görünüyor. "İnceleme önceliği olmayan gözlemleri de göster" kutusuyla diğer
+      DNS kayıtları da görünüyor.
+- [ ] Ctrl+C ile toplayıcıyı durdurup aynı komutu tekrar çalıştırdım; terminalde
+      `"new_records": 0` görünüyor, kayıtlar **ikinci kez eklenmedi**.
 
 ## 6. Dışa aktarma ve gizlilik
 
-- [ ] Raporları JSON (ve varsa CSV) olarak indirdim.
-- [ ] İndirilen dosyalarda IP'ler varsayılan olarak takma adla (`Host 001`,
-      `Device 001` gibi) geliyor; gerçek IP yok.
-- [ ] **Gözlenen cihaz IP'lerini yerelde göster** seçeneği yalnızca açıkça açınca
-      gerçek IP'leri ekranda gösteriyor ve indirilen dosyaya eklemiyor.
+**Toplanan bağlantılar** sayfasında:
+
+- [ ] **Toplanan bağlantıların JSON raporunu indir** ile raporu indirdim.
+- [ ] Dosyayı açtım: cihazlar `Host 002`, `Device 006` gibi takma adlarla
+      geçiyor; gerçek IP adresi yok.
+- [ ] **"Gözlenen cihaz IP'lerini yerelde göster; indirmeler takma adları
+      korur"** kutusunu işaretleyince gerçek IP'ler yalnızca ekranda göründü.
+      Raporu tekrar indirince dosyada yine takma adlar var.
 
 ## 7. Genel izlenim
 
@@ -117,6 +150,23 @@ threatfusion-ai collect --input-dir /home/yahya/Work/threatfusion-lab/results/pe
 
 ## Sonuç
 
-- Tarih ve test edilen sürüm (`threatfusion-ai status` veya kurulum çıktısı):
+- Tarih ve test edilen sürüm (kurulum çıktısı veya `threatfusion-ai status`):
 - Bulunan sorunlar:
 - Genel değerlendirme (geçti / sorunlu):
+
+## Önceki turlarda bildirilen sorunlar (kayıt)
+
+- Tur 1 — kullanıcının notu: "Update CTI now tuşuna basınca güncelliyor. Ama aynı
+  tuşa tekrar basınca durduruyor galiba orda hata var mı bak (ayrıca güncelleme
+  kısmında bar veya %71 gibi bir değer ekle çünkü uzun sürüyor ve sadece dönüp
+  duran küçük bir ikon var. pop up gibi ortada çıkabilir güncelleniyor diye)".
+  Durum: düzeltildi (arka planda güncelleme, ilerleme çubuğu, bildirimler).
+- Tur 1 — "önceki ayarlardan kasıt ne anlamadım". Durum: madde netleştirildi.
+- Tur 2 — PhishTank her güncellemede "anahtarını kontrol et" uyarısı veriyordu.
+  Durum: kaynak kaynaklı kesinti olarak mavi notla gösteriliyor.
+- Tur 3 — internetsiz denemede sonuç görünmüyordu, SGB çok yavaştı, kaynaklar
+  güncelken düğme işlevsiz görünüyordu. Durum: kalıcı sonuç mesajları, düğme
+  bitişte yeniden aktif, "yeniden indir" seçeneği, SGB 4 paralel sayfa.
+- Tur 4 — hızlı sorgunun hata ayrıntıları İngilizceydi; Bölüm 5'teki eski örnek
+  veri inceleme grubu üretmediği için tablolar boş görünecekti. Durum: çeviriler
+  eklendi, örnek veri değiştirildi.
