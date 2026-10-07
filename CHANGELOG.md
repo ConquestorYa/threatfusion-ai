@@ -254,6 +254,11 @@ release date is added only when the final tag/release is created.
 
 ### Fixed
 
+- Keyless PhishTank failures are shown as an upstream public-feed outage
+  (information) instead of "check your key", and no longer turn every update
+  into "finished with problems". On 2026-10-07 the public URL redirects to a
+  CDN 404 image; the redirect is still refused and previous data is kept.
+
 - Manual "Update CTI now" ran inside the Streamlit script, so any click during
   an update (including the same button, navigation or language change) aborted
   it mid-source without recording a failure (user P0 feedback). Updates now run

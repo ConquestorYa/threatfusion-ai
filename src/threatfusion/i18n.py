@@ -238,6 +238,7 @@ _TR: dict[str, str] = {
     "Last attempt: {time}": "Son deneme: {time}",
     "A source update is running. Existing cached data remains available.": "Kaynak güncellemesi sürüyor. Mevcut önbellek kullanılabilir.",
     "Update failed. Check network access and retry; existing data is preserved.": "Güncelleme başarısız. Ağ erişimini kontrol edip tekrar dene; mevcut veriler korunur.",
+    "{source}: the public keyless feed is currently unavailable from the source; nothing to fix on your side. Other sources are unaffected and previous data is kept.": "{source}: anahtarsız public kaynak şu an kaynağın kendisinden alınamıyor; senin tarafında düzeltilecek bir şey yok. Diğer kaynaklar etkilenmez, önceki veriler korunur.",
     "{source}: update failed; previous cache preserved. Check source access and your key.": "{source}: güncelleme başarısız; eski önbellek korundu. Kaynak erişimini ve anahtarını kontrol et.",
     "Cache still fresh": "Önbellek hâlâ güncel",
     "{count} records updated": "{count} kayıt güncellendi",

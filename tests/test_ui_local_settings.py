@@ -180,3 +180,20 @@ def test_other_sessions_mode_changes_are_respected(managed):
     assert not app.exception
     assert workspace.load_settings(managed)["mode"] == "demo"
     assert app.selectbox(key="local_mode").value == "demo"
+
+
+def test_keyless_phishtank_outage_is_information_not_a_key_problem(managed, monkeypatch):
+    def refresh(path, **kwargs):
+        return (CTIRefreshOutcome("PhishTank", "failed", detail="redirected"),
+                CTIRefreshOutcome("SGB", "refreshed", record_count=3))
+
+    monkeypatch.setattr(workspace, "refresh_configured_sources", refresh)
+    status = workspace.refresh_workspace(managed, credentials={})
+    assert status["outcomes"][0] == {"source": "PhishTank", "status": "failed",
+                                     "record_count": 0, "public_feed": True}
+    app = local_app(managed)
+    assert not app.exception
+    assert any("public keyless feed is currently unavailable" in str(i.value) for i in app.info)
+    assert not any("PhishTank" in str(w.value) for w in app.warning)
+    keyed = workspace.refresh_workspace(managed, credentials={"PHISHTANK_APP_KEY": "own-app-key"})
+    assert "public_feed" not in keyed["outcomes"][0]

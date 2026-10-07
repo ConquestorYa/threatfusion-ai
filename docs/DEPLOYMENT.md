@@ -12,10 +12,10 @@ Do not create or resume a hosted site, tunnel or preview without a new explicit
 user request. Bind local test servers to `127.0.0.1`.
 
 No hosting configuration is maintained in this repository. The Render Blueprint
-(`render.yaml`) was removed on 2026-10-07 at the user's request (DEC-086). A
-previously created demo service may still exist, suspended, in the user's Render
-account and linked to `main`; until the user deletes it, source-only commits keep
-`[skip render]` and the hosting checks in [AGENTS.md](../AGENTS.md) still apply.
+(`render.yaml`) was removed on 2026-10-07 at the user's request (DEC-086), and
+the user reported deleting the previously suspended demo web service the same
+day. Until the user confirms the Render Blueprint is deleted as well, commits
+keep `[skip render]` (see [AGENTS.md](../AGENTS.md)).
 Any future hosting needs a new explicit user request and a new configuration.
 
 ## Public mode

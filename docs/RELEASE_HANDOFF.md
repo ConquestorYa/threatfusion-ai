@@ -2,6 +2,19 @@
 
 Status date: 2026-10-06
 
+## P0 round-2 feedback: PhishTank public feed and Render service (2026-10-07)
+
+- After upgrading, a manual update reported "finished with problems" with
+  PhishTank failed. Diagnosis: the keyless public URL now 302-redirects to a
+  `cdn.phishtank.com` path that returns 404 with a JPEG body; the collector
+  correctly refuses redirects. The user's cache never contained PhishTank
+  records (SGB 488,904 / ThreatFox 111,601 / URLhaus 31,070), so the earlier
+  checklist "yes" for PhishTank was a misleading UI outcome, not a success.
+  Keyless PhishTank failures are now recorded as `public_feed` and shown as an
+  upstream outage, not a key problem or general update problem. One new test.
+- The user reported deleting the Render web service. Commits keep
+  `[skip render]` until the Blueprint deletion is confirmed.
+
 ## P0 round-1 feedback: CTI update interruption and progress (2026-10-07)
 
 - The user installed on Omarchy (Arch-based, first non-Debian/Ubuntu install)

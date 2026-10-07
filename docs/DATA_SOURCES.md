@@ -44,6 +44,11 @@ Verified from current official source documentation:
   and never visits the listed URLs. The feed is not committed to this
   repository. See:
   - https://phishtank.org/developer_info.php
+- PhishTank status observed 2026-10-07: the keyless public URL answers HTTP 302 to a
+  `cdn.phishtank.com` path that returns HTTP 404 with an image body. The
+  collector refuses redirects, so keyless PhishTank refreshes fail fast and
+  previous data is kept; the managed UI reports this as an upstream outage,
+  not a key problem. Other sources are unaffected. Recheck before relying on it.
 - The SGB API documentation explicitly describes automated integration of its
   malicious-address intelligence into security products/systems, but this
   repository does not rely on that statement as a broad redistribution license.

@@ -211,6 +211,13 @@ def refresh_workspace(
                     for k, v in asdict(item).items()
                     if k in {"source", "status", "record_count"}
                 }
+                | (
+                    # The keyless public feed can be withdrawn upstream; the
+                    # user has no key to check. Flag only the safe category.
+                    {"public_feed": True}
+                    if item.source == "PhishTank" and not keys.get("PHISHTANK_APP_KEY")
+                    else {}
+                )
                 for item in outcomes
             ]
             status["skipped"] = [

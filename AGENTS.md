@@ -36,9 +36,10 @@
   Do not treat the merge request as permission to resume or publish a site.
 - The Render Blueprint (`render.yaml`) was removed at the user's request
   (DEC-086); do not re-add hosting configuration without a new explicit request.
-  A suspended demo service may still exist in the user's Render account, linked
-  to `main`. Until the user confirms it is deleted, keep `[skip render]` and the
-  checks above. Never claim external settings changed without verifying them.
+  On 2026-10-07 the user reported deleting the `threatfusion-ai-demo` web
+  service. Until the user confirms the Render Blueprint is deleted too, keep
+  `[skip render]` on commits. Never claim external settings changed without
+  verifying them.
 
 ## Local data and ML evidence
 

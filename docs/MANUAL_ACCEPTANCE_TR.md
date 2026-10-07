@@ -52,6 +52,13 @@ etmek istediğin düzeltmeler GitHub `main`'e gönderilmiş olmalı. Kurulum her
     - [ ] Bitince "CTI güncellemesi tamamlandı" bildirimi çıktı, çubuk kayboldu
           ve kaynak kayıt sayıları göründü.
 - [evet] SGB ve PhishTank anahtarsız güncellendi.
+  - **Tur 2 notu:** Kontrol ettim: PhishTank'tan hiç kayıt gelmemiş (SGB,
+    ThreatFox ve URLhaus verisi var). Sebep PhishTank'ın kendisi: anahtarsız
+    public indirme adresi şu an kaldırılmış/çalışmıyor. Bu senin hatan değil.
+    Artık uygulama bunu sarı uyarı yerine mavi bilgi notu olarak gösteriyor.
+    - [ ] Güncellemeden sonra PhishTank için "anahtarsız public kaynak şu an
+          alınamıyor; senin tarafında düzeltilecek bir şey yok" notu çıktı ve
+          güncelleme bildirimi "sorunlarla bitti" yerine "tamamlandı" dedi.
 - [evet] Anahtarı **kaydetmeden** uygulamayı kapatıp açtım; anahtar hatırlanmadı
       (beklenen davranış).
 - [] Anahtarı açıkça kaydetmeyi seçtim; yeniden açınca hatırlandı.

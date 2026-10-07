@@ -233,7 +233,8 @@ def render_refresh_progress(root: Path) -> None:
         # Earlier lookup/analysis results used the previous cache.
         st.session_state.pop("quick_lookup_result", None)
         st.session_state.pop("analysis_result", None)
-        if status.get("failed") or any(item.get("status") == "failed" for item in status.get("outcomes", [])):
+        if status.get("failed") or any(item.get("status") == "failed" and not item.get("public_feed")
+                                       for item in status.get("outcomes", [])):
             st.toast(tr("CTI update finished with problems. See Local setup & CTI updates."))
         else:
             st.toast(tr("CTI update finished."))
@@ -261,7 +262,14 @@ def _render_refresh_status(root: Path) -> None:
         if source == "Cache maintenance" and result == "failed":
             st.warning(tr("Cache cleanup failed; completed source updates remain available. Retry maintenance later."))
             continue
-        if result == "failed":
+        if result == "failed" and item.get("public_feed"):
+            st.info(
+                tr(
+                    "{source}: the public keyless feed is currently unavailable from the source; nothing to fix on your side. Other sources are unaffected and previous data is kept.",
+                    source=source,
+                )
+            )
+        elif result == "failed":
             st.warning(
                 tr(
                     "{source}: update failed; previous cache preserved. Check source access and your key.",
