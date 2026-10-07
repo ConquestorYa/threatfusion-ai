@@ -24,10 +24,10 @@ etmek istediğin düzeltmeler GitHub `main`'e gönderilmiş olmalı. Kurulum her
 - [evet] `threatfusion-ai status` çalışan sunucuyu gösteriyor.
 - [evet] Tarayıcı sekmesini kapattım; `status` sunucunun hâlâ çalıştığını gösteriyor.
 - [evet] `threatfusion-ai stop` sunucuyu durdurdu; `status` bunu doğruluyor.
-- [önceki ayarlardan kasıt ne anlamadım] Menüden veya `threatfusion-ai` ile tekrar açtım; önceki ayarlar duruyor.
+- [evet] Menüden veya `threatfusion-ai` ile tekrar açtım; önceki ayarlar duruyor.
   - **Tur 2 — yeniden test et (madde netleştirildi):** "Ayarlar" şunlar demek:
-    - [ ] Yan çubuktaki mod seçimi (gerçek CTI / demo) kapatmadan önceki gibi.
-    - [ ] "Otomatik güncelleme" kutusu ve güncelleme aralığı (değiştirdiysen)
+    - [evet] Yan çubuktaki mod seçimi (gerçek CTI / demo) kapatmadan önceki gibi.
+    - [] "Otomatik güncelleme" kutusu ve güncelleme aralığı (değiştirdiysen)
           kapatmadan önceki gibi.
     - [ ] Güncellediğin CTI kaynaklarının kayıt sayıları ve son güncelleme zamanı
           hâlâ görünüyor (veriler silinmemiş).
