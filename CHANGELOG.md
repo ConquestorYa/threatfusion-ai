@@ -254,6 +254,16 @@ release date is added only when the final tag/release is created.
 
 ### Fixed
 
+- "database is locked" in the dashboard while a CTI update wrote (user P0
+  report): readers ran the schema script, which needs the write lock, and the
+  rollback journal blocks readers during a large write. The CTI cache now uses
+  SQLite WAL (readers never wait for the refresh writer), skips schema writes
+  when the schema is current, closes every connection after use (previously
+  handles lingered until garbage collection; 45 after 10 reads), and the
+  status panel shows a note instead of an exception if a lock still occurs.
+  Packaged/demo caches are switched back to rollback mode for read-only
+  directories. Quick lookups during an update no longer fail either.
+
 - Quick lookup input-validation details are translated in the Turkish UI.
 - Manual acceptance checklist reviewed end to end: the collection step used a
   sample that yields no review groups (empty default tables); it now uses the

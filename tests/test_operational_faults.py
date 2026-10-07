@@ -48,8 +48,17 @@ def status(state):
     return json.loads((state / "status.json").read_text())
 
 
+def rollback_journal(cache, monkeypatch):
+    """Fallback when WAL cannot be enabled (e.g. a filesystem without shared memory)."""
+    from threatfusion import cti_cache
+    monkeypatch.setattr(cti_cache, "_enable_wal", lambda connection: None)
+    with sqlite3.connect(cache) as connection:
+        assert connection.execute("PRAGMA journal_mode=DELETE").fetchone()[0] == "delete"
+
+
 def test_real_cti_lock_longer_than_busy_timeout_keeps_collecting_with_disclosure(tmp_path, monkeypatch, capsys):
     source, state, cache = setup(tmp_path)
+    rollback_journal(cache, monkeypatch)
     observed = []
     holder = sqlite3.connect(cache, timeout=0, isolation_level=None)
 
@@ -157,3 +166,28 @@ def test_unchanged_indicators_are_not_deep_copied_and_changed_content_recomputes
         assert collector.tick(indicators=changed)["scan"]["analysis_recomputed"]
         changed[0].tags.append("c")  # In-place mutation still invalidates.
         assert collector.tick(indicators=changed)["scan"]["analysis_recomputed"]
+
+
+def test_wal_cache_lets_collector_read_while_a_refresh_writes(tmp_path, monkeypatch):
+    source, state, cache = setup(tmp_path)
+    with sqlite3.connect(cache) as connection:
+        assert connection.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
+    observed = []
+    holder = sqlite3.connect(cache, timeout=0, isolation_level=None)
+
+    def write():
+        holder.execute("BEGIN IMMEDIATE")
+        holder.execute("INSERT INTO cti_metadata VALUES('refresh-in-progress', '1')")
+        os.utime(cache)
+
+    def check():
+        observed.append(status(state))
+        holder.execute("ROLLBACK")
+
+    drive(monkeypatch, [write, check])
+    try:
+        assert module.main(["--input-dir", str(source), "--state-dir", str(state), "--db", str(cache)]) == 0
+    finally:
+        holder.close()
+    # The reload during the open write transaction succeeded immediately.
+    assert observed[0]["cti_reload_deferred"] is False and observed[0]["cti_indicators"] == 1

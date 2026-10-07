@@ -508,3 +508,56 @@ def test_existing_pre_lifecycle_database_is_migrated_in_place(tmp_path) -> None:
     assert migrated.first_seen_in_cache == refresh_time.isoformat()
     assert migrated.last_seen_in_refresh == refresh_time.isoformat()
 
+
+
+def test_reads_do_not_wait_for_a_refresh_writer(tmp_path):
+    import sqlite3
+    import time
+    from threatfusion.cti_cache import list_cti_cache_status, lookup_ioc_records, replace_source_records
+    db = tmp_path / "cache.sqlite"
+    replace_source_records(db, "SGB", [IOCRecord("a.example", IOCType.DOMAIN, "SGB")])
+    writer = sqlite3.connect(db, isolation_level=None)
+    writer.execute("BEGIN IMMEDIATE")
+    writer.execute("INSERT INTO cti_metadata VALUES ('writing', '1')")
+    try:
+        started = time.monotonic()
+        assert list_cti_cache_status(db)[0].source == "SGB"
+        assert lookup_ioc_records(db, domain="a.example")[0].value == "a.example"
+        assert time.monotonic() - started < 1
+    finally:
+        writer.execute("ROLLBACK")
+        writer.close()
+
+
+def test_packaged_cache_reads_from_a_read_only_directory(tmp_path):
+    import os
+    from threatfusion.cti_cache import finalize_for_read_only, list_cti_cache_status, lookup_ioc_records, replace_source_records
+    folder = tmp_path / "bundle"
+    folder.mkdir()
+    db = folder / "threatfusion.sqlite"
+    replace_source_records(db, "SGB", [IOCRecord("a.example", IOCType.DOMAIN, "SGB")])
+    finalize_for_read_only(db)
+    db.chmod(0o444)
+    folder.chmod(0o555)
+    try:
+        if os.access(folder, os.W_OK):
+            pytest.skip("running with privileges that ignore directory permissions")
+        assert list_cti_cache_status(db)[0].source == "SGB"
+        assert lookup_ioc_records(db, domain="a.example")[0].value == "a.example"
+        assert sorted(p.name for p in folder.iterdir()) == ["threatfusion.sqlite"]
+    finally:
+        folder.chmod(0o755)
+        db.chmod(0o644)
+
+
+def test_cache_connections_are_closed_after_use(tmp_path):
+    import os
+    from threatfusion.cti_cache import list_cti_cache_status, load_ioc_records, lookup_ioc_records, replace_source_records
+    db = tmp_path / "cache.sqlite"
+    replace_source_records(db, "SGB", [IOCRecord("a.example", IOCType.DOMAIN, "SGB")])
+    for _ in range(5):
+        list_cti_cache_status(db)
+        load_ioc_records(db)
+        lookup_ioc_records(db, domain="a.example")
+    handles = [os.path.realpath(f"/proc/self/fd/{fd}") for fd in os.listdir("/proc/self/fd")]
+    assert not [h for h in handles if h.startswith(str(tmp_path))]

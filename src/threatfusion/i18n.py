@@ -231,6 +231,7 @@ _TR: dict[str, str] = {
     "CTI update failed. Check your internet connection and retry; existing data is kept.": "CTI güncellemesi başarısız oldu. İnternet bağlantını kontrol edip tekrar dene; mevcut veriler korunuyor.",
     "CTI is already up to date; nothing needed downloading. To download anyway, tick “Download again even if sources are still fresh”.": "CTI zaten güncel; indirilecek bir şey yoktu. Yine de indirmek için “Kaynaklar güncel olsa da yeniden indir” kutusunu işaretle.",
     "No CTI source could be reached. Check your internet connection; existing data is kept.": "Hiçbir CTI kaynağına ulaşılamadı. İnternet bağlantını kontrol et; mevcut veriler korunuyor.",
+    "CTI cache is being updated; source status refreshes shortly.": "CTI önbelleği güncelleniyor; kaynak durumu birazdan yenilenecek.",
     "CTI update finished: {count} source(s) downloaded.": "CTI güncellemesi tamamlandı: {count} kaynak indirildi.",
     "{seen} / {total} records": "{seen} / {total} kayıt",
     "starting": "başlıyor",

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sqlite3
 import sys
 from datetime import timedelta
 from pathlib import Path
@@ -112,7 +113,12 @@ def _show_system_status(
         "info" if cti_only else "good" if model_ready else "bad",
     )
 
-    statuses = list_cti_cache_status(db_path)
+    try:
+        statuses = list_cti_cache_status(db_path)
+    except sqlite3.OperationalError:
+        # A refresh may briefly hold the cache; the fragment retries in 10 s.
+        st.sidebar.caption(tr("CTI cache is being updated; source status refreshes shortly."))
+        return
     status_rows = (
         cti_status_rows(
             statuses,

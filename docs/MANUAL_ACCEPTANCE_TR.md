@@ -74,7 +74,7 @@ Adres `http://127.0.0.1:` veya `http://localhost:` ile başlamalı (port 8501,
   - [evet] Yan çubuktaki mod seçimi (gerçek CTI / demo) aynı.
   - [evet — sohbetten aktarıldı] CTI kayıt sayıları ve "son güncelleme" zamanı
         korunuyor (yeniden açınca kaynaklar "Fresh" göründü).
-  - [ ] **"Uygulama çalışırken otomatik güncelle"** kutusunu işaretle, aralığı
+  - [evet — sohbetten aktarıldı] **"Uygulama çalışırken otomatik güncelle"** kutusunu işaretle, aralığı
         12 saat seç, **"Güncelleme ayarlarını kaydet"**e bas. Uygulamayı kapatıp
         aç: kutu işaretli ve aralık 12 saat kalmalı. (Sonra istediğin gibi geri al.)
   - Dil seçimi bilerek kalıcı değildir; yeniden açınca varsayılana dönmesi normal.
@@ -98,21 +98,31 @@ Tamamlananlar:
 
 Yapılacaklar (sırayla):
 
-- [ ] **Zaten güncel durumu:** Kutuyu işaretlemeden **Update CTI now**
+- [evet — sohbetten aktarıldı: "CTI is already up to date…" mesajı çıktı;
+  "sonraki indirme" yazısı ayrıca bildirilmedi] **Zaten güncel durumu:** Kutuyu işaretlemeden **Update CTI now**
       (**CTI verilerini şimdi güncelle**) düğmesine bas. Birkaç saniye içinde
       "CTI zaten güncel; indirilecek bir şey yoktu" mesajı çıkmalı ve düğme
       tekrar tıklanabilir olmalı. Panelde "Kaynaklar güncel; sonraki indirme
       yaklaşık … saat sonra" yazmalı.
 - [ ] **Gerçek indirme:** **"Kaynaklar güncel olsa da yeniden indir"** kutusunu
       işaretle ve düğmeye bas. Kontrol et:
-  - [ ] Köşede "CTI güncellemesi başladı" bildirimi çıktı.
-  - [ ] Sayfanın üstünde ilerleme çubuğu var: "x/y tamamlandı · %…, kaynak,
+  - [evet — sohbetten aktarıldı] Köşede "CTI güncellemesi başladı" bildirimi çıktı.
+  - [evet — sohbetten aktarıldı: bar doldu] Sayfanın üstünde ilerleme çubuğu var: "x/y tamamlandı · %…, kaynak,
         aşama". SGB sırasında "… / … kayıt" sayacı ilerliyor. Yüzde tamamlanan
         kaynakları sayar (indirme boyutları önceden bilinmez).
-  - [ ] Güncelleme sürerken düğme ve kutu gri/tıklanamaz.
-  - [ ] Güncelleme sürerken başka sayfaya geçtim ve dili değiştirdim; çubuk
-        durmadan devam etti.
-  - [ ] Bitince "CTI güncellemesi tamamlandı: … kaynak indirildi" mesajı çıktı,
+  - [evet — sohbetten aktarıldı] Güncelleme sürerken düğme ve kutu gri/tıklanamaz.
+  - [sorunlu — sohbetten aktarıldı: başka sayfaya geçince çubuk devam etti ama
+    web arayüzünde bir anlık hata çıkıp kayboldu; terminalde
+    "sqlite3.OperationalError: database is locked"] Güncelleme sürerken başka
+        sayfaya geçtim ve dili değiştirdim; çubuk durmadan devam etti.
+    - **Tur 5 — düzeltildi, yeniden test et:** Güncelleme veritabanına yazarken
+      yan paneldeki durum bölümü okuyamıyordu. Artık veritabanı okumaları
+      yazmayı beklemiyor.
+      - [ ] "Yeniden indir" kutusuyla güncelleme sürerken sayfalar arasında
+            gezindim, dili değiştirdim ve bir **hızlı sorgu** yaptım: web
+            arayüzünde ve uygulamayı başlattığın terminalde hata çıkmadı.
+  - [evet — sohbetten aktarıldı: "CTI update finished: 3 source(s) downloaded"]
+        Bitince "CTI güncellemesi tamamlandı: … kaynak indirildi" mesajı çıktı,
         düğme tekrar aktif oldu, kayıt sayıları güncellendi.
   - [ ] Panelde PhishTank için **mavi** bilgi notu var ("anahtarsız public kaynak
         şu an alınamıyor; senin tarafında düzeltilecek bir şey yok").
@@ -197,6 +207,10 @@ ayrılmıştır.
 - Tur 3 — internetsiz denemede sonuç görünmüyordu, SGB çok yavaştı, kaynaklar
   güncelken düğme işlevsiz görünüyordu. Durum: kalıcı sonuç mesajları, düğme
   bitişte yeniden aktif, "yeniden indir" seçeneği, SGB 4 paralel sayfa.
+- Tur 5 — güncelleme sırasında sayfa değişince "database is locked" hatası.
+  Durum: CTI önbelleği WAL moduna alındı (okumalar yazmayı beklemiyor),
+  bağlantılar her kullanımdan sonra kapatılıyor, durum paneli kilitte hata
+  yerine bilgi notu gösteriyor.
 - Tur 4 — hızlı sorgunun hata ayrıntıları İngilizceydi; Bölüm 5'teki eski örnek
   veri inceleme grubu üretmediği için tablolar boş görünecekti. Durum: çeviriler
   eklendi, örnek veri değiştirildi.

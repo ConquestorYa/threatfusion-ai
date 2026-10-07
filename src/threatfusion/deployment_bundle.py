@@ -9,6 +9,7 @@ from .cti_cache import (
     CTICacheStatus,
     list_cti_cache_status,
     load_ioc_records,
+    finalize_for_read_only,
     replace_source_records,
 )
 from .ml_artifact import compute_ml_artifact_checksum, load_trusted_ml_artifact
@@ -123,6 +124,8 @@ def create_deployment_bundle(
             records_by_source.get(status.source, []),
             refreshed_at=_parse_refresh_time(status.refreshed_at),
         )
+    if target_db.exists():
+        finalize_for_read_only(target_db)
 
     shutil.copy2(
         source_model_dir / "model.joblib",

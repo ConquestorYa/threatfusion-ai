@@ -2,6 +2,25 @@
 
 Status date: 2026-10-06
 
+## P0 round-5: database locked during CTI update (2026-10-07)
+
+- User (installed `8e4a918`) reports auto-update settings persist, "already up
+  to date" works, a forced update shows notifications/progress, a disabled
+  button and "3 source(s) downloaded"; but switching pages during the update
+  briefly showed an error, with `sqlite3.OperationalError: database is locked`
+  from `_show_system_status` → `list_cti_cache_status` → `initialize_cti_cache`.
+- Reproduced: during an open write transaction both the status read and quick
+  lookup failed after 5 s. Causes: readers executed the schema script (needs the
+  write lock), rollback journal blocks readers during large writes, and CTI
+  connections were never closed (45 open handles after 10 reads until GC).
+- Fix (DEC-087): WAL mode, read-only schema check, closing connections,
+  status-panel fallback note, packaged caches finalized in rollback mode for
+  read-only directories. Verified: reads during a held write return
+  immediately; a concurrent 300k-record replace with a continuous reader had
+  zero reader errors; zero leaked handles. The real-lock collector test now
+  runs explicitly in rollback mode (WAL fallback); a new test covers WAL reads.
+  Four new tests; 1,366 local tests pass.
+
 ## Manual acceptance checklist review (2026-10-07)
 
 - At the user's request every checklist step was checked against the product.

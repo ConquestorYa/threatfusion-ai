@@ -882,3 +882,18 @@ user-suspended Render service may remain in the user's account, linked to
 until then. Future hosting requires a new explicit request and configuration.
 The user deleted the web service and disconnected the Blueprint on 2026-10-07,
 so no host is connected and `[skip render]` is no longer required.
+
+## DEC-087: Use SQLite WAL for the local CTI cache
+
+**Decision (2026-10-07):** The writable local CTI cache uses WAL journal mode.
+A full SGB/URLhaus/ThreatFox refresh writes hundreds of thousands of rows; in
+rollback-journal mode readers (dashboard status, quick lookup, collector) were
+blocked past the 5 s busy timeout. Readers no longer run schema DDL when the
+schema is current, and connections close deterministically.
+
+**Consequences:** `-wal`/`-shm` sidecars may appear next to the cache (ignored by
+Git, same private directory). Packaged caches for read-only directories
+(public-demo image, deployment bundles) are finalized in rollback mode; readers
+try WAL and fall back silently. The collector's busy/locked fallback remains
+for caches where WAL cannot be enabled.
+

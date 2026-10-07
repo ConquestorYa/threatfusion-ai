@@ -4,6 +4,7 @@ import shutil
 from dataclasses import replace
 from pathlib import Path
 
+from .cti_cache import finalize_for_read_only
 from .demo_cti import write_public_demo_cti_cache
 from .ml_artifact import train_selected_model_artifact, write_ml_artifact
 from .ml_dataset import DomainSample
@@ -55,6 +56,7 @@ def create_public_demo_runtime(
     model_dir = output / "models" / "development-001"
 
     write_public_demo_cti_cache(db_path)
+    finalize_for_read_only(db_path)
     artifact = train_selected_model_artifact(
         build_public_demo_model_samples(),
     )

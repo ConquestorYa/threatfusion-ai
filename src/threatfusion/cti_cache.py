@@ -93,8 +93,22 @@ CREATE TABLE IF NOT EXISTS cti_metadata (
 """
 
 
+class _ClosingConnection(sqlite3.Connection):
+    """``with`` commits or rolls back, then closes.
+
+    Plain sqlite3 connections stay open until garbage collection; in the
+    long-running app those lingering handles kept locks and file descriptors.
+    """
+
+    def __exit__(self, *exc):
+        try:
+            return super().__exit__(*exc)
+        finally:
+            self.close()
+
+
 def _connect(db_path: Path) -> sqlite3.Connection:
-    connection = sqlite3.connect(Path(db_path))
+    connection = sqlite3.connect(Path(db_path), factory=_ClosingConnection)
     connection.execute("PRAGMA foreign_keys = ON")
     return connection
 
@@ -186,12 +200,62 @@ def _migrate_cti_records(connection: sqlite3.Connection) -> None:
         )
 
 
+_REQUIRED_INDEXES = frozenset({
+    "idx_cti_records_source", "idx_cti_records_type_value", "idx_cti_records_source_active",
+    "idx_cti_records_active_normalized", "idx_cti_records_active_url_hostname",
+})
+_REQUIRED_COLUMNS = frozenset({
+    "first_seen_in_cache", "last_seen_in_refresh", "active", "normalized_value", "url_hostname",
+})
+
+
+def _schema_ready(connection: sqlite3.Connection) -> bool:
+    """Read-only check, so readers never need the write lock a refresh holds."""
+    names = {row[0] for row in connection.execute("SELECT name FROM sqlite_master")}
+    if not {"cti_records", "cti_refreshes", "cti_metadata"} <= names or not _REQUIRED_INDEXES <= names:
+        return False
+    columns = {str(row[1]) for row in connection.execute("PRAGMA table_info(cti_records)")}
+    if not _REQUIRED_COLUMNS <= columns:
+        return False
+    version = connection.execute(
+        "SELECT value FROM cti_metadata WHERE key = 'lookup_index_version'"
+    ).fetchone()
+    return version is not None and str(version[0]) == "1"
+
+
+def _enable_wal(connection: sqlite3.Connection) -> None:
+    # WAL lets lookups, the dashboard and the collector read while a refresh
+    # writes. Switching needs a moment without other writers; retry later.
+    try:
+        if str(connection.execute("PRAGMA journal_mode").fetchone()[0]).lower() != "wal":
+            connection.execute("PRAGMA journal_mode=WAL")
+    except sqlite3.OperationalError:
+        pass
+
+
+def finalize_for_read_only(db_path: Path) -> None:
+    """Rollback-journal mode for packaged caches in read-only directories.
+
+    A WAL database needs a writable directory for its shared-memory file.
+    Readers try WAL again and fall back silently when that is not possible.
+    """
+    with _connect(Path(db_path)) as connection:
+        mode = connection.execute("PRAGMA journal_mode=DELETE").fetchone()[0]
+    if str(mode).lower() != "delete":
+        raise ValueError("CTI cache could not leave WAL mode for packaging")
+
+
 def initialize_cti_cache(db_path: Path) -> None:
-    """Create or migrate local CTI cache tables."""
+    """Create or migrate local CTI cache tables; no writes when already current."""
     path = Path(db_path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
     with _connect(path) as connection:
+        if _schema_ready(connection):
+            _enable_wal(connection)
+            return
+    with _connect(path) as connection:
+        _enable_wal(connection)
         connection.executescript(_SCHEMA)
         _migrate_cti_records(connection)
 
