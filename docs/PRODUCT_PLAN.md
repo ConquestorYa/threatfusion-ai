@@ -76,7 +76,11 @@ linked documents rather than being copied into this plan.
   ~7 s per recompute with the 616k-indicator cache. Final candidate passes 9/9;
   every earlier failing run is preserved. 1,328 local tests, ~91% coverage. A
   declared 6-hour real wall-clock collector+web soak was interrupted by a Claude
-  Code restart and is rerunning; no soak outcome is claimed yet. See
+  Code restart; the detached rerun completed with **15/16 checks** — the
+  declared RSS growth limit failed (collector 1.32 vs 1.25) from a single
+  ~290 MiB step at the CTI reload, flat afterwards. Security review fixed DNS
+  rebinding to the local app and a ThreatFox redirect key leak. Next P1: lower
+  the reload high-water and re-soak with several reloads. See
   [OPERATIONAL_CONFIDENCE.md](OPERATIONAL_CONFIDENCE.md).
 - Runtime repairs are merged to main at `35423bc`; 45 added regression cases,
   1,321 local tests and approximately 91% coverage. Six CI jobs passed at
@@ -104,9 +108,9 @@ Historical “Next” paragraphs in experiment documents are not this active que
 
 | Order / status | Work | Completion gate |
 | --- | --- | --- |
-| P0 — next, pending user | Manual local workflow acceptance | User exercises install/start/stop/reopen, own-key CTI refresh/offline failure, completed conn/DNS collection, local identity/timelines and alias/IP exports. Record reproducible defects and fixes; do not mark passed without user results. |
+| P0 — next, pending user | Manual local workflow acceptance | User exercises install/start/stop/reopen, own-key CTI refresh/offline failure, completed conn/DNS collection, local identity/timelines and alias/IP exports. Record reproducible defects and fixes; do not mark passed without user results. Checklist: [MANUAL_ACCEPTANCE_TR.md](MANUAL_ACCEPTANCE_TR.md). |
 | P1 — in progress | Operational confidence on the repaired source | Freeze this candidate; declare a bounded real wall-clock soak and broader permission/IO/database/resource faults before outcomes. Measure collector **and** web/representative CTI resources, exact retained counts, stale/coverage warnings, old-report preservation and recovery. No private data redistribution or physical host-disk exhaustion. |
-| P2 — partial evidence, more work planned | Analyst usefulness and independent traffic validation | Predeclare actual investigation tasks on permitted independent benign/suspicious windows. Measure review burden, missed cases, correct evidence interpretation, time/task success and effects of normal context. Compare native RITA on identical inputs/configuration with separate output units; preserve negative results. |
+| P2 — partial evidence, more work planned | Analyst usefulness and independent traffic validation | Predeclare actual investigation tasks on permitted independent benign/suspicious windows. Measure review burden, missed cases, correct evidence interpretation, time/task success and effects of normal context. Compare native RITA on identical inputs/configuration with separate output units; preserve negative results. User chose own-traffic + labeled-malware arms (2026-10-07): [design](REAL_TRAFFIC_EVALUATION.md). |
 | P3 — planned, evidence-gated | Focused detection coverage | Prioritize observed gaps in timing/size/jitter/retry/idle/sparse failures. Develop proper registrable-domain DNS tunneling aggregation and benign CDN/update/telemetry controls. Separate development from newly reserved evaluation inputs; regress old CTI/context behavior. Each new detector needs measured incremental usefulness. |
 | P4 — planned, no connector implemented | Versioned integration contract, then one pilot adapter | Define structured findings/coverage/provenance, stable event IDs and deduplication, time/source identity, privacy opt-in, authentication, backpressure/retry and schema compatibility. Select Wazuh or a generic SIEM/log destination from pilot needs; validate end-to-end delivery. Do not build many integrations before proving one. |
 | P5 — planned | Repeatable private pilot and release | Independent users install/use/recover, documented security fixes and realistic resource limits, upgrade/backup behavior, useful operator guide and release checklist. Tag/release only when appropriate. Public hosting is optional and requires a new explicit user request. |
@@ -115,6 +119,16 @@ Manual feedback may arrive while independent P1 preparation continues; it must
 not be silently replaced by automated checks. Fix a confirmed correctness or
 privacy defect before extending detection. No feature or milestone is complete
 just because code was generated or tests for its implementation passed.
+
+## Committed direction: behavioral ML (user request, 2026-10-07)
+
+The lexical domain model is a weak standalone signal. The user asked for ML that
+goes well beyond domain names. Once P2 has produced permitted labeled real data,
+design and evaluate a behavior-feature model before or within P3: connection
+timing/size/jitter, destination rarity across clients, DNS patterns, CTI context
+and per-device baselines. Develop only on development captures; evaluate on
+untouched reserved inputs with the same discipline as other gates. Until then the
+lexical model stays an auxiliary signal and frozen identities do not change.
 
 ## Deferred ideas, not automatic next tasks
 

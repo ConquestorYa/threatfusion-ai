@@ -31,7 +31,7 @@ class FakeResponse:
 class FakeSession:
     def __init__(self, response: FakeResponse) -> None:
         self.response = response
-        self.post_calls: list[tuple[object, dict[str, str], dict[str, object], int]] = []
+        self.post_calls: list[tuple[object, dict[str, str], dict[str, object], int, bool]] = []
 
     def post(
         self,
@@ -40,8 +40,9 @@ class FakeSession:
         headers: dict[str, str],
         json: dict[str, object],
         timeout: int,
+        allow_redirects: bool,
     ) -> FakeResponse:
-        self.post_calls.append((url, headers, json, timeout))
+        self.post_calls.append((url, headers, json, timeout, allow_redirects))
         return self.response
 
 
@@ -287,6 +288,9 @@ def test_malicious_url_is_sent_as_data_only() -> None:
     assert len(session.post_calls) == 1
     assert session.post_calls[0][0] == THREATFOX_API_URL
     assert session.post_calls[0][2] == {"query": "get_iocs", "days": 1}
+    # The Auth-Key header must never follow a redirect to another host.
+    assert session.post_calls[0][4] is False
+
 
 def test_oversized_full_export_is_rejected() -> None:
     response = FakeExportResponse(_zipped_csv("bad.example,domain"))

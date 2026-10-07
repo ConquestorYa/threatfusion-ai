@@ -111,12 +111,70 @@ indicator lists briefly coexist; Python keeps the high-water). The growth limit
 was **not** changed; a separately labeled diagnostic compares the last hour with
 the hour after the CTI change.
 
-Outcome: the first full run was interrupted about 45 minutes in when Claude Code
-was restarted (its own children ended; partial receipts and an interruption note
-are preserved, no summary). This is not a product outcome. A rerun with the same
-declaration and candidate, detached from Claude Code, is **in progress**; no soak
-result is claimed until it completes. Two pushes' worth of local test/audit runs
-overlap its first minutes and are recorded as operator notes.
+The first full run was interrupted about 45 minutes in when Claude Code was
+restarted (its own children ended; partial receipts and an interruption note are
+preserved, no summary). This is not a product outcome.
+
+**Outcome of the detached rerun (same plan `f9a8da85…`, summary `6f7d10e8…`):
+15 of 16 declared checks passed; `all_passed` is false.** The failing check is
+the declared RSS growth limit: collector last-hour median / second-hour median
+= **1.32** (limit 1.25); web 1.11. Every other check passed over 21,600 s:
+
+| Measure | Result | Declared limit |
+| --- | ---: | ---: |
+| Collector RSS max | 1,253 MiB | 1.5 GiB |
+| Web RSS max | 364 MiB | 2 GiB |
+| State max | 74 MiB | 512 MiB |
+| Snapshot age max | 18.9 s | 60 s |
+| Persistent view gap max (2,162 reruns) | 10.1 s | 60 s |
+| Fresh sessions rendered / slowest | 24 of 24 / 2.1 s | all / 60 s |
+| CTI change visible | 19.9 s | 60 s |
+| Generated = imported, rejected files | 115,200 = 115,200, 0 | exact, 0 |
+| Final retained / capacity disclosed | 100,000 / yes | 100k / yes |
+| fd / thread growth (collector, web) | −1, 0 / 0, 0 | ≤ 16 |
+| Exceptions, session errors, clean exit, cache hash | 0, none, yes, unchanged | — |
+
+Hourly collector RSS medians: 888, 921, 939, **1,227**, 1,219, 1,217 MiB. The
+increase is a single ~290 MiB step at the hour-3 CTI reload, followed by a flat
+or slightly falling level while retained rows grew to the 100k cap. The labeled
+diagnostic declared before this run (last hour / hour after the CTI change) is
+**1.00**. This matches the method-smoke observation: old and new indicator lists
+coexist during reload and the process keeps that high-water. The declared check
+still fails and is reported as failed; it is not reinterpreted as a pass.
+
+Product interpretation: no progressive leak was observed in six hours, but one
+CTI reload permanently costs ~290 MiB of collector RSS with the 616k cache, and
+only one reload occurred. Next P1 work: (1) reduce the reload high-water (build
+the new view without holding both lists, or an indexed lookup instead of a full
+in-memory list) and (2) declare a new soak root with several reloads to show the
+level plateaus, both measured on a new candidate. Local test/audit runs
+overlapping the first hour are recorded as operator notes.
+
+## Security review (P1, 2026-10-07)
+
+A source review of the local attack surface covered HTML/Markdown rendering of
+log-derived values, CSV export formula injection, CTI HTTP fetching (redirects,
+size/decompression bounds, error text), credential storage, SQL construction,
+upload parsing bounds, installer integrity/archive extraction and model loading.
+Those areas were found consistent with their stated safeguards. Two defects
+were fixed:
+
+- **DNS rebinding to the loopback workspace (medium).** Streamlit accepted any
+  `Host` and treated a matching `Origin` as same-origin, so a web page could
+  rebind its own name to `127.0.0.1` and drive the local session (read collected
+  telemetry, change settings). Outside public mode the app now renders nothing
+  unless `Host` is `127.0.0.1`, `localhost` or `::1`, or a name the operator lists
+  in `THREATFUSION_ALLOWED_HOSTS`. Verified with a raw Streamlit websocket using a
+  pre-connected loopback socket: unpatched `main` rendered the workspace for
+  `Host: rebind.test`; the repaired source shows only the refusal for
+  `rebind.test`/`attacker.example` and renders normally for `127.0.0.1`/`localhost`.
+- **ThreatFox API key on redirect (low).** The recent-IOC API request (used by a
+  developer script) followed redirects with the `Auth-Key` header; redirects are
+  now refused like every other feed request.
+
+Known limitation, not changed: there is no app login. Another local OS account
+on the same machine can reach the loopback port; the product assumes a
+single-user workstation or sensor host.
 
 ## Limits and what remains
 

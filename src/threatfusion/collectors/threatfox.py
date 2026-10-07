@@ -223,6 +223,8 @@ class ThreatFoxCollector:
             headers={"Auth-Key": self.auth_key},
             json={"query": "get_iocs", "days": days},
             timeout=REQUEST_TIMEOUT_SECONDS,
+            # A redirect would forward the Auth-Key header to its target.
+            allow_redirects=False,
         )
         response.raise_for_status()
         payload = response.json()

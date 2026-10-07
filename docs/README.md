@@ -20,7 +20,9 @@ copyable continuation prompt. Read [AGENTS.md](../AGENTS.md) for operating rules
 | [DNS_COLLECTION.md](DNS_COLLECTION.md) | Automatic TCP/UDP DNS transaction collection, private state migration and live controls |
 | [LOG_PREPARATION.md](LOG_PREPARATION.md) | Bounded completed-log preparation, explicit private DNS quarantine and coverage accounting |
 | [CONNECTION_CAPACITY.md](CONNECTION_CAPACITY.md) | Diverse collector targets, bounded snapshots, verified private full exports and recovery evidence |
-| [OPERATIONAL_CONFIDENCE.md](OPERATIONAL_CONFIDENCE.md) | P1 fault matrix, CTI-lock/memory repairs and real wall-clock collector+web soak protocol |
+| [OPERATIONAL_CONFIDENCE.md](OPERATIONAL_CONFIDENCE.md) | P1 fault matrix, CTI-lock/memory repairs, wall-clock soak outcome and security review |
+| [MANUAL_ACCEPTANCE_TR.md](MANUAL_ACCEPTANCE_TR.md) | Turkish P0 manual acceptance checklist |
+| [REAL_TRAFFIC_EVALUATION.md](REAL_TRAFFIC_EVALUATION.md) | P2 real-traffic evaluation design (own traffic, labeled malware, blind overlay) |
 | [MULTIDAY_COLLECTION.md](MULTIDAY_COLLECTION.md) | Accelerated multi-day rotation, independent retention, own-process resources and recovery protocol |
 | [DNS_INVESTIGATION.md](DNS_INVESTIGATION.md) | Device/domain query timelines, scan health and private rotation/recovery/resource protocol |
 | [NETWORK_EVALUATION.md](NETWORK_EVALUATION.md) | Independent official IoT-23 protocol, aggregate observations and detection gaps |

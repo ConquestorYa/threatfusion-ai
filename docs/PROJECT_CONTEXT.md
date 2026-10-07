@@ -11,8 +11,10 @@ real collector CLI fixed two defects: CTI cache locks longer than SQLite's busy
 timeout no longer stop collection (last complete indicators, disclosed as
 `cti_reload_deferred`), and the cached-analysis comparison no longer deep-copies
 a 616k-indicator cache. The final candidate passes all nine cases; 1,328 local
-tests pass. The 6-hour wall-clock soak is rerunning after an operator restart.
-See [OPERATIONAL_CONFIDENCE.md](OPERATIONAL_CONFIDENCE.md).
+tests pass. The 6-hour wall-clock soak completed 15/16 declared checks: the RSS
+growth limit failed because one CTI reload adds ~290 MiB that is not released
+(flat afterwards). A security review fixed DNS rebinding to the loopback app and
+a ThreatFox redirect key leak. See [OPERATIONAL_CONFIDENCE.md](OPERATIONAL_CONFIDENCE.md).
 
 ### Previous checkpoint (2026-10-06)
 

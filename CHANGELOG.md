@@ -12,6 +12,13 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- Security: the local app refuses requests whose `Host` is not loopback (or an
+  operator-listed name in `THREATFUSION_ALLOWED_HOSTS`), closing DNS rebinding
+  to the workspace; the ThreatFox API request no longer follows redirects with
+  its key. Wall-clock soak result (15/16; reload memory step) and security review
+  in `docs/OPERATIONAL_CONFIDENCE.md`. Turkish manual acceptance checklist and
+  P2 real-traffic evaluation design. Docs/tests included.
+
 - P1 operational confidence methods: predeclared nine-case collector CLI fault
   matrix (CTI refresh/lock, read-only state, unreadable file/directory, corrupt
   state, truncated gzip, missing declarations, SIGTERM) and a real wall-clock

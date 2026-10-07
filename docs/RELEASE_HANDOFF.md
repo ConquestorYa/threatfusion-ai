@@ -2,6 +2,25 @@
 
 Status date: 2026-10-06
 
+## P1 soak outcome, security review and P2 design (2026-10-07)
+
+- `wallclock-soak-v1` rerun finished on `d006771`: 15/16 declared checks; the RSS
+  growth check failed (collector 1.32 vs 1.25 limit) from a one-time ~290 MiB
+  step at the CTI reload; the pre-declared labeled diagnostic is 1.00. All other
+  limits held (details in `OPERATIONAL_CONFIDENCE.md`). Reported as failed.
+- Security review: Host allowlist outside public mode (`request_guard.py`,
+  optional `THREATFUSION_ALLOWED_HOSTS`) closes DNS rebinding to the local app,
+  verified by websocket probe against unpatched and repaired source; ThreatFox
+  API request refuses redirects. 1,346 local tests, Ruff clean.
+- Docs: Turkish P0 checklist `MANUAL_ACCEPTANCE_TR.md`; P2 design
+  `REAL_TRAFFIC_EVALUATION.md` (user chose own-traffic + labeled Stratosphere
+  malware arms, then a blind overlay); committed behavioral-ML direction in the
+  product plan. No P2 data acquired yet.
+- Render: user set Auto-Deploy to Off and confirmed "Suspended by you
+  (October 4)". Source-only `[skip render]` commit.
+- Next: reduce CTI reload high-water and re-soak with several reloads; user P0;
+  P2 arm A permission/capture and arm B selection.
+
 ## P1 fault matrix, collector repairs and wall-clock soak (2026-10-07)
 
 - Started P1 from verified main `8d93abe` (docs-only after runtime `35423bc`;

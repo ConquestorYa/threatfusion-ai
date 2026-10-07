@@ -238,6 +238,7 @@ _TR: dict[str, str] = {
     "Existing analysis results are snapshots. Run the lookup or analysis again after a cache update.": "Mevcut analiz sonuçları anlık görüntüdür. Önbellek güncellendikten sonra sorguyu veya analizi yeniden çalıştır.",
     "Local settings could not be read. Check private file permissions.": "Yerel ayarlar okunamadı. Özel dosya izinlerini kontrol et.",
     "Application configuration is invalid. Check runtime paths and private file permissions.": "Uygulama yapılandırması geçersiz. Çalışma yollarını ve özel dosya izinlerini kontrol et.",
+    "This local workspace only accepts requests addressed to 127.0.0.1 or localhost.": "Bu yerel çalışma alanı yalnızca 127.0.0.1 veya localhost adresine gelen istekleri kabul eder.",
     "fetching": "indiriliyor",
     "saving": "kaydediliyor",
     "failed": "başarısız",

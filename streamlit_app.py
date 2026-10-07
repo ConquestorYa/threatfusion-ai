@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 from datetime import timedelta
 from pathlib import Path
@@ -37,6 +38,7 @@ from threatfusion.quick_lookup import (
     analyze_quick_lookup_from_cache,
 )
 from threatfusion.reporting import build_analysis_report
+from threatfusion.request_guard import is_allowed_host
 from threatfusion.runtime_analysis import (
     analyze_adguard_query_log_with_diagnostics,
     analyze_dns_csv_with_diagnostics,
@@ -577,6 +579,9 @@ def main() -> None:
         config, local_root = resolve_managed_config(load_app_config())
     except (OSError, TypeError, ValueError):
         st.error(tr("Application configuration is invalid. Check runtime paths and private file permissions."))
+        return
+    if not config.public_mode and not is_allowed_host(st.context.headers.get("Host"), os.environ):
+        st.error(tr("This local workspace only accepts requests addressed to 127.0.0.1 or localhost."))
         return
 
     db_path = config.db_path
