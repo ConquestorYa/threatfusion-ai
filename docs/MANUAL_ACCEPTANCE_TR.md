@@ -12,30 +12,30 @@ etmek istediğin düzeltmeler GitHub `main`'e gönderilmiş olmalı. Kurulum her
 
 ## 1. Kurulum
 
-- [ ] Normal kullanıcıyla (**sudo olmadan**) [README.tr.md](../README.tr.md)
+- [evet] Normal kullanıcıyla (**sudo olmadan**) [README.tr.md](../README.tr.md)
       içindeki "Linux — tek komutla local kurulum" komutunu çalıştırdım.
-- [ ] Kurulum hatasız bitti ve tarayıcıda `http://127.0.0.1:8501` (veya
+- [evet] Kurulum hatasız bitti ve tarayıcıda `http://127.0.0.1:8501` (veya
       sıradaki boş port) açıldı.
-- [ ] Uygulamalar menüsünde **ThreatFusion AI** kısayolu var.
-- [ ] Yeni bir terminalde `threatfusion-ai` komutu bulunuyor.
+- [evet] Uygulamalar menüsünde **ThreatFusion AI** kısayolu var.
+- [evet] Yeni bir terminalde `threatfusion-ai` komutu bulunuyor.
 
 ## 2. Açma, kapatma, yeniden açma
 
-- [ ] `threatfusion-ai status` çalışan sunucuyu gösteriyor.
-- [ ] Tarayıcı sekmesini kapattım; `status` sunucunun hâlâ çalıştığını gösteriyor.
-- [ ] `threatfusion-ai stop` sunucuyu durdurdu; `status` bunu doğruluyor.
-- [ ] Menüden veya `threatfusion-ai` ile tekrar açtım; önceki ayarlar duruyor.
-- [ ] Web panelindeki **Yerel uygulamayı kapat** düğmesi de sunucuyu durduruyor.
+- [evet] `threatfusion-ai status` çalışan sunucuyu gösteriyor.
+- [evet] Tarayıcı sekmesini kapattım; `status` sunucunun hâlâ çalıştığını gösteriyor.
+- [evet] `threatfusion-ai stop` sunucuyu durdurdu; `status` bunu doğruluyor.
+- [önceki ayarlardan kasıt ne anlamadım] Menüden veya `threatfusion-ai` ile tekrar açtım; önceki ayarlar duruyor.
+- [evet] Web panelindeki **Yerel uygulamayı kapat** düğmesi de sunucuyu durduruyor.
 
 ## 3. CTI anahtarları ve güncelleme
 
-- [ ] Yan çubukta **Yerel kurulum ve CTI güncellemeleri** panelini buldum.
-- [ ] Kendi ThreatFox ve URLhaus anahtarlarımı girip uyguladım.
-- [ ] Kaynakları güncelledim; kaynak durumu "güncel" ve kayıt sayıları görünüyor.
-- [ ] SGB ve PhishTank anahtarsız güncellendi.
-- [ ] Anahtarı **kaydetmeden** uygulamayı kapatıp açtım; anahtar hatırlanmadı
+- [evet] Yan çubukta **Yerel kurulum ve CTI güncellemeleri** panelini buldum.
+- [evet] Kendi ThreatFox ve URLhaus anahtarlarımı girip uyguladım.
+- [Update CTI now tuşuna basınca güncelliyor. Ama aynı tuşa tekrar basınca durduruyor galiba orda hata var mı bak (ayrıca güncelleme kısmında bar veya %71 gibi bir değer ekle çünkü uzun sürüyor ve sadece dönüp duran küçük bir ikon var. pop up gibi ortada çıkabilir güncelleniyor diye)] Kaynakları güncelledim; kaynak durumu "güncel" ve kayıt sayıları görünüyor.
+- [evet] SGB ve PhishTank anahtarsız güncellendi.
+- [evet] Anahtarı **kaydetmeden** uygulamayı kapatıp açtım; anahtar hatırlanmadı
       (beklenen davranış).
-- [ ] Anahtarı açıkça kaydetmeyi seçtim; yeniden açınca hatırlandı.
+- [] Anahtarı açıkça kaydetmeyi seçtim; yeniden açınca hatırlandı.
 - [ ] İnterneti kestim ve tekrar güncellemeyi denedim: anlaşılır bir hata
       gördüm ve **önceki veriler silinmedi**.
 - [ ] İnterneti açıp tekrar güncelleyince düzeldi.
