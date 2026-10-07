@@ -25,6 +25,13 @@ etmek istediğin düzeltmeler GitHub `main`'e gönderilmiş olmalı. Kurulum her
 - [evet] Tarayıcı sekmesini kapattım; `status` sunucunun hâlâ çalıştığını gösteriyor.
 - [evet] `threatfusion-ai stop` sunucuyu durdurdu; `status` bunu doğruluyor.
 - [önceki ayarlardan kasıt ne anlamadım] Menüden veya `threatfusion-ai` ile tekrar açtım; önceki ayarlar duruyor.
+  - **Tur 2 — yeniden test et (madde netleştirildi):** "Ayarlar" şunlar demek:
+    - [ ] Yan çubuktaki mod seçimi (gerçek CTI / demo) kapatmadan önceki gibi.
+    - [ ] "Otomatik güncelleme" kutusu ve güncelleme aralığı (değiştirdiysen)
+          kapatmadan önceki gibi.
+    - [ ] Güncellediğin CTI kaynaklarının kayıt sayıları ve son güncelleme zamanı
+          hâlâ görünüyor (veriler silinmemiş).
+    - Dil seçimi bilerek kalıcı değildir; yeniden açınca varsayılana dönmesi normal.
 - [evet] Web panelindeki **Yerel uygulamayı kapat** düğmesi de sunucuyu durduruyor.
 
 ## 3. CTI anahtarları ve güncelleme
@@ -32,6 +39,18 @@ etmek istediğin düzeltmeler GitHub `main`'e gönderilmiş olmalı. Kurulum her
 - [evet] Yan çubukta **Yerel kurulum ve CTI güncellemeleri** panelini buldum.
 - [evet] Kendi ThreatFox ve URLhaus anahtarlarımı girip uyguladım.
 - [Update CTI now tuşuna basınca güncelliyor. Ama aynı tuşa tekrar basınca durduruyor galiba orda hata var mı bak (ayrıca güncelleme kısmında bar veya %71 gibi bir değer ekle çünkü uzun sürüyor ve sadece dönüp duran küçük bir ikon var. pop up gibi ortada çıkabilir güncelleniyor diye)] Kaynakları güncelledim; kaynak durumu "güncel" ve kayıt sayıları görünüyor.
+  - **Tur 2 — düzeltildi, yeniden test et:** Hata doğrulandı: güncelleme
+    sürerken herhangi bir tıklama güncellemeyi yarıda kesiyordu. Artık arka
+    planda çalışıyor.
+    - [ ] "Update CTI now"a basınca sağ üstte "güncelleme başladı" bildirimi çıktı.
+    - [ ] Sayfanın üstünde ilerleme çubuğu var: "x/y tamamlandı · %..., kaynak
+          adı, aşama". Yüzde tamamlanan kaynakları sayar (indirme boyutu
+          önceden bilinmez); SGB sayfalarında ara değerler görünür.
+    - [ ] Güncelleme sürerken düğme pasif (gri) ve tıklanamıyor.
+    - [ ] Güncelleme sürerken başka sayfaya geçtim / dili değiştirdim; güncelleme
+          durmadı, çubuk ilerlemeye devam etti.
+    - [ ] Bitince "CTI güncellemesi tamamlandı" bildirimi çıktı, çubuk kayboldu
+          ve kaynak kayıt sayıları göründü.
 - [evet] SGB ve PhishTank anahtarsız güncellendi.
 - [evet] Anahtarı **kaydetmeden** uygulamayı kapatıp açtım; anahtar hatırlanmadı
       (beklenen davranış).

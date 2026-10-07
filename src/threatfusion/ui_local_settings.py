@@ -17,9 +17,10 @@ from .local_workspace import (
     load_credentials,
     load_settings,
     read_private_json,
-    refresh_workspace,
+    refresh_running,
     save_credentials,
     save_settings,
+    start_background_refresh,
     validate_root,
 )
 
@@ -134,18 +135,13 @@ def render_local_settings(root: Path) -> None:
                 forget_credentials(root)
                 st.session_state.pop("_local_session_keys", None)
                 st.rerun()
-            if st.button(tr("Update CTI now"), key="local_refresh_cti"):
+            running = refresh_running(read_private_json(root / "refresh-status.json"))
+            if st.button(tr("Update CTI now"), key="local_refresh_cti", disabled=running,
+                         help=tr("An update is already running.") if running else None):
                 keys = st.session_state.get("_local_session_keys", saved)
-                with st.status(tr("Updating source caches…")) as progress_view:
-                    refresh_workspace(
-                        root,
-                        credentials=keys,
-                        progress=lambda source, stage, detail: progress_view.update(
-                            label=source + " · " + tr(stage)
-                        ),
-                    )
-                st.session_state.pop("quick_lookup_result", None)
-                st.session_state.pop("analysis_result", None)
+                # Runs outside this script: page interactions cannot abort it.
+                if start_background_refresh(root, credentials=keys):
+                    st.toast(tr("CTI update started. You can keep using the app."))
                 st.rerun()
             with st.form("local_schedule"):
                 automatic = st.checkbox(
@@ -214,6 +210,35 @@ def _apply_keys(root: Path) -> None:
         st.session_state["local_remember_keys"] = False
 
 
+@st.fragment(run_every="2s")
+def render_refresh_progress(root: Path) -> None:
+    """Main-workspace progress for a running CTI update, and a completion notice."""
+    status = read_private_json(root / "refresh-status.json")
+    finished = status.get("finished_at")
+    seen = st.session_state.setdefault("_local_refresh_seen", finished)
+    if refresh_running(status):
+        progress = status.get("progress") or {}
+        percent = progress.get("percent", 0)
+        percent = percent if type(percent) is int and 0 <= percent <= 100 else 0
+        total = progress.get("total") or 0
+        source = progress.get("source")
+        label = tr("Updating CTI sources: {done}/{total} finished · {percent}%",
+                   done=progress.get("completed", 0), total=total, percent=percent)
+        if source:
+            label += " · " + str(source) + " · " + tr(str(progress.get("stage", "")))
+        st.progress(percent / 100, text=label)
+        st.caption(tr("Existing cached data stays available until each source finishes. Download sizes are not known in advance, so the percentage counts finished sources."))
+    elif finished and finished != seen:
+        st.session_state["_local_refresh_seen"] = finished
+        # Earlier lookup/analysis results used the previous cache.
+        st.session_state.pop("quick_lookup_result", None)
+        st.session_state.pop("analysis_result", None)
+        if status.get("failed") or any(item.get("status") == "failed" for item in status.get("outcomes", [])):
+            st.toast(tr("CTI update finished with problems. See Local setup & CTI updates."))
+        else:
+            st.toast(tr("CTI update finished."))
+
+
 @st.fragment(run_every="10s")
 def _render_refresh_status(root: Path) -> None:
     status = read_private_json(root / "refresh-status.json")
@@ -221,7 +246,7 @@ def _render_refresh_status(root: Path) -> None:
         st.info(tr("No refresh yet. Use Update CTI now to download source data."))
         return
     st.caption(tr("Last attempt: {time}", time=status.get("attempted_at", "—")))
-    if status.get("running"):
+    if refresh_running(status):
         st.info(
             tr("A source update is running. Existing cached data remains available.")
         )

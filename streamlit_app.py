@@ -63,7 +63,11 @@ from threatfusion.ui_quick_lookup import (
     render_quick_lookup_empty_state,
     render_quick_lookup_result,
 )
-from threatfusion.ui_local_settings import resolve_managed_config, render_local_settings
+from threatfusion.ui_local_settings import (
+    render_local_settings,
+    render_refresh_progress,
+    resolve_managed_config,
+)
 from threatfusion.ui_theme import (
     THEME_OPTIONS,
     canonical_theme_name,
@@ -663,6 +667,8 @@ def main() -> None:
                 st.session_state["workspace_nav"] = "Collected connections"
                 st.rerun()
 
+    if local_root is not None:
+        render_refresh_progress(local_root)
     _render_primary_workspace_launcher(page)
     if config.cti_only:
         st.warning(tr(

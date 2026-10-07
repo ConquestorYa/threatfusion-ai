@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import threading
 from datetime import datetime, timedelta, timezone
@@ -201,3 +202,40 @@ def test_unsafe_refresh_lock_preserves_its_target(root, tmp_path):
     with pytest.raises(OSError):
         workspace.refresh_workspace(root)
     assert target.read_text() == "private"
+
+
+def test_progress_records_safe_percentages_and_stale_running_is_ignored(root, monkeypatch):
+    snapshots = []
+
+    def refresh(path, **kwargs):
+        progress = kwargs["progress"]
+        progress("URLhaus", "fetching", "https://key-bearing.example")
+        snapshots.append(workspace.read_private_json(root / "refresh-status.json")["progress"])
+        progress("URLhaus", "refreshed", "5 active records")
+        progress("SGB", "fetching", "page 2 · 500 / 1,000 raw records")
+        snapshots.append(workspace.read_private_json(root / "refresh-status.json")["progress"])
+        return ()
+
+    monkeypatch.setattr(workspace, "refresh_configured_sources", refresh)
+    status = workspace.refresh_workspace(root, credentials={"URLHAUS_AUTH_KEY": "own-key"})
+    assert [s["percent"] for s in snapshots] == [0, 47]
+    assert snapshots[1]["completed"] == 1 and snapshots[1]["total"] == 3
+    assert "key-bearing" not in (root / "refresh-status.json").read_text()
+    assert not workspace.refresh_running(status) and "progress" not in status
+    assert workspace.refresh_running({"running": True, "pid": os.getpid()})
+    assert not workspace.refresh_running({"running": True, "pid": 2 ** 22 + 12345})
+    assert not workspace.refresh_running({"running": True})
+
+
+def test_background_refresh_runs_once_outside_the_caller(root, monkeypatch):
+    import time
+    calls = []
+    monkeypatch.setattr(workspace, "refresh_configured_sources", lambda path, **k: calls.append(1) or ())
+    assert workspace.start_background_refresh(root, credentials={})
+    deadline = time.monotonic() + 10
+    while not workspace.read_private_json(root / "refresh-status.json").get("finished_at"):
+        assert time.monotonic() < deadline
+        time.sleep(0.02)
+    assert calls == [1]
+    workspace.write_private_json(root / "refresh-status.json", {"running": True, "pid": os.getpid()})
+    assert not workspace.start_background_refresh(root, credentials={})

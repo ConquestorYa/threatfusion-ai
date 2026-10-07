@@ -104,10 +104,55 @@ def test_manual_refresh_uses_session_keys_and_exposes_only_safe_status(
         "THREATFOX_AUTH_KEY": "session-only-key"
     }
     button(app, "Update CTI now").click().run(timeout=15)
+    wait_finished(managed)
+    app.run(timeout=15)
     assert not app.exception and seen == ["session-only-key"]
     assert "private-url-key" not in "\n".join(str(c.value) for c in app.caption)
     assert any("previous cache preserved" in str(w.value) for w in app.warning)
     assert not (managed / "credentials.json").exists()
+
+
+def wait_finished(root, timeout=10):
+    import time
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        status = workspace.read_private_json(root / "refresh-status.json")
+        if status.get("finished_at") and not status.get("running"):
+            return status
+        time.sleep(0.05)
+    raise AssertionError("background refresh did not finish")
+
+
+def test_running_update_survives_reruns_disables_button_and_shows_progress(managed, monkeypatch):
+    import threading
+    release, started, calls = threading.Event(), threading.Event(), []
+
+    def refresh(path, **kwargs):
+        calls.append(1)
+        kwargs["progress"]("PhishTank", "refreshed", "1 active records")
+        started.set()
+        assert release.wait(10)
+        return (CTIRefreshOutcome("PhishTank", "refreshed", record_count=1),)
+
+    monkeypatch.setattr(workspace, "refresh_configured_sources", refresh)
+    app = local_app(managed)
+    button(app, "Update CTI now").click().run(timeout=15)
+    assert started.wait(10)
+    # A page interaction during the update used to abort it mid-source.
+    app.run(timeout=15)
+    assert button(app, "Update CTI now").disabled
+    progress = AppTest.from_string(
+        "from pathlib import Path\nfrom threatfusion.ui_local_settings import render_refresh_progress\n"
+        f"render_refresh_progress(Path({str(managed)!r}))"
+    ).run(timeout=15)
+    bar = progress.get("progress")[0]
+    assert "1/2 finished" in bar.proto.text and "50%" in bar.proto.text
+    release.set()
+    status = wait_finished(managed)
+    assert calls == [1] and status["outcomes"][0]["status"] == "refreshed"
+    assert "progress" not in status
+    app.run(timeout=15)
+    assert not button(app, "Update CTI now").disabled
 
 
 def test_auto_update_is_explicit_and_interval_is_saved(managed):

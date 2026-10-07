@@ -254,6 +254,14 @@ release date is added only when the final tag/release is created.
 
 ### Fixed
 
+- Manual "Update CTI now" ran inside the Streamlit script, so any click during
+  an update (including the same button, navigation or language change) aborted
+  it mid-source without recording a failure (user P0 feedback). Updates now run
+  in a background thread, the button is disabled while one runs, stale
+  "running" status from a dead process is ignored, and the main workspace shows
+  a progress bar (finished sources, SGB page estimate, source/stage) with
+  start/finish notifications. Status files keep only safe aggregates.
+
 - Collector no longer stops when the CTI cache is busy/locked beyond the SQLite
   busy timeout; it keeps the last complete indicators, discloses
   `cti_reload_deferred` in status and the dashboard, and never scans a busy

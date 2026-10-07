@@ -2,6 +2,22 @@
 
 Status date: 2026-10-06
 
+## P0 round-1 feedback: CTI update interruption and progress (2026-10-07)
+
+- The user installed on Omarchy (Arch-based, first non-Debian/Ubuntu install)
+  and annotated `MANUAL_ACCEPTANCE_TR.md` directly on GitHub (`711bdf6`, a
+  commit without `[skip render]`; Render events must be rechecked by the user).
+- Confirmed defect: the manual CTI refresh ran in the Streamlit script; a rerun
+  raises Streamlit's `RerunException` (a `BaseException`) from the progress
+  callback, aborting the refresh mid-source with no failure recorded. Fixed by
+  a background thread (`start_background_refresh`), PID-checked running state,
+  a disabled button while running and a main-workspace progress bar/toasts. The
+  percentage counts finished sources (sizes are unknown) plus SGB page progress.
+  Four new/updated regression tests; the earlier synchronous UI test now waits.
+- Clarified the ambiguous "previous settings" checklist item (mode, automatic
+  update/interval, CTI data; language is session-only) and added round-2
+  retest items. P0 remains pending.
+
 ## Render configuration removed (2026-10-07)
 
 - At the user's request `render.yaml` is deleted and README/DEPLOYMENT/AGENTS no
