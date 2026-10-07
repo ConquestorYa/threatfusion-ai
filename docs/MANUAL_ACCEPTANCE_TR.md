@@ -11,19 +11,49 @@ aktarıldı" notlu olanları sen sohbette bildirdin, Claude işaretledi. Sırayl
 **boş `[ ]` maddeleri** yap. Arayüz Türkçe ise düğme adları parantez içindeki
 Türkçe karşılıklarıyla görünür.
 
+## Testler dışında senden istenenler (genel kurallar)
+
+- Bu dosyayı **bilgisayarındaki kopyada** düzenle
+  (`~/Work/threatfusion-ai/docs/MANUAL_ACCEPTANCE_TR.md`) ya da sonuçları
+  sohbete yaz. GitHub web sitesinde düzenleme; Claude yerelde değişiklik
+  yaparken çakışma olur.
+- Claude Code'u yeni bir oturum için proje klasöründen başlat:
+  `cd ~/Work/threatfusion-ai && claude`. Aynı anda bu repoda tek Claude
+  oturumu çalışsın.
+- Bölüm 5'te yalnızca listedeki klasörü kullan; `reserved` adlı klasörleri açma.
+- API anahtarlarını sohbete, bu dosyaya veya GitHub'a yazma.
+- [evet] Render: servis silindi, Blueprint bağlantısı koparıldı (artık bir şey
+  yapman gerekmiyor).
+
 ## 0. Başlamadan önce: en son sürüme güncelle
 
-Düzeltmeler GitHub `main`'e gönderildikten sonra:
+Claude doğrulanmış her düzeltmeyi GitHub `main`'e gönderir. Kurulum komutu her
+çalıştığında `main`'deki **en son** sürümü kurar; tekrar çalıştırmak güncelleme
+yapar. Silip yeniden kurman gerekmez; CTI verileri, ayarlar ve kayıtlı
+anahtarlar korunur.
 
-```bash
-threatfusion-ai stop
-```
+1. Uygulamayı durdur:
 
-Ardından [README.tr.md](../README.tr.md) içindeki **aynı tek satırlık kurulum
-komutunu** tekrar çalıştır. Silip yeniden kurman gerekmez; CTI verileri,
-ayarlar ve kayıtlı anahtarlar korunur. Uygulama tarayıcıda açılır. Adres
-`http://127.0.0.1:` veya `http://localhost:` ile başlamalı (port 8501, 8502…
-olabilir); başka adreslerle güvenlik gereği boş sayfa görünür.
+   ```bash
+   threatfusion-ai stop
+   ```
+
+2. [README.tr.md](../README.tr.md) içindeki **aynı tek satırlık kurulum
+   komutunu** tekrar çalıştır. Bitince uygulama tarayıcıda açılır.
+3. Kurulu sürümü kontrol et:
+
+   ```bash
+   grep -o 'releases/[0-9a-f]\{7\}' ~/.local/share/threatfusion-ai/installation.json
+   ```
+
+   Çıkan 7 karakter, GitHub'daki son commit'in ilk 7 karakteriyle aynı olmalı
+   (repo sayfasında commit listesinin en üstü ya da Claude'un son mesajında
+   söylediği commit).
+
+- [ ] Güncelledim; kurulu sürüm son commit ile aynı: `…….`
+
+Adres `http://127.0.0.1:` veya `http://localhost:` ile başlamalı (port 8501,
+8502… olabilir); başka adreslerle güvenlik gereği boş sayfa görünür.
 
 ## 1. Kurulum
 
