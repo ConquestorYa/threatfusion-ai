@@ -483,10 +483,10 @@ THREATFUSION_CTI_ONLY=1 .venv/bin/python -m streamlit run streamlit_app.py --ser
 ```
 
 CTI and DNS behavior remain available; ML and model-dependent history are
-disabled. This does not promote an experimental model. The synthetic hosted
-demo uses [`render.yaml`](render.yaml) and
-[`Dockerfile.public-demo`](Dockerfile.public-demo); see
-the [deployment guide](docs/DEPLOYMENT.md) for limits and verification.
+disabled. This does not promote an experimental model. An optional synthetic
+public-demo container is defined by
+[`Dockerfile.public-demo`](Dockerfile.public-demo); no hosting configuration is
+maintained. See the [deployment guide](docs/DEPLOYMENT.md) for limits and verification.
 
 You do **not** need to reinstall anything. Open PowerShell, return to the repository, set the runtime variables again, and start Streamlit:
 

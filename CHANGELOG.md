@@ -10,6 +10,13 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 The current unreleased state is the v0.1.0 portfolio-release candidate. The
 release date is added only when the final tag/release is created.
 
+### Removed
+
+- Render Blueprint `render.yaml` and Render-specific deployment instructions, at
+  the user's request (DEC-086). The host-independent `Dockerfile.public-demo`,
+  synthetic demo generator and their CI checks remain. A suspended Render
+  service may still exist in the user's account until the user deletes it.
+
 ### Added
 
 - Security: the local app refuses requests whose `Host` is not loopback (or an

@@ -488,10 +488,10 @@ THREATFUSION_CTI_ONLY=1 .venv/bin/python -m streamlit run streamlit_app.py --ser
 ```
 
 CTI ve DNS davranış analizi kullanılabilir; ML ve model bilgisi gerektiren
-history kapalıdır. Deneysel model promotion yapılmaz. Sentetik hosted demo
-[`render.yaml`](render.yaml) ve
-[`Dockerfile.public-demo`](Dockerfile.public-demo) kullanır; limitler ve
-doğrulama için [deployment rehberine](docs/DEPLOYMENT.md) bak.
+history kapalıdır. Deneysel model promotion yapılmaz. İsteğe bağlı sentetik
+public-demo container'ı [`Dockerfile.public-demo`](Dockerfile.public-demo) ile
+tanımlıdır; hosting yapılandırması tutulmaz. Limitler ve doğrulama için
+[deployment rehberine](docs/DEPLOYMENT.md) bak.
 
 Bağımlılıkları yeniden kurmana gerek yok. PowerShell'i aç, proje klasörüne gir, runtime değişkenlerini yeniden ayarla ve Streamlit'i başlat:
 

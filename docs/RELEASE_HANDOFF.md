@@ -2,6 +2,18 @@
 
 Status date: 2026-10-06
 
+## Render configuration removed (2026-10-07)
+
+- At the user's request `render.yaml` is deleted and README/DEPLOYMENT/AGENTS no
+  longer describe a Render path (DEC-086). `Dockerfile.public-demo`, the
+  synthetic demo generator, public-mode limits and their CI job are kept: they
+  are host-independent and shared with the local demo mode. No runtime code
+  changes. The user-suspended `threatfusion-ai-demo` service and its Blueprint
+  still exist in the user's Render account (status checked by the user on
+  2026-10-07: suspended, last deploy 2026-10-04, Blueprint manual sync only,
+  Auto-Deploy "After CI Checks Pass"); deleting them is the user's later
+  dashboard action. Until then commits keep `[skip render]`.
+
 ## P1 soak outcome, security review and P2 design (2026-10-07)
 
 - `wallclock-soak-v1` rerun finished on `d006771`: 15/16 declared checks; the RSS

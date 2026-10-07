@@ -11,20 +11,12 @@ stay local; completed, verified source changes may still be published to GitHub.
 Do not create or resume a hosted site, tunnel or preview without a new explicit
 user request. Bind local test servers to `127.0.0.1`.
 
-The retained Blueprint disables automatic service deploys and preview
-environments. This does not suspend an already-created Render service and does
-not switch off an existing Blueprint's dashboard Auto Sync setting. Before
-updating a hosting-connected branch, suspend the existing demo and verify
-Auto-Deploy is Off and Blueprint Auto Sync is No. When those settings cannot be
-verified, publish source changes to a separate `local-development/` branch
-instead. GitHub CI on that branch tests code/containers without deploying them.
-
-For the user's explicit `main` integration request, the existing service was
-verified as user-suspended with previews disabled. The merge uses `[skip render]`,
-adds no Blueprint resources and retains manual deploy settings; suspension and
-deploy history must be checked again after CI. This guarded source merge does
-not authorize resuming the service. Render documents the skip phrase in
-[Deploying on Render](https://render.com/docs/deploys#skipping-an-auto-deploy).
+No hosting configuration is maintained in this repository. The Render Blueprint
+(`render.yaml`) was removed on 2026-10-07 at the user's request (DEC-086). A
+previously created demo service may still exist, suspended, in the user's Render
+account and linked to `main`; until the user deletes it, source-only commits keep
+`[skip render]` and the hosting checks in [AGENTS.md](../AGENTS.md) still apply.
+Any future hosting needs a new explicit user request and a new configuration.
 
 ## Public mode
 
@@ -174,32 +166,27 @@ Unmatched domains are not thereby confirmed benign. This mode is explicit;
 missing or invalid artifacts do not silently select it. Restore the trusted
 original privately to resume the existing ML runtime policy.
 
-## Render public-demo path
+## Public-demo container (no hosting configured)
 
-For the portfolio-hosted demo, the repository can generate its entire runtime
-during the Render build. The generated CTI cache and ML artifact are synthetic
-and demo-only; they are not the measured local model or third-party feed data.
+`Dockerfile.public-demo` builds a self-contained demonstration image. Its CTI
+cache and ML artifact are generated synthetically during the build; they are
+not the measured local model or third-party feed data. The image copies its
+SHA-256 pin to a separate root-owned file. Code, model and pin remain read-only
+to the non-root web process. No runtime upload, database service, persistent
+disk or feed credential is required.
 
-Only after an explicit user request to host, use the repository's `render.yaml`
-Blueprint. It selects the free Frankfurt web-service plan and
-`Dockerfile.public-demo`. The image generates its synthetic runtime during the
-build and copies its SHA-256 pin to a separate root-owned file. Code, model and
-pin remain read-only to the non-root web process. No local runtime upload,
-database service, persistent disk or feed credential is required.
+Nginx listens on `$PORT` (default `10000`) and forwards to Streamlit on loopback
+`8501`. Requests are limited to 10/s per client and 50/s globally, with bounded
+bursts; WebSocket connections are limited to three per client and eight
+globally. Health probes remain available under visitor limits. Public-demo
+uploads are limited to 20 MB (21 MB proxy allowance for multipart framing),
+while private/local Streamlit defaults remain 100 MB. Proxy access logs and
+upload buffering are disabled. TLS termination would come from a host that is
+not configured here.
 
-Render terminates HTTPS; Nginx listens on `$PORT` (default `10000`) and forwards
-to Streamlit on loopback `8501`. Requests are limited to 10/s per client and
-50/s globally, with bounded bursts; WebSocket connections are limited to three
-per client and eight globally. Health probes remain available under visitor
-limits. Public-demo uploads are limited to 20 MB (21 MB proxy allowance for
-multipart framing), while private/local Streamlit defaults remain 100 MB.
-Proxy access logs and upload buffering are disabled.
-
-The Blueprint trusts Render's private ingress and Cloudflare's published proxy
-networks for client addressing. Verify the hosted ingress path and per-client
-limits before release; keep those ranges current. A directly exposed local
-container trusts no forwarded headers by default. Never trust `0.0.0.0/0` or
-`::/0`. The global limit still applies regardless of visitor identity.
+A container trusts no forwarded headers by default. Set
+`THREATFUSION_TRUSTED_PROXY_CIDRS` only to a verified ingress path; never trust
+`0.0.0.0/0` or `::/0`. The global limit still applies regardless of visitor identity.
 
 Reproduce the deployment check without any developer data:
 
@@ -211,10 +198,8 @@ python scripts/check_public_demo_proxy.py --base-url http://127.0.0.1:18501
 
 Run the check only against your own demo. CI builds this image and checks its
 privacy boundary, health, response headers, body limits and HTTP 429 responses.
-Both Streamlit and Nginx are supervised and terminated on SIGTERM. Free Render
-services can sleep when idle. Hosted verification is deferred while the project
-undergoes local development and security review; the presence of this image or
-Blueprint does not authorize public deployment.
+Both Streamlit and Nginx are supervised and terminated on SIGTERM. The presence
+of this image does not authorize public deployment.
 
 No ThreatFox or URLhaus credential is required by this public-demo service.
 The synthetic demo artifact exists only so visitors can exercise the complete

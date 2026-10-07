@@ -34,9 +34,11 @@
   a `[skip render]` integration commit permits that source-only merge without
   resuming hosting. Recheck service suspension and deployment history after CI.
   Do not treat the merge request as permission to resume or publish a site.
-- `render.yaml` is retained for possible future use. Its manual-deploy setting
-  does not suspend an existing service or disable dashboard Blueprint auto-sync.
-  Never claim those external settings changed without verifying them.
+- The Render Blueprint (`render.yaml`) was removed at the user's request
+  (DEC-086); do not re-add hosting configuration without a new explicit request.
+  A suspended demo service may still exist in the user's Render account, linked
+  to `main`. Until the user confirms it is deleted, keep `[skip render]` and the
+  checks above. Never claim external settings changed without verifying them.
 
 ## Local data and ML evidence
 

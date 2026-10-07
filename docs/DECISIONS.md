@@ -868,3 +868,15 @@ remain pending until actually obtained. RITA stays external; SIEM integration
 is a gated future increment, not a delivered capability. This supersedes the
 old “feature-complete / public demo next” README framing without deleting prior
 experiment results or authorizing hosting.
+
+## DEC-086: Remove the Render hosting configuration
+
+**Decision (2026-10-07):** At the user's request, delete `render.yaml`. Its only
+purpose was publishing the synthetic demo, which is not part of current work.
+Keep `Dockerfile.public-demo`, the synthetic demo generator and their CI checks:
+they are host-independent and the local `--mode demo` shares the generator.
+
+**Consequences:** No hosting configuration exists in the repository. The
+user-suspended Render service may remain in the user's account, linked to
+`main`, until the user deletes it; the `[skip render]`/suspension checks stay
+until then. Future hosting requires a new explicit request and configuration.
