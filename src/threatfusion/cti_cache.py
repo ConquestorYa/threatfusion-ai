@@ -245,14 +245,19 @@ def finalize_for_read_only(db_path: Path) -> None:
         raise ValueError("CTI cache could not leave WAL mode for packaging")
 
 
-def initialize_cti_cache(db_path: Path) -> None:
-    """Create or migrate local CTI cache tables; no writes when already current."""
+def initialize_cti_cache(db_path: Path, *, writer: bool = False) -> None:
+    """Create or migrate local CTI cache tables; no writes when already current.
+
+    Readers leave a current file byte-identical. Writers (refreshes, cleanup,
+    the managed app's own cache at startup) switch it to WAL first.
+    """
     path = Path(db_path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
     with _connect(path) as connection:
         if _schema_ready(connection):
-            _enable_wal(connection)
+            if writer:
+                _enable_wal(connection)
             return
     with _connect(path) as connection:
         _enable_wal(connection)
@@ -375,7 +380,7 @@ def replace_source_records(
     if any(record.source != source_name for record in record_list):
         raise ValueError("every IOCRecord source must match the target source")
 
-    initialize_cti_cache(db_path)
+    initialize_cti_cache(db_path, writer=True)
     refresh_text = _refresh_time_text(refreshed_at)
 
     unique_records: dict[tuple[str, str], IOCRecord] = {}
@@ -673,7 +678,7 @@ def prune_inactive_records(
         raise ValueError("now must be timezone-aware")
     cutoff = reference.timestamp() - older_than_days * 86400
 
-    initialize_cti_cache(db_path)
+    initialize_cti_cache(db_path, writer=True)
     with _connect(Path(db_path)) as connection:
         cursor = connection.execute(
             """

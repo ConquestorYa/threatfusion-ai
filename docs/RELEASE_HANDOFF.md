@@ -20,6 +20,12 @@ Status date: 2026-10-06
   zero reader errors; zero leaked handles. The real-lock collector test now
   runs explicitly in rollback mode (WAL fallback); a new test covers WAL reads.
   Four new tests; 1,366 local tests pass.
+- First CI run of `63a921b` failed three jobs, preserved here: the fd-leak test
+  used Linux `/proc` on Windows, and readers switched a finalized demo cache to
+  WAL, breaking the installer's demo-cache immutability check. Fixed: only
+  writers (refresh, cleanup, the managed cache at startup) switch to WAL;
+  readers leave a current cache byte-identical (new test; demo flow replicated
+  locally with an unchanged demo cache). 1,367 local tests pass.
 
 ## Manual acceptance checklist review (2026-10-07)
 

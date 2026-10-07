@@ -894,6 +894,7 @@ schema is current, and connections close deterministically.
 **Consequences:** `-wal`/`-shm` sidecars may appear next to the cache (ignored by
 Git, same private directory). Packaged caches for read-only directories
 (public-demo image, deployment bundles) are finalized in rollback mode; readers
-try WAL and fall back silently. The collector's busy/locked fallback remains
+never change the file; only writers (refreshes, cleanup, the managed cache at
+startup) switch to WAL. The collector's busy/locked fallback remains
 for caches where WAL cannot be enabled.
 

@@ -54,7 +54,7 @@ def prepare_local_environment(
         cti = runtime / "cti"
         cti.mkdir(exist_ok=True)
         db = cti / "threatfusion.sqlite"
-        initialize_cti_cache(db)
+        initialize_cti_cache(db, writer=True)
         model = cti / "no-ml-artifact"
         pin = ""
     values = dict(environment)

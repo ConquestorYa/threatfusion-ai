@@ -550,6 +550,7 @@ def test_packaged_cache_reads_from_a_read_only_directory(tmp_path):
         db.chmod(0o644)
 
 
+@pytest.mark.skipif(not __import__("os").path.isdir("/proc/self/fd"), reason="Linux file-descriptor inventory")
 def test_cache_connections_are_closed_after_use(tmp_path):
     import os
     from threatfusion.cti_cache import list_cti_cache_status, load_ioc_records, lookup_ioc_records, replace_source_records
@@ -561,3 +562,21 @@ def test_cache_connections_are_closed_after_use(tmp_path):
         lookup_ioc_records(db, domain="a.example")
     handles = [os.path.realpath(f"/proc/self/fd/{fd}") for fd in os.listdir("/proc/self/fd")]
     assert not [h for h in handles if h.startswith(str(tmp_path))]
+
+
+def test_readers_leave_a_current_cache_byte_identical(tmp_path):
+    import hashlib
+    from threatfusion.cti_cache import (finalize_for_read_only, list_cti_cache_status, load_ioc_records,
+                                        lookup_ioc_records, replace_source_records)
+    db = tmp_path / "demo.sqlite"
+    replace_source_records(db, "SGB", [IOCRecord("a.example", IOCType.DOMAIN, "SGB")])
+    finalize_for_read_only(db)
+    before = hashlib.sha256(db.read_bytes()).hexdigest()
+    list_cti_cache_status(db)
+    load_ioc_records(db)
+    lookup_ioc_records(db, domain="a.example")
+    assert hashlib.sha256(db.read_bytes()).hexdigest() == before
+    replace_source_records(db, "SGB", [IOCRecord("b.example", IOCType.DOMAIN, "SGB")])
+    import sqlite3
+    with sqlite3.connect(db) as connection:
+        assert connection.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
