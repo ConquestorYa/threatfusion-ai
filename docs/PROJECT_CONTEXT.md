@@ -273,8 +273,8 @@ Demo is an explicit separate mode; its reserved synthetic cache/model never
 enter real CTI scoring. Existing installations retain their selected mode on
 upgrade. No developer cache, model, key or holdout is copied, distributed or
 promoted. First-run telemetry is session-local and shared history is disabled.
-See `INSTALL_LINUX.md`. Source updates target `main` with the hosting guard in
-`AGENTS.md`; the Render demo remains user-suspended and must not be resumed.
+See `INSTALL_LINUX.md`. Source updates target `main`; no host is connected
+(the Render demo service was deleted by the user on 2026-10-07, DEC-086).
 
 ## Intended users
 

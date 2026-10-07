@@ -96,8 +96,9 @@ linked documents rather than being copied into this plan.
   synthetic tasks do not count as the user's acceptance or an analyst pilot.
 - Runtime correctness has improved; real detection efficacy, broad security,
   enterprise resources and RITA parity are still unqualified.
-- Public hosting remains user-suspended; previews are off. Publishing verified
-  source to main does not authorize deployment. Preserve the hosting checks in
+- No host is connected: the user removed the Render configuration, deleted the
+  demo service and disconnected its Blueprint (2026-10-07, DEC-086). Publishing
+  verified source to main does not authorize any deployment; see
   [AGENTS.md](../AGENTS.md).
 
 ## Ordered roadmap and completion gates

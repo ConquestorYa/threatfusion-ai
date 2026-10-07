@@ -43,14 +43,16 @@ etmek istediğin düzeltmeler GitHub `main`'e gönderilmiş olmalı. Kurulum her
     sürerken herhangi bir tıklama güncellemeyi yarıda kesiyordu. Artık arka
     planda çalışıyor.
     - [ ] "Update CTI now"a basınca sağ üstte "güncelleme başladı" bildirimi çıktı.
-    - [ ] Sayfanın üstünde ilerleme çubuğu var: "x/y tamamlandı · %..., kaynak
+    - [evet — sohbetten aktarıldı: kısa süre göründü; kaynaklar hâlâ güncel
+      olduğu için güncelleme hemen bitti] Sayfanın üstünde ilerleme çubuğu var: "x/y tamamlandı · %..., kaynak
           adı, aşama". Yüzde tamamlanan kaynakları sayar (indirme boyutu
           önceden bilinmez); SGB sayfalarında ara değerler görünür.
     - [ ] Güncelleme sürerken düğme pasif (gri) ve tıklanamıyor.
     - [ ] Güncelleme sürerken başka sayfaya geçtim / dili değiştirdim; güncelleme
           durmadı, çubuk ilerlemeye devam etti.
-    - [ ] Bitince "CTI güncellemesi tamamlandı" bildirimi çıktı, çubuk kayboldu
-          ve kaynak kayıt sayıları göründü.
+    - [evet — sohbetten aktarıldı: onay bildirimi çıktı, çubuk kayboldu;
+      PhishTank dışındaki kaynaklar "Fresh"] Bitince "CTI güncellemesi
+          tamamlandı" bildirimi çıktı, çubuk kayboldu ve kaynak kayıt sayıları göründü.
 - [evet] SGB ve PhishTank anahtarsız güncellendi.
   - **Tur 2 notu:** Kontrol ettim: PhishTank'tan hiç kayıt gelmemiş (SGB,
     ThreatFox ve URLhaus verisi var). Sebep PhishTank'ın kendisi: anahtarsız
@@ -61,7 +63,7 @@ etmek istediğin düzeltmeler GitHub `main`'e gönderilmiş olmalı. Kurulum her
           güncelleme bildirimi "sorunlarla bitti" yerine "tamamlandı" dedi.
 - [evet] Anahtarı **kaydetmeden** uygulamayı kapatıp açtım; anahtar hatırlanmadı
       (beklenen davranış).
-- [] Anahtarı açıkça kaydetmeyi seçtim; yeniden açınca hatırlandı.
+- [evet — sohbetten aktarıldı] Anahtarı açıkça kaydetmeyi seçtim; yeniden açınca hatırlandı.
 - [ ] İnterneti kestim ve tekrar güncellemeyi denedim: anlaşılır bir hata
       gördüm ve **önceki veriler silinmedi**.
 - [ ] İnterneti açıp tekrar güncelleyince düzeldi.

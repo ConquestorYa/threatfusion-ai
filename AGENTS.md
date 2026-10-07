@@ -24,22 +24,13 @@
 - The user authorizes publishing completed, working changes to this GitHub
   repository after appropriate verification. Preserve unrelated user changes
   and record results and limitations in the handoff/changelog.
-- Before updating a branch connected to hosting, confirm that automatic deploy,
-  Blueprint auto-sync and hosted previews cannot trigger publication. If this
-  cannot be established, use a separate `local-development/` branch and do not
-  merge it into the hosting-connected branch. CI runs on those branches without
-  deploying a service.
-- The user explicitly requested integration into `main`. A confirmed
-  user-suspended service with previews disabled, no new Blueprint resources and
-  a `[skip render]` integration commit permits that source-only merge without
-  resuming hosting. Recheck service suspension and deployment history after CI.
-  Do not treat the merge request as permission to resume or publish a site.
-- The Render Blueprint (`render.yaml`) was removed at the user's request
-  (DEC-086); do not re-add hosting configuration without a new explicit request.
-  On 2026-10-07 the user reported deleting the `threatfusion-ai-demo` web
-  service. Until the user confirms the Render Blueprint is deleted too, keep
-  `[skip render]` on commits. Never claim external settings changed without
-  verifying them.
+- No hosting is connected to this repository (DEC-086): on 2026-10-07 the user
+  removed the Render configuration, deleted the demo web service and
+  disconnected its Blueprint. Verified source may be pushed to `main`; CI runs
+  without deploying anything. `[skip render]` is no longer required.
+- Do not add hosting configuration or connect a host without a new explicit
+  user request. If a host is ever connected again, first confirm that automatic
+  deploys and previews cannot publish unreviewed source.
 
 ## Local data and ML evidence
 

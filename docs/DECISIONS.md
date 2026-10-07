@@ -880,5 +880,5 @@ they are host-independent and the local `--mode demo` shares the generator.
 user-suspended Render service may remain in the user's account, linked to
 `main`, until the user deletes it; the `[skip render]`/suspension checks stay
 until then. Future hosting requires a new explicit request and configuration.
-The user reported deleting the web service on 2026-10-07; the Blueprint's
-deletion is still to be confirmed.
+The user deleted the web service and disconnected the Blueprint on 2026-10-07,
+so no host is connected and `[skip render]` is no longer required.

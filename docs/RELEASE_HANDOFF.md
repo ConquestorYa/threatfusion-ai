@@ -2,6 +2,18 @@
 
 Status date: 2026-10-06
 
+## Render fully disconnected; P0 round-2 results (2026-10-07)
+
+- The user deleted the Render web service and disconnected its Blueprint. No
+  host is connected; AGENTS/DEPLOYMENT/DECISIONS/CLAUDE drop the `[skip render]`
+  requirement and keep "no hosting without an explicit request".
+- After upgrading with the same one-line installer (upgrade path works), the
+  user reports: saved API keys are remembered across restart; the progress bar
+  appeared briefly and a completion notification followed because ThreatFox,
+  URLhaus and SGB were still within the 6 h freshness window ("Fresh", last
+  download 1.1 h earlier); PhishTank remains unavailable upstream. The
+  checklist marks only these user-reported items, tagged as relayed from chat.
+
 ## P0 round-2 feedback: PhishTank public feed and Render service (2026-10-07)
 
 - After upgrading, a manual update reported "finished with problems" with
