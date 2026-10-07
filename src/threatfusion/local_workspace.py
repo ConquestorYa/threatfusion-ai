@@ -160,8 +160,13 @@ def refresh_workspace(
     credentials: dict | None = None,
     progress=None,
     now: datetime | None = None,
+    force: bool = False,
 ) -> dict:
-    """Fixed feeds only, no inherited developer keys, and one refresh at a time."""
+    """Fixed feeds only, no inherited developer keys, and one refresh at a time.
+
+    ``force`` downloads sources that are still fresh; PhishTank keeps its own
+    24-hour public-feed limit.
+    """
     import fcntl
 
     validate_root(root)
@@ -203,6 +208,7 @@ def refresh_workspace(
                 stale_after=timedelta(hours=load_settings(root)["interval_hours"]),
                 progress=_progress_recorder(root, status, total, progress),
                 now=reference,
+                force=bool(force),
             )
             # Persist only safe aggregates. Never retain exception URLs or bodies.
             status["outcomes"] = [
@@ -253,6 +259,7 @@ def _progress_recorder(root: Path, status: dict, total: int, outer=None):
     def record(source, stage, detail=None):
         nonlocal completed
         fraction = 0.0
+        items = None
         if source != "Cache maintenance" and stage in _DONE_STAGES:
             completed = min(total, completed + 1)
         elif stage == "saving":
@@ -260,10 +267,11 @@ def _progress_recorder(root: Path, status: dict, total: int, outer=None):
         elif detail and (match := _RAW_RECORDS.search(detail)):
             seen, expected = (int(value.replace(",", "")) for value in match.groups())
             fraction = 0.85 * min(1.0, seen / expected) if expected else 0.0
+            items = {"seen": seen, "total": expected}
         status["progress"] = {
             "source": source, "stage": stage, "completed": completed, "total": total,
             "percent": min(99, int(100 * (completed + fraction) / total)),
-        }
+        } | ({"items": items} if items else {})
         write_private_json(root / "refresh-status.json", status)
         if outer is not None:
             outer(source, stage, detail)
@@ -287,7 +295,7 @@ def refresh_running(status: dict | None) -> bool:
     return True
 
 
-def start_background_refresh(root: Path, credentials: dict | None = None) -> bool:
+def start_background_refresh(root: Path, credentials: dict | None = None, *, force: bool = False) -> bool:
     """Run a manual refresh outside the Streamlit script so reruns cannot abort it."""
     validate_root(root)
     if refresh_running(read_private_json(root / "refresh-status.json")):
@@ -295,7 +303,7 @@ def start_background_refresh(root: Path, credentials: dict | None = None) -> boo
 
     def run():
         try:
-            refresh_workspace(root, credentials=credentials)
+            refresh_workspace(root, credentials=credentials, force=force)
         except (OSError, ValueError, TypeError):
             pass  # No raw exceptions: upstream errors can carry credentials.
 

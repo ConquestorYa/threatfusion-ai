@@ -136,13 +136,21 @@ def render_local_settings(root: Path) -> None:
                 st.session_state.pop("_local_session_keys", None)
                 st.rerun()
             running = refresh_running(read_private_json(root / "refresh-status.json"))
+            force = st.checkbox(
+                tr("Download again even if sources are still fresh"),
+                key="local_force_refresh", disabled=running,
+                help=tr("Normally sources are downloaded again only when older than the update interval. PhishTank keeps its 24-hour limit."),
+            )
             if st.button(tr("Update CTI now"), key="local_refresh_cti", disabled=running,
                          help=tr("An update is already running.") if running else None):
                 keys = st.session_state.get("_local_session_keys", saved)
                 # Runs outside this script: page interactions cannot abort it.
-                if start_background_refresh(root, credentials=keys):
+                if start_background_refresh(root, credentials=keys, force=force):
                     st.toast(tr("CTI update started. You can keep using the app."))
                 st.rerun()
+            due = _next_download(root, settings["interval_hours"])
+            if due is not None and not running:
+                st.caption(tr("Sources are fresh; the next download is due in about {hours} h. Tick the box above to download now.", hours=due))
             with st.form("local_schedule"):
                 automatic = st.checkbox(
                     tr("Automatic updates while the app is running"),
@@ -210,9 +218,53 @@ def _apply_keys(root: Path) -> None:
         st.session_state["local_remember_keys"] = False
 
 
+def _next_download(root: Path, interval_hours: int) -> str | None:
+    """Hours until the oldest fresh source is due, or None when one is due now."""
+    from datetime import datetime, timedelta, timezone
+
+    from .cti_cache import list_cti_cache_status
+
+    try:
+        statuses = list_cti_cache_status(root / "runtime/cti/threatfusion.sqlite")
+    except (OSError, ValueError):
+        return None
+    times = []
+    for item in statuses:
+        if item.source == "PhishTank":
+            continue
+        try:
+            refreshed = datetime.fromisoformat(item.refreshed_at)
+        except (TypeError, ValueError):
+            return None
+        times.append(refreshed if refreshed.tzinfo else refreshed.replace(tzinfo=timezone.utc))
+    if not times:
+        return None
+    remaining = min(times) + timedelta(hours=interval_hours) - datetime.now(timezone.utc)
+    hours = remaining.total_seconds() / 3600
+    return f"{hours:.1f}" if hours > 0.05 else None
+
+
+def _refresh_summary(status: dict) -> tuple[str, str]:
+    outcomes = [item for item in status.get("outcomes", []) if item.get("source") != "Cache maintenance"]
+    relevant = [item for item in outcomes if not (item.get("status") == "failed" and item.get("public_feed"))]
+    failed = [item for item in relevant if item.get("status") == "failed"]
+    refreshed = [item for item in relevant if item.get("status") == "refreshed"]
+    if status.get("failed"):
+        return "warning", tr("CTI update failed. Check your internet connection and retry; existing data is kept.")
+    if relevant and not failed and not refreshed:
+        return "info", tr("CTI is already up to date; nothing needed downloading. To download anyway, tick “Download again even if sources are still fresh”.")
+    if failed and not refreshed and all(item.get("status") == "failed" for item in relevant):
+        return "warning", tr("No CTI source could be reached. Check your internet connection; existing data is kept.")
+    if failed:
+        return "warning", tr("CTI update finished with problems. See Local setup & CTI updates.")
+    return "success", tr("CTI update finished: {count} source(s) downloaded.", count=len(refreshed))
+
+
 @st.fragment(run_every="2s")
 def render_refresh_progress(root: Path) -> None:
-    """Main-workspace progress for a running CTI update, and a completion notice."""
+    """Main-workspace progress for a running CTI update, and its result."""
+    from datetime import datetime, timezone
+
     status = read_private_json(root / "refresh-status.json")
     finished = status.get("finished_at")
     seen = st.session_state.setdefault("_local_refresh_seen", finished)
@@ -226,18 +278,32 @@ def render_refresh_progress(root: Path) -> None:
                    done=progress.get("completed", 0), total=total, percent=percent)
         if source:
             label += " · " + str(source) + " · " + tr(str(progress.get("stage", "")))
+        items = progress.get("items")
+        if isinstance(items, dict) and type(items.get("seen")) is int and type(items.get("total")) is int:
+            label += " · " + tr("{seen} / {total} records", seen=f"{items['seen']:,}", total=f"{items['total']:,}")
         st.progress(percent / 100, text=label)
         st.caption(tr("Existing cached data stays available until each source finishes. Download sizes are not known in advance, so the percentage counts finished sources."))
-    elif finished and finished != seen:
+        return
+    if finished and finished != seen:
         st.session_state["_local_refresh_seen"] = finished
         # Earlier lookup/analysis results used the previous cache.
         st.session_state.pop("quick_lookup_result", None)
         st.session_state.pop("analysis_result", None)
-        if status.get("failed") or any(item.get("status") == "failed" and not item.get("public_feed")
-                                       for item in status.get("outcomes", [])):
-            st.toast(tr("CTI update finished with problems. See Local setup & CTI updates."))
-        else:
-            st.toast(tr("CTI update finished."))
+        st.session_state["_local_refresh_notice"] = (*_refresh_summary(status), finished)
+        # The sidebar button and source list sit outside this fragment.
+        st.rerun(scope="app")
+    notice = st.session_state.get("_local_refresh_notice")
+    if notice and notice[2] == finished:
+        kind, message, _ = notice
+        if not st.session_state.get("_local_refresh_toasted") == finished:
+            st.session_state["_local_refresh_toasted"] = finished
+            st.toast(message)
+        try:
+            age = (datetime.now(timezone.utc) - datetime.fromisoformat(finished)).total_seconds()
+        except (TypeError, ValueError):
+            age = 0
+        if age < 120:
+            getattr(st, kind)(message)
 
 
 @st.fragment(run_every="10s")
@@ -257,15 +323,27 @@ def _render_refresh_status(root: Path) -> None:
                 "Update failed. Check network access and retry; existing data is preserved."
             )
         )
+    attempted = [item for item in status.get("outcomes", [])
+                 if item.get("source") != "Cache maintenance" and item.get("status") != "fresh"]
+    # When every attempted source failed, the likely cause is local connectivity,
+    # not a withdrawn public feed.
+    unreachable = bool(attempted) and all(item.get("status") == "failed" for item in attempted)
     for item in status.get("outcomes", []):
         source, result = item["source"], item["status"]
         if source == "Cache maintenance" and result == "failed":
             st.warning(tr("Cache cleanup failed; completed source updates remain available. Retry maintenance later."))
             continue
-        if result == "failed" and item.get("public_feed"):
+        if result == "failed" and item.get("public_feed") and not unreachable:
             st.info(
                 tr(
                     "{source}: the public keyless feed is currently unavailable from the source; nothing to fix on your side. Other sources are unaffected and previous data is kept.",
+                    source=source,
+                )
+            )
+        elif result == "failed" and source in {"SGB", "PhishTank"}:
+            st.warning(
+                tr(
+                    "{source}: update failed; previous cache preserved. Check your internet connection or source availability.",
                     source=source,
                 )
             )

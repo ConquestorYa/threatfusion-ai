@@ -197,3 +197,41 @@ def test_keyless_phishtank_outage_is_information_not_a_key_problem(managed, monk
     assert not any("PhishTank" in str(w.value) for w in app.warning)
     keyed = workspace.refresh_workspace(managed, credentials={"PHISHTANK_APP_KEY": "own-app-key"})
     assert "public_feed" not in keyed["outcomes"][0]
+
+
+@pytest.mark.parametrize("outcomes,failed,kind,text", [
+    ([("ThreatFox", "fresh"), ("PhishTank", "failed", True), ("SGB", "fresh")], False, "info", "already up to date"),
+    ([("PhishTank", "failed", True), ("SGB", "failed")], False, "warning", "No CTI source could be reached"),
+    ([("SGB", "refreshed"), ("ThreatFox", "failed")], False, "warning", "finished with problems"),
+    ([("SGB", "refreshed"), ("PhishTank", "failed", True)], False, "success", "1 source(s) downloaded"),
+    ([], True, "warning", "update failed"),
+])
+def test_refresh_result_summary_explains_the_outcome(outcomes, failed, kind, text):
+    status = {"failed": failed, "outcomes": [
+        {"source": o[0], "status": o[1], "record_count": 0} | ({"public_feed": True} if len(o) > 2 else {})
+        for o in outcomes]}
+    assert ui._refresh_summary(status)[0] == kind and text in ui._refresh_summary(status)[1]
+
+
+def test_force_option_reaches_the_source_refresh(managed, monkeypatch):
+    seen = []
+    monkeypatch.setattr(workspace, "refresh_configured_sources",
+                        lambda path, **kwargs: seen.append(kwargs["force"]) or ())
+    app = local_app(managed)
+    next(c for c in app.checkbox if c.label == "Download again even if sources are still fresh").check()
+    button(app, "Update CTI now").click().run(timeout=15)
+    wait_finished(managed)
+    assert seen == [True]
+    workspace.refresh_workspace(managed, credentials={})
+    assert seen == [True, False]
+
+
+def test_offline_failures_do_not_blame_phishtank_or_keys(managed, monkeypatch):
+    monkeypatch.setattr(workspace, "refresh_configured_sources", lambda path, **kwargs: (
+        CTIRefreshOutcome("PhishTank", "failed"), CTIRefreshOutcome("SGB", "failed")))
+    workspace.refresh_workspace(managed, credentials={})
+    app = local_app(managed)
+    text = "\n".join(str(w.value) for w in app.warning)
+    assert "Check your internet connection or source availability" in text
+    assert "your key" not in text
+    assert not any("public keyless feed" in str(i.value) for i in app.info)

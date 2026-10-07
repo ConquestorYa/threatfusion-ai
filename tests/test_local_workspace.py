@@ -239,3 +239,16 @@ def test_background_refresh_runs_once_outside_the_caller(root, monkeypatch):
     assert calls == [1]
     workspace.write_private_json(root / "refresh-status.json", {"running": True, "pid": os.getpid()})
     assert not workspace.start_background_refresh(root, credentials={})
+
+
+def test_sgb_record_counts_are_kept_as_safe_integers(root, monkeypatch):
+    seen = []
+
+    def refresh(path, **kwargs):
+        kwargs["progress"]("SGB", "fetching", "page 3 · 29,997 / 495,842 raw records")
+        seen.append(workspace.read_private_json(root / "refresh-status.json")["progress"]["items"])
+        return ()
+
+    monkeypatch.setattr(workspace, "refresh_configured_sources", refresh)
+    workspace.refresh_workspace(root, credentials={})
+    assert seen == [{"seen": 29997, "total": 495842}]

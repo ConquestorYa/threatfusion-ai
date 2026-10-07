@@ -4,6 +4,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlsplit
 
 import requests
@@ -15,6 +16,7 @@ SGB_API_URL = "https://siberguvenlik.gov.tr/api/address/index"
 REQUEST_TIMEOUT_SECONDS = 30
 MAX_SGB_PAGE_BYTES = 8 * 1024 * 1024
 SGB_PAGE_SIZE = 9999
+SGB_PARALLEL_PAGES = 4
 PageProgressCallback = Callable[[int, int, int | None], None]
 
 
@@ -188,11 +190,53 @@ class SGBCollector:
         pages_fetched = 0
         reached_source_end = False
 
-        for page in range(1, max_pages + 1):
-            page_records, raw_item_count, total_count = self._fetch_page(page)
+        def accept(page_records, raw_item_count):
+            nonlocal raw_items_seen, pages_fetched
             pages_fetched += 1
             records.extend(page_records)
             raw_items_seen += raw_item_count
+
+        first_records, first_raw, total_count = self._fetch_page(1)
+        accept(first_records, first_raw)
+        if progress is not None:
+            progress(1, raw_items_seen, total_count)
+        next_page = 2
+        if first_raw == 0 or (total_count is not None and raw_items_seen >= total_count):
+            reached_source_end = True
+        elif total_count is not None:
+            # SGB spends ~3 s preparing each page; a small bounded pool overlaps
+            # that server time. Pages are merged in order, and any failure fails
+            # the whole snapshot exactly as a sequential fetch would.
+            expected = min(max_pages, -(-total_count // first_raw))
+            pages = range(2, expected + 1)
+            results = {}
+            with ThreadPoolExecutor(max_workers=SGB_PARALLEL_PAGES) as pool:
+                futures = {pool.submit(self._fetch_page, page): page for page in pages}
+                seen = raw_items_seen
+                try:
+                    for future in as_completed(futures):
+                        results[futures[future]] = future.result()
+                        seen += results[futures[future]][1]
+                        if progress is not None:
+                            progress(1 + len(results), seen, total_count)
+                except BaseException:
+                    pool.shutdown(wait=True, cancel_futures=True)
+                    raise
+            for page in pages:
+                page_records, raw_item_count, _ = results[page]
+                accept(page_records, raw_item_count)
+                if raw_item_count == 0:
+                    reached_source_end = True
+            next_page = expected + 1
+            if raw_items_seen >= total_count:
+                reached_source_end = True
+
+        # Sequential continuation: unknown totals or a source that grew meanwhile.
+        for page in range(next_page, max_pages + 1):
+            if reached_source_end:
+                break
+            page_records, raw_item_count, total_count = self._fetch_page(page)
+            accept(page_records, raw_item_count)
 
             if progress is not None:
                 progress(page, raw_items_seen, total_count)

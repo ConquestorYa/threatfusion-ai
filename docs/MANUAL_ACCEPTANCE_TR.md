@@ -53,6 +53,15 @@ etmek istediğin düzeltmeler GitHub `main`'e gönderilmiş olmalı. Kurulum her
     - [evet — sohbetten aktarıldı: onay bildirimi çıktı, çubuk kayboldu;
       PhishTank dışındaki kaynaklar "Fresh"] Bitince "CTI güncellemesi
           tamamlandı" bildirimi çıktı, çubuk kayboldu ve kaynak kayıt sayıları göründü.
+  - **Tur 3 — düzeltildi, yeniden test et:**
+    - [ ] İnternet kapalıyken güncelleyince birkaç saniye içinde "Hiçbir CTI
+          kaynağına ulaşılamadı. İnternet bağlantını kontrol et" mesajı çıktı ve
+          düğme yeniden tıklanabilir oldu.
+    - [ ] Kaynaklar güncelken basınca "CTI zaten güncel" mesajı çıktı; yan
+          panelde "sonraki indirme yaklaşık … saat sonra" yazıyor.
+    - [ ] "Kaynaklar güncel olsa da yeniden indir" kutusunu işaretleyip basınca
+          gerçek bir indirme başladı ve SGB'de "… / … kayıt" sayacı ilerledi.
+    - [ ] SGB eskisine göre belirgin şekilde daha hızlı bitti (yaklaşık süre: …).
 - [evet] SGB ve PhishTank anahtarsız güncellendi.
   - **Tur 2 notu:** Kontrol ettim: PhishTank'tan hiç kayıt gelmemiş (SGB,
     ThreatFox ve URLhaus verisi var). Sebep PhishTank'ın kendisi: anahtarsız

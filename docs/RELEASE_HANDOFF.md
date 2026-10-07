@@ -2,6 +2,22 @@
 
 Status date: 2026-10-06
 
+## P0 round-3 feedback: update result clarity and SGB speed (2026-10-07)
+
+- User reports: offline update showed only "started"; SGB sat at 79% for a
+  long time; when sources were fresh the button looked dead. A real Streamlit
+  server driven over its websocket like a browser confirmed: the sidebar button
+  stayed disabled after completion (only fragments rerun) and the result was a
+  short toast plus 10 s-delayed sidebar notes. Fixed with a full-page rerun on
+  completion, a persistent two-minute result message and outcome-specific
+  wording (up to date / unreachable / partial / success), plus a force option
+  and the next-due time. Re-probed offline/fresh/force flows on a real server.
+- SGB: ~3.1 s of each ~3.3 s page is server preparation (gzip page ~235 KB).
+  Bounded 4-way parallel page fetching: one real full fetch 95.5 s, 50 pages,
+  488,915 records, complete. Sequential time is an estimate, not re-measured.
+- Every scheduled/manual refresh re-downloads full exports (not incremental),
+  so durations repeat each interval. Eleven new tests; 1,361 local tests pass.
+
 ## Render fully disconnected; P0 round-2 results (2026-10-07)
 
 - The user deleted the Render web service and disconnected its Blueprint. No

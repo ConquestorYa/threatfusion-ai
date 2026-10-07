@@ -358,3 +358,60 @@ def test_bounded_pagination_reports_progress() -> None:
 
     assert result.reached_source_end is True
     assert progress == [(1, 2, 3), (2, 3, 3)]
+
+
+class PageSession:
+    """Thread-safe fake keyed by page, recording overlap of in-flight requests."""
+
+    def __init__(self, pages: dict[int, list[str]], total: int, fail_page: int | None = None,
+                 delay: float = 0.05) -> None:
+        import threading
+        self.pages, self.total, self.fail_page, self.delay = pages, total, fail_page, delay
+        self.lock = threading.Lock()
+        self.active = self.peak = 0
+        self.requested: list[int] = []
+
+    def get(self, url, *, params, timeout, allow_redirects, stream=False):
+        import time
+        page = params["page"]
+        with self.lock:
+            self.requested.append(page)
+            self.active += 1
+            self.peak = max(self.peak, self.active)
+        try:
+            time.sleep(self.delay)
+            if page == self.fail_page:
+                raise requests.HTTPError("page failed")
+            models = [{"url": value, "type": "domain"} for value in self.pages.get(page, [])]
+            return FakeResponse({"totalCount": self.total, "models": models})
+        finally:
+            with self.lock:
+                self.active -= 1
+
+
+def test_known_total_fetches_remaining_pages_in_bounded_parallel_and_keeps_order() -> None:
+    from threatfusion.collectors.sgb import SGB_PARALLEL_PAGES
+    pages = {page: [f"p{page}-{index}.example" for index in range(2)] for page in range(1, 9)}
+    session = PageSession(pages, total=16)
+    progress = []
+    result = SGBCollector(session).fetch_bounded_addresses(
+        max_pages=100, progress=lambda page, seen, total: progress.append((page, seen, total)))
+    assert [record.value for record in result.records] == [v for page in range(1, 9) for v in pages[page]]
+    assert result.pages_fetched == 8 and result.reached_source_end
+    assert sorted(session.requested) == list(range(1, 9)) and session.requested[0] == 1
+    assert 1 < session.peak <= SGB_PARALLEL_PAGES
+    assert [seen for _, seen, _ in progress] == [2, 4, 6, 8, 10, 12, 14, 16]
+
+
+def test_parallel_page_failure_fails_the_whole_snapshot() -> None:
+    pages = {page: ["x.example"] for page in range(1, 7)}
+    with pytest.raises(requests.HTTPError):
+        SGBCollector(PageSession(pages, total=6, fail_page=4)).fetch_bounded_addresses(max_pages=100)
+
+
+def test_page_cap_below_reported_total_stays_incomplete() -> None:
+    pages = {page: ["x.example"] for page in range(1, 7)}
+    session = PageSession(pages, total=6, delay=0)
+    result = SGBCollector(session).fetch_bounded_addresses(max_pages=3)
+    assert result.pages_fetched == 3 and not result.reached_source_end
+    assert sorted(session.requested) == [1, 2, 3]

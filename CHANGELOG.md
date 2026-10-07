@@ -254,6 +254,18 @@ release date is added only when the final tag/release is created.
 
 ### Fixed
 
+- CTI update UX from user P0 feedback: after a background update the sidebar
+  button stayed disabled until another interaction and the result toast was
+  easy to miss. Completion now reruns the whole page, shows a two-minute result
+  message and distinguishes "already up to date", "no source reachable"
+  (offline) and partial failures; keyless SGB/PhishTank failures no longer say
+  "check your key". A "download again even if fresh" option and the time until
+  the next due download are shown.
+- SGB downloads its ~50 pages with at most four concurrent requests (page
+  order kept, any page failure still fails the snapshot); a full fetch took
+  95 s here versus about 165 s estimated sequentially (~3.3 s/page server time).
+  The progress bar shows SGB record counts.
+
 - Keyless PhishTank failures are shown as an upstream public-feed outage
   (information) instead of "check your key", and no longer turn every update
   into "finished with problems". On 2026-10-07 the public URL redirects to a
