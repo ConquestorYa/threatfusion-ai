@@ -229,8 +229,10 @@ cihaz/hedefin neden incelenmesi gerektiğini gösterdiğini görmek.
 3. Sayfada **Gözlenen cihaz IP'lerini yerelde göster; indirmeler takma adları
    korur** kutusunu işaretle.
 
-- [ ] Tabloda artık gerçek IP adresleri görünüyor (yalnızca senin ekranında).
-- [ ] Raporu tekrar indirip açtım: dosyada yine yalnızca takma adlar var.
+- [x] Tabloda artık gerçek IP adresleri görünüyor (yalnızca senin ekranında).
+- [x] Raporu tekrar indirip açtım: dosyada yine yalnızca takma adlar var.
+      — Kullanıcı (sohbet) + Claude'un taraması: `threatfusion_collected_connections
+      (1).json` içinde 0 IPv4, 0 IPv6; yalnızca takma adlar.
 
 ---
 
