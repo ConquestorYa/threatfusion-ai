@@ -215,12 +215,16 @@ cihaz/hedefin neden incelenmesi gerektiğini gösterdiğini görmek.
 **Amaç:** İndirilen raporlarda gerçek IP adreslerinin bulunmadığını görmek.
 **Gerekenler:** Bölüm E yapılmış olmalı. **Toplanan bağlantılar** sayfasında ol.
 
-1. **Toplanan bağlantıların JSON raporunu indir** düğmesine bas.
+1. **Toplanan bağlantıların JSON raporunu indir** düğmesine bas. (Dosya
+   `~/Downloads/threatfusion_collected_connections.json` olarak iner.)
 2. İnen dosyayı bir metin düzenleyiciyle aç (ör. çift tıkla veya
    `cat ~/Downloads/<dosya_adı>.json`).
 
-- [ ] Dosyada cihazlar `Host 002`, `Device 006` gibi takma adlarla geçiyor;
-      `192.168…` gibi gerçek IP adresi yok.
+- [x] Dosyada cihazlar `Host 002`, `Device 006` gibi takma adlarla geçiyor;
+      `192.168…` gibi gerçek IP adresi yok. — Kullanıcı (sohbet) + Claude'un
+      taraması: 0 IPv4, 0 IPv6; yalnızca `Host …` / `Device …` takma adları.
+      (Dosyada 23 bağlantı grubu var; ekrandaki tablo varsayılan olarak yalnızca
+      8 inceleme grubunu gösterir.)
 
 3. Sayfada **Gözlenen cihaz IP'lerini yerelde göster; indirmeler takma adları
    korur** kutusunu işaretle.
