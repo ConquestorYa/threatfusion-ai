@@ -85,16 +85,17 @@ devam ettiğini görmek. Önceki denemede burada "database is locked" hatası
       yapıldı; hiçbirinde sorun yok, terminalde hata yok.
 - [x] Bitince "CTI güncellemesi tamamlandı: … kaynak indirildi" mesajı çıktı ve
       düğme yeniden tıklanabilir oldu.
-- [ ] PhishTank notu — kullanıcı (sohbet): görünmedi. Sebep: not panelin en
+- [x] PhishTank notu — kullanıcı (sohbet): görünmedi. Sebep: not panelin en
       altındaydı. **Düzeltildi**, güncelleme (Bölüm A) sonrası tekrar bak:
-  - [ ] **CTI verilerini şimdi güncelle** düğmesinin hemen altında, "Son deneme"
+  - [x] **CTI verilerini şimdi güncelle** düğmesinin hemen altında, "Son deneme"
         satırının altında **mavi** not var: "PhishTank: anahtarsız public kaynak
         şu an kaynağın kendisinden alınamıyor; senin tarafında düzeltilecek bir
         şey yok…". (Güncelleme yapmana gerek yok; paneli açman yeterli.)
-  - [ ] Sol yan çubuktaki **PhishTank · Doğrulanmış ve Çevrimiçi** kartında
+  - [x] Sol yan çubuktaki **PhishTank · Doğrulanmış ve Çevrimiçi** kartında
         "Güncelleme zamanı bilinmiyor" yerine "Anahtarsız public kaynak şu an
         kaynağın kendisinden alınamıyor" yazıyor. (PhishTank'ın kendi hizmeti
         çalışmıyor; kayıt gelmemesi beklenen durum.)
+      — Kullanıcı (sohbet, `532609f`): Bölüm B'deki her şey tamam.
 - [x] Panelde "Kaynaklar güncel; sonraki indirme yaklaşık … saat sonra" yazıyor.
       — Kullanıcı (sohbet): "yaklaşık 6.0 saat sonra".
 - [x] Güncelleme yaklaşık **2 dakika** sürdü (kullanıcı, sohbet).
