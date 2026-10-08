@@ -243,6 +243,10 @@ cihaz/hedefin neden incelenmesi gerektiğini gösterdiğini görmek.
 - [ ] Anlamsız, kafa karıştırıcı veya çevrilmemiş Türkçe metin gördüm mü?
       Gördüysem nerede olduğunu yazdım.
 - Ekledikleri / kafama takılanlar:
+  - Kullanıcı (sohbet, 2026-10-09): "Genel olarak arayüz ile ilgili çok fazla
+    şikayetim var… sitenin yapay zekadan yapıldığı çok belli oluyor." Arayüzün
+    baştan, daha profesyonel bir görünümle yeniden tasarlanmasını istiyor.
+    Ayrıntılı şikâyet listesi bekleniyor.
 
 ---
 

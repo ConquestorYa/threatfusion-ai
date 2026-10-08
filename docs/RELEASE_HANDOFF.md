@@ -2,6 +2,19 @@
 
 Status date: 2026-10-06
 
+## P0 functional sections passed; UI redesign requested (2026-10-09)
+
+- User completed sections A–F on `f0a0036`/`1110e6b`: upgrade/version check,
+  CTI update during navigation (no errors, ~2 min), offline update message and
+  preserved counts, quick lookup, Zeek collection (818 records, 8 connection /
+  1 DNS review groups, no duplicates on restart), and both downloaded reports
+  with zero IPv4/IPv6 literals (local IP display stays on screen only).
+- Section G (general impression): the user has many UI complaints and says the
+  interface visibly looks AI-generated; they want a professional redesign. P0
+  is therefore **functionally passed, UX not accepted**. A detailed complaint
+  list and redesign scope are pending; a UI redesign will need a UI-focused
+  re-acceptance pass (backend/CLI/privacy results stay valid unless changed).
+
 ## P0 manual acceptance: completed items moved out of the checklist (2026-10-08)
 
 The user asked for a checklist with only remaining tests. Completed results
