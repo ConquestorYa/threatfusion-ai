@@ -16,6 +16,10 @@ button and "3 source(s) downloaded". Open round-5 item: page switching during
 an update showed "database is locked" (fixed in `63a921b`/`df75d61`, retest
 pending). Defects found and fixed during P0 are listed in the sections below.
 
+Update 2026-10-08 (user, build `1364e07`): the round-5 retest passed — during a
+forced update the user switched pages, language and theme and ran a quick
+lookup with no web or terminal error; the update took about 2 minutes.
+
 ## P0 round-5: database locked during CTI update (2026-10-07)
 
 - User (installed `8e4a918`) reports auto-update settings persist, "already up

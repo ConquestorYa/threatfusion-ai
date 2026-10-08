@@ -38,8 +38,9 @@ Toplam süre: yaklaşık **40–50 dakika**. Bölümleri ayrı günlerde de yapa
    grep -o 'releases/[0-9a-f]\{7\}' ~/.local/share/threatfusion-ai/installation.json
    ```
 
-- [ ] Çıktı `releases/df75d61` (veya Claude'un son mesajında söylediği daha
+- [x] Çıktı `releases/df75d61` (veya Claude'un son mesajında söylediği daha
       yeni bir numara).
+      — Kullanıcı (sohbet): `releases/1364e07`.
 
 > Not: Adres her zaman `http://127.0.0.1:…` veya `http://localhost:…` olmalı.
 > Başka bir adresle açarsan güvenlik gereği boş sayfa görürsün.
@@ -77,16 +78,18 @@ devam ettiğini görmek. Önceki denemede burada "database is locked" hatası
 
 **Beklenen:**
 
-- [ ] Güncelleme boyunca web sayfasında da terminalde de **hiç hata** çıkmadı
+- [x] Güncelleme boyunca web sayfasında da terminalde de **hiç hata** çıkmadı
       ("Traceback" veya "database is locked" yazısı yok).
-- [ ] Hızlı sorgu güncelleme sürerken de sonuç verdi.
+- [x] Hızlı sorgu güncelleme sürerken de sonuç verdi.
+      — Kullanıcı (sohbet): sayfa, dil ve tema değiştirildi; hızlı sorgu
+      yapıldı; hiçbirinde sorun yok, terminalde hata yok.
 - [ ] Bitince "CTI güncellemesi tamamlandı: … kaynak indirildi" mesajı çıktı ve
       düğme yeniden tıklanabilir oldu.
 - [ ] Panelde PhishTank için **mavi** bir not var: "anahtarsız public kaynak şu
       an alınamıyor; senin tarafında düzeltilecek bir şey yok". (PhishTank'ın
       kendi hizmeti çalışmıyor; bu beklenen durum.)
 - [ ] Panelde "Kaynaklar güncel; sonraki indirme yaklaşık … saat sonra" yazıyor.
-- [ ] Güncelleme yaklaşık **… dakika** sürdü (buraya yaz).
+- [x] Güncelleme yaklaşık **2 dakika** sürdü (kullanıcı, sohbet).
 
 ---
 
