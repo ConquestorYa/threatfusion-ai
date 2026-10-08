@@ -30,8 +30,8 @@ _LOOKUP_PRESENTATIONS = {
         kicker="Low risk",
         title="No threat signal found",
         summary=(
-            "Nothing in the available local CTI cache or ML thresholds currently "
-            "raises this domain or URL for review."
+            "Nothing in the available local CTI cache (or ML, when it is enabled) "
+            "currently raises this target for review."
         ),
         signal_tone="safe",
     ),

@@ -417,7 +417,7 @@ _TR: dict[str, str] = {
     "ML scores are uncalibrated decision scores, not malware probabilities.": "ML skorları kalibre edilmiş olasılıklar değil, karar skorlarıdır.",
     "Low risk": "Düşük risk",
     "No threat signal found": "Tehdit sinyali bulunamadı",
-    "Nothing in the available local CTI cache or ML thresholds currently raises this domain or URL for review.": "Mevcut yerel CTI önbelleği veya ML eşikleri bu hedef için şu anda inceleme gerektiren bir sinyal üretmedi.",
+    "Nothing in the available local CTI cache (or ML, when it is enabled) currently raises this target for review.": "Mevcut yerel CTI önbelleği (ve etkinse ML) bu hedef için şu anda inceleme gerektiren bir sinyal üretmedi.",
     "Review recommended": "İnceleme önerilir",
     "Some signals need a closer look": "Bazı sinyaller daha yakından incelenmeli",
     "ThreatFusion found contextual CTI or an ML signal that is worth reviewing before you trust this destination.": "ThreatFusion, bu hedefe güvenmeden önce incelenmesi gereken bağlamsal CTI veya ML sinyali buldu.",

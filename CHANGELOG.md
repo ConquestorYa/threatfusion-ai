@@ -254,6 +254,9 @@ release date is added only when the final tag/release is created.
 
 ### Fixed
 
+- Quick lookup "no threat signal" summary no longer mentions ML thresholds when
+  ML is disabled or calls an IP a "domain or URL".
+
 - CTI update results (last attempt and per-source notes) now sit directly under
   the update button instead of below the schedule settings, and the PhishTank
   source card says when its keyless public feed is unavailable upstream rather

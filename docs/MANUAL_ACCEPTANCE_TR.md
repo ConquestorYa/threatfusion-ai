@@ -134,13 +134,19 @@ kullanılır).
 **Gerekenler:** Hiçbir şey. Sorgular internete çıkmaz, siteleri ziyaret etmez;
 yalnızca bilgisayarındaki CTI verisine bakar.
 
-Ana sayfadaki **URL, domain veya IP** kutusuna yaz ve **Kontrol et**'e bas:
+Ana sayfadaki **URL, domain veya IP** (İngilizce: **URL, domain or IP**) kutusuna
+yaz ve **Kontrol et** (**Check**)'e bas. Arayüz İngilizceyse mesajlar da
+İngilizce çıkar; bu normal.
 
-- [ ] `wikipedia.org` → eşleşme yok; ayrıca bunun "kesin güvenli" anlamına
-      gelmediğini söylüyor.
-- [ ] `8.8.8.8` → sonuç anlaşılır.
-- [ ] `abc def` → uygulama çökmüyor; Türkçe bir hata çıkıyor ("Girdi analiz
-      edilemedi: alan adı en az iki bölümden oluşmalı…").
+- [x] `wikipedia.org` → eşleşme yok; ayrıca bunun "kesin güvenli" anlamına
+      gelmediğini söylüyor. — Kullanıcı (sohbet): "No threat signal found".
+      Uyarı aşağıdaki **Threat intelligence evidence** bölümünde: "No CTI match
+      found … This does not guarantee that the destination is safe."
+- [x] `8.8.8.8` → sonuç anlaşılır. — Kullanıcı (sohbet): "No threat signal found".
+- [x] `abc def` → uygulama çökmüyor; açıklayıcı bir hata çıkıyor. — Kullanıcı
+      (sohbet, İngilizce arayüz): "Lookup input could not be analyzed: internet
+      domain must contain at least two labels". Türkçe arayüzde: "Girdi analiz
+      edilemedi: alan adı en az iki bölümden oluşmalı…".
 
 ---
 
