@@ -151,6 +151,8 @@ def render_local_settings(root: Path) -> None:
             due = _next_download(root, settings["interval_hours"])
             if due is not None and not running:
                 st.caption(tr("Sources are fresh; the next download is due in about {hours} h. Tick the box above to download now.", hours=due))
+            # Results belong next to the action that produced them.
+            _render_refresh_status(root)
             with st.form("local_schedule"):
                 automatic = st.checkbox(
                     tr("Automatic updates while the app is running"),
@@ -171,7 +173,6 @@ def render_local_settings(root: Path) -> None:
                         root, mode=mode, interval_hours=hours, automatic=automatic
                     )
                     st.rerun()
-            _render_refresh_status(root)
         st.caption(
             tr(
                 "Reopen from the applications menu or run threatfusion-ai. Closing the browser tab does not stop the local server."
@@ -216,6 +217,20 @@ def _apply_keys(root: Path) -> None:
         for key in KEY_NAMES:
             st.session_state["local_key_" + key] = ""
         st.session_state["local_remember_keys"] = False
+
+
+def upstream_unavailable_sources(root: Path) -> frozenset[str]:
+    """Keyless public feeds whose last attempt failed upstream (not offline)."""
+    try:
+        status = read_private_json(root / "refresh-status.json")
+    except (OSError, ValueError):
+        return frozenset()
+    outcomes = [item for item in status.get("outcomes", []) if isinstance(item, dict)]
+    attempted = [item for item in outcomes if item.get("source") != "Cache maintenance" and item.get("status") != "fresh"]
+    if attempted and all(item.get("status") == "failed" for item in attempted):
+        return frozenset()  # Everything failed: likely local connectivity.
+    return frozenset(str(item["source"]) for item in outcomes
+                     if item.get("status") == "failed" and item.get("public_feed"))
 
 
 def _next_download(root: Path, interval_hours: int) -> str | None:

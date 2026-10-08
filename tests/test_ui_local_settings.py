@@ -244,3 +244,29 @@ def test_lookup_validation_messages_have_turkish_translations():
     sources = "".join(Path("src/threatfusion", name).read_text() for name in ("quick_lookup.py", "normalization.py"))
     messages = set(re.findall(r'raise ValueError\("([^"]+)"\)', sources))
     assert len(messages) >= 10 and not messages - set(_TR)
+
+
+def test_upstream_outage_reaches_source_card_and_sits_under_the_button(managed):
+    from threatfusion.ui_components import source_status_html
+    outcomes = [{"source": "SGB", "status": "refreshed", "record_count": 3},
+                {"source": "PhishTank", "status": "failed", "record_count": 0, "public_feed": True}]
+    workspace.write_private_json(managed / "refresh-status.json",
+                                 {"attempted_at": "2026-10-08T20:00:00+00:00", "running": False,
+                                  "finished_at": "2026-10-08T20:01:00+00:00", "outcomes": outcomes})
+    assert ui.upstream_unavailable_sources(managed) == frozenset({"PhishTank"})
+    row = {"Source": "PhishTank", "Status": "Not cached", "Records": None, "Age": "Unknown",
+           "Upstream unavailable": True}
+    assert "Public keyless feed currently unavailable from the source" in source_status_html(row)
+    app = local_app(managed)
+    labels = [getattr(e, "label", None) or str(getattr(e, "value", "")) for e in app.sidebar]
+    note = next(i for i, v in enumerate(labels) if "public keyless feed" in v)
+    assert labels.index("Update CTI now") < note < labels.index("Automatic updates while the app is running")
+
+
+def test_offline_attempt_does_not_mark_public_feeds_as_upstream_outages(managed):
+    workspace.write_private_json(managed / "refresh-status.json", {"outcomes": [
+        {"source": "SGB", "status": "failed", "record_count": 0},
+        {"source": "PhishTank", "status": "failed", "record_count": 0, "public_feed": True}]})
+    assert ui.upstream_unavailable_sources(managed) == frozenset()
+    (managed / "refresh-status.json").unlink()
+    assert ui.upstream_unavailable_sources(managed) == frozenset()

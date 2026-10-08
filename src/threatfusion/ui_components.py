@@ -70,6 +70,8 @@ def source_status_html(row: dict[str, object]) -> str:
         if source == "PhishTank"
         else source
     )
+    if row.get("Upstream unavailable"):
+        updated = tr("Public keyless feed currently unavailable from the source")
     count = row.get("Records")
     if count is None:
         count_text = tr("No cached indicators")

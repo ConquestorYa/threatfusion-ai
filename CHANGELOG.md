@@ -254,6 +254,11 @@ release date is added only when the final tag/release is created.
 
 ### Fixed
 
+- CTI update results (last attempt and per-source notes) now sit directly under
+  the update button instead of below the schedule settings, and the PhishTank
+  source card says when its keyless public feed is unavailable upstream rather
+  than only "update time unavailable" (user P0 report: the note was not found).
+
 - "database is locked" in the dashboard while a CTI update wrote (user P0
   report): readers ran the schema script, which needs the write lock, and the
   rollback journal blocks readers during a large write. The CTI cache now uses

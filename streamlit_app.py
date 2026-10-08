@@ -67,6 +67,7 @@ from threatfusion.ui_quick_lookup import (
 from threatfusion.ui_local_settings import (
     render_local_settings,
     render_refresh_progress,
+    upstream_unavailable_sources,
     resolve_managed_config,
 )
 from threatfusion.ui_theme import (
@@ -101,6 +102,7 @@ def _show_system_status(
     *,
     cti_stale_after_by_source=None,
     cti_only=False,
+    upstream_unavailable=frozenset(),
 ) -> None:
     st.sidebar.markdown(f"### {tr('Workspace health')}")
 
@@ -166,6 +168,8 @@ def _show_system_status(
                 "Stale after": f"{(cti_stale_after_by_source or {}).get(source, timedelta(hours=24)).total_seconds() / 3600:g} h",
             },
         )
+        if source in upstream_unavailable:
+            row = dict(row, **{"Upstream unavailable": True})
         render_source_status(row)
     with st.sidebar.expander(tr("Workspace details"), expanded=False):
         st.caption(
@@ -623,6 +627,7 @@ def main() -> None:
         config.evaluation_report_path,
         cti_stale_after_by_source=config.cti_stale_after_by_source,
         cti_only=config.cti_only,
+        upstream_unavailable=upstream_unavailable_sources(local_root) if local_root else frozenset(),
     )
     pages = [
         "Analyze telemetry",

@@ -389,6 +389,7 @@ _TR: dict[str, str] = {
     "Not cached": "Önbellekte yok",
     "Updated just now": "Az önce güncellendi",
     "Update time unavailable": "Güncelleme zamanı bilinmiyor",
+    "Public keyless feed currently unavailable from the source": "Anahtarsız public kaynak şu an kaynağın kendisinden alınamıyor",
     "Updated {minutes}m ago": "{minutes} dk önce güncellendi",
     "Updated {hours}h ago": "{hours} sa önce güncellendi",
     "Updated {days}d ago": "{days} gün önce güncellendi",
