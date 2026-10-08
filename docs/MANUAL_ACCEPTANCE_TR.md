@@ -1,216 +1,214 @@
-# P0 manuel kabul testi — kontrol listesi
+# Kalan manuel testler (P0)
 
-Bu liste [ürün planındaki](PRODUCT_PLAN.md) P0 kapısı içindir. P0 yalnızca
-kullanıcının kendi sonuçlarıyla "geçti" sayılır; otomatik testler bunun yerine
-geçmez. Her maddeyi işaretle. Bir sorun görürsen altına şu üç satırı yaz:
+Bu dosyada yalnızca **henüz yapılmamış** testler var. Tamamlananlar kayıt için
+[RELEASE_HANDOFF.md](RELEASE_HANDOFF.md) içine taşındı.
 
-> **Ne yaptım:** … **Ne bekledim:** … **Ne oldu:** … (varsa ekran görüntüsü)
+**Nasıl işaretlenir:** Her maddenin başındaki `[ ]` içine `x` yaz: `[x]`.
+Bir şey beklenenden farklıysa maddenin altına kısa bir not yaz:
 
-`[evet]` olan maddeler tamamlandı; tekrar yapman gerekmiyor. "Sohbetten
-aktarıldı" notlu olanları sen sohbette bildirdin, Claude işaretledi. Sırayla
-**boş `[ ]` maddeleri** yap. Arayüz Türkçe ise düğme adları parantez içindeki
-Türkçe karşılıklarıyla görünür.
+> Ne yaptım: … / Ne bekledim: … / Ne oldu: … (ekran görüntüsü varsa çok iyi)
 
-## Testler dışında senden istenenler (genel kurallar)
+Bu dosyayı **bilgisayarındaki kopyada** düzenle:
+`~/Work/threatfusion-ai/docs/MANUAL_ACCEPTANCE_TR.md`. GitHub sitesinde
+düzenleme. İstersen sonuçları doğrudan sohbete de yazabilirsin.
 
-- Bu dosyayı **bilgisayarındaki kopyada** düzenle
-  (`~/Work/threatfusion-ai/docs/MANUAL_ACCEPTANCE_TR.md`) ya da sonuçları
-  sohbete yaz. GitHub web sitesinde düzenleme; Claude yerelde değişiklik
-  yaparken çakışma olur.
-- Claude Code'u yeni bir oturum için proje klasöründen başlat:
-  `cd ~/Work/threatfusion-ai && claude`. Aynı anda bu repoda tek Claude
-  oturumu çalışsın.
-- Bölüm 5'te yalnızca listedeki klasörü kullan; `reserved` adlı klasörleri açma.
-- API anahtarlarını sohbete, bu dosyaya veya GitHub'a yazma.
-- [evet] Render: servis silindi, Blueprint bağlantısı koparıldı (artık bir şey
-  yapman gerekmiyor).
+Toplam süre: yaklaşık **40–50 dakika**. Bölümleri ayrı günlerde de yapabilirsin.
 
-## 0. Başlamadan önce: en son sürüme güncelle
+---
 
-Claude doğrulanmış her düzeltmeyi GitHub `main`'e gönderir. Kurulum komutu her
-çalıştığında `main`'deki **en son** sürümü kurar; tekrar çalıştırmak güncelleme
-yapar. Silip yeniden kurman gerekmez; CTI verileri, ayarlar ve kayıtlı
-anahtarlar korunur.
+## Bölüm A — En son sürüme güncelle (5 dk)
 
-1. Uygulamayı durdur:
+**Amaç:** Testleri son düzeltmelerle yapmak.
+**Gerekenler:** İnternet. API anahtarı gerekmez.
+
+1. Terminalde uygulamayı durdur:
 
    ```bash
    threatfusion-ai stop
    ```
 
-2. [README.tr.md](../README.tr.md) içindeki **aynı tek satırlık kurulum
-   komutunu** tekrar çalıştır. Bitince uygulama tarayıcıda açılır.
-3. Kurulu sürümü kontrol et:
+2. [README.tr.md](../README.tr.md) içindeki **"Linux — tek komutla local
+   kurulum"** komutunu aynen tekrar çalıştır. Silip yeniden kurmana gerek yok;
+   verilerin ve kayıtlı anahtarların korunur.
+3. Kurulum bitince uygulama tarayıcıda kendiliğinden açılır. Açılmazsa
+   terminalde `threatfusion-ai` yaz.
+4. Kurulu sürümü kontrol et:
 
    ```bash
    grep -o 'releases/[0-9a-f]\{7\}' ~/.local/share/threatfusion-ai/installation.json
    ```
 
-   Çıkan 7 karakter, GitHub'daki son commit'in ilk 7 karakteriyle aynı olmalı
-   (repo sayfasında commit listesinin en üstü ya da Claude'un son mesajında
-   söylediği commit).
+- [ ] Çıktı `releases/df75d61` (veya Claude'un son mesajında söylediği daha
+      yeni bir numara).
 
-- [ ] Güncelledim; kurulu sürüm son commit ile aynı: `…….`
+> Not: Adres her zaman `http://127.0.0.1:…` veya `http://localhost:…` olmalı.
+> Başka bir adresle açarsan güvenlik gereği boş sayfa görürsün.
 
-Adres `http://127.0.0.1:` veya `http://localhost:` ile başlamalı (port 8501,
-8502… olabilir); başka adreslerle güvenlik gereği boş sayfa görünür.
+---
 
-## 1. Kurulum
+## Bölüm B — CTI güncellemesi sırasında uygulamayı kullanmak (10 dk)
 
-- [evet] Normal kullanıcıyla (**sudo olmadan**) README.tr.md içindeki
-      "Linux — tek komutla local kurulum" komutunu çalıştırdım.
-- [evet] Kurulum hatasız bitti ve tarayıcıda uygulama açıldı.
-- [evet] Uygulamalar menüsünde **ThreatFusion AI** kısayolu var.
-- [evet] Yeni bir terminalde `threatfusion-ai` komutu bulunuyor.
-- [evet — sohbetten aktarıldı] Aynı komutu tekrar çalıştırınca güncellendi;
-      CTI verileri ve kayıtlı anahtarlar korundu. (Omarchy/Arch üzerinde.)
+**Amaç:** Büyük bir güncelleme sürerken uygulamanın hata vermeden çalışmaya
+devam ettiğini görmek. Önceki denemede burada "database is locked" hatası
+çıkmıştı; düzeltildi.
 
-## 2. Açma, kapatma, yeniden açma
+**Gerekenler:**
+- İnternet açık.
+- **API anahtarı:** Daha önce ThreatFox ve URLhaus anahtarlarını
+  **kaydettin**; uygulama onları otomatik kullanır, tekrar girmen gerekmez.
+  Yan panelde "Kayıtlı anahtarlar: ThreatFox, URLhaus" (İngilizcede "Saved
+  keys") yazısını görmelisin. Görmüyorsan anahtarlarını aynı panelden tekrar gir ve
+  "Anahtarları bu bilgisayara kaydet" kutusunu işaretleyip **Anahtarları
+  uygula**'ya bas. SGB ve PhishTank anahtar istemez.
+- Uygulamayı başlattığın **terminal penceresini açık tut**; hata çıkarsa orada
+  görünür.
 
-- [evet] `threatfusion-ai status` çalışan sunucuyu gösteriyor.
-- [evet] Tarayıcı sekmesini kapattım; `status` sunucunun hâlâ çalıştığını gösteriyor.
-- [evet] `threatfusion-ai stop` sunucuyu durdurdu; `status` bunu doğruluyor.
-- [evet] Menüden veya `threatfusion-ai` ile tekrar açtım; önceki ayarlar duruyor:
-  - [evet] Yan çubuktaki mod seçimi (gerçek CTI / demo) aynı.
-  - [evet — sohbetten aktarıldı] CTI kayıt sayıları ve "son güncelleme" zamanı
-        korunuyor (yeniden açınca kaynaklar "Fresh" göründü).
-  - [evet — sohbetten aktarıldı] **"Uygulama çalışırken otomatik güncelle"** kutusunu işaretle, aralığı
-        12 saat seç, **"Güncelleme ayarlarını kaydet"**e bas. Uygulamayı kapatıp
-        aç: kutu işaretli ve aralık 12 saat kalmalı. (Sonra istediğin gibi geri al.)
-  - Dil seçimi bilerek kalıcı değildir; yeniden açınca varsayılana dönmesi normal.
-- [evet] Web panelindeki **Yerel uygulamayı kapat** düğmesi de sunucuyu durduruyor.
+**Adımlar:**
 
-## 3. CTI anahtarları ve güncelleme
+1. Sol yan çubukta **Yerel kurulum ve CTI güncellemeleri** panelini aç.
+2. **Kaynaklar güncel olsa da yeniden indir** kutusunu işaretle.
+3. **CTI verilerini şimdi güncelle** düğmesine bas.
+4. Güncelleme sürerken (birkaç dakika):
+   - üstteki ilerleme çubuğunu izle,
+   - başka bir sayfaya geç ve geri dön,
+   - yan çubuktan dili değiştir,
+   - ana sayfada **Hızlı sorgu** alanına `wikipedia.org` yazıp **Kontrol et**'e bas.
+5. Bitmesini bekle ve süreyi not et.
 
-Hepsi yan çubuktaki **Yerel kurulum ve CTI güncellemeleri** panelinde.
-ThreatFox ve URLhaus **senin anahtarını** ister; SGB ve PhishTank anahtarsızdır.
+**Beklenen:**
 
-Tamamlananlar:
+- [ ] Güncelleme boyunca web sayfasında da terminalde de **hiç hata** çıkmadı
+      ("Traceback" veya "database is locked" yazısı yok).
+- [ ] Hızlı sorgu güncelleme sürerken de sonuç verdi.
+- [ ] Bitince "CTI güncellemesi tamamlandı: … kaynak indirildi" mesajı çıktı ve
+      düğme yeniden tıklanabilir oldu.
+- [ ] Panelde PhishTank için **mavi** bir not var: "anahtarsız public kaynak şu
+      an alınamıyor; senin tarafında düzeltilecek bir şey yok". (PhishTank'ın
+      kendi hizmeti çalışmıyor; bu beklenen durum.)
+- [ ] Panelde "Kaynaklar güncel; sonraki indirme yaklaşık … saat sonra" yazıyor.
+- [ ] Güncelleme yaklaşık **… dakika** sürdü (buraya yaz).
 
-- [evet] Paneli buldum.
-- [evet] Kendi ThreatFox ve URLhaus anahtarlarımı girip uyguladım.
-- [evet] Anahtarı **kaydetmeden** uygulamayı kapatıp açtım; anahtar hatırlanmadı
-      (beklenen davranış).
-- [evet — sohbetten aktarıldı] Anahtarı açıkça kaydetmeyi seçtim; yeniden açınca hatırlandı.
-- [evet] SGB ve PhishTank anahtarsız güncellendi.
-  - Not: PhishTank'tan aslında hiç kayıt gelmedi. Sebep PhishTank'ın kendisi:
-    anahtarsız public indirme adresi şu an çalışmıyor. Bu senin hatan değil.
+---
 
-Yapılacaklar (sırayla):
+## Bölüm C — İnternet yokken güncelleme (5 dk)
 
-- [evet — sohbetten aktarıldı: "CTI is already up to date…" mesajı çıktı;
-  "sonraki indirme" yazısı ayrıca bildirilmedi] **Zaten güncel durumu:** Kutuyu işaretlemeden **Update CTI now**
-      (**CTI verilerini şimdi güncelle**) düğmesine bas. Birkaç saniye içinde
-      "CTI zaten güncel; indirilecek bir şey yoktu" mesajı çıkmalı ve düğme
-      tekrar tıklanabilir olmalı. Panelde "Kaynaklar güncel; sonraki indirme
-      yaklaşık … saat sonra" yazmalı.
-- [ ] **Gerçek indirme:** **"Kaynaklar güncel olsa da yeniden indir"** kutusunu
-      işaretle ve düğmeye bas. Kontrol et:
-  - [evet — sohbetten aktarıldı] Köşede "CTI güncellemesi başladı" bildirimi çıktı.
-  - [evet — sohbetten aktarıldı: bar doldu] Sayfanın üstünde ilerleme çubuğu var: "x/y tamamlandı · %…, kaynak,
-        aşama". SGB sırasında "… / … kayıt" sayacı ilerliyor. Yüzde tamamlanan
-        kaynakları sayar (indirme boyutları önceden bilinmez).
-  - [evet — sohbetten aktarıldı] Güncelleme sürerken düğme ve kutu gri/tıklanamaz.
-  - [sorunlu — sohbetten aktarıldı: başka sayfaya geçince çubuk devam etti ama
-    web arayüzünde bir anlık hata çıkıp kayboldu; terminalde
-    "sqlite3.OperationalError: database is locked"] Güncelleme sürerken başka
-        sayfaya geçtim ve dili değiştirdim; çubuk durmadan devam etti.
-    - **Tur 5 — düzeltildi, yeniden test et:** Güncelleme veritabanına yazarken
-      yan paneldeki durum bölümü okuyamıyordu. Artık veritabanı okumaları
-      yazmayı beklemiyor.
-      - [ ] "Yeniden indir" kutusuyla güncelleme sürerken sayfalar arasında
-            gezindim, dili değiştirdim ve bir **hızlı sorgu** yaptım: web
-            arayüzünde ve uygulamayı başlattığın terminalde hata çıkmadı.
-  - [evet — sohbetten aktarıldı: "CTI update finished: 3 source(s) downloaded"]
-        Bitince "CTI güncellemesi tamamlandı: … kaynak indirildi" mesajı çıktı,
-        düğme tekrar aktif oldu, kayıt sayıları güncellendi.
-  - [ ] Panelde PhishTank için **mavi** bilgi notu var ("anahtarsız public kaynak
-        şu an alınamıyor; senin tarafında düzeltilecek bir şey yok").
-  - [ ] Toplam süre: … dakika (SGB eskisine göre daha kısa sürmeli).
-- [ ] **İnternetsiz:** Wi-Fi'ı kapat, kutuyu işaretli bırak ve düğmeye bas.
-      Birkaç saniye içinde "Hiçbir CTI kaynağına ulaşılamadı. İnternet
-      bağlantını kontrol et; mevcut veriler korunuyor" mesajı çıkmalı, düğme
-      tekrar aktif olmalı ve **kayıt sayıları değişmemeli**. Panelde
-      "anahtarını kontrol et" yazmamalı.
-- [ ] Wi-Fi'ı aç, kutu işaretliyken tekrar bas: güncelleme başarıyla bitti.
+**Amaç:** İnternet kesikken uygulamanın anlaşılır bir mesaj verdiğini ve eski
+verileri silmediğini görmek.
+**Gerekenler:** Bölüm B bitmiş olmalı. API anahtarı gerekmez (kayıtlı olanlar
+kullanılır).
 
-## 4. Hızlı sorgu (Quick lookup)
+1. Yan panelde kaynakların **kayıt sayılarını** not et (ör. SGB 488.915).
+2. Wi-Fi'ı (veya kablolu interneti) kapat.
+3. **Kaynaklar güncel olsa da yeniden indir** kutusunu işaretle ve **CTI
+   verilerini şimdi güncelle**'ye bas.
+4. Birkaç saniye bekle.
 
-Ana sayfadaki **Hızlı sorgu** alanını kullan. Hiçbir sorgu hedef siteye
-bağlanmaz; yalnızca yerel CTI verisine bakılır.
+**Beklenen:**
 
-- [ ] `wikipedia.org` sorguladım: eşleşme olmadığı ve bunun "kesin güvenli"
-      anlamına gelmediği anlaşılır biçimde yazıyor.
-- [ ] Bir IP adresi sorguladım (ör. `8.8.8.8`); sonuç anlaşılır.
-- [ ] Hatalı bir girdi denedim (ör. `abc def`): uygulama çökmedi, Türkçe bir
-      hata çıktı ("Girdi analiz edilemedi: alan adı en az iki bölümden oluşmalı…").
+- [ ] "Hiçbir CTI kaynağına ulaşılamadı. İnternet bağlantını kontrol et; mevcut
+      veriler korunuyor" mesajı çıktı.
+- [ ] Düğme yeniden tıklanabilir oldu.
+- [ ] Kayıt sayıları **değişmedi** (1. adımdakiyle aynı).
 
-## 5. Zeek log toplama
+5. Wi-Fi'ı aç, kutu işaretliyken tekrar bas.
 
-Bu adım için lab'daki **sentetik** veri setini kullan (gerçek trafik değil,
-inceleme gerektiren örnekler içerir). Uygulama açıkken **ikinci bir
-terminalde** çalıştır:
+- [ ] Güncelleme bu kez başarıyla bitti.
 
-```bash
-threatfusion-ai collect --input-dir /home/yahya/Work/threatfusion-lab/analyst-guidance-v1/traffic/development/zeek
-```
+---
 
-Testte başka bir klasör verme (her toplayıcı durumu tek bir kaynağa
-bağlıdır). `reserved` adlı klasörleri kullanma; onlar değerlendirme için
-ayrılmıştır.
+## Bölüm D — Hızlı sorgu (3 dk)
 
-- [ ] Komut hatasız çalıştı. Terminalde ilk satırda `"new_records": 818` ve
-      `"review_groups": 8` görünüyor; sonraki satırlarda `"new_records": 0`.
-- [ ] Yan çubukta **İkincil görünümler → Toplanan bağlantılar** sayfasını açtım;
-      tabloda 8 inceleme grubu var. Uçlar `Sistem 001` gibi takma adlarla görünüyor.
-- [ ] Bir grubu seçtim; zaman çizelgesi ve **İnceleme rehberi** (neden incelenmeli, sonra neye bakılmalı) bölümü
+**Amaç:** Tek bir alan adı/IP kontrolünün anlaşılır olduğunu görmek.
+**Gerekenler:** Hiçbir şey. Sorgular internete çıkmaz, siteleri ziyaret etmez;
+yalnızca bilgisayarındaki CTI verisine bakar.
+
+Ana sayfadaki **URL, domain veya IP** kutusuna yaz ve **Kontrol et**'e bas:
+
+- [ ] `wikipedia.org` → eşleşme yok; ayrıca bunun "kesin güvenli" anlamına
+      gelmediğini söylüyor.
+- [ ] `8.8.8.8` → sonuç anlaşılır.
+- [ ] `abc def` → uygulama çökmüyor; Türkçe bir hata çıkıyor ("Girdi analiz
+      edilemedi: alan adı en az iki bölümden oluşmalı…").
+
+---
+
+## Bölüm E — Zeek log toplama (10 dk)
+
+**Amaç:** Uygulamanın ağ kayıtlarını (Zeek logları) otomatik toplayıp hangi
+cihaz/hedefin neden incelenmesi gerektiğini gösterdiğini görmek.
+**Gerekenler:** Uygulama açık. İnternet veya API anahtarı gerekmez. Lab'daki
+**sentetik** (yapay) örnek veri kullanılır; gerçek trafik değildir.
+
+1. **Yeni bir terminal** aç (uygulamanınki açık kalsın) ve şunu çalıştır:
+
+   ```bash
+   threatfusion-ai collect --input-dir /home/yahya/Work/threatfusion-lab/analyst-guidance-v1/traffic/development/zeek
+   ```
+
+   Komut kapanmaz; 10 saniyede bir tarama yapar ve her taramada bir satır
+   yazar. Bu normal.
+
+- [ ] İlk satırda `"new_records": 818` ve `"review_groups": 8` var; sonraki
+      satırlarda `"new_records": 0`.
+
+2. Tarayıcıda sol yan çubukta **İkincil görünümler → Toplanan bağlantılar**'a
+   tıkla.
+
+- [ ] Tabloda **8** inceleme grubu var. Cihazlar gerçek IP yerine `Sistem 001`
+      gibi takma adlarla görünüyor.
+- [ ] Tablonun altından bir grup seçince zaman çizelgesi ve **İnceleme
+      rehberi** (neden incelenmeli, sonra neye bakılmalı) görünüyor ve
       anlaşılır.
-- [ ] Aynı sayfadaki **Toplanan DNS gözlemleri** bölümünde 1 inceleme grubu
-      görünüyor. "İnceleme önceliği olmayan gözlemleri de göster" kutusuyla diğer
-      DNS kayıtları da görünüyor.
-- [ ] Ctrl+C ile toplayıcıyı durdurup aynı komutu tekrar çalıştırdım; terminalde
-      `"new_records": 0` görünüyor, kayıtlar **ikinci kez eklenmedi**.
+- [ ] Aynı sayfanın aşağısındaki **Toplanan DNS gözlemleri** bölümünde **1**
+      inceleme grubu var. **İnceleme önceliği olmayan gözlemleri de göster**
+      kutusunu işaretleyince diğer DNS kayıtları da görünüyor.
 
-## 6. Dışa aktarma ve gizlilik
+3. Toplama terminalinde **Ctrl+C**'ye bas (toplayıcı durur), sonra aynı komutu
+   tekrar çalıştır.
 
-**Toplanan bağlantılar** sayfasında:
+- [ ] Yeni çalıştırmada `"new_records": 0` yazıyor; aynı kayıtlar ikinci kez
+      eklenmedi.
 
-- [ ] **Toplanan bağlantıların JSON raporunu indir** ile raporu indirdim.
-- [ ] Dosyayı açtım: cihazlar `Host 002`, `Device 006` gibi takma adlarla
-      geçiyor; gerçek IP adresi yok.
-- [ ] **"Gözlenen cihaz IP'lerini yerelde göster; indirmeler takma adları
-      korur"** kutusunu işaretleyince gerçek IP'ler yalnızca ekranda göründü.
-      Raporu tekrar indirince dosyada yine takma adlar var.
+4. İşin bitince toplama terminalinde tekrar **Ctrl+C**'ye bas.
 
-## 7. Genel izlenim
+> Önemli: Bu testte başka bir klasör verme. `reserved` adlı klasörleri açma;
+> onlar ileride yapılacak ölçümler için ayrıldı.
 
-- [ ] Bir analist olarak "hangi cihaza/hedefe neden bakmalıyım" sorusuna cevap
-      bulabildim. Bulamadıysam nerede takıldığımı yazdım.
-- [ ] Türkçe metinlerde anlamsız veya çevrilmemiş yer var mı? Varsa yazdım.
+---
+
+## Bölüm F — Rapor indirme ve gizlilik (5 dk)
+
+**Amaç:** İndirilen raporlarda gerçek IP adreslerinin bulunmadığını görmek.
+**Gerekenler:** Bölüm E yapılmış olmalı. **Toplanan bağlantılar** sayfasında ol.
+
+1. **Toplanan bağlantıların JSON raporunu indir** düğmesine bas.
+2. İnen dosyayı bir metin düzenleyiciyle aç (ör. çift tıkla veya
+   `cat ~/Downloads/<dosya_adı>.json`).
+
+- [ ] Dosyada cihazlar `Host 002`, `Device 006` gibi takma adlarla geçiyor;
+      `192.168…` gibi gerçek IP adresi yok.
+
+3. Sayfada **Gözlenen cihaz IP'lerini yerelde göster; indirmeler takma adları
+   korur** kutusunu işaretle.
+
+- [ ] Tabloda artık gerçek IP adresleri görünüyor (yalnızca senin ekranında).
+- [ ] Raporu tekrar indirip açtım: dosyada yine yalnızca takma adlar var.
+
+---
+
+## Bölüm G — Genel izlenim (serbest)
+
+- [ ] Bir analist gözüyle: "Hangi cihaza / hedefe neden bakmalıyım?" sorusuna
+      cevap bulabildim. Bulamadıysam nerede takıldığımı yazdım.
+- [ ] Anlamsız, kafa karıştırıcı veya çevrilmemiş Türkçe metin gördüm mü?
+      Gördüysem nerede olduğunu yazdım.
+- Ekledikleri / kafama takılanlar:
+
+---
 
 ## Sonuç
 
-- Tarih ve test edilen sürüm (kurulum çıktısı veya `threatfusion-ai status`):
+- Tarih:
+- Kurulu sürüm (Bölüm A'daki çıktı):
 - Bulunan sorunlar:
 - Genel değerlendirme (geçti / sorunlu):
-
-## Önceki turlarda bildirilen sorunlar (kayıt)
-
-- Tur 1 — kullanıcının notu: "Update CTI now tuşuna basınca güncelliyor. Ama aynı
-  tuşa tekrar basınca durduruyor galiba orda hata var mı bak (ayrıca güncelleme
-  kısmında bar veya %71 gibi bir değer ekle çünkü uzun sürüyor ve sadece dönüp
-  duran küçük bir ikon var. pop up gibi ortada çıkabilir güncelleniyor diye)".
-  Durum: düzeltildi (arka planda güncelleme, ilerleme çubuğu, bildirimler).
-- Tur 1 — "önceki ayarlardan kasıt ne anlamadım". Durum: madde netleştirildi.
-- Tur 2 — PhishTank her güncellemede "anahtarını kontrol et" uyarısı veriyordu.
-  Durum: kaynak kaynaklı kesinti olarak mavi notla gösteriliyor.
-- Tur 3 — internetsiz denemede sonuç görünmüyordu, SGB çok yavaştı, kaynaklar
-  güncelken düğme işlevsiz görünüyordu. Durum: kalıcı sonuç mesajları, düğme
-  bitişte yeniden aktif, "yeniden indir" seçeneği, SGB 4 paralel sayfa.
-- Tur 5 — güncelleme sırasında sayfa değişince "database is locked" hatası.
-  Durum: CTI önbelleği WAL moduna alındı (okumalar yazmayı beklemiyor),
-  bağlantılar her kullanımdan sonra kapatılıyor, durum paneli kilitte hata
-  yerine bilgi notu gösteriyor.
-- Tur 4 — hızlı sorgunun hata ayrıntıları İngilizceydi; Bölüm 5'teki eski örnek
-  veri inceleme grubu üretmediği için tablolar boş görünecekti. Durum: çeviriler
-  eklendi, örnek veri değiştirildi.

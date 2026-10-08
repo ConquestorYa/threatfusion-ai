@@ -322,6 +322,10 @@ release date is added only when the final tag/release is created.
 
 ### Changed
 
+- The Turkish manual acceptance checklist lists only remaining tests (sections
+  A–G with goal, prerequisites including whether API keys are needed, exact
+  steps and expected results); completed user results moved to the handoff.
+
 - CI installs development dependencies explicitly on Ubuntu and Windows, so
   lockfile regeneration cannot silently remove Ruff/pytest from checks. Ruff
   advances to 0.16.9 while preserving unrelated locked dependency versions.
