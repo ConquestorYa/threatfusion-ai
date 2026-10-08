@@ -306,7 +306,12 @@ def test_navigation_preserves_current_analysis_and_format(feedback_app):
     app.run(timeout=15)
     app.button(key="nav_analysis_history").click().run(timeout=15)
     assert not app.exception
-    app.button(key="open_telemetry_workspace").click().run(timeout=15)
+    # Secondary views lead with their header and a compact way back.
+    headers = [item.value for item in app.markdown if "<h1>" in item.value]
+    assert headers and "Analysis history" in headers[0]
+    with pytest.raises(KeyError):
+        app.button(key="open_telemetry_workspace")
+    app.button(key="back_telemetry").click().run(timeout=15)
     assert not app.exception
     assert app.session_state["analysis_result"] == result
     assert app.selectbox(key="telemetry_format").value == "Zeek dns.log"

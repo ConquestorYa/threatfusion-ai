@@ -301,6 +301,8 @@ _TR: dict[str, str] = {
     "Passive": "Pasif",
     "Fast verdict": "Hızlı sonuç",
     "Open quick lookup": "Hızlı sorguyu aç",
+    "← Quick lookup": "← Hızlı sorgu",
+    "← Analyze telemetry": "← Telemetriyi analiz et",
     "Analyze telemetry": "Telemetriyi analiz et",
     "Upload DNS CSV, Zeek, Pi-hole or AdGuard data and correlate CTI, ML and DNS behavior at scale.": "DNS CSV, Zeek, Pi-hole veya AdGuard verisi yükle; CTI, ML ve DNS davranışını toplu olarak ilişkilendir.",
     "Multi-domain": "Çoklu domain",

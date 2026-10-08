@@ -502,6 +502,24 @@ def _clear_quick_lookup_state() -> None:
     st.session_state.pop("quick_lookup_result", None)
 
 
+PRIMARY_PAGES = frozenset({"Quick lookup", "Analyze telemetry"})
+SECONDARY_HEADERS = {
+    "Collected connections": ("Collected connections", "Inspect automatically collected local Zeek connection activity."),
+    "Analysis history": ("Analysis history", "Revisit saved runs, compare changes and record analyst decisions."),
+    "Model evaluation": ("Model evaluation", "Inspect the frozen model's measured performance and its limits."),
+}
+
+
+def _render_compact_workspace_switch() -> None:
+    back_lookup, back_telemetry, _ = st.columns([1, 1, 2])
+    if back_lookup.button(tr("← Quick lookup"), key="back_quick_lookup", width="stretch"):
+        st.session_state["workspace_nav"] = "Quick lookup"
+        st.rerun()
+    if back_telemetry.button(tr("← Analyze telemetry"), key="back_telemetry", width="stretch"):
+        st.session_state["workspace_nav"] = "Analyze telemetry"
+        st.rerun()
+
+
 def _render_primary_workspace_launcher(current_page: str) -> None:
     """Keep the two core user workflows visually dominant in the main canvas."""
     with st.container(border=True, key="primary_workspace_launcher"):
@@ -674,13 +692,20 @@ def main() -> None:
             st.rerun()
         st.caption(tr("Primary tools are available in the main workspace."))
         if collector_available:
-            if st.button(tr("Collected connections"), key="nav_collector", width="stretch"):
+            if st.button(tr("Collected connections"), key="nav_collector", width="stretch",
+                         type="primary" if page == "Collected connections" else "secondary"):
                 st.session_state["workspace_nav"] = "Collected connections"
                 st.rerun()
 
     if local_root is not None:
         render_refresh_progress(local_root)
-    _render_primary_workspace_launcher(page)
+    if page in PRIMARY_PAGES:
+        _render_primary_workspace_launcher(page)
+    else:
+        # Secondary views start with their own header, not the large launcher,
+        # so switching pages is visible without scrolling.
+        render_app_header(*SECONDARY_HEADERS[page])
+        _render_compact_workspace_switch()
     if config.cti_only:
         st.warning(tr(
             "CTI-only mode: ML is disabled. Results use the local CTI cache and "
@@ -689,7 +714,6 @@ def main() -> None:
         ))
 
     if page == "Collected connections":
-        render_app_header("Collected connections", "Inspect automatically collected local Zeek connection activity.")
         render_collector(local_root / "collector" if local_root else config.collector_state_dir,
                          public_mode=not collector_available)
         return
@@ -789,17 +813,9 @@ def main() -> None:
         return
 
     if page == "Analysis history":
-        render_app_header(
-            "Analysis history",
-            "Revisit saved runs, compare changes and record analyst decisions.",
-        )
         _show_history(db_path)
         return
     if page == "Model evaluation":
-        render_app_header(
-            "Model evaluation",
-            "Inspect the frozen model's measured performance and its limits.",
-        )
         _show_model_evaluation(config.evaluation_report_path)
         return
 

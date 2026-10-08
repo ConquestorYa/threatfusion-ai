@@ -254,6 +254,12 @@ release date is added only when the final tag/release is created.
 
 ### Fixed
 
+- Switching to Collected connections, Analysis history or Model evaluation was
+  hard to notice: the large primary-workspace cards stayed on top and the new
+  page header appeared below the fold (user P0 section E). Secondary views now
+  start with their header plus a compact way back, and the active sidebar entry
+  is highlighted.
+
 - "Download again even if fresh" is now an explicit one-shot option: it applies
   to the next update, clears when that update starts and says so. Previously it
   cleared silently when the box was disabled during the update, so a follow-up

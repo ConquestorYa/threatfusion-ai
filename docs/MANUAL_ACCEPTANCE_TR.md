@@ -181,25 +181,27 @@ cihaz/hedefin neden incelenmesi gerektiğini gösterdiğini görmek.
 2. Tarayıcıda sol yan çubukta **İkincil görünümler → Toplanan bağlantılar**'a
    tıkla. Sayfanın üst başlığı **Toplanan bağlantılar** (İngilizce: **Collected
    connections**) olmalı.
-   - Kullanıcı (sohbet): tıklayınca hiçbir şey olmadı. Claude aynı çalışan
-     uygulamada ayrı bir oturumla denedi; sayfa açıldı. Önce tarayıcı
-     sekmesini **yenile (F5)** ve tekrar tıkla. Yine olmazsa ekran görüntüsü
-     ve uygulamanın terminal çıktısını gönder.
+   - Kullanıcı (sohbet): sayfa açılıyordu ama başlık büyük kartların altında
+     kaldığı için değiştiği belli olmuyordu. **Düzeltildi:** ikincil sayfalar
+     artık başlıkla başlıyor; yan çubukta aktif sayfa vurgulanıyor.
 
-- [ ] Tabloda **8** inceleme grubu var. Cihazlar gerçek IP yerine `Sistem 001`
+- [x] Tabloda **8** inceleme grubu var. Cihazlar gerçek IP yerine `Sistem 001`
       gibi takma adlarla görünüyor.
-- [ ] Tablonun altından bir grup seçince zaman çizelgesi ve **İnceleme
+- [x] Tablonun altından bir grup seçince zaman çizelgesi ve **İnceleme
       rehberi** (neden incelenmeli, sonra neye bakılmalı) görünüyor ve
       anlaşılır.
-- [ ] Aynı sayfanın aşağısındaki **Toplanan DNS gözlemleri** bölümünde **1**
+- [x] Aynı sayfanın aşağısındaki **Toplanan DNS gözlemleri** bölümünde **1**
       inceleme grubu var. **İnceleme önceliği olmayan gözlemleri de göster**
       kutusunu işaretleyince diğer DNS kayıtları da görünüyor.
 
 3. Toplama terminalinde **Ctrl+C**'ye bas (toplayıcı durur), sonra aynı komutu
    tekrar çalıştır.
 
-- [ ] Yeni çalıştırmada `"new_records": 0` yazıyor; aynı kayıtlar ikinci kez
+- [x] Yeni çalıştırmada `"new_records": 0` yazıyor; aynı kayıtlar ikinci kez
       eklenmedi.
+      — Kullanıcı (sohbet + ekran görüntüsü): 8 grup, "Sistem" takma adları,
+      İnceleme rehberi, DNS gözlemleri kutusu ve tekrar çalıştırmada
+      `"new_records": 0` doğrulandı.
 
 4. İşin bitince toplama terminalinde tekrar **Ctrl+C**'ye bas.
 
