@@ -112,19 +112,27 @@ kullanılır).
 1. Yan panelde kaynakların **kayıt sayılarını** not et (ör. SGB 488.915).
 2. Wi-Fi'ı (veya kablolu interneti) kapat.
 3. **Kaynaklar güncel olsa da yeniden indir** kutusunu işaretle ve **CTI
-   verilerini şimdi güncelle**'ye bas.
+   verilerini şimdi güncelle**'ye bas. (Kutu yalnızca o güncelleme için
+   geçerlidir; güncelleme başlayınca temizlenir.)
 4. Birkaç saniye bekle.
 
 **Beklenen:**
 
-- [ ] "Hiçbir CTI kaynağına ulaşılamadı. İnternet bağlantını kontrol et; mevcut
+- [x] "Hiçbir CTI kaynağına ulaşılamadı. İnternet bağlantını kontrol et; mevcut
       veriler korunuyor" mesajı çıktı.
-- [ ] Düğme yeniden tıklanabilir oldu.
-- [ ] Kayıt sayıları **değişmedi** (1. adımdakiyle aynı).
+- [x] Düğme yeniden tıklanabilir oldu.
+- [x] Kayıt sayıları **değişmedi** (1. adımdakiyle aynı). — Kullanıcı (sohbet):
+      üç madde de tamam.
 
-5. Wi-Fi'ı aç, kutu işaretliyken tekrar bas.
+5. Wi-Fi'ı aç. **"Kaynaklar güncel olsa da yeniden indir" kutusunu yeniden
+   işaretle** (kutu her güncelleme başlayınca kendiliğinden temizlenir; tek
+   seferliktir) ve **CTI verilerini şimdi güncelle**'ye bas.
 
-- [ ] Güncelleme bu kez başarıyla bitti.
+- [ ] Güncelleme bu kez gerçekten indirdi: "CTI güncellemesi tamamlandı: 3
+      kaynak indirildi" mesajı çıktı.
+  - Kullanıcı (sohbet): ilk denemede kutu temizlendiği için "CTI is already up
+    to date" çıktı; bu bir hata değil (kaynaklar zaten günceldi), ama internetin
+    geri geldiğini göstermiyor. Kutuyu yeniden işaretleyip tekrar dene.
 
 ---
 

@@ -270,3 +270,23 @@ def test_offline_attempt_does_not_mark_public_feeds_as_upstream_outages(managed)
     assert ui.upstream_unavailable_sources(managed) == frozenset()
     (managed / "refresh-status.json").unlink()
     assert ui.upstream_unavailable_sources(managed) == frozenset()
+
+
+def test_force_option_is_one_shot_and_disabled_while_running(managed, monkeypatch):
+    seen = []
+    monkeypatch.setattr(workspace, "refresh_configured_sources",
+                        lambda path, **kwargs: seen.append(kwargs["force"]) or ())
+    app = local_app(managed)
+
+    def box():
+        return next(c for c in app.checkbox if c.label == "Download again even if sources are still fresh")
+
+    box().check()
+    button(app, "Update CTI now").click().run(timeout=15)
+    assert any("CTI update started" in str(t.value) for t in app.toast)
+    wait_finished(managed)
+    app.run(timeout=15)
+    assert box().value is False
+    button(app, "Update CTI now").click().run(timeout=15)
+    wait_finished(managed)
+    assert seen == [True, False]

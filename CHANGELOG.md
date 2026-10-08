@@ -254,6 +254,12 @@ release date is added only when the final tag/release is created.
 
 ### Fixed
 
+- "Download again even if fresh" is now an explicit one-shot option: it applies
+  to the next update, clears when that update starts and says so. Previously it
+  cleared silently when the box was disabled during the update, so a follow-up
+  update was unexpectedly not forced (user P0 section C). Keys are read at
+  click time.
+
 - Quick lookup "no threat signal" summary no longer mentions ML thresholds when
   ML is disabled or calls an IP a "domain or URL".
 

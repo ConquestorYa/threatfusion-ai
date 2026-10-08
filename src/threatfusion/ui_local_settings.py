@@ -136,18 +136,16 @@ def render_local_settings(root: Path) -> None:
                 st.session_state.pop("_local_session_keys", None)
                 st.rerun()
             running = refresh_running(read_private_json(root / "refresh-status.json"))
-            force = st.checkbox(
+            st.checkbox(
                 tr("Download again even if sources are still fresh"),
                 key="local_force_refresh", disabled=running,
-                help=tr("Normally sources are downloaded again only when older than the update interval. PhishTank keeps its 24-hour limit."),
+                help=tr("Applies to the next update only and clears when it starts. Normally sources are downloaded again only when older than the update interval. PhishTank keeps its 24-hour limit."),
             )
-            if st.button(tr("Update CTI now"), key="local_refresh_cti", disabled=running,
-                         help=tr("An update is already running.") if running else None):
-                keys = st.session_state.get("_local_session_keys", saved)
-                # Runs outside this script: page interactions cannot abort it.
-                if start_background_refresh(root, credentials=keys, force=force):
-                    st.toast(tr("CTI update started. You can keep using the app."))
-                st.rerun()
+            st.button(tr("Update CTI now"), key="local_refresh_cti", disabled=running,
+                      help=tr("An update is already running.") if running else None,
+                      on_click=_start_refresh, args=(root, saved))
+            if st.session_state.pop("_local_refresh_started", False):
+                st.toast(tr("CTI update started. You can keep using the app."))
             due = _next_download(root, settings["interval_hours"])
             if due is not None and not running:
                 st.caption(tr("Sources are fresh; the next download is due in about {hours} h. Tick the box above to download now.", hours=due))
@@ -217,6 +215,15 @@ def _apply_keys(root: Path) -> None:
         for key in KEY_NAMES:
             st.session_state["local_key_" + key] = ""
         st.session_state["local_remember_keys"] = False
+
+
+def _start_refresh(root: Path, saved: dict) -> None:
+    """Button callback: the force choice is one-shot and clears explicitly."""
+    keys = st.session_state.get("_local_session_keys", saved)  # read at click time
+    force = bool(st.session_state.get("local_force_refresh", False))
+    # Runs outside this script: page interactions cannot abort it.
+    st.session_state["_local_refresh_started"] = start_background_refresh(root, credentials=keys, force=force)
+    st.session_state["local_force_refresh"] = False
 
 
 def upstream_unavailable_sources(root: Path) -> frozenset[str]:
