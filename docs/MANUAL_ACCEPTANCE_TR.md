@@ -128,7 +128,7 @@ kullanılır).
    işaretle** (kutu her güncelleme başlayınca kendiliğinden temizlenir; tek
    seferliktir) ve **CTI verilerini şimdi güncelle**'ye bas.
 
-- [ ] Güncelleme bu kez gerçekten indirdi: "CTI güncellemesi tamamlandı: 3
+- [x] Güncelleme bu kez gerçekten indirdi: "CTI güncellemesi tamamlandı: 3
       kaynak indirildi" mesajı çıktı.
   - Kullanıcı (sohbet): ilk denemede kutu temizlendiği için "CTI is already up
     to date" çıktı; bu bir hata değil (kaynaklar zaten günceldi), ama internetin
@@ -174,11 +174,17 @@ cihaz/hedefin neden incelenmesi gerektiğini gösterdiğini görmek.
    Komut kapanmaz; 10 saniyede bir tarama yapar ve her taramada bir satır
    yazar. Bu normal.
 
-- [ ] İlk satırda `"new_records": 818` ve `"review_groups": 8` var; sonraki
-      satırlarda `"new_records": 0`.
+- [x] İlk satırda `"new_records": 818` ve `"review_groups": 8` var; sonraki
+      satırlarda `"new_records": 0`. — Kullanıcı (sohbet): aynen böyle
+      (`"dns_review_groups": 1` dahil).
 
 2. Tarayıcıda sol yan çubukta **İkincil görünümler → Toplanan bağlantılar**'a
-   tıkla.
+   tıkla. Sayfanın üst başlığı **Toplanan bağlantılar** (İngilizce: **Collected
+   connections**) olmalı.
+   - Kullanıcı (sohbet): tıklayınca hiçbir şey olmadı. Claude aynı çalışan
+     uygulamada ayrı bir oturumla denedi; sayfa açıldı. Önce tarayıcı
+     sekmesini **yenile (F5)** ve tekrar tıkla. Yine olmazsa ekran görüntüsü
+     ve uygulamanın terminal çıktısını gönder.
 
 - [ ] Tabloda **8** inceleme grubu var. Cihazlar gerçek IP yerine `Sistem 001`
       gibi takma adlarla görünüyor.
