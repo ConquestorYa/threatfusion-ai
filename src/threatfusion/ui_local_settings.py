@@ -104,12 +104,12 @@ def render_local_settings(root: Path) -> None:
             with st.form("local_credentials", clear_on_submit=True):
                 _ = {
                     key: st.text_input(
-                        source + " API key", type="password", key="local_key_" + key
+                        tr("{source} API key", source=source), type="password", key="local_key_" + key
                     )
                     for source, key in (
                         ("ThreatFox", KEY_NAMES[0]),
                         ("URLhaus", KEY_NAMES[1]),
-                        ("PhishTank (optional)", KEY_NAMES[2]),
+                        (tr("PhishTank (optional)"), KEY_NAMES[2]),
                     )
                 }
                 st.checkbox(

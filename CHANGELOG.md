@@ -342,6 +342,14 @@ release date is added only when the final tag/release is created.
 
 ### Changed
 
+- Visual redesign after P0 feedback (DEC-088): two themes (Dark, Light) bound to
+  Streamlit's native theme so tables and inputs match; one accent color;
+  bundled Source Sans/Source Code Pro fonts; new two-ring logo; compact header
+  with language and theme controls; tab-style primary navigation; no emoji,
+  pill tags, uppercase kickers, glows or step diagrams; ML panels hidden when
+  no model score exists; CTI-only caveat shown as a quiet note. Browser-based
+  contrast audit: no text below WCAG AA in either theme.
+
 - The Turkish manual acceptance checklist lists only remaining tests (sections
   A–G with goal, prerequisites including whether API keys are needed, exact
   steps and expected results); completed user results moved to the handoff.

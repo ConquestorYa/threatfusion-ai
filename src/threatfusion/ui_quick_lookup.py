@@ -359,19 +359,22 @@ def _render_signal_console(result: QuickLookupResult) -> None:
     st.markdown(
         '<div class="tf-signal-console">'
         f'<div class="tf-signal-node tf-signal-node--{cti_tone}">'
-        '<span class="tf-signal-node-arrow" aria-hidden="true">→</span>'
         f'<div class="tf-signal-node-label">{safe_text(tr("Local threat intelligence"))}</div>'
         f'<div class="tf-signal-node-value">{safe_text(cti_value)}</div>'
         f'<div class="tf-signal-node-sub">{safe_text(tr("ThreatFox · URLhaus · PhishTank · SGB cache"))}</div>'
         '</div>'
-        f'<div class="tf-signal-node tf-signal-node--{ml_tone}">'
-        '<span class="tf-signal-node-arrow" aria-hidden="true">→</span>'
-        f'<div class="tf-signal-node-label">{safe_text(tr("Host model"))}</div>'
-        f'<div class="tf-signal-node-value">{safe_text(ml_value)}</div>'
-        f'<div class="tf-signal-node-sub">{safe_text(ml_sub)}</div>'
-        '</div>'
+        + (
+            # No score means no model ran (e.g. CTI-only); do not show a model box.
+            f'<div class="tf-signal-node tf-signal-node--{ml_tone}">'
+            f'<div class="tf-signal-node-label">{safe_text(tr("Host model"))}</div>'
+            f'<div class="tf-signal-node-value">{safe_text(ml_value)}</div>'
+            f'<div class="tf-signal-node-sub">{safe_text(ml_sub)}</div>'
+            '</div>'
+            if result.ml_score is not None
+            else ""
+        )
+        +
         '<div class="tf-signal-node tf-signal-node--info">'
-        '<span class="tf-signal-node-arrow" aria-hidden="true">→</span>'
         f'<div class="tf-signal-node-label">{safe_text(tr("Host shape context"))}</div>'
         f'<div class="tf-signal-node-value">{safe_text(result.normalized_domain)}</div>'
         f'<div class="tf-signal-node-sub">{safe_text(" · ".join(shape_bits))}</div>'
@@ -391,6 +394,9 @@ def _render_signal_console(result: QuickLookupResult) -> None:
 
 def _render_graphic_overview(result: QuickLookupResult) -> None:
     section_label(tr("Signal overview"))
+    if result.ml_score is None:
+        _render_signal_console(result)
+        return
     ml_col, flow_col = st.columns([1, 1.65], vertical_alignment="center")
     with ml_col:
         _render_ml_risk_card(result)
@@ -402,10 +408,9 @@ def _render_reasons(result: QuickLookupResult) -> None:
     section_label(tr("Why this result?"))
     reasons = [_reason_text(reason) for reason in result.reasons]
     if not reasons:
-        reasons = [
-            tr("No cached CTI match was found."),
-            tr("The ML score did not cross a review threshold."),
-        ]
+        reasons = [tr("No cached CTI match was found.")]
+        if result.ml_score is not None:
+            reasons.append(tr("The ML score did not cross a review threshold."))
 
     rows = "".join(
         '<div class="tf-reason-row">'
@@ -455,29 +460,7 @@ def _render_evidence_state(result: QuickLookupResult) -> None:
 
 
 def render_quick_lookup_empty_state() -> None:
-    st.markdown(
-        '<div class="tf-lookup-empty-visual">'
-        '<div class="tf-lookup-empty-step">'
-        f'<div class="tf-lookup-empty-step-num">01 · {safe_text(tr("Input"))}</div>'
-        f'<div class="tf-lookup-empty-step-title">{safe_text(tr("URL, domain or IP"))}</div>'
-        f'<div class="tf-lookup-empty-step-copy">{safe_text(tr("Paste one URL, domain or IP into the lookup field above."))}</div>'
-        '</div>'
-        '<div class="tf-lookup-empty-arrow" aria-hidden="true">→</div>'
-        '<div class="tf-lookup-empty-step">'
-        f'<div class="tf-lookup-empty-step-num">02 · {safe_text(tr("Signals"))}</div>'
-        '<div class="tf-lookup-empty-step-title">CTI + ML</div>'
-        f'<div class="tf-lookup-empty-step-copy">{safe_text(tr("Check the local ThreatFox, URLhaus, PhishTank and SGB cache plus the domain model."))}</div>'
-        '</div>'
-        '<div class="tf-lookup-empty-arrow" aria-hidden="true">→</div>'
-        '<div class="tf-lookup-empty-step">'
-        f'<div class="tf-lookup-empty-step-num">03 · {safe_text(tr("Result"))}</div>'
-        f'<div class="tf-lookup-empty-step-title">{safe_text(tr("Clear verdict"))}</div>'
-        f'<div class="tf-lookup-empty-step-copy">{safe_text(tr("See a color-coded result, evidence path and model signal overview."))}</div>'
-        '</div>'
-        '</div>'
-        f'<div class="tf-lookup-empty-note">{safe_text(tr("Passive analysis only · the destination is never opened or resolved."))}</div>',
-        unsafe_allow_html=True,
-    )
+    """Nothing to show yet; the passive-lookup caption above already explains."""
 
 
 def render_quick_lookup_result(result: QuickLookupResult) -> None:

@@ -9,49 +9,49 @@ maxUploadSize = 100
 gatherUsageStats = false
 
 [theme]
-base = "dark"
+# No fixed base: Streamlit offers Light and Dark below (default follows the
+# operating system). The in-app picker switches Streamlit's own theme so
+# native widgets and the product palette always match. Keep these values in
+# sync with THEME_PALETTES in src/threatfusion/ui_theme.py (tests check this).
 font = "sans serif"
-primaryColor = "#53C9BE"
-chartCategoricalColors = [
-    "#FA8991",
-    "#F4A26D",
-    "#E8C76A",
-    "#81CAA3",
-    "#53C9BE",
-    "#97B6D5",
-]
+codeFont = "monospace"
+baseRadius = "small"
 showSidebarBorder = true
 
 [theme.dark]
-primaryColor = "#53C9BE"
-backgroundColor = "#0C121C"
-secondaryBackgroundColor = "#141F2C"
-textColor = "#E5ECF4"
-redColor = "#FA8991"
-orangeColor = "#F4A26D"
-yellowColor = "#E8C76A"
-greenColor = "#81CAA3"
-blueColor = "#97B6D5"
+primaryColor = "#7AA7F7"
+backgroundColor = "#0E1116"
+secondaryBackgroundColor = "#161B22"
+textColor = "#E6EAF0"
+borderColor = "#2D3540"
+redColor = "#F27A80"
+orangeColor = "#EE9662"
+yellowColor = "#E2B84F"
+greenColor = "#56C98F"
+blueColor = "#86B0F8"
+chartCategoricalColors = ["#7AA7F7", "#56C98F", "#E2B84F", "#EE9662", "#F27A80", "#9BA6B4"]
 
 [theme.dark.sidebar]
-primaryColor = "#53C9BE"
-backgroundColor = "#101923"
-secondaryBackgroundColor = "#182534"
-textColor = "#E5ECF4"
+backgroundColor = "#12161C"
+secondaryBackgroundColor = "#161B22"
+textColor = "#E6EAF0"
+borderColor = "#2D3540"
 
 [theme.light]
-primaryColor = "#0E706D"
-backgroundColor = "#F6F8FB"
-secondaryBackgroundColor = "#FFFFFF"
-textColor = "#1D2B3D"
-redColor = "#AE2B3B"
-orangeColor = "#A04413"
-yellowColor = "#785A0D"
-greenColor = "#246843"
-blueColor = "#3A628A"
+primaryColor = "#1D5CC8"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F4F6F9"
+textColor = "#161B22"
+borderColor = "#D5DAE1"
+redColor = "#BF2638"
+orangeColor = "#AF4C0E"
+yellowColor = "#875700"
+greenColor = "#18794A"
+blueColor = "#1D5CC8"
+chartCategoricalColors = ["#1D5CC8", "#18794A", "#875700", "#AF4C0E", "#BF2638", "#56606C"]
 
 [theme.light.sidebar]
-primaryColor = "#0E706D"
-backgroundColor = "#EDF1F6"
+backgroundColor = "#F4F6F9"
 secondaryBackgroundColor = "#FFFFFF"
-textColor = "#1D2B3D"
+textColor = "#161B22"
+borderColor = "#D5DAE1"

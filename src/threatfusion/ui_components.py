@@ -22,26 +22,7 @@ def empty_state(title: str, description: str) -> None:
 
 
 def intake_steps() -> None:
-    st.markdown(
-        f'<div class="tf-steps" aria-label="{safe_text(tr("Analysis workflow"))}">'
-        '<div class="tf-step tf-step--active">'
-        '<div class="tf-step-number">01</div>'
-        f'<div><div class="tf-step-title">{safe_text(tr("Choose source"))}</div>'
-        f'<div class="tf-step-sub">{safe_text(tr("Select the telemetry format you want to analyze."))}</div></div>'
-        '</div>'
-        '<div class="tf-step">'
-        '<div class="tf-step-number">02</div>'
-        f'<div><div class="tf-step-title">{safe_text(tr("Upload telemetry"))}</div>'
-        f'<div class="tf-step-sub">{safe_text(tr("Provide DNS, packet-capture, Zeek, Suricata, Pi-hole or AdGuard data."))}</div></div>'
-        '</div>'
-        '<div class="tf-step">'
-        '<div class="tf-step-number">03</div>'
-        f'<div><div class="tf-step-title">{safe_text(tr("Analyze & triage"))}</div>'
-        f'<div class="tf-step-sub">{safe_text(tr("Correlate CTI, ML and DNS behavior, then prioritize findings."))}</div></div>'
-        '</div>'
-        '</div>',
-        unsafe_allow_html=True,
-    )
+    st.caption(tr("Choose the format, upload a file, then analyze. Supported: delimited tables, Zeek DNS/connection logs, DNS packet captures, Suricata EVE, Pi-hole and AdGuard."))
 
 
 def source_status_html(row: dict[str, object]) -> str:

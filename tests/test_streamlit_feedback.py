@@ -242,7 +242,8 @@ def test_legacy_theme_state_is_migrated_to_product_theme_name(feedback_app):
     app.run(timeout=15)
 
     assert not app.exception
-    assert app.session_state["visual_theme"] == "Midnight"
+    # Retired theme names fall back to Streamlit's active theme.
+    assert app.session_state["visual_theme"] == "Dark"
 
 
 def test_quick_lookup_is_default_primary_workspace_without_network_activity(
@@ -252,7 +253,7 @@ def test_quick_lookup_is_default_primary_workspace_without_network_activity(
     app.run(timeout=15)
 
     assert not app.exception
-    assert app.button(key="open_quick_lookup_workspace").label == "Open quick lookup"
+    assert app.button(key="open_quick_lookup_workspace").label == "Quick lookup"
     assert any(item.label == "URL, domain or IP" for item in app.text_input)
     assert app.button(key="quick_lookup_analyze").label == "Check"
     assert not app.button(key="quick_lookup_analyze").disabled
@@ -366,7 +367,7 @@ def test_explicit_cti_only_lookup_works_without_model(feedback_app, monkeypatch)
     app.run(timeout=15)
     assert not app.exception
     assert not app.error
-    assert any("CTI-only mode" in item.value for item in app.warning)
+    assert any("CTI-only mode" in item.value for item in app.markdown)
     assert not any(button.key == "nav_analysis_history" for button in app.button)
     app.text_input(key="quick_lookup_input").set_value("known.example")
     app.button(key="quick_lookup_analyze").click().run(timeout=15)

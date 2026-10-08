@@ -74,6 +74,7 @@ def test_text_and_verdict_tokens_meet_normal_text_contrast(theme):
     for foreground in [
         colors["text"],
         colors["muted"],
+        colors["cyan"],
         *verdict_colors(theme).values(),
     ]:
         for background in [
@@ -91,37 +92,23 @@ def test_text_and_verdict_tokens_meet_normal_text_contrast(theme):
 
 
 def test_visual_theme_choices_match_product_ui():
-    assert THEME_OPTIONS == ("Midnight", "Crimson", "Violet Noir", "Monochrome")
-    assert canonical_theme_name("Dark") == "Midnight"
-    assert canonical_theme_name("White") == "Midnight"
-    assert canonical_theme_name("Arctic") == "Midnight"
-    assert canonical_theme_name("Blue Dark") == "Midnight"
-    assert canonical_theme_name("Red") == "Crimson"
-    assert palette("Light") == palette("Midnight")
+    assert THEME_OPTIONS == ("Dark", "Light")
+    for legacy in ("Midnight", "Crimson", "Violet Noir", "Monochrome", "Blue Dark", "Red"):
+        assert canonical_theme_name(legacy) == "Dark"
+    assert canonical_theme_name("White") == "Light"
+    assert palette("Unknown") == palette("Dark")
 
 
-def test_each_theme_has_a_distinct_logo_tint_and_input_surface():
-    logo_colors = {palette(theme)["logo"] for theme in THEME_OPTIONS}
-    assert len(logo_colors) == len(THEME_OPTIONS)
+def test_light_and_dark_are_genuinely_light_and_dark():
+    def luminance(hex_color):
+        values = [int(hex_color[index : index + 2], 16) / 255 for index in (1, 3, 5)]
+        return sum(v * w for v, w in zip(values, (0.2126, 0.7152, 0.0722)))
+
+    assert luminance(palette("Light")["bg"]) > 0.9 > 0.1 > luminance(palette("Dark")["bg"])
+    assert palette("Light")["plot_template"] == "plotly_white"
+    assert palette("Dark")["scheme"] == "dark" and palette("Light")["scheme"] == "light"
     for theme in THEME_OPTIONS:
-        colors = palette(theme)
-        assert colors["input_bg"] != colors["surface"]
-
-
-def test_violet_noir_theme_is_distinctly_purple_black():
-    colors = palette("Violet Noir")
-    assert colors["bg"] == "#09070F"
-    assert colors["panel"] == "#171022"
-    assert colors["cyan"] == "#A97BFF"
-    assert colors["logo"] == "#B98CFF"
-
-
-def test_monochrome_theme_uses_black_white_product_palette():
-    colors = palette("Monochrome")
-    assert colors["bg"] == "#000000"
-    assert colors["panel"] == "#0A0A0A"
-    assert colors["cyan"] == "#FFFFFF"
-    assert colors["logo"] == "#FFFFFF"
+        assert palette(theme)["input_bg"] != palette(theme)["border"]
 
 
 def test_distribution_uses_active_product_theme_verdict_colors():
@@ -147,11 +134,11 @@ def test_distribution_uses_active_product_theme_verdict_colors():
 def test_plotly_theme_uses_selected_product_palette():
     import plotly.graph_objects as go
 
-    figure = apply_plotly_theme(go.Figure(), theme="Violet Noir")
+    figure = apply_plotly_theme(go.Figure(), theme="Light")
 
-    assert figure.layout.font.color == palette("Violet Noir")["text"]
-    assert figure.layout.hoverlabel.bgcolor == palette("Violet Noir")["panel"]
-    assert figure.layout.xaxis.gridcolor == palette("Violet Noir")["grid"]
+    assert figure.layout.font.color == palette("Light")["text"]
+    assert figure.layout.hoverlabel.bgcolor == palette("Light")["panel"]
+    assert figure.layout.xaxis.gridcolor == palette("Light")["grid"]
 
 
 def test_loaded_evaluation_preserves_operating_points_and_source_diagnostics(tmp_path):

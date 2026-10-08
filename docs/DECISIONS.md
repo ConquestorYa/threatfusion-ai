@@ -898,3 +898,27 @@ never change the file; only writers (refreshes, cleanup, the managed cache at
 startup) switch to WAL. The collector's busy/locked fallback remains
 for caches where WAL cannot be enabled.
 
+## DEC-088: Restrained two-theme visual design
+
+**Decision (2026-10-09):** After P0 the user rejected the interface as visibly
+AI-generated (colors, fonts, lines, logo, themes). The UI now uses two themes,
+Dark (neutral graphite) and Light, with one blue accent; Streamlit's bundled
+Source Sans / Source Code Pro fonts; small radii; no uppercase letter-spaced
+kickers, pill tags, glows, decorative gradients, emoji labels, numbered
+marketing cards or step diagrams; and a simple two-ring mark as the logo.
+Secondary views lead with their header. ML panels are hidden when no model
+score exists.
+
+**Theme mechanism:** The product palette follows Streamlit's own active theme
+(`st.context.theme`), and `.streamlit/config.toml` defines `[theme.light]` and
+`[theme.dark]` with the same values, so dataframes and inputs match. The in-app
+picker writes Streamlit's stored choice (`stActiveTheme-<path>-v2`, guarded by
+a test against the pinned Streamlit bundle) and reloads the page, which clears
+open results; this is stated next to the picker.
+
+**Consequences:** Every text token passes 4.5:1 on every surface in both themes
+(unit test), and a browser audit of rendered pages found no text below its
+WCAG AA threshold in either theme (English and Turkish). The four retired theme
+names map to Dark. README screenshots are outdated until the design is
+approved. The visible UI needs a short re-acceptance by the user.
+

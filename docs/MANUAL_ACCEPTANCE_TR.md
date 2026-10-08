@@ -248,6 +248,34 @@ cihaz/hedefin neden incelenmesi gerektiğini gösterdiğini görmek.
     baştan, daha profesyonel bir görünümle yeniden tasarlanmasını istiyor.
     Ayrıntılı şikâyet listesi bekleniyor.
 
+
+---
+
+## Bölüm H — Yeni arayüz (yeniden tasarım sonrası, ~15 dk)
+
+**Amaç:** Yeni görünümün profesyonel, okunaklı ve tutarlı olduğunu görmek.
+Arka plan özellikleri değişmedi; yalnızca görünüm ve sayfa düzeni değişti.
+**Gerekenler:** Bölüm A'daki gibi güncelle. İnternet veya API anahtarı gerekmez.
+
+1. Uygulamayı aç. Üst sağda **Türkçe / English** ve **Koyu / Açık** (Dark /
+   Light) düğmeleri var.
+2. **Açık**'a bas: sayfa kendiliğinden yenilenip açık temaya geçer. Sonra
+   **Koyu**'ya bas. (Tema değişince sayfa yenilenir; açık sonuçlar kapanır, bu
+   beklenen davranış.)
+3. Her iki temada şu sayfaları gez: **Hızlı sorgu** (bir sorgu yap, ör.
+   `wikipedia.org`), **Telemetriyi analiz et**, yan çubukta **Toplanan
+   bağlantılar**. İkisinde de dili değiştirip birkaç yere bak.
+
+- [ ] Logo, renkler, yazı tipi ve çizgiler sade ve profesyonel görünüyor;
+      "yapay zekâ yapmış" hissi yok ya da belirgin şekilde azaldı.
+- [ ] Açık temada her şey açık (tablolar, kutular, yan çubuk dahil); koyu
+      temada her şey koyu. Yarısı açık yarısı koyu bir alan yok.
+- [ ] Hiçbir yerde okunmayan, soluk kalan veya renk uyumsuz yazı yok.
+- [ ] Tema değiştirme düğmesi her iki yönde çalışıyor.
+- [ ] Toplanan bağlantılar gibi ikincil sayfalarda başlık en üstte; sayfanın
+      değiştiği hemen belli oluyor.
+- Beğenmediğin yerleri ekran görüntüsüyle yaz (ör. "yan çubuk çok kalabalık",
+  "logo olmamış", "bu renk koyu").
 ---
 
 ## Sonuç

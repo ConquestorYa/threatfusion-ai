@@ -1,166 +1,130 @@
 from __future__ import annotations
 
+import re
+import tomllib
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+import streamlit
 from streamlit.testing.v1 import AppTest
 
-from threatfusion.brand_assets import THREATFUSION_LOGO_DATA_URI
+from threatfusion import ui_theme
+from threatfusion.brand_assets import _THREATFUSION_LOGO_SVG, THREATFUSION_LOGO_DATA_URI
 from threatfusion.ui_theme import (
+    STREAMLIT_THEME_STORAGE_KEY,
     THEME_OPTION_LABELS,
     THEME_OPTIONS,
     THEME_PALETTES,
     VERDICT_COLORS,
     palette,
     safe_text,
+    theme_switch_script,
 )
 
+ROOT = Path(__file__).resolve().parents[1]
 
-def test_theme_palettes_define_product_modes() -> None:
-    assert {"Midnight", "Crimson", "Violet Noir", "Monochrome"} == set(THEME_PALETTES)
-    assert palette("Light") == palette("Midnight")
-    assert palette("White") == palette("Midnight")
-    assert palette("Dark") == palette("Midnight")
-    assert palette("Obsidian") == palette("Midnight")
-    assert palette("Arctic") == palette("Midnight")
-    assert palette("Blue Dark") == palette("Midnight")
-    assert palette("Red") == palette("Crimson")
-    assert palette("Midnight")["bg"] != palette("Crimson")["bg"]
-    assert palette("Midnight")["logo"] != palette("Violet Noir")["logo"]
+
+def _ratio(a: str, b: str) -> float:
+    def lum(color):
+        values = [int(color[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+        lin = [v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4 for v in values]
+        return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]
+
+    high, low = sorted((lum(a), lum(b)), reverse=True)
+    return (high + 0.05) / (low + 0.05)
+
+
+def test_exactly_two_product_themes_with_readable_accent_text() -> None:
+    assert set(THEME_PALETTES) == {"Dark", "Light"} == set(THEME_OPTIONS)
+    for theme in THEME_OPTIONS:
+        colors = palette(theme)
+        assert _ratio(colors["on_accent"], colors["cyan"]) >= 4.5
+        assert _ratio(colors["logo"], colors["bg"]) >= 4.5
+
+
+def test_streamlit_native_theme_matches_product_palette() -> None:
+    # Dataframes and inputs use Streamlit's theme; it must equal the palette.
+    config = tomllib.loads((ROOT / ".streamlit/config.toml").read_text())["theme"]
+    assert "base" not in config
+    for theme in THEME_OPTIONS:
+        native, colors = config[theme.lower()], palette(theme)
+        assert native["backgroundColor"] == colors["bg"]
+        assert native["textColor"] == colors["text"]
+        assert native["primaryColor"] == colors["cyan"]
+        assert native["borderColor"] == colors["border"]
+        assert native["sidebar"]["backgroundColor"] == colors["bg_alt"]
+        for token in ("red", "orange", "yellow", "green", "blue"):
+            assert native[f"{token}Color"] == colors[token]
+
+
+def test_bundled_streamlit_stores_the_theme_under_the_expected_key() -> None:
+    static = Path(streamlit.__file__).parent / "static/static/js"
+    source = "".join(path.read_text(errors="ignore") for path in static.glob("*.js"))
+    match = re.search(r"(\w+)=(\d+),(\w+)=`stActiveTheme-\$\{window\.location\.pathname\}`,"
+                      r"\w+=\{CACHED_THEME_VERSION:\1,CACHED_THEME_BASE_KEY:\3,ACTIVE_THEME:`\$\{\3\}-v\$\{\1\}`", source)
+    assert match, "Streamlit changed its theme storage; update STREAMLIT_THEME_STORAGE_KEY"
+    assert STREAMLIT_THEME_STORAGE_KEY == f"stActiveTheme-{{path}}-v{match.group(2)}"
+
+
+def test_theme_switch_script_writes_streamlit_choice_and_reloads() -> None:
+    script = theme_switch_script("Light")
+    assert '"stActiveTheme-" + window.parent.location.pathname + "-v2"' in script
+    assert '"\\"Light\\""' in script and "location.reload()" in script
+    with pytest.raises(ValueError):
+        theme_switch_script("Midnight\"); alert(1); (\"")
+
+
+def test_active_theme_follows_streamlit(monkeypatch) -> None:
+    for kind, expected in (("light", "Light"), ("dark", "Dark"), (None, "Dark")):
+        monkeypatch.setattr(ui_theme.st, "context", SimpleNamespace(theme=SimpleNamespace(type=kind)), raising=False)
+        assert ui_theme.active_theme() == expected
 
 
 def test_verdict_palette_covers_all_runtime_verdicts() -> None:
-    assert set(VERDICT_COLORS) == {
-        "Known Threat",
-        "High Risk",
-        "Review",
-        "Low",
-    }
+    assert set(VERDICT_COLORS) == {"Known Threat", "High Risk", "Review", "Low"}
 
 
 def test_safe_text_escapes_dynamic_html() -> None:
-    assert safe_text("<script>alert(1)</script>") == (
-        "&lt;script&gt;alert(1)&lt;/script&gt;"
-    )
+    assert safe_text("<script>alert(1)</script>") == "&lt;script&gt;alert(1)&lt;/script&gt;"
 
 
-def test_brand_logo_is_vector_and_theme_tinted() -> None:
+def test_brand_logo_is_simple_vector_without_text_and_theme_tinted() -> None:
     assert THREATFUSION_LOGO_DATA_URI.startswith("data:image/svg+xml")
     assert "base64" not in THREATFUSION_LOGO_DATA_URI
-    assert len({palette(theme)["logo"] for theme in THEME_PALETTES}) == 4
+    assert "<text" not in _THREATFUSION_LOGO_SVG and _THREATFUSION_LOGO_SVG.count("<circle") == 4
+    assert palette("Dark")["logo"] != palette("Light")["logo"]
 
 
-def test_language_segmented_control_is_required() -> None:
+def test_controls_have_no_emoji_and_switch_theme_once() -> None:
+    assert all(label.isascii() for label in THEME_OPTION_LABELS.values())
     app = AppTest.from_string(
-        "import streamlit as st\n"
-        "from threatfusion.ui_theme import render_main_brand\n"
-        "render_main_brand()\n"
+        "from threatfusion.ui_theme import render_main_brand\nrender_main_brand()\n"
     ).run(timeout=15)
-
     assert not app.exception
-    language = next(
-        item for item in app.segmented_control if item.key == "language_selector"
-    )
-    language.set_value("🇹🇷 Türkçe").run(timeout=15)
-    assert app.session_state["language_selector"] == "🇹🇷 Türkçe"
-
-    language = next(
-        item for item in app.segmented_control if item.key == "language_selector"
-    )
-    language.set_value("🇹🇷 Türkçe").run(timeout=15)
-    assert app.session_state["language_selector"] == "🇹🇷 Türkçe"
-
-
-def test_theme_picker_is_compact_non_editable_and_updates_state() -> None:
-    app = AppTest.from_string(
-        "import streamlit as st\n"
-        "from threatfusion.ui_theme import render_main_brand\n"
-        "st.session_state.setdefault('visual_theme', 'Midnight')\n"
-        "render_main_brand()\n"
+    language = next(item for item in app.segmented_control if item.key == "language_selector")
+    assert language.options == ["Türkçe", "English"]  # visible labels, no flags
+    theme = next(item for item in app.segmented_control if item.key == "visual_theme")
+    assert theme.value == "Dark"
+    theme.set_value("Light").run(timeout=15)
+    assert not app.exception
+    assert any("Tema uygulanıyor" in item.value or "Applying theme" in item.value for item in app.caption)
+    app.run(timeout=15)
+    assert not any("Applying theme" in item.value or "Tema uygulanıyor" in item.value for item in app.caption)
+    other = AppTest.from_string(
+        "from threatfusion.ui_theme import render_main_brand\nrender_main_brand()\n"
     ).run(timeout=15)
-
-    assert not app.exception
-    assert not any(item.key == "visual_theme" for item in app.selectbox)
-    assert not any(item.key == "visual_theme" for item in app.radio)
-    assert not any(button.label == "Apply" for button in app.button)
-
-    theme = next(
-        item for item in app.segmented_control if item.key == "visual_theme"
-    )
-    assert theme.value == "Midnight"
-    theme.set_value("Monochrome").run(timeout=15)
-
-    assert not app.exception
-    assert app.session_state["visual_theme"] == "Monochrome"
+    next(i for i in other.segmented_control if i.key == "language_selector").set_value("🇹🇷 Türkçe").run(timeout=15)
+    assert other.session_state["language_selector"] == "🇹🇷 Türkçe" and not other.exception
 
 
-def test_monochrome_theme_is_black_white_and_grayscale() -> None:
-    colors = palette("Monochrome")
-
-    assert colors["bg"] == "#000000"
-    assert colors["text"] == "#F8F8F8"
-    assert colors["logo"] == "#FFFFFF"
-    assert colors["cyan"] == "#FFFFFF"
-    assert colors["panel"] == "#0A0A0A"
-    assert colors["border"] == "#343434"
-
-
-def test_monochrome_verdict_palette_is_grayscale() -> None:
-    from threatfusion.ui_theme import verdict_colors
-
-    colors = verdict_colors("Monochrome")
-    assert colors == {
-        "Known Threat": "#FFFFFF",
-        "High Risk": "#E2E2E2",
-        "Review": "#CFCFCF",
-        "Low": "#B8B8B8",
-    }
-
-
-def test_monochrome_button_contrast_css_targets_nested_streamlit_text(monkeypatch) -> None:
-    from threatfusion import ui_theme
-
+def test_css_has_no_decorative_effects(monkeypatch) -> None:
     rendered: list[str] = []
-
-    monkeypatch.setattr(
-        ui_theme.st,
-        "markdown",
-        lambda body, **kwargs: rendered.append(body),
-    )
-
-    ui_theme.inject_theme_css("Monochrome")
-
+    monkeypatch.setattr(ui_theme.st, "markdown", lambda body, **kwargs: rendered.append(body))
+    ui_theme.inject_theme_css("Light")
     css = "\n".join(rendered)
-    assert (
-        '.st-key-visual_theme button[aria-pressed="true"] *' in css
-    )
-    assert 'color:var(--tf-on-accent)!important' in css
-    assert '[data-testid="stBaseButton-primary"] *' in css
-    assert 'fill:var(--tf-on-accent)!important' in css
-    assert 'stroke:var(--tf-on-accent)!important' in css
-
-
-def test_compact_theme_labels_are_short_and_unique() -> None:
-    assert set(THEME_OPTION_LABELS) == set(THEME_OPTIONS)
-    assert len(set(THEME_OPTION_LABELS.values())) == len(THEME_OPTIONS)
-    assert THEME_OPTION_LABELS["Midnight"] == "🌙 Mid"
-    assert THEME_OPTION_LABELS["Crimson"] == "🟥 Red"
-    assert THEME_OPTION_LABELS["Violet Noir"] == "🟪 Violet"
-    assert THEME_OPTION_LABELS["Monochrome"] == "◻ Mono"
-
-
-def test_monochrome_primary_button_text_fill_is_forced(monkeypatch) -> None:
-    from threatfusion import ui_theme
-
-    rendered: list[str] = []
-    monkeypatch.setattr(
-        ui_theme.st,
-        "markdown",
-        lambda body, **kwargs: rendered.append(body),
-    )
-
-    ui_theme.inject_theme_css("Monochrome")
-    css = "\n".join(rendered)
-
-    assert '[data-testid="stBaseButton-primary"] p' in css
-    assert '-webkit-text-fill-color:var(--tf-on-accent)!important' in css
-    assert '.st-key-quick_lookup_analyze [data-testid="stBaseButton-primary"] *' in css
-    assert '[data-testid="stBaseButton-primary"]:disabled' in css
-    assert '-webkit-text-fill-color:var(--tf-muted)!important' in css
+    for forbidden in ("text-transform:uppercase", "letter-spacing", "box-shadow", "drop-shadow", "Aptos"):
+        assert forbidden not in css
+    assert "border-radius:999px" not in css and '"Source Sans"' in css
+    assert '[data-testid="stBaseButton-primary"]' in css and "var(--tf-on-accent)" in css
+    assert palette("Light")["bg"] in css

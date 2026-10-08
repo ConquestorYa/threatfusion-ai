@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import html
+import json
 
 import plotly.graph_objects as go
 import streamlit as st
@@ -10,116 +11,74 @@ import streamlit as st
 from .brand_assets import THREATFUSION_LOGO_DATA_URI
 from .i18n import LANGUAGE_OPTIONS, current_language, language_option_for, tr
 
-THEME_OPTIONS = ("Midnight", "Crimson", "Violet Noir", "Monochrome")
-THEME_OPTION_LABELS = {
-    "Midnight": "🌙 Mid",
-    "Crimson": "🟥 Red",
-    "Violet Noir": "🟪 Violet",
-    "Monochrome": "◻ Mono",
-}
+THEME_OPTIONS = ("Dark", "Light")
+THEME_OPTION_LABELS = {"Dark": "Dark", "Light": "Light"}
 
+# Earlier releases offered four dark variants; they all map to Dark now.
 _LEGACY_THEME_NAMES = {
-    "Dark": "Midnight",
-    "White": "Midnight",
-    "Light": "Midnight",
-    "Blue Dark": "Midnight",
-    "Obsidian": "Midnight",
-    "Arctic": "Midnight",
-    "Red": "Crimson",
+    "Midnight": "Dark",
+    "Crimson": "Dark",
+    "Violet Noir": "Dark",
+    "Monochrome": "Dark",
+    "Blue Dark": "Dark",
+    "Obsidian": "Dark",
+    "Red": "Dark",
+    "White": "Light",
+    "Arctic": "Light",
 }
 
+# Streamlit keeps the active theme in browser storage under this key
+# (pinned Streamlit release; tests guard the format). Native widgets such as
+# dataframes follow it, so the product palette follows it too.
+STREAMLIT_THEME_STORAGE_KEY = "stActiveTheme-{path}-v2"
+
+# Every text token meets WCAG AA (4.5:1) on every surface token; see tests.
 THEME_PALETTES = {
-    "Midnight": {
-        "bg": "#071525",
-        "bg_alt": "#0B1D31",
-        "panel": "#10243A",
-        "panel_alt": "#15304A",
-        "surface": "#1C3B58",
-        "input_bg": "#0C2136",
-        "border": "#2E4C68",
-        "text": "#E8F2FF",
-        "muted": "#9EB4CA",
-        "cyan": "#62B8FF",
-        "cyan_soft": "rgba(98, 184, 255, 0.11)",
-        "logo": "#69C1FF",
-        "on_accent": "#06121F",
-        "green": "#83D8AE",
-        "yellow": "#F0D074",
-        "orange": "#FFA36C",
-        "red": "#FF8791",
-        "blue": "#91C6F4",
-        "grid": "rgba(158, 180, 202, 0.14)",
+    "Dark": {
+        "bg": "#0E1116",
+        "bg_alt": "#12161C",
+        "panel": "#161B22",
+        "panel_alt": "#1C222B",
+        "surface": "#232A34",
+        "input_bg": "#12171E",
+        "border": "#2D3540",
+        "text": "#E6EAF0",
+        "muted": "#9BA6B4",
+        "cyan": "#7AA7F7",
+        "cyan_soft": "rgba(122, 167, 247, 0.12)",
+        "logo": "#E6EAF0",
+        "on_accent": "#0B1220",
+        "green": "#56C98F",
+        "yellow": "#E2B84F",
+        "orange": "#EE9662",
+        "red": "#F27A80",
+        "blue": "#86B0F8",
+        "grid": "rgba(155, 166, 180, 0.14)",
         "plot_template": "plotly_dark",
         "scheme": "dark",
     },
-    "Crimson": {
-        "bg": "#170B10",
-        "bg_alt": "#211017",
-        "panel": "#2A141D",
-        "panel_alt": "#341925",
-        "surface": "#44202E",
-        "input_bg": "#26121B",
-        "border": "#5A3040",
-        "text": "#F7EAF0",
-        "muted": "#C7A6B4",
-        "cyan": "#E9687B",
-        "cyan_soft": "rgba(233, 104, 123, 0.12)",
-        "logo": "#F06D80",
-        "on_accent": "#18090E",
-        "green": "#8FD2A4",
-        "yellow": "#F0C972",
-        "orange": "#F09A6C",
-        "red": "#FF8791",
-        "blue": "#D8A0B5",
-        "grid": "rgba(199, 166, 180, 0.13)",
-        "plot_template": "plotly_dark",
-        "scheme": "dark",
-    },
-    "Violet Noir": {
-        "bg": "#09070F",
-        "bg_alt": "#100B19",
-        "panel": "#171022",
-        "panel_alt": "#21162F",
-        "surface": "#2E2041",
-        "input_bg": "#120D1B",
-        "border": "#49345F",
-        "text": "#F2ECFA",
-        "muted": "#B7A8C8",
-        "cyan": "#A97BFF",
-        "cyan_soft": "rgba(169, 123, 255, 0.12)",
-        "logo": "#B98CFF",
-        "on_accent": "#0B0712",
-        "green": "#88D3AD",
-        "yellow": "#E8C975",
-        "orange": "#F0A06F",
-        "red": "#F27E92",
-        "blue": "#B49DF4",
-        "grid": "rgba(183, 168, 200, 0.13)",
-        "plot_template": "plotly_dark",
-        "scheme": "dark",
-    },
-    "Monochrome": {
-        "bg": "#000000",
-        "bg_alt": "#050505",
-        "panel": "#0A0A0A",
-        "panel_alt": "#111111",
-        "surface": "#1A1A1A",
-        "input_bg": "#070707",
-        "border": "#343434",
-        "text": "#F8F8F8",
-        "muted": "#A8A8A8",
-        "cyan": "#FFFFFF",
-        "cyan_soft": "rgba(255, 255, 255, 0.10)",
-        "logo": "#FFFFFF",
-        "on_accent": "#000000",
-        "green": "#B8B8B8",
-        "yellow": "#CFCFCF",
-        "orange": "#E2E2E2",
-        "red": "#FFFFFF",
-        "blue": "#D8D8D8",
-        "grid": "rgba(255, 255, 255, 0.10)",
-        "plot_template": "plotly_dark",
-        "scheme": "dark",
+    "Light": {
+        "bg": "#FFFFFF",
+        "bg_alt": "#F4F6F9",
+        "panel": "#FFFFFF",
+        "panel_alt": "#F7F8FA",
+        "surface": "#EDF0F4",
+        "input_bg": "#FFFFFF",
+        "border": "#D5DAE1",
+        "text": "#161B22",
+        "muted": "#56606C",
+        "cyan": "#1D5CC8",
+        "cyan_soft": "rgba(29, 92, 200, 0.08)",
+        "logo": "#161B22",
+        "on_accent": "#FFFFFF",
+        "green": "#18794A",
+        "yellow": "#875700",
+        "orange": "#AF4C0E",
+        "red": "#BF2638",
+        "blue": "#1D5CC8",
+        "grid": "rgba(86, 96, 108, 0.16)",
+        "plot_template": "plotly_white",
+        "scheme": "light",
     },
 }
 
@@ -150,18 +109,17 @@ def canonical_theme_name(theme: str) -> str:
 
 
 def active_theme() -> str:
-    """Return the explicit ThreatFusion theme, defaulting to Midnight."""
-    selected = st.session_state.get("visual_theme")
-    if isinstance(selected, str):
-        canonical = canonical_theme_name(selected)
-        if canonical in THEME_OPTIONS:
-            return canonical
-    return "Midnight"
+    """The product theme follows Streamlit's active theme (Light or Dark)."""
+    try:
+        kind = st.context.theme.type
+    except (AttributeError, KeyError, RuntimeError):
+        kind = None
+    return "Light" if kind == "light" else "Dark"
 
 
 def palette(theme: str | None = None) -> dict[str, str]:
     selected = canonical_theme_name(theme) if theme is not None else active_theme()
-    return THEME_PALETTES[selected]
+    return THEME_PALETTES.get(selected, THEME_PALETTES["Dark"])
 
 
 def verdict_colors(theme: str | None = None) -> dict[str, str]:
@@ -194,8 +152,9 @@ def inject_theme_css(theme: str | None = None) -> None:
 
 _CSS = """
 :root {
-    --tf-font-ui:"Aptos","Segoe UI Variable","Segoe UI",system-ui,-apple-system,sans-serif;
-    --tf-font-display:"Aptos Display","Aptos","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+    --tf-font-ui:"Source Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;
+    --tf-font-display:var(--tf-font-ui);
+    --tf-font-mono:"Source Code Pro",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
 }
 [data-testid="stAppViewContainer"] {
     background:var(--tf-bg);
@@ -210,12 +169,34 @@ _CSS = """
     font-family:var(--tf-font-ui)!important;
 }
 [data-testid="stHeader"] { background:var(--tf-bg); }
+/* Sidebar secondary text uses the measured muted token, not faded opacity. */
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p,
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] {
+    color:var(--tf-muted)!important; opacity:1!important;
+}
+.tf-mode-note {
+    color:var(--tf-muted); font-size:.82rem; margin:.25rem 0 1rem;
+    padding-left:.6rem; border-left:3px solid var(--tf-yellow);
+}
+/* Primary actions: readable text on the accent in both themes. */
+[data-testid="stBaseButton-primary"],
+[data-testid="stBaseButton-primary"] p,
+[data-testid="stBaseButton-primary"] span {
+    color:var(--tf-on-accent)!important;
+    -webkit-text-fill-color:var(--tf-on-accent)!important;
+}
+/* Primary workspace switch: a quiet tab row instead of marketing cards. */
+.st-key-primary_workspace_launcher {
+    border:none!important; padding:0!important; margin:0 0 1rem;
+    border-bottom:1px solid var(--tf-border)!important; border-radius:0!important;
+}
+.st-key-primary_workspace_launcher button { min-height:38px!important; }
 [data-testid="stSidebar"] {
     background:var(--tf-bg-alt); border-right:1px solid var(--tf-border);
 }
-.block-container { max-width:1440px; padding-top:4.5rem; padding-bottom:3rem; }
+.block-container { max-width:1440px; padding-top:3.5rem; padding-bottom:3rem; }
 h1,h2,h3,.tf-page-head,.tf-sidebar-brand,.tf-product-brand { font-family:var(--tf-font-display); }
-h1 { font-size:1.8rem!important; line-height:1.25!important; letter-spacing:-.03em; }
+h1 { font-size:1.8rem!important; line-height:1.25!important; }
 h2 { font-size:1.3rem!important; line-height:1.35!important; }
 h3 { font-size:1.06rem!important; line-height:1.4!important; }
 .tf-page-head { padding:0 0 1.2rem; border-bottom:1px solid var(--tf-border); margin-bottom:1.1rem; }
@@ -223,7 +204,6 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
 .tf-page-head p { margin:.35rem 0 0; color:var(--tf-muted); font-size:.95rem; line-height:1.6; }
 .tf-eyebrow,.tf-section-label {
     color:var(--tf-muted); font-size:.75rem; font-weight:600;
-    text-transform:uppercase; letter-spacing:.09em;
 }
 .tf-section-label { margin:1.15rem 0 .65rem; }
 .tf-sidebar-brand { display:flex; align-items:center; gap:.7rem; margin:0 0 1.15rem; }
@@ -234,10 +214,6 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     background:var(--tf-logo);
     -webkit-mask:var(--tf-brand-logo) center / contain no-repeat;
     mask:var(--tf-brand-logo) center / contain no-repeat;
-    filter:
-        drop-shadow(0 0 8px var(--tf-cyan-soft))
-        drop-shadow(0 5px 12px rgba(0,0,0,.16));
-    transition:background-color .18s ease, filter .18s ease;
 }
 .tf-sidebar-brand-title { font-size:1rem; font-weight:650; color:var(--tf-text); }
 .tf-sidebar-brand-sub { color:var(--tf-muted); font-size:.75rem; margin-top:.1rem; }
@@ -266,32 +242,24 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     background:var(--tf-logo);
     -webkit-mask:var(--tf-brand-logo) center / contain no-repeat;
     mask:var(--tf-brand-logo) center / contain no-repeat;
-    filter:
-        drop-shadow(0 0 11px var(--tf-cyan-soft))
-        drop-shadow(0 8px 20px rgba(0,0,0,.18));
-    transition:background-color .18s ease, filter .18s ease;
 }
 .st-key-utility_dock {
     margin-top:.15rem;
     padding:.55rem .70rem;
     border:1px solid var(--tf-border);
-    border-radius:12px;
+    border-radius:6px;
     background:color-mix(in srgb, var(--tf-panel) 94%, var(--tf-bg));
 }
 .tf-mini-controls-kicker {
     color:var(--tf-muted);
     font-size:.64rem;
-    font-weight:750;
-    letter-spacing:.08em;
-    text-transform:uppercase;
+    font-weight:650;
     margin:0 0 .42rem;
 }
 .tf-theme-picker-label {
     color:var(--tf-muted);
     font-size:.68rem;
-    font-weight:750;
-    letter-spacing:.07em;
-    text-transform:uppercase;
+    font-weight:650;
     text-align:right;
     margin:0;
     line-height:1;
@@ -320,7 +288,7 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     min-height:30px!important;
     width:auto!important;
     padding:.18rem .58rem!important;
-    border-radius:999px!important;
+    border-radius:4px!important;
     font-size:.74rem!important;
     font-weight:650!important;
     background:var(--tf-panel)!important;
@@ -385,9 +353,8 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
 .tf-product-brand-title {
     color:var(--tf-text);
     font-size:1.55rem;
-    font-weight:780;
+    font-weight:650;
     line-height:1.1;
-    letter-spacing:-.03em;
 }
 .tf-product-brand-sub {
     color:var(--tf-muted);
@@ -400,20 +367,18 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     flex:0 0 auto;
     padding:.38rem .62rem;
     border:1px solid var(--tf-border);
-    border-radius:999px;
+    border-radius:4px;
     color:var(--tf-muted);
     font-family:var(--tf-font-ui);
     font-size:.7rem;
     font-weight:650;
-    letter-spacing:.06em;
-    text-transform:uppercase;
 }
 
 .tf-primary-workspace {
     margin:0 0 1.5rem;
     padding:1.15rem 1.2rem 1.25rem;
     border:1px solid var(--tf-border);
-    border-radius:14px;
+    border-radius:6px;
     background:color-mix(in srgb, var(--tf-panel) 94%, var(--tf-cyan-soft));
 }
 .tf-primary-workspace-head {
@@ -426,15 +391,12 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
 .tf-primary-workspace-kicker {
     color:var(--tf-cyan);
     font-size:.72rem;
-    font-weight:700;
-    letter-spacing:.09em;
-    text-transform:uppercase;
+    font-weight:600;
 }
 .tf-primary-workspace-title {
     color:var(--tf-text);
     font-size:1.15rem;
-    font-weight:700;
-    letter-spacing:-.015em;
+    font-weight:600;
     margin-top:.2rem;
 }
 .tf-primary-workspace-hint {
@@ -447,14 +409,12 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     min-height:132px;
     padding:1rem 1.05rem;
     border:1px solid var(--tf-border);
-    border-radius:11px;
+    border-radius:6px;
     background:var(--tf-bg-alt);
-    transition:border-color .15s ease, background .15s ease, transform .15s ease;
 }
 .tf-primary-card--active {
     border-color:color-mix(in srgb, var(--tf-cyan) 62%, var(--tf-border));
     background:color-mix(in srgb, var(--tf-cyan-soft) 72%, var(--tf-bg-alt));
-    box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--tf-cyan) 14%, transparent);
 }
 .tf-primary-card-top {
     display:flex;
@@ -465,21 +425,18 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
 .tf-primary-card-number {
     color:var(--tf-cyan);
     font-size:.72rem;
-    font-weight:700;
-    letter-spacing:.08em;
+    font-weight:600;
 }
 .tf-primary-card-state {
     color:var(--tf-muted);
     font-size:.7rem;
     font-weight:600;
-    text-transform:uppercase;
-    letter-spacing:.07em;
 }
 .tf-primary-card--active .tf-primary-card-state { color:var(--tf-cyan); }
 .tf-primary-card-title {
     color:var(--tf-text);
     font-size:1.08rem;
-    font-weight:700;
+    font-weight:600;
     margin-top:.65rem;
 }
 .tf-primary-card-copy {
@@ -497,15 +454,15 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
 .tf-primary-card-tag {
     padding:.16rem .42rem;
     border:1px solid var(--tf-border);
-    border-radius:999px;
+    border-radius:4px;
     color:var(--tf-muted);
     font-size:.68rem;
 }
 .st-key-open_telemetry_workspace button,
 .st-key-open_quick_lookup_workspace button {
     min-height:48px!important;
-    border-radius:9px!important;
-    font-weight:700!important;
+    border-radius:6px!important;
+    font-weight:600!important;
     margin-top:.2rem;
 }
 
@@ -543,7 +500,7 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     background:var(--tf-panel);
 }
 .tf-finding-domain,.tf-domain-name {
-    font-family:ui-monospace,"Cascadia Code",Consolas,monospace;
+    font-family:var(--tf-font-mono);
     color:var(--tf-text); overflow-wrap:anywhere;
 }
 .tf-finding-domain { font-size:.88rem; font-weight:600; }
@@ -577,13 +534,12 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     min-height:92px;
     padding:.9rem 1rem;
     border:1px solid var(--tf-border);
-    border-radius:10px;
+    border-radius:6px;
     background:var(--tf-bg-alt);
 }
 .tf-step--active {
     border-color:color-mix(in srgb, var(--tf-cyan) 52%, var(--tf-border));
     background:color-mix(in srgb, var(--tf-cyan-soft) 72%, var(--tf-bg-alt));
-    box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--tf-cyan) 10%, transparent);
 }
 .tf-step-number {
     flex:0 0 auto;
@@ -591,17 +547,17 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     place-items:center;
     width:2.25rem;
     height:2.25rem;
-    border-radius:999px;
+    border-radius:4px;
     border:1px solid color-mix(in srgb, var(--tf-cyan) 42%, var(--tf-border));
     background:color-mix(in srgb, var(--tf-cyan) 14%, transparent);
     color:var(--tf-cyan);
     font-size:.8rem;
-    font-weight:800;
+    font-weight:650;
 }
 .tf-step-title {
     color:var(--tf-text);
     font-size:.92rem;
-    font-weight:700;
+    font-weight:600;
     line-height:1.35;
 }
 .tf-step-sub {
@@ -625,13 +581,8 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     padding:1.35rem 1.45rem;
     border:1px solid var(--tf-lookup-border);
     border-left:5px solid var(--tf-lookup-accent);
-    border-radius:12px;
-    background:linear-gradient(
-        90deg,
-        var(--tf-lookup-soft) 0%,
-        color-mix(in srgb, var(--tf-panel) 96%, transparent) 48%,
-        var(--tf-panel) 100%
-    );
+    border-radius:6px;
+    background:var(--tf-panel);
 }
 .tf-lookup-result--safe { --tf-lookup-accent:var(--tf-green); }
 .tf-lookup-result--review { --tf-lookup-accent:var(--tf-yellow); }
@@ -656,27 +607,24 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     place-items:center;
     width:3.3rem;
     height:3.3rem;
-    border-radius:999px;
+    border-radius:4px;
     border:1px solid color-mix(in srgb, var(--tf-lookup-accent) 48%, transparent);
     background:color-mix(in srgb, var(--tf-lookup-accent) 14%, transparent);
     color:var(--tf-lookup-accent);
     font-family:"Segoe UI Symbol","Segoe UI",Arial,sans-serif;
     font-size:1.7rem;
-    font-weight:700;
+    font-weight:600;
     line-height:1;
 }
 .tf-lookup-kicker {
     color:var(--tf-lookup-accent);
     font-size:.72rem;
-    font-weight:700;
-    letter-spacing:.09em;
-    text-transform:uppercase;
+    font-weight:600;
 }
 .tf-lookup-title {
     color:var(--tf-text);
     font-size:1.55rem;
-    font-weight:700;
-    letter-spacing:-.025em;
+    font-weight:600;
     line-height:1.22;
     margin:.18rem 0 .2rem;
 }
@@ -689,11 +637,11 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     flex:0 1 42%;
     max-width:42rem;
     min-width:15rem;
-    font-family:ui-monospace,"Cascadia Code",Consolas,monospace;
+    font-family:var(--tf-font-mono);
     color:var(--tf-text);
     background:color-mix(in srgb, var(--tf-bg) 72%, transparent);
     border:1px solid var(--tf-border);
-    border-radius:8px;
+    border-radius:6px;
     padding:.72rem .85rem;
     overflow-wrap:anywhere;
     font-size:.83rem;
@@ -720,14 +668,12 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     min-height:76px;
     padding:.78rem .85rem;
     border:1px solid var(--tf-border);
-    border-radius:8px;
+    border-radius:6px;
     background:var(--tf-panel);
 }
 .tf-signal-label {
     color:var(--tf-muted);
     font-size:.72rem;
-    text-transform:uppercase;
-    letter-spacing:.07em;
     font-weight:600;
 }
 .tf-signal-value {
@@ -763,7 +709,7 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
 }
 .tf-reason-icon {
     color:var(--tf-cyan);
-    font-weight:700;
+    font-weight:600;
     text-align:center;
 }
 .tf-evidence-state {
@@ -772,7 +718,7 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     align-items:flex-start;
     padding:.85rem 1rem;
     border:1px solid var(--tf-border);
-    border-radius:8px;
+    border-radius:6px;
     background:var(--tf-panel);
     font-size:.84rem;
     line-height:1.55;
@@ -788,27 +734,26 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     width:1.6rem;
     color:var(--tf-text);
     font-size:1.05rem;
-    font-weight:700;
+    font-weight:600;
     line-height:1.4;
     text-align:center;
 }
 
 /* Make the single-item lookup feel like the primary action, not a form field. */
 .st-key-quick_lookup_input [data-baseweb="input"] {
-    min-height:68px;
-    border-radius:12px;
-    border:1px solid color-mix(in srgb, var(--tf-cyan) 42%, var(--tf-border));
+    min-height:44px;
+    border-radius:6px;
+    border:1px solid var(--tf-border);
     background:var(--tf-input-bg)!important;
-    box-shadow:0 0 0 1px color-mix(in srgb, var(--tf-cyan) 8%, transparent);
 }
 .st-key-quick_lookup_input [data-baseweb="input"] > div {
     background:transparent!important;
 }
 .st-key-quick_lookup_input input {
-    min-height:66px;
-    padding:0 1.05rem!important;
-    font-size:1.08rem!important;
-    font-family:ui-monospace,"Cascadia Code",Consolas,monospace!important;
+    min-height:42px;
+    padding:0 .8rem!important;
+    font-size:.98rem!important;
+    font-family:var(--tf-font-mono)!important;
     color:var(--tf-text)!important;
 }
 .st-key-quick_lookup_input label p {
@@ -818,13 +763,12 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
 }
 .st-key-quick_lookup_input [data-baseweb="input"]:focus-within {
     border-color:var(--tf-cyan);
-    box-shadow:0 0 0 3px color-mix(in srgb, var(--tf-cyan) 16%, transparent);
 }
 .st-key-quick_lookup_analyze button {
-    min-height:68px!important;
-    border-radius:12px!important;
+    min-height:44px!important;
+    border-radius:6px!important;
     font-size:1rem!important;
-    font-weight:700!important;
+    font-weight:600!important;
 }
 
 .tf-ml-risk-card {
@@ -835,12 +779,8 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     justify-content:center;
     padding:1rem 1.05rem;
     border:1px solid var(--tf-border);
-    border-radius:12px;
-    background:linear-gradient(
-        145deg,
-        color-mix(in srgb, var(--tf-ml-accent) 7%, var(--tf-panel)),
-        var(--tf-panel) 54%
-    );
+    border-radius:6px;
+    background:var(--tf-panel);
 }
 .tf-ml-risk-card--safe { --tf-ml-accent:var(--tf-green); }
 .tf-ml-risk-card--low { --tf-ml-accent:var(--tf-cyan); }
@@ -856,15 +796,12 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
 .tf-ml-risk-kicker {
     color:var(--tf-muted);
     font-size:.7rem;
-    font-weight:700;
-    letter-spacing:.08em;
-    text-transform:uppercase;
+    font-weight:600;
 }
 .tf-ml-risk-level {
     color:var(--tf-ml-accent);
     font-size:1.55rem;
-    font-weight:750;
-    letter-spacing:-.025em;
+    font-weight:650;
     line-height:1.15;
     margin-top:.28rem;
 }
@@ -878,7 +815,7 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
 .tf-ml-risk-score strong {
     color:var(--tf-ml-accent);
     font-size:2rem;
-    font-weight:800;
+    font-weight:650;
     line-height:1;
 }
 .tf-ml-risk-score span {
@@ -898,7 +835,7 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     margin-top:.7rem;
     overflow:hidden;
     border:1px solid color-mix(in srgb, var(--tf-border) 82%, transparent);
-    border-radius:999px;
+    border-radius:4px;
     background:color-mix(in srgb, var(--tf-muted) 13%, var(--tf-bg-alt));
 }
 .tf-ml-risk-track::after {
@@ -926,7 +863,7 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     position:absolute;
     inset:0 auto 0 0;
     min-width:0;
-    border-radius:999px;
+    border-radius:4px;
     background:var(--tf-ml-accent);
 }
 .tf-ml-risk-scale {
@@ -961,7 +898,7 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     min-height:250px;
     padding:.85rem;
     border:1px solid var(--tf-border);
-    border-radius:12px;
+    border-radius:6px;
     background:var(--tf-panel);
 }
 .tf-signal-node {
@@ -972,7 +909,7 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     min-height:104px;
     padding:.9rem 1rem;
     border:1px solid var(--tf-border);
-    border-radius:9px;
+    border-radius:6px;
     background:var(--tf-bg-alt);
 }
 .tf-signal-node--wide { grid-column:1 / -1; }
@@ -985,13 +922,11 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     color:var(--tf-muted);
     font-size:.7rem;
     font-weight:650;
-    text-transform:uppercase;
-    letter-spacing:.08em;
 }
 .tf-signal-node-value {
     color:var(--tf-text);
     font-size:1.12rem;
-    font-weight:700;
+    font-weight:600;
     margin-top:.3rem;
 }
 .tf-signal-node-sub {
@@ -1021,7 +956,7 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     margin:1.4rem 0 .55rem;
     padding:1rem;
     border:1px solid var(--tf-border);
-    border-radius:12px;
+    border-radius:6px;
     background:color-mix(in srgb, var(--tf-panel) 92%, var(--tf-cyan-soft));
 }
 .tf-lookup-empty-step {
@@ -1031,20 +966,18 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     justify-content:center;
     padding:.9rem 1rem;
     border:1px solid var(--tf-border);
-    border-radius:9px;
+    border-radius:6px;
     background:var(--tf-bg-alt);
 }
 .tf-lookup-empty-step-num {
     color:var(--tf-cyan);
     font-size:.7rem;
-    font-weight:700;
-    letter-spacing:.08em;
-    text-transform:uppercase;
+    font-weight:600;
 }
 .tf-lookup-empty-step-title {
     color:var(--tf-text);
     font-size:1rem;
-    font-weight:700;
+    font-weight:600;
     margin-top:.3rem;
 }
 .tf-lookup-empty-step-copy {
@@ -1056,7 +989,7 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
 .tf-lookup-empty-arrow {
     color:var(--tf-cyan);
     font-size:1.4rem;
-    font-weight:700;
+    font-weight:600;
     text-align:center;
 }
 .tf-lookup-empty-note {
@@ -1211,7 +1144,7 @@ button:focus-visible,a:focus-visible,input:focus-visible {
     .st-key-quick_lookup_analyze button { min-height:60px!important; }
     .st-key-quick_lookup_input input { min-height:58px; font-size:1rem!important; }
 }
-@media(prefers-reduced-motion:reduce) { .tf-finding-row { transition:none; } }
+@media(prefers-reduced-motion:reduce) { .tf-finding-row { } }
 """
 
 
@@ -1220,8 +1153,7 @@ def render_app_header(
     description: str = "Turn DNS activity into a prioritized investigation queue.",
 ) -> None:
     st.markdown(
-        f'<header class="tf-page-head"><div class="tf-eyebrow">{safe_text(tr("Analyst workspace"))}</div>'
-        f"<h1>{safe_text(tr(title))}</h1><p>{safe_text(tr(description))}</p></header>",
+        f"<header class=\"tf-page-head\"><h1>{safe_text(tr(title))}</h1><p>{safe_text(tr(description))}</p></header>",
         unsafe_allow_html=True,
     )
 
@@ -1234,79 +1166,90 @@ def _logo_markup(css_class: str) -> str:
     )
 
 
+def _language_label(option: str) -> str:
+    # Option values keep their stored form; the visible label has no emoji.
+    return option.split(" ", 1)[-1]
+
+
+def _queue_theme_change() -> None:
+    st.session_state["_tf_theme_request"] = st.session_state.get("visual_theme")
+
+
+def theme_switch_script(theme: str) -> str:
+    """Browser script that selects Streamlit's theme and reloads the page."""
+    if theme not in THEME_OPTIONS:
+        raise ValueError("unsupported theme")
+    prefix, suffix = STREAMLIT_THEME_STORAGE_KEY.split("{path}")
+    key = f"{json.dumps(prefix)} + window.parent.location.pathname + {json.dumps(suffix)}"
+    return (
+        "<script>"
+        f"window.parent.localStorage.setItem({key}, {json.dumps(json.dumps(theme))});"
+        "window.parent.location.reload();"
+        "</script>"
+    )
+
+
+def _apply_theme_request() -> None:
+    """Switch Streamlit's own theme so native widgets and the palette agree."""
+    requested = st.session_state.pop("_tf_theme_request", None)
+    if requested not in THEME_OPTIONS or requested == active_theme():
+        return
+    # Trusted fixed template; the theme name comes from THEME_OPTIONS only.
+    st.iframe(theme_switch_script(requested), height=1)
+    st.caption(tr("Applying theme…"))
+
+
 def render_main_brand() -> None:
     if st.session_state.get("language_selector") not in LANGUAGE_OPTIONS:
         st.session_state["language_selector"] = language_option_for(current_language())
+    # Set once per session; a theme change reloads the page into a new session.
+    if st.session_state.get("visual_theme") not in THEME_OPTIONS:
+        st.session_state["visual_theme"] = active_theme()
 
     with st.container(key="product_topbar"):
-        brand_col, controls_col = st.columns(
-            [2.20, 1.10],
+        brand_col, language_col, theme_col = st.columns(
+            [3.2, 1.0, 1.0],
             vertical_alignment="center",
         )
         with brand_col:
             st.markdown(
                 '<div class="tf-product-brand">'
                 + _logo_markup("tf-product-brand-logo")
-                + '<div><div class="tf-product-brand-title">ThreatFusion AI</div>'
-                f'<div class="tf-product-brand-sub">{safe_text(tr("Threat intelligence, DNS analysis and AI-assisted triage in one analyst workspace."))}'
-                '</div></div></div>',
+                + '<div><div class="tf-product-brand-title">ThreatFusion</div>'
+                f'<div class="tf-product-brand-sub">{safe_text(tr("Local DNS and connection triage with your own threat intelligence."))}'
+                "</div></div></div>",
                 unsafe_allow_html=True,
             )
-        with controls_col:
-            with st.container(key="utility_dock"):
-                st.markdown(
-                    f'<div class="tf-mini-controls-kicker">{safe_text(tr("Controls"))}</div>',
-                    unsafe_allow_html=True,
-                )
-
-                lang_label_col, lang_ui_col = st.columns(
-                    [0.28, 0.72],
-                    gap="small",
-                    vertical_alignment="center",
-                )
-                with lang_label_col:
-                    st.markdown(
-                        f'<div class="tf-theme-picker-label tf-mini-label">{safe_text(tr("Language"))}</div>',
-                        unsafe_allow_html=True,
-                    )
-                with lang_ui_col:
-                    st.segmented_control(
-                        "Language",
-                        list(LANGUAGE_OPTIONS),
-                        key="language_selector",
-                        required=True,
-                        label_visibility="collapsed",
-                        width="stretch",
-                    )
-
-                theme_label_col, theme_ui_col = st.columns(
-                    [0.28, 0.72],
-                    gap="small",
-                    vertical_alignment="center",
-                )
-                with theme_label_col:
-                    st.markdown(
-                        f'<div class="tf-theme-picker-label tf-mini-label">{safe_text(tr("Theme"))}</div>',
-                        unsafe_allow_html=True,
-                    )
-                with theme_ui_col:
-                    st.segmented_control(
-                        tr("Theme"),
-                        list(THEME_OPTIONS),
-                        key="visual_theme",
-                        required=True,
-                        label_visibility="collapsed",
-                        width="stretch",
-                        format_func=lambda option: THEME_OPTION_LABELS.get(option, option),
-                    )
+        with language_col:
+            st.segmented_control(
+                tr("Language"),
+                list(LANGUAGE_OPTIONS),
+                key="language_selector",
+                required=True,
+                label_visibility="collapsed",
+                width="stretch",
+                format_func=_language_label,
+            )
+        with theme_col:
+            st.segmented_control(
+                tr("Theme"),
+                list(THEME_OPTIONS),
+                key="visual_theme",
+                required=True,
+                label_visibility="collapsed",
+                width="stretch",
+                format_func=lambda option: tr(THEME_OPTION_LABELS.get(option, option)),
+                on_change=_queue_theme_change,
+                help=tr("Switching the theme reloads the page; open results are cleared."),
+            )
+    _apply_theme_request()
 
 
 def render_sidebar_brand() -> None:
     st.sidebar.markdown(
         '<div class="tf-sidebar-brand">'
-        + _logo_markup("tf-sidebar-brand-logo")
-        + '<div><div class="tf-sidebar-brand-title">ThreatFusion AI</div>'
-        f'<div class="tf-sidebar-brand-sub">{safe_text(tr("DNS intelligence workspace"))}</div></div></div>',
+        f'<div><div class="tf-sidebar-brand-title">{safe_text(tr("Workspace"))}</div>'
+        f'<div class="tf-sidebar-brand-sub">{safe_text(tr("Setup, sources and views"))}</div></div></div>',
         unsafe_allow_html=True,
     )
 
@@ -1385,7 +1328,7 @@ def apply_plotly_theme(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         font={
-            "family": "Aptos, Segoe UI Variable, Segoe UI, Arial, sans-serif",
+            "family": "Source Sans, system-ui, sans-serif",
             "size": 13,
             "color": colors["text"],
         },

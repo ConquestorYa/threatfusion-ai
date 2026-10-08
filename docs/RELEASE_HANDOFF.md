@@ -2,6 +2,26 @@
 
 Status date: 2026-10-06
 
+## UI redesign after P0 (2026-10-09)
+
+- User feedback: colors, fonts, lines, logo and themes looked AI-generated;
+  wanted one good light and one good dark theme without readability or color
+  inconsistencies. Implemented DEC-088 within Streamlit (backend untouched).
+- Root problems found: the CSS forced fonts absent on Linux (Aptos/Segoe), so
+  text fell back to arbitrary system fonts; Streamlit was pinned to a dark base
+  theme, so a light product theme would have left dataframes dark; the palette
+  was chosen from a stale session value, so the first render after a theme
+  change mismatched (observed: text at 1.05:1 until the next interaction).
+- Verification: a headless-Chromium harness (disposable install, synthetic lab
+  data) captured lookup, lookup result, collected connections and telemetry in
+  both themes and Turkish/English, and audited every visible text node's real
+  color against its effective background: zero failures after the fixes. Theme
+  buttons clicked in a real browser switch both ways. 1,365 local tests pass;
+  theme tests now cover palette contrast, config/palette parity, the Streamlit
+  storage-key format and CSS without decorative effects.
+- Not yet done: user's visual acceptance; README screenshots (regenerate from
+  the synthetic demo after approval); deeper layout work on long sidebar copy.
+
 ## P0 functional sections passed; UI redesign requested (2026-10-09)
 
 - User completed sections A–F on `f0a0036`/`1110e6b`: upgrade/version check,

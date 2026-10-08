@@ -71,8 +71,7 @@ from threatfusion.ui_local_settings import (
     resolve_managed_config,
 )
 from threatfusion.ui_theme import (
-    THEME_OPTIONS,
-    canonical_theme_name,
+    safe_text,
     inject_theme_css,
     metric_card,
     render_app_header,
@@ -521,83 +520,25 @@ def _render_compact_workspace_switch() -> None:
 
 
 def _render_primary_workspace_launcher(current_page: str) -> None:
-    """Keep the two core user workflows visually dominant in the main canvas."""
-    with st.container(border=True, key="primary_workspace_launcher"):
-        st.markdown(
-            '<div class="tf-primary-workspace-head">'
-            f'<div><div class="tf-primary-workspace-kicker">{tr("Primary workspace")}</div>'
-            f'<div class="tf-primary-workspace-title">{tr("Choose how you want to investigate")}</div></div>'
-            '<div class="tf-primary-workspace-hint">'
-            f'{tr("Quick lookup is the default entry point; telemetry analysis is one click away for deeper batch investigation.")}'
-            '</div></div>',
-            unsafe_allow_html=True,
-        )
-
-        lookup_col, telemetry_col = st.columns(2)
-
-        lookup_active = current_page == "Quick lookup"
-        with lookup_col:
-            lookup_state = (
-                tr("Current workspace") if lookup_active else tr("Instant investigation")
-            )
-            lookup_class = " tf-primary-card--active" if lookup_active else ""
-            st.markdown(
-                f'<div class="tf-primary-card{lookup_class}">'
-                '<div class="tf-primary-card-top">'
-                f'<span class="tf-primary-card-number">01 · {tr("QUICK LOOKUP")}</span>'
-                f'<span class="tf-primary-card-state">{lookup_state}</span>'
-                '</div>'
-                f'<div class="tf-primary-card-title">{tr("Check a URL, domain or IP")}</div>'
-                '<div class="tf-primary-card-copy">'
-                f'{tr("Paste one address for a fast passive CTI + ML check with a clear color-coded result and evidence path.")}'
-                '</div>'
-                '<div class="tf-primary-card-tags">'
-                f'<span class="tf-primary-card-tag">{tr("Single target")}</span>'
-                f'<span class="tf-primary-card-tag">{tr("Passive")}</span>'
-                f'<span class="tf-primary-card-tag">{tr("Fast verdict")}</span>'
-                '</div></div>',
-                unsafe_allow_html=True,
-            )
-            if st.button(
-                tr("Open quick lookup"),
-                key="open_quick_lookup_workspace",
-                type="primary" if lookup_active else "secondary",
-                width="stretch",
-            ):
-                st.session_state["workspace_nav"] = "Quick lookup"
-                st.rerun()
-
-        telemetry_active = current_page == "Analyze telemetry"
-        with telemetry_col:
-            telemetry_state = (
-                tr("Current workspace") if telemetry_active else tr("Batch investigation")
-            )
-            telemetry_class = " tf-primary-card--active" if telemetry_active else ""
-            st.markdown(
-                f'<div class="tf-primary-card{telemetry_class}">'
-                '<div class="tf-primary-card-top">'
-                f'<span class="tf-primary-card-number">02 · {tr("TELEMETRY")}</span>'
-                f'<span class="tf-primary-card-state">{telemetry_state}</span>'
-                '</div>'
-                f'<div class="tf-primary-card-title">{tr("Analyze telemetry")}</div>'
-                '<div class="tf-primary-card-copy">'
-                f'{tr("Upload DNS CSV, Zeek, Pi-hole or AdGuard data and correlate CTI, ML and DNS behavior at scale.")}'
-                '</div>'
-                '<div class="tf-primary-card-tags">'
-                f'<span class="tf-primary-card-tag">{tr("Multi-domain")}</span>'
-                f'<span class="tf-primary-card-tag">{tr("Behavior signals")}</span>'
-                f'<span class="tf-primary-card-tag">{tr("Investigation queue")}</span>'
-                '</div></div>',
-                unsafe_allow_html=True,
-            )
-            if st.button(
-                tr("Open telemetry analysis"),
-                key="open_telemetry_workspace",
-                type="primary" if telemetry_active else "secondary",
-                width="stretch",
-            ):
-                st.session_state["workspace_nav"] = "Analyze telemetry"
-                st.rerun()
+    """Two core workflows as a compact tab row."""
+    with st.container(key="primary_workspace_launcher"):
+        lookup_col, telemetry_col, _ = st.columns([1, 1, 3])
+        if lookup_col.button(
+            tr("Quick lookup"),
+            key="open_quick_lookup_workspace",
+            type="primary" if current_page == "Quick lookup" else "secondary",
+            width="stretch",
+        ):
+            st.session_state["workspace_nav"] = "Quick lookup"
+            st.rerun()
+        if telemetry_col.button(
+            tr("Analyze telemetry"),
+            key="open_telemetry_workspace",
+            type="primary" if current_page == "Analyze telemetry" else "secondary",
+            width="stretch",
+        ):
+            st.session_state["workspace_nav"] = "Analyze telemetry"
+            st.rerun()
 
 
 def main() -> None:
@@ -619,14 +560,8 @@ def main() -> None:
     db_path = config.db_path
     model_dir = config.model_dir
 
-    selected_theme = st.session_state.get("visual_theme")
-    if isinstance(selected_theme, str):
-        selected_theme = canonical_theme_name(selected_theme)
-    if selected_theme not in THEME_OPTIONS:
-        selected_theme = "Midnight"
-    st.session_state["visual_theme"] = selected_theme
-
-    inject_theme_css(selected_theme)
+    # The palette follows Streamlit's active theme, so native widgets match.
+    inject_theme_css()
     render_sidebar_brand()
     render_main_brand()
     if "telemetry_format" in st.session_state:
@@ -707,11 +642,15 @@ def main() -> None:
         render_app_header(*SECONDARY_HEADERS[page])
         _render_compact_workspace_switch()
     if config.cti_only:
-        st.warning(tr(
-            "CTI-only mode: ML is disabled. Results use the local CTI cache and "
-            "available DNS behavior only. A missing match does not establish "
-            "that a target is benign. Shared history is disabled in this mode."
-        ))
+        # A persistent mode note, not an alarm: same caveat, less visual weight.
+        st.markdown(
+            '<div class="tf-mode-note">' + safe_text(tr(
+                "CTI-only mode: ML is disabled. Results use the local CTI cache and "
+                "available DNS behavior only. A missing match does not establish "
+                "that a target is benign. Shared history is disabled in this mode."
+            )) + "</div>",
+            unsafe_allow_html=True,
+        )
 
     if page == "Collected connections":
         render_collector(local_root / "collector" if local_root else config.collector_state_dir,
@@ -721,8 +660,8 @@ def main() -> None:
     if page == "Quick lookup":
         render_app_header(
             "Quick lookup",
-            "Check one URL or domain against local threat intelligence and the "
-            "domain ML model without visiting the destination.",
+            "Check one URL, domain or IP against your local threat intelligence "
+            "without visiting it.",
         )
 
         try:
@@ -761,12 +700,6 @@ def main() -> None:
                 )
             )
 
-        st.caption(
-            tr(
-                "Paste one URL, domain or IP. ThreatFusion checks the local CTI "
-                "cache and uses the domain model only when the host is a domain."
-            )
-        )
         lookup_input, lookup_action = st.columns([5, 1.15], vertical_alignment="bottom")
         with lookup_input:
             lookup_value = st.text_input(
