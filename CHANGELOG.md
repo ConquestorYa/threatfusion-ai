@@ -25,6 +25,9 @@ framing is retired. No release date or tag is set.
 
 ### Fixed
 
+- Nine untranslated Turkish UI strings (sidebar "Status" heading, evaluation and
+  investigation labels); a test now covers every literal UI string.
+
 - An accidentally committed `.venv` symlink (in `4ba4119`) made the Linux
   installer fail with `ValueError`; it is removed and each commit's archive is
   now tested against the installer's extraction checks.

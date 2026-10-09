@@ -61,19 +61,19 @@ Ayrıntılar: [kullanım kılavuzu](docs/USER_GUIDE.md#what-gets-flagged) (İngi
 Tüm görüntüler sentetik demo verisiyle, test için ayrılmış adresler ve `.test` alan adlarıyla alınmıştır.
 
 <p align="center">
-  <img src="docs/screenshots/collected-connections.png" alt="Toplanan bağlantılar: inceleme nedenleriyle cihaz-hedef grupları" width="100%">
+  <img src="docs/screenshots/tr/collected-connections.png" alt="Toplanan bağlantılar: inceleme nedenleriyle cihaz-hedef grupları" width="100%">
 </p>
 <p align="center"><em>Toplanan bağlantılar: Zeek kayıtlarından oluşan inceleme listesi.</em></p>
 
 <p align="center">
-  <img src="docs/screenshots/connection-investigation.png" alt="Bir bağlantı grubunun bağlantı başlangıçları zaman çizelgesi" width="100%">
+  <img src="docs/screenshots/tr/connection-investigation.png" alt="Bir bağlantı grubunun bağlantı başlangıçları zaman çizelgesi" width="100%">
 </p>
 <p align="center"><em>Bir grubu incelemek: zamana göre bağlantılar, durumlar ve baytlar.</em></p>
 
 <table>
 <tr>
-<td width="50%"><img src="docs/screenshots/quick-lookup.png" alt="Sentetik bir göstergenin hızlı sorgusu"><br><em>Hızlı sorgu: tek bir URL, alan adı ya da IP'yi ziyaret etmeden kontrol et.</em></td>
-<td width="50%"><img src="docs/screenshots/setup.png" alt="Kurulum ve CTI güncellemeleri sayfası"><br><em>Kurulum: kendi API anahtarların ve CTI güncellemeleri.</em></td>
+<td width="50%"><img src="docs/screenshots/tr/quick-lookup.png" alt="Sentetik bir göstergenin hızlı sorgusu"><br><em>Hızlı sorgu: tek bir URL, alan adı ya da IP'yi ziyaret etmeden kontrol et.</em></td>
+<td width="50%"><img src="docs/screenshots/tr/setup.png" alt="Kurulum ve CTI güncellemeleri sayfası"><br><em>Kurulum: kendi API anahtarların ve CTI güncellemeleri.</em></td>
 </tr>
 </table>
 

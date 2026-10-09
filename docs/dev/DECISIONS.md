@@ -1012,3 +1012,9 @@ installed-session check stay. The experimental ML code stays (user decision).
 
 **Consequences:** Paths in AGENTS.md, CLAUDE.md, the lab skill and scripts point
 to `docs/dev/` and `docs/evidence/`. Removed files remain in Git history.
+
+**Follow-up (2026-10-09):** At the user's request the screenshots use the dark
+theme, with English UI in `docs/screenshots/` for README.md and Turkish UI in
+`docs/screenshots/tr/` for README.tr.md. Capturing the Turkish set exposed nine
+untranslated UI strings (e.g. the sidebar "Status" heading); they were added and
+a test now requires a Turkish translation for every literal `tr()` string.
