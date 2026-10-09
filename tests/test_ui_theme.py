@@ -144,3 +144,10 @@ def test_bundled_fonts_are_served_locally_with_license() -> None:
     assert config["theme"]["font"].startswith("IBM Plex Sans")
     assert sorted(p.name for p in (ROOT / "static/fonts").glob("OFL-*.txt")) == [
         "OFL-IBM-Plex-Mono.txt", "OFL-IBM-Plex-Sans.txt"]
+
+
+def test_static_folder_holds_only_public_font_assets() -> None:
+    # Streamlit serves ./static without the app's Host guard; keep it to fonts.
+    files = [p for p in (ROOT / "static").rglob("*") if p.is_file()]
+    assert files and all(p.parent == ROOT / "static/fonts" for p in files)
+    assert {p.suffix for p in files} <= {".woff2", ".txt", ".md"}

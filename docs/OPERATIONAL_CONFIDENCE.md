@@ -176,6 +176,35 @@ Known limitation, not changed: there is no app login. Another local OS account
 on the same machine can reach the loopback port; the product assumes a
 single-user workstation or sensor host.
 
+## Security review, round 2 (P1, 2026-10-09)
+
+Focused on surfaces added after round 1: bundled-font static serving, the theme
+switch script, the background CTI refresh thread, widget callbacks and the
+local control socket. Checked on a disposable real Streamlit server:
+
+- **Widget callbacks under a foreign Host.** Streamlit runs callbacks before the
+  script body, i.e. before the Host guard. A session opened as `Host:
+  rebind.test` replayed the real widget ids of *Update CTI now*, *Operating
+  mode* and *Stop local application* taken from a loopback session: it saw only
+  the refusal message; no refresh started, the mode did not change and the app
+  kept running. Streamlit ignores callbacks for widgets never rendered in that
+  session. No change needed.
+- **Static serving.** `/app/static/` is served without the Host guard. Fonts and
+  their README are returned (public data, `nosniff`); `..`, `%2e%2e` and `%2f`
+  traversal attempts return 400 and directory listing returns 404. A new test
+  keeps `static/` limited to font assets and their license/readme files.
+- **Theme switch script.** A fixed template rendered through `st.iframe`; the
+  only variable is a theme name validated against `("Dark", "Light")` and
+  JSON-encoded. **Background refresh.** Keys stay in process memory; status
+  files store only safe aggregates (source, status, counts). **Control socket.**
+  Unix socket inside the 0700 installation, mode 0600, fixed two-command
+  protocol; no TCP listener.
+
+Known low-severity limitations, not changed: no app login (single-user host
+assumption, as in round 1); a rebinding page can still reach Streamlit's
+health and upload endpoints, which are XSRF-protected and whose uploads are
+never processed for a refused session (bounded by the 100 MB upload limit).
+
 ## Limits and what remains
 
 - One host, synthetic traffic shape, one sensor; not 72 hours, not enterprise

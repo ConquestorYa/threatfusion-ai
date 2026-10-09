@@ -19,6 +19,10 @@ release date is added only when the final tag/release is created.
 
 ### Added
 
+- P1 security review round 2 (callbacks under a foreign Host, static serving,
+  theme script, background refresh, control socket): no new vulnerability; a
+  test keeps the statically served folder limited to font assets.
+
 - Security: the local app refuses requests whose `Host` is not loopback (or an
   operator-listed name in `THREATFUSION_ALLOWED_HOSTS`), closing DNS rebinding
   to the workspace; the ThreatFox API request no longer follows redirects with

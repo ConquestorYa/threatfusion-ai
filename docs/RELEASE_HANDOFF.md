@@ -2,6 +2,17 @@
 
 Status date: 2026-10-06
 
+## P1 security review round 2 (2026-10-09)
+
+- Covered surfaces added after round 1 (see OPERATIONAL_CONFIDENCE.md): widget
+  callbacks under a rebinding Host (real widget ids replayed; no effect),
+  static font serving (traversal 400, listing 404, `nosniff`), theme script,
+  background refresh and the control socket. No new vulnerability found; a
+  test now keeps `static/` limited to font assets. Remaining known limits: no
+  app login; health/upload endpoints reachable but inert for refused sessions.
+- Soak rerun-2 on `7957395` is running (declared same acceptance); result
+  pending.
+
 ## P1: CTI reload memory reduction (2026-10-09)
 
 - Addresses the `wallclock-soak-v1` rerun failure (collector RSS growth 1.32 >
