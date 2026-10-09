@@ -376,7 +376,7 @@ Komut özel **Python 3.12.14**, hash doğrulamalı 49 kütüphane, kaynak kod,
 uygulamalar menüsü kısayolu ve `threatfusion-ai` terminal komutunu kurar.
 Tarayıcıda **http://127.0.0.1:8501** (veya sıradaki boş local port) açılır.
 Yeni kurulum gerçek CTI modundadır; **ML kapalıdır** ve ilk cache boştur.
-Yan çubuktaki **Yerel kurulum ve CTI güncellemeleri** panelinden kendi API
+İlk açılışta gelen **Kurulum ve CTI güncellemeleri** sayfasından kendi API
 anahtarlarını girip kaynakları güncelle ve isteğe bağlı 6/12/24 saatlik otomatik
 kontrolü aç. SGB ve public PhishTank anahtarsız denenebilir; ThreatFox/URLhaus
 kendi anahtarlarını gerektirir. Veriler ilk güncelleme talebinden sonra indirilir.

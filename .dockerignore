@@ -12,6 +12,9 @@
 !deploy/**
 !.streamlit/
 !.streamlit/config.toml
+!static/
+!static/fonts/
+!static/fonts/**
 **/__pycache__/
 **/*.pyc
 **/*.joblib

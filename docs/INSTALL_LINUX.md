@@ -20,7 +20,7 @@ space for downloaded CTI. On a headless machine append `--no-browser`.
 
 New installations open in **real CTI mode with ML disabled**. The cache is
 initially empty; an empty cache or a missing match does not establish safety.
-The **Local setup & CTI updates** panel in the sidebar opens on first use:
+The **Setup & CTI updates** page (sidebar **Pages** list) opens first on a new install:
 
 1. Enter your own ThreatFox and URLhaus API keys if you have them. PhishTank's
    key is optional. SGB and public PhishTank can be attempted without keys.

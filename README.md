@@ -372,7 +372,7 @@ bash -c 'set -e; f=$(mktemp /tmp/threatfusion-install.XXXXXXXX); trap "rm -f -- 
 The command installs private **Python 3.12.14**, 49 hashed runtime dependencies,
 source code, an applications-menu shortcut and the `threatfusion-ai` command.
 It opens **http://127.0.0.1:8501** (or the next free port) in real CTI mode,
-with **ML disabled**. The sidebar's **Local setup & CTI updates** panel lets you
+with **ML disabled**. The **Setup & CTI updates** page (first page on a new install) lets you
 enter your own API keys, update feeds and enable optional 6/12/24-hour updates.
 SGB and public PhishTank can be attempted without keys; ThreatFox/URLhaus need
 your own keys. The first cache is empty until you request collection.

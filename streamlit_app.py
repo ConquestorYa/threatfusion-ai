@@ -65,6 +65,7 @@ from threatfusion.ui_quick_lookup import (
     render_quick_lookup_result,
 )
 from threatfusion.ui_local_settings import (
+    needs_first_setup,
     render_local_settings,
     render_refresh_progress,
     upstream_unavailable_sources,
@@ -77,7 +78,6 @@ from threatfusion.ui_theme import (
     render_app_header,
     render_main_brand,
     render_priority_finding,
-    render_sidebar_brand,
     section_label,
     status_card,
 )
@@ -103,7 +103,7 @@ def _show_system_status(
     cti_only=False,
     upstream_unavailable=frozenset(),
 ) -> None:
-    st.sidebar.markdown(f"### {tr('Workspace health')}")
+    st.sidebar.markdown(f"### {tr('Status')}")
 
     model_path = model_dir / "model.joblib"
     metadata_path = model_dir / "metadata.json"
@@ -142,12 +142,13 @@ def _show_system_status(
 
     status_card(tr("CTI cache"), cti_value, cti_tone)
 
-    holdout_ready = evaluation_report_path.is_file()
-    status_card(
-        tr("Final evaluation"),
-        tr("Available") if holdout_ready else tr("Pending holdout"),
-        "good" if holdout_ready else "info",
-    )
+    if not cti_only:  # Holdout evaluation only matters when a model runs.
+        holdout_ready = evaluation_report_path.is_file()
+        status_card(
+            tr("Final evaluation"),
+            tr("Available") if holdout_ready else tr("Pending holdout"),
+            "good" if holdout_ready else "info",
+        )
 
     st.sidebar.markdown(f"### {tr('CTI sources')}")
     cached = {str(row["Source"]): row for row in status_rows}
@@ -169,15 +170,7 @@ def _show_system_status(
         )
         if source in upstream_unavailable:
             row = dict(row, **{"Upstream unavailable": True})
-        render_source_status(row)
-    with st.sidebar.expander(tr("Workspace details"), expanded=False):
-        st.caption(
-            tr(
-                "Artifact status checks for local model and metadata files. The model is validated when analysis opens."
-            )
-        )
-        st.caption(tr("Theme and language controls are available in the top bar."))
-        st.caption(tr("CTI status describes the local cache, not a live feed connection."))
+        render_source_status(row, details=False)
 
 
 def _show_analysis_result(
@@ -501,43 +494,37 @@ def _clear_quick_lookup_state() -> None:
     st.session_state.pop("quick_lookup_result", None)
 
 
-PRIMARY_PAGES = frozenset({"Quick lookup", "Analyze telemetry"})
-SECONDARY_HEADERS = {
+PAGE_HEADERS = {
+    "Quick lookup": ("Quick lookup", "Check one URL, domain or IP against your local threat intelligence without visiting it."),
+    "Analyze telemetry": ("Analyze telemetry", "Turn DNS activity into a prioritized investigation queue."),
     "Collected connections": ("Collected connections", "Inspect automatically collected local Zeek connection activity."),
     "Analysis history": ("Analysis history", "Revisit saved runs, compare changes and record analyst decisions."),
     "Model evaluation": ("Model evaluation", "Inspect the frozen model's measured performance and its limits."),
+    "Setup & CTI updates": ("Setup & CTI updates", "Operating mode, your own API keys and threat-intelligence updates."),
 }
+# Sidebar order and stable widget keys (tests and muscle memory rely on them).
+NAVIGATION = (
+    ("Quick lookup", "open_quick_lookup_workspace"),
+    ("Analyze telemetry", "open_telemetry_workspace"),
+    ("Collected connections", "nav_collector"),
+    ("Analysis history", "nav_analysis_history"),
+    ("Model evaluation", "nav_model_evaluation"),
+    ("Setup & CTI updates", "nav_settings"),
+)
 
 
-def _render_compact_workspace_switch() -> None:
-    back_lookup, back_telemetry, _ = st.columns([1, 1, 2])
-    if back_lookup.button(tr("← Quick lookup"), key="back_quick_lookup", width="stretch"):
-        st.session_state["workspace_nav"] = "Quick lookup"
-        st.rerun()
-    if back_telemetry.button(tr("← Analyze telemetry"), key="back_telemetry", width="stretch"):
-        st.session_state["workspace_nav"] = "Analyze telemetry"
-        st.rerun()
-
-
-def _render_primary_workspace_launcher(current_page: str) -> None:
-    """Two core workflows as a compact tab row."""
-    with st.container(key="primary_workspace_launcher"):
-        lookup_col, telemetry_col, _ = st.columns([1, 1, 3])
-        if lookup_col.button(
-            tr("Quick lookup"),
-            key="open_quick_lookup_workspace",
-            type="primary" if current_page == "Quick lookup" else "secondary",
+def _render_navigation(pages: list[str], current: str) -> None:
+    st.sidebar.markdown(f'<div class="tf-nav-label">{safe_text(tr("Pages"))}</div>', unsafe_allow_html=True)
+    for name, key in NAVIGATION:
+        if name not in pages:
+            continue
+        if st.sidebar.button(
+            tr(name),
+            key=key,
+            type="primary" if name == current else "secondary",
             width="stretch",
         ):
-            st.session_state["workspace_nav"] = "Quick lookup"
-            st.rerun()
-        if telemetry_col.button(
-            tr("Analyze telemetry"),
-            key="open_telemetry_workspace",
-            type="primary" if current_page == "Analyze telemetry" else "secondary",
-            width="stretch",
-        ):
-            st.session_state["workspace_nav"] = "Analyze telemetry"
+            st.session_state["workspace_nav"] = name
             st.rerun()
 
 
@@ -562,18 +549,37 @@ def main() -> None:
 
     # The palette follows Streamlit's active theme, so native widgets match.
     inject_theme_css()
-    render_sidebar_brand()
     render_main_brand()
     if "telemetry_format" in st.session_state:
         st.session_state["telemetry_format"] = st.session_state["telemetry_format"]
 
+    pages = [
+        "Quick lookup",
+        "Analyze telemetry",
+        "Collected connections",
+        "Analysis history",
+        "Model evaluation",
+    ]
+    collector_available = not config.public_mode or (local_root is not None and config.cti_only)
+    if not collector_available:
+        pages.remove("Collected connections")
+    if not config.history_enabled:
+        pages.remove("Analysis history")
     if local_root is not None:
-        try:
-            render_local_settings(local_root)
-        except (OSError, ValueError, TypeError):
-            st.sidebar.error(tr("Local settings could not be read. Check private file permissions."))
+        pages.append("Setup & CTI updates")
 
-    navigation = st.sidebar.container()
+    if local_root is not None and needs_first_setup(local_root):
+        default_page = "Setup & CTI updates"  # first run: get CTI data first
+    elif st.session_state.get("analysis_result") is not None:
+        default_page = "Analyze telemetry"
+    else:
+        default_page = "Quick lookup"
+    page = st.session_state.get("workspace_nav", default_page)
+    if page not in pages:
+        page = default_page
+    st.session_state["workspace_nav"] = page
+
+    _render_navigation(pages, page)
     _show_system_status(
         db_path,
         model_dir,
@@ -582,65 +588,10 @@ def main() -> None:
         cti_only=config.cti_only,
         upstream_unavailable=upstream_unavailable_sources(local_root) if local_root else frozenset(),
     )
-    pages = [
-        "Analyze telemetry",
-        "Quick lookup",
-        "Analysis history",
-        "Model evaluation",
-    ]
-    collector_available = not config.public_mode or (local_root is not None and config.cti_only)
-    if collector_available:
-        pages.append("Collected connections")
-    if not config.history_enabled:
-        pages.remove("Analysis history")
-
-    default_page = (
-        "Analyze telemetry"
-        if st.session_state.get("analysis_result") is not None
-        else "Quick lookup"
-    )
-    page = st.session_state.get("workspace_nav", default_page)
-    if page not in pages:
-        page = default_page
-    st.session_state["workspace_nav"] = page
-
-    # Keep history/evaluation as secondary navigation. The two core workflows
-    # live prominently in the main canvas instead of being tiny sidebar items.
-    with navigation:
-        st.markdown(f"### {tr('Secondary views')}")
-        if config.history_enabled:
-            if st.button(
-                tr("Analysis history"),
-                key="nav_analysis_history",
-                type="primary" if page == "Analysis history" else "secondary",
-                width="stretch",
-            ):
-                st.session_state["workspace_nav"] = "Analysis history"
-                st.rerun()
-        if st.button(
-            tr("Model evaluation"),
-            key="nav_model_evaluation",
-            type="primary" if page == "Model evaluation" else "secondary",
-            width="stretch",
-        ):
-            st.session_state["workspace_nav"] = "Model evaluation"
-            st.rerun()
-        st.caption(tr("Primary tools are available in the main workspace."))
-        if collector_available:
-            if st.button(tr("Collected connections"), key="nav_collector", width="stretch",
-                         type="primary" if page == "Collected connections" else "secondary"):
-                st.session_state["workspace_nav"] = "Collected connections"
-                st.rerun()
-
     if local_root is not None:
         render_refresh_progress(local_root)
-    if page in PRIMARY_PAGES:
-        _render_primary_workspace_launcher(page)
-    else:
-        # Secondary views start with their own header, not the large launcher,
-        # so switching pages is visible without scrolling.
-        render_app_header(*SECONDARY_HEADERS[page])
-        _render_compact_workspace_switch()
+    # Every page starts with its own header, so switching is always visible.
+    render_app_header(*PAGE_HEADERS[page])
     if config.cti_only:
         # A persistent mode note, not an alarm: same caveat, less visual weight.
         st.markdown(
@@ -652,17 +603,31 @@ def main() -> None:
             unsafe_allow_html=True,
         )
 
+    if page == "Setup & CTI updates":
+        try:
+            render_local_settings(local_root)
+        except (OSError, ValueError, TypeError):
+            st.error(tr("Local settings could not be read. Check private file permissions."))
+        try:
+            source_rows = cti_status_rows(
+                list_cti_cache_status(db_path),
+                stale_after_by_source=config.cti_stale_after_by_source,
+            )
+        except sqlite3.OperationalError:
+            source_rows = []  # A refresh holds the cache; the sidebar shows status.
+        if source_rows:
+            st.divider()
+            st.markdown(f"#### {tr('CTI sources')}")
+            st.dataframe(translate_dataframe(pd.DataFrame(source_rows)), hide_index=True, width="stretch")
+            st.caption(tr("CTI status describes the local cache, not a live feed connection."))
+        return
+
     if page == "Collected connections":
         render_collector(local_root / "collector" if local_root else config.collector_state_dir,
                          public_mode=not collector_available)
         return
 
     if page == "Quick lookup":
-        render_app_header(
-            "Quick lookup",
-            "Check one URL, domain or IP against your local threat intelligence "
-            "without visiting it.",
-        )
 
         try:
             artifact = None if config.cti_only else _load_artifact(str(model_dir), config.model_sha256)
@@ -752,7 +717,6 @@ def main() -> None:
         _show_model_evaluation(config.evaluation_report_path)
         return
 
-    render_app_header()
     if config.public_mode:
         st.caption(tr("Session-only workspace · Shared analysis history is disabled."))
     with st.expander(

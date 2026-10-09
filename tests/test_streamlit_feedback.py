@@ -307,12 +307,11 @@ def test_navigation_preserves_current_analysis_and_format(feedback_app):
     app.run(timeout=15)
     app.button(key="nav_analysis_history").click().run(timeout=15)
     assert not app.exception
-    # Secondary views lead with their header and a compact way back.
+    # Every page leads with its own header; navigation lives in the sidebar.
     headers = [item.value for item in app.markdown if "<h1>" in item.value]
     assert headers and "Analysis history" in headers[0]
-    with pytest.raises(KeyError):
-        app.button(key="open_telemetry_workspace")
-    app.button(key="back_telemetry").click().run(timeout=15)
+    assert app.button(key="nav_analysis_history").proto.type == "primary"
+    app.button(key="open_telemetry_workspace").click().run(timeout=15)
     assert not app.exception
     assert app.session_state["analysis_result"] == result
     assert app.selectbox(key="telemetry_format").value == "Zeek dns.log"
@@ -420,7 +419,8 @@ def test_sidebar_status_is_not_a_dataframe(feedback_app, monkeypatch):
     assert "8,590 active indicators" in sidebar_html
     assert "Fresh" in sidebar_html
     assert "Not cached" in sidebar_html
-    assert any(item.label == "ThreatFox details" for item in app.sidebar.expander)
+    # Compact sidebar cards; per-source details moved to the setup page.
+    assert not any("details" in item.label for item in app.sidebar.expander)
 
 
 def test_public_mode_rejects_stale_history_navigation(feedback_app, monkeypatch):

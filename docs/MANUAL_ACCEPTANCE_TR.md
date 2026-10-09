@@ -66,7 +66,7 @@ devam ettiğini görmek. Önceki denemede burada "database is locked" hatası
 
 **Adımlar:**
 
-1. Sol yan çubukta **Yerel kurulum ve CTI güncellemeleri** panelini aç.
+1. Sol yan çubuktaki **Sayfalar** listesinden **Kurulum ve CTI güncellemeleri** sayfasını aç.
 2. **Kaynaklar güncel olsa da yeniden indir** kutusunu işaretle.
 3. **CTI verilerini şimdi güncelle** düğmesine bas.
 4. Güncelleme sürerken (birkaç dakika):
@@ -178,7 +178,7 @@ cihaz/hedefin neden incelenmesi gerektiğini gösterdiğini görmek.
       satırlarda `"new_records": 0`. — Kullanıcı (sohbet): aynen böyle
       (`"dns_review_groups": 1` dahil).
 
-2. Tarayıcıda sol yan çubukta **İkincil görünümler → Toplanan bağlantılar**'a
+2. Tarayıcıda sol yan çubuktaki **Sayfalar** listesinden **Toplanan bağlantılar**'a
    tıkla. Sayfanın üst başlığı **Toplanan bağlantılar** (İngilizce: **Collected
    connections**) olmalı.
    - Kullanıcı (sohbet): sayfa açılıyordu ama başlık büyük kartların altında
@@ -258,22 +258,27 @@ Arka plan özellikleri değişmedi; yalnızca görünüm ve sayfa düzeni deği�
 **Gerekenler:** Bölüm A'daki gibi güncelle. İnternet veya API anahtarı gerekmez.
 
 1. Uygulamayı aç. Üst sağda **Türkçe / English** ve **Koyu / Açık** (Dark /
-   Light) düğmeleri var.
+   Light) düğmeleri, solda **Sayfalar** listesi var: Hızlı sorgu, Telemetriyi
+   analiz et, Toplanan bağlantılar, Model değerlendirme, Kurulum ve CTI
+   güncellemeleri. Bulunduğun sayfa vurgulu görünür.
 2. **Açık**'a bas: sayfa kendiliğinden yenilenip açık temaya geçer. Sonra
    **Koyu**'ya bas. (Tema değişince sayfa yenilenir; açık sonuçlar kapanır, bu
    beklenen davranış.)
-3. Her iki temada şu sayfaları gez: **Hızlı sorgu** (bir sorgu yap, ör.
-   `wikipedia.org`), **Telemetriyi analiz et**, yan çubukta **Toplanan
-   bağlantılar**. İkisinde de dili değiştirip birkaç yere bak.
+3. Her iki temada soldaki listeden tüm sayfaları gez; **Hızlı sorgu**'da bir
+   sorgu yap (ör. `wikipedia.org`). API anahtarları, CTI güncelleme ve otomatik
+   güncelleme artık **Kurulum ve CTI güncellemeleri** sayfasında. Dili de
+   değiştirip birkaç yere bak.
 
-- [ ] Logo, renkler, yazı tipi ve çizgiler sade ve profesyonel görünüyor;
+- [ ] Yazı tipi değişti (IBM Plex); logo, renkler ve çizgiler sade ve profesyonel görünüyor;
       "yapay zekâ yapmış" hissi yok ya da belirgin şekilde azaldı.
 - [ ] Açık temada her şey açık (tablolar, kutular, yan çubuk dahil); koyu
       temada her şey koyu. Yarısı açık yarısı koyu bir alan yok.
 - [ ] Hiçbir yerde okunmayan, soluk kalan veya renk uyumsuz yazı yok.
 - [ ] Tema değiştirme düğmesi her iki yönde çalışıyor.
-- [ ] Toplanan bağlantılar gibi ikincil sayfalarda başlık en üstte; sayfanın
-      değiştiği hemen belli oluyor.
+- [ ] Soldaki **Sayfalar** listesiyle her sayfaya tek tıkla ulaşabiliyorum;
+      her sayfanın başlığı en üstte, sayfanın değiştiği hemen belli oluyor.
+- [ ] Sol paneldeki **Durum** bölümü (CTI kaynakları ve güncellikleri) anlaşılır;
+      kaynak ayrıntıları Kurulum sayfasındaki tabloda.
 - Beğenmediğin yerleri ekran görüntüsüyle yaz (ör. "yan çubuk çok kalabalık",
   "logo olmamış", "bu renk koyu").
 ---

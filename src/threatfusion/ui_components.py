@@ -72,8 +72,10 @@ def source_status_html(row: dict[str, object]) -> str:
     )
 
 
-def render_source_status(row: dict[str, object]) -> None:
+def render_source_status(row: dict[str, object], *, details: bool = True) -> None:
     st.sidebar.markdown(source_status_html(row), unsafe_allow_html=True)
+    if not details:
+        return  # Compact sidebar card; full details live on the setup page.
     with st.sidebar.expander(
         tr("{source} details", source=row["Source"]),
         expanded=False,

@@ -2,6 +2,23 @@
 
 Status date: 2026-10-06
 
+## Fonts and navigation after first redesign review (2026-10-09)
+
+- User: the redesign looked simpler and more professional, but fonts looked the
+  same and the left panel was hard to use. Findings: Source Sans is Streamlit's
+  default; navigation was split between main-area tabs and sidebar buttons
+  below a long setup panel.
+- IBM Plex Sans/Mono bundled (`static/fonts`, OFL texts, `server.
+  enableStaticServing`, `[[theme.fontFaces]]`); Docker allowlist updated; the
+  installer already ships the whole source archive. Browser check: Plex loaded
+  and used by headings and the sidebar.
+- Sidebar: one Pages list (active page highlighted, left-aligned) and compact
+  status cards; final-evaluation row hidden in CTI-only mode; per-source detail
+  expanders replaced by a table on the setup page. Setup is its own page with
+  mode/keys and CTI/automatic updates in two columns.
+- Verification: 1,366 local tests; browser audit in both themes found zero
+  contrast failures on setup, lookup, collected connections and telemetry.
+
 ## UI redesign after P0 (2026-10-09)
 
 - User feedback: colors, fonts, lines, logo and themes looked AI-generated;

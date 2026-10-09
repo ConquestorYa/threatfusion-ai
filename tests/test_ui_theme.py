@@ -125,6 +125,22 @@ def test_css_has_no_decorative_effects(monkeypatch) -> None:
     css = "\n".join(rendered)
     for forbidden in ("text-transform:uppercase", "letter-spacing", "box-shadow", "drop-shadow", "Aptos"):
         assert forbidden not in css
-    assert "border-radius:999px" not in css and '"Source Sans"' in css
+    assert "border-radius:999px" not in css
+    assert '"IBM Plex Sans"' in css and '"IBM Plex Mono"' in css
     assert '[data-testid="stBaseButton-primary"]' in css and "var(--tf-on-accent)" in css
     assert palette("Light")["bg"] in css
+
+
+def test_bundled_fonts_are_served_locally_with_license() -> None:
+    config = tomllib.loads((ROOT / ".streamlit/config.toml").read_text())
+    assert config["server"]["enableStaticServing"] is True
+    faces = config["theme"]["fontFaces"]
+    assert {face["family"] for face in faces} == {"IBM Plex Sans", "IBM Plex Mono"}
+    for face in faces:
+        assert face["url"].startswith("app/static/fonts/")
+        assert (ROOT / "static/fonts" / face["url"].rsplit("/", 1)[1]).is_file()
+    # Turkish letters (ğ ş İ ı) need the Latin Extended subset.
+    assert any("U+0100-02BA" in face["unicodeRange"] for face in faces if face["family"] == "IBM Plex Sans")
+    assert config["theme"]["font"].startswith("IBM Plex Sans")
+    assert sorted(p.name for p in (ROOT / "static/fonts").glob("OFL-*.txt")) == [
+        "OFL-IBM-Plex-Mono.txt", "OFL-IBM-Plex-Sans.txt"]

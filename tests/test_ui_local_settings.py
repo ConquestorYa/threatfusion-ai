@@ -258,7 +258,7 @@ def test_upstream_outage_reaches_source_card_and_sits_under_the_button(managed):
            "Upstream unavailable": True}
     assert "Public keyless feed currently unavailable from the source" in source_status_html(row)
     app = local_app(managed)
-    labels = [getattr(e, "label", None) or str(getattr(e, "value", "")) for e in app.sidebar]
+    labels = [getattr(e, "label", None) or str(getattr(e, "value", "")) for e in app.main]
     note = next(i for i, v in enumerate(labels) if "public keyless feed" in v)
     assert labels.index("Update CTI now") < note < labels.index("Automatic updates while the app is running")
 

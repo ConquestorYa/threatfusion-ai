@@ -33,7 +33,7 @@ it works independently of the web process. `threatfusion-ai stop` stops the web
 app, not a collector in another terminal. No boot/login service is installed.
 Use `--once` for one scan. The collector uses the installation's existing private
 CTI cache without collecting feeds or using API credentials. Cache refresh is
-configured separately in Local setup & CTI updates; the next collector scan
+configured separately on the Setup & CTI updates page; the next collector scan
 reloads the cache. Check that panel for source freshness and upstream failures.
 An empty cache still permits behavior analysis. ML is disabled on this path.
 If the cache is busy or locked by a refresh/maintenance writer beyond SQLite's

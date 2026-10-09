@@ -46,18 +46,18 @@ def resolve_managed_config(config: AppConfig) -> tuple[AppConfig, Path | None]:
     return _mode_config(root, load_settings(root)["mode"]), root
 
 
+def needs_first_setup(root: Path) -> bool:
+    """A real-CTI installation that has never attempted a source update."""
+    return load_settings(root)["mode"] == "cti-only" and not (root / "refresh-status.json").exists()
+
+
 def render_local_settings(root: Path) -> None:
+    """Setup page: mode and keys on the left, CTI updates on the right."""
     settings = load_settings(root)
-    with st.sidebar.expander(
-        tr("Local setup & CTI updates"),
-        expanded=settings["mode"] == "cti-only"
-        and not (root / "refresh-status.json").exists(),
-    ):
-        st.caption(
-            tr(
-                "This installation uses your own credentials. No developer keys are included."
-            )
-        )
+    st.caption(tr("This installation uses your own credentials. No developer keys are included."))
+    left, right = st.columns(2, gap="large")
+    with left:
+        st.markdown(f"#### {tr('Operating mode')}")
         options = ("cti-only", "demo")
         # Read persisted selection; only an explicit widget callback changes it.
         st.session_state["local_mode"] = settings["mode"]
@@ -72,20 +72,18 @@ def render_local_settings(root: Path) -> None:
             key="local_mode",
             on_change=_change_mode,
             args=(root,),
+            label_visibility="collapsed",
         )
         if mode == "demo":
-            st.info(
-                tr(
-                    "Demo data is synthetic. Switch to real CTI to configure sources and updates."
-                )
-            )
+            st.info(tr("Demo data is synthetic. Switch to real CTI to configure sources and updates."))
         else:
+            saved = load_credentials(root)
+            st.markdown(f"#### {tr('API keys')}")
             st.caption(
                 tr(
                     "SGB and public PhishTank can be attempted without keys. ThreatFox and URLhaus require your own keys. Source access may fail; previous data is preserved."
                 )
             )
-            saved = load_credentials(root)
             st.caption(
                 tr(
                     "Saved keys: {sources}",
@@ -135,13 +133,16 @@ def render_local_settings(root: Path) -> None:
                 forget_credentials(root)
                 st.session_state.pop("_local_session_keys", None)
                 st.rerun()
+    if mode != "demo":
+        with right:
+            st.markdown(f"#### {tr('CTI data')}")
             running = refresh_running(read_private_json(root / "refresh-status.json"))
             st.checkbox(
                 tr("Download again even if sources are still fresh"),
                 key="local_force_refresh", disabled=running,
                 help=tr("Applies to the next update only and clears when it starts. Normally sources are downloaded again only when older than the update interval. PhishTank keeps its 24-hour limit."),
             )
-            st.button(tr("Update CTI now"), key="local_refresh_cti", disabled=running,
+            st.button(tr("Update CTI now"), key="local_refresh_cti", disabled=running, type="primary",
                       help=tr("An update is already running.") if running else None,
                       on_click=_start_refresh, args=(root, saved))
             if st.session_state.pop("_local_refresh_started", False):
@@ -151,6 +152,7 @@ def render_local_settings(root: Path) -> None:
                 st.caption(tr("Sources are fresh; the next download is due in about {hours} h. Tick the box above to download now.", hours=due))
             # Results belong next to the action that produced them.
             _render_refresh_status(root)
+            st.markdown(f"#### {tr('Automatic updates')}")
             with st.form("local_schedule"):
                 automatic = st.checkbox(
                     tr("Automatic updates while the app is running"),
@@ -171,14 +173,16 @@ def render_local_settings(root: Path) -> None:
                         root, mode=mode, interval_hours=hours, automatic=automatic
                     )
                     st.rerun()
-        st.caption(
-            tr(
-                "Reopen from the applications menu or run threatfusion-ai. Closing the browser tab does not stop the local server."
-            )
+    st.divider()
+    st.markdown(f"#### {tr('Application')}")
+    st.caption(
+        tr(
+            "Reopen from the applications menu or run threatfusion-ai. Closing the browser tab does not stop the local server."
         )
-        if st.button(tr("Stop local application"), key="local_stop_app"):
-            request_local_control(root, "stop")
-            st.info(tr("The local application is stopping. You can close this tab."))
+    )
+    if st.button(tr("Stop local application"), key="local_stop_app"):
+        request_local_control(root, "stop")
+        st.info(tr("The local application is stopping. You can close this tab."))
 
 
 def _change_mode(root: Path) -> None:

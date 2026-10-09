@@ -152,9 +152,9 @@ def inject_theme_css(theme: str | None = None) -> None:
 
 _CSS = """
 :root {
-    --tf-font-ui:"Source Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;
+    --tf-font-ui:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;
     --tf-font-display:var(--tf-font-ui);
-    --tf-font-mono:"Source Code Pro",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --tf-font-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
 }
 [data-testid="stAppViewContainer"] {
     background:var(--tf-bg);
@@ -178,6 +178,16 @@ _CSS = """
     color:var(--tf-muted); font-size:.82rem; margin:.25rem 0 1rem;
     padding-left:.6rem; border-left:3px solid var(--tf-yellow);
 }
+/* Sidebar navigation: a plain left-aligned list, active page highlighted. */
+.tf-nav-label { color:var(--tf-muted); font-size:.8rem; font-weight:600; margin:.25rem 0 .4rem; }
+[data-testid="stSidebar"] [data-testid="stButton"] button { justify-content:flex-start!important; min-height:36px!important; }
+[data-testid="stSidebar"] [data-testid="stButton"] button > div,
+[data-testid="stSidebar"] [data-testid="stButton"] button [data-testid="stMarkdownContainer"] {
+    justify-content:flex-start!important; width:100%; text-align:left!important;
+}
+[data-testid="stSidebar"] [data-testid="stButton"] button p { text-align:left!important; width:100%; }
+[data-testid="stSidebar"] [data-testid="stBaseButton-secondary"] { background:transparent!important; border-color:transparent!important; }
+[data-testid="stSidebar"] [data-testid="stBaseButton-secondary"]:hover { background:var(--tf-surface)!important; }
 /* Primary actions: readable text on the accent in both themes. */
 [data-testid="stBaseButton-primary"],
 [data-testid="stBaseButton-primary"] p,
@@ -1328,7 +1338,7 @@ def apply_plotly_theme(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         font={
-            "family": "Source Sans, system-ui, sans-serif",
+            "family": "IBM Plex Sans, system-ui, sans-serif",
             "size": 13,
             "color": colors["text"],
         },

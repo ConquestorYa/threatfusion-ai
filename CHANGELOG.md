@@ -342,6 +342,11 @@ release date is added only when the final tag/release is created.
 
 ### Changed
 
+- Bundled IBM Plex Sans/Mono fonts (OFL-1.1, served locally) replace the stock
+  Streamlit font. The sidebar is now one **Pages** navigation list plus compact
+  CTI status; setup, API keys and CTI updates moved to a **Setup & CTI updates**
+  page (default on a fresh install) with a source details table.
+
 - Visual redesign after P0 feedback (DEC-088): two themes (Dark, Light) bound to
   Streamlit's native theme so tables and inputs match; one accent color;
   bundled Source Sans/Source Code Pro fonts; new two-ring logo; compact header

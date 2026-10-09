@@ -922,3 +922,13 @@ WCAG AA threshold in either theme (English and Turkish). The four retired theme
 names map to Dark. README screenshots are outdated until the design is
 approved. The visible UI needs a short re-acceptance by the user.
 
+**Follow-up (2026-10-09):** The user found the fonts unchanged: Source Sans is
+Streamlit's default and reads as a stock template. IBM Plex Sans/Mono (OFL-1.1,
+Latin and Latin Extended subsets, ~212 KB) are bundled under `static/fonts` and
+served by Streamlit static serving on the same loopback origin (no runtime
+network access); `[[theme.fontFaces]]` applies them to native widgets too. The
+sidebar became a single **Pages** list plus compact status; the setup/CTI panel
+moved to its own page (first page on a new install) with per-source details in a
+table. The main-area tab row and back buttons were removed so navigation lives
+in one place.
+
