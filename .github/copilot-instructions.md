@@ -2,7 +2,7 @@
 
 ## Project Goal
 
-ThreatFusion AI is an educational cybersecurity project that combines multiple public cyber threat intelligence sources with user-provided DNS telemetry.
+ThreatFusion AI is a local-first network investigation and triage tool (early prototype; see docs/PRODUCT_PLAN.md) that combines multiple public cyber threat intelligence sources with user-provided network/DNS telemetry.
 
 The system should:
 

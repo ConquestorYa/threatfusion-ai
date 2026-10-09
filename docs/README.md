@@ -1,6 +1,6 @@
 # ThreatFusion AI Documentation
 
-This directory contains the technical documentation behind the portfolio-facing README.
+This directory contains the technical documentation behind the repository README. Start with [PRODUCT_PLAN.md](PRODUCT_PLAN.md) for the product goal, current status and work order.
 
 > Language note: the repository README is available in **[English](../README.md)** and **[Türkçe](../README.tr.md)**. Technical reference documents are kept in English to avoid maintaining two diverging specifications.
 
@@ -34,8 +34,8 @@ copyable continuation prompt. Read [AGENTS.md](../AGENTS.md) for operating rules
 | [DATA_SOURCES.md](DATA_SOURCES.md) | CTI sources, attribution, redistribution boundaries and telemetry privacy |
 | [ML_DATASET.md](ML_DATASET.md) | Dataset construction, evaluation methodology, holdouts and model limitations |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Docker, public mode, sanitized runtime bundles and scheduled CTI refresh |
-| [RELEASE_NOTES_v0.1.0.md](RELEASE_NOTES_v0.1.0.md) | v0.1.0 release-candidate scope and limitations |
-| [RELEASE_CHECKLIST_v0.1.0.md](RELEASE_CHECKLIST_v0.1.0.md) | Final publication checklist |
+| [RELEASE_NOTES_v0.1.0.md](RELEASE_NOTES_v0.1.0.md) | Historical v0.1.0 portfolio-release scope (superseded framing; see DEC-090) |
+| [RELEASE_CHECKLIST_v0.1.0.md](RELEASE_CHECKLIST_v0.1.0.md) | Historical v0.1.0 publication checklist |
 | [RELEASE_HANDOFF.md](RELEASE_HANDOFF.md) | Current release status, blockers and exact next steps |
 | [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) | Problem statement, goals, implemented scope and intended users |
 | [DECISIONS.md](DECISIONS.md) | Important technical and product decisions |
@@ -43,18 +43,18 @@ copyable continuation prompt. Read [AGENTS.md](../AGENTS.md) for operating rules
 
 ## Current product boundaries
 
-ThreatFusion AI is an educational and portfolio security-analysis prototype.
+ThreatFusion AI aims to be a useful local Zeek/CTI investigation tool; today it is an early prototype that has not been validated on real traffic or by independent users (DEC-090).
 
-It currently demonstrates:
+It currently implements:
 
 - multi-source CTI ingestion and normalization;
 - indexed passive URL/domain/IP lookup;
 - automatic network/DNS telemetry ingestion;
 - deterministic IOC correlation;
-- ML-assisted domain scoring;
+- experimental ML domain scoring (off by default; CTI-only installations);
 - DNS behavior context;
 - explainable hybrid verdicts;
-- analyst feedback, suppression and history;
+- analyst feedback, suppression and history (trusted-model local mode only; disabled in CTI-only);
 - privacy-safe exports;
 - scheduled CTI refresh support;
 - Docker/public-mode packaging;

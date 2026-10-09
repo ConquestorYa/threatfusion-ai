@@ -2,6 +2,19 @@
 
 Status date: 2026-10-06
 
+## One product identity in the documents (2026-10-09, DEC-090)
+
+- A read-only product review found the documents disagreed on what the project
+  is (useful product in the plan; "educational / portfolio" prototype in the
+  READMEs and context; "v0.1.0 Release Candidate" badge). The user chose: goal
+  is a useful local Zeek/CTI investigation tool, stated status early prototype.
+- Updated READMEs (tagline, status badge, ML row, positioning paragraph),
+  `docs/README.md`, `PROJECT_CONTEXT.md` core goal, `ARCHITECTURE.md`,
+  `DATA_SOURCES.md`, `DEPLOYMENT.md`, Copilot instructions, the plan header and
+  CHANGELOG. v0.1.0 notes/checklist stay as history. Documentation only.
+- Edited in a separate worktree from `origin/main`: soak rerun-3 is running on
+  the main checkout's source and was not touched.
+
 ## P0 manual acceptance passed (2026-10-09)
 
 - The user re-checked the Section G fixes and the PhishTank removal on

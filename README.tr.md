@@ -2,7 +2,7 @@
 
 # 🛡️ ThreatFusion AI
 
-### Yerel odaklı siber tehdit istihbaratı, ağ telemetrisi triyajı ve açıklanabilir ML
+### Zeek/CTI için yerel odaklı ağ inceleme ve triyaj aracı
 
 <p>
   <a href="README.md"><strong>🇬🇧 English README</strong></a>
@@ -21,7 +21,7 @@
 
 <p>
   <img alt="CI" src="https://github.com/ConquestorYa/threatfusion-ai/actions/workflows/ci.yml/badge.svg">
-  <img alt="Status" src="https://img.shields.io/badge/Status-v0.1.0%20Release%20Candidate-blueviolet">
+  <img alt="Status" src="https://img.shields.io/badge/Status-Early%20prototype-orange">
   <img alt="Privacy" src="https://img.shields.io/badge/Telemetry-local%20%2F%20in--memory-2ea44f">
   <img alt="Geliştirme yaklaşımı" src="https://img.shields.io/badge/Geliştirme-AI%20destekli%20Vibe%20Coding-6f42c1">
 </p>
@@ -43,11 +43,11 @@ ThreatFusion dört farklı kanıt katmanını tek bir yerel akışta birleştiri
 | Katman | Rol |
 | --- | --- |
 | 🧭 **Tehdit İstihbaratı** | ThreatFox, URLhaus ve SGB ile deterministik eşleştirme |
-| 🧠 **Makine Öğrenmesi** | Daha önce görülmemiş domainler için yardımcı sözcüksel risk sinyali |
+| 🧠 **Makine Öğrenmesi** | Deneysel, yardımcı sözcüksel domain skoru; yeni kurulumlar varsayılan olarak CTI-only çalışır, yönetilen demo sentetik model kullanır |
 | 📡 **Telemetri Davranışı** | DNS hacmi, NXDOMAIN, yanıt-IP değişimi, zamanlama ve istemci yayılımı |
 | 🔎 **Analist Bağlamı** | Açıklanabilir sonuçlar, geçmiş incelemeler, suppression ve ilişkili aktivite |
 
-Proje bilinçli olarak **eğitim / portföy amaçlı bir güvenlik analiz prototipi** olarak konumlandırılır. Production SIEM, EDR veya garantili zararlı yazılım tespit ürünü olarak sunulmaz.
+**Hedef:** Zeek çalıştıran, teknik bilgisi olan bireysel kullanıcılar ve küçük ekipler için kullanışlı, yerel bir inceleme aracı. **Bugünkü durum: erken prototip.** Akış sentetik ve yeniden oynatılmış verilerle uçtan uca çalışıyor ve geliştiricinin manuel kabul testlerinden geçti; ancak gerçek ağ trafiğinde ve bağımsız kullanıcılarla henüz doğrulanmadı, tespit başarısı ölçülmedi. SIEM, EDR, IDS yerine geçen bir araç veya garantili zararlı yazılım tespit ürünü değildir. Durum ve sonraki kapılar için [ürün planına](docs/PRODUCT_PLAN.md) bakın.
 
 ### 🤖 Geliştirme yaklaşımı: AI destekli vibe coding
 
@@ -599,7 +599,7 @@ threatfusion-ai/
 | **[Veri kaynakları](docs/DATA_SOURCES.md)** | Attribution, kaynak kapsamı ve redistribution notları |
 | **[ML veri seti ve değerlendirme](docs/ML_DATASET.md)** | Model metodolojisi ve değerlendirme geçmişi |
 | **[Deployment](docs/DEPLOYMENT.md)** | Public mode, Docker, refresh job'ları ve hosting |
-| **[Release notları](docs/RELEASE_NOTES_v0.1.0.md)** | v0.1.0 release-candidate kapsamı |
+| **[Release notları](docs/RELEASE_NOTES_v0.1.0.md)** | Tarihsel v0.1.0 portföy sürüm notları (eski çerçeve) |
 
 ---
 

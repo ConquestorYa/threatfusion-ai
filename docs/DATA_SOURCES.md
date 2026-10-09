@@ -1,6 +1,6 @@
 # Data Sources, Attribution, and Redistribution Notes
 
-This repository aggregates indicators and DNS telemetry for educational analysis.
+This repository aggregates indicators and network/DNS telemetry for local investigation.
 Treat all threat indicators as inert data only.
 
 ## Verified source endpoints used in code
@@ -60,7 +60,7 @@ Public-demo policy:
 - keep source attribution when presenting results derived from locally fetched
   third-party data
 
-This is a conservative portfolio-release boundary, not a legal conclusion about
+This is a conservative release boundary, not a legal conclusion about
 every possible redistribution scenario.
 
 ## Telemetry privacy notes

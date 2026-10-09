@@ -1,6 +1,7 @@
 # Product plan and AI continuation guide
 
-Updated: 2026-10-07. Latest verified runtime: `d006771` (P1 repairs).
+Updated: 2026-10-09. Product identity: DEC-090. The latest runtime candidate
+and verification are recorded in the newest [handoff](RELEASE_HANDOFF.md) section.
 This is the **current product direction and ordered work queue**, not a record
 of future features already delivered. Start here when continuing in a new chat.
 
@@ -17,8 +18,10 @@ cache and conservative behavior evidence, and helps answer:
 Keep the local web dashboard as the analyst workspace and Linux command line
 as the installation/automation interface. Quick Lookup stays a supporting tool.
 The core product is ongoing telemetry investigation, not a URL upload page or
-a replacement for the network sensor. The current runtime is a working
+a replacement for the network sensor. The current runtime is an early working
 prototype; a dependable product is the goal, not an established qualification.
+This plan is the authoritative statement of the product identity (DEC-090);
+earlier “educational / portfolio” wording is retired history.
 
 The intended distinguishing value is **explainable client-level DNS/connection
 triage**, with honest evidence scope, visible coverage loss, normal-activity

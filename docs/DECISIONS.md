@@ -950,3 +950,27 @@ scrubbing and the release audit still treat `PHISHTANK_APP_KEY` as a secret.
 Phishing-URL coverage now comes only from URLhaus/SGB where they overlap; a
 replacement (e.g. OpenPhish) needs its terms and measured usefulness checked
 first. Historical documents keep their PhishTank references as history.
+
+## DEC-090: One product identity — useful local tool, early prototype status
+
+**Decision (2026-10-09):** At the user's choice, the documents state one
+identity. The goal is a useful, local-first Zeek/CTI network investigation and
+triage tool for technically capable individual users and small teams. The
+stated status is **early prototype**: the workflow runs end to end on synthetic
+and replayed data and passed the developer's manual acceptance, but it is not
+validated on real own traffic or by independent users, and detection efficacy
+is unmeasured. `PRODUCT_PLAN.md` is the authoritative statement.
+
+**Reason:** `PRODUCT_PLAN.md` described a useful product, while the READMEs,
+`PROJECT_CONTEXT.md`, `ARCHITECTURE.md`, `docs/README.md` and others called it
+an "educational / portfolio" prototype, and the README badge said "v0.1.0
+Release Candidate" with ML presented as a core layer although installations run
+CTI-only without a trusted model. Readers could not tell what the project is or
+how mature it is.
+
+**Consequences:** Current descriptions drop the "educational / portfolio"
+framing; the README badge reads "Early prototype"; ML is described as
+experimental and off by default. `RELEASE_NOTES_v0.1.0.md`,
+`RELEASE_CHECKLIST_v0.1.0.md`, earlier decisions, the changelog history and
+public-demo sections of `DEPLOYMENT.md` keep their wording as dated history.
+No runtime code, ML identity/threshold, roadmap order or hosting changes.

@@ -7,8 +7,17 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
-The current unreleased state is the v0.1.0 portfolio-release candidate. The
-release date is added only when the final tag/release is created.
+The current unreleased state is an early prototype of a local Zeek/CTI
+investigation tool (DEC-090); the earlier v0.1.0 portfolio-release-candidate
+framing is retired. No release date or tag is set.
+
+### Documentation
+
+- One product identity across documents (DEC-090): a useful local investigation
+  tool as the goal, early prototype as the stated status. README status badge
+  changed from "v0.1.0 Release Candidate" to "Early prototype"; ML is described
+  as experimental and off by default; "educational / portfolio" wording is
+  removed from current descriptions and kept only in dated history.
 
 ### Fixed
 

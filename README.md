@@ -2,7 +2,7 @@
 
 # 🛡️ ThreatFusion AI
 
-### Local-first cyber threat intelligence, network telemetry triage, and explainable ML
+### Local-first Zeek/CTI network investigation and triage workbench
 
 <p>
   <strong>English README</strong>
@@ -21,7 +21,7 @@
 
 <p>
   <img alt="CI" src="https://github.com/ConquestorYa/threatfusion-ai/actions/workflows/ci.yml/badge.svg">
-  <img alt="Status" src="https://img.shields.io/badge/Status-v0.1.0%20Release%20Candidate-blueviolet">
+  <img alt="Status" src="https://img.shields.io/badge/Status-Early%20prototype-orange">
   <img alt="Privacy" src="https://img.shields.io/badge/Telemetry-local%20%2F%20in--memory-2ea44f">
   <img alt="Development style" src="https://img.shields.io/badge/Development-AI--assisted%20Vibe%20Coding-6f42c1">
 </p>
@@ -43,11 +43,11 @@ ThreatFusion combines four evidence layers in one local workflow:
 | Layer | Role |
 | --- | --- |
 | 🧭 **Threat Intelligence** | Deterministic matching against ThreatFox, URLhaus and SGB |
-| 🧠 **Machine Learning** | Auxiliary lexical risk scoring for previously unseen domain names |
+| 🧠 **Machine Learning** | Experimental auxiliary lexical domain score; fresh installations default to CTI-only, and the managed demo uses a synthetic model |
 | 📡 **Telemetry Behavior** | DNS volume, NXDOMAIN, response-IP churn, timing and client-spread context |
 | 🔎 **Analyst Context** | Explainable verdicts, prior review, suppression, history and related activity |
 
-The project is intentionally built as an **educational / portfolio security-analysis prototype**. It is not presented as a production SIEM, EDR, or guaranteed malware detector.
+**Goal:** a useful local investigation tool for technically capable individual users and small teams who run Zeek. **Current status: early prototype.** The workflow runs end to end on synthetic and replayed data and has passed the developer's manual acceptance checks, but it has not yet been validated on real network traffic or by independent users, and its detection efficacy is unmeasured. It is not a SIEM, EDR, IDS replacement or guaranteed malware detector. See the [product plan](docs/PRODUCT_PLAN.md) for status and next gates.
 
 ### 🤖 Development approach: AI-assisted vibe coding
 
@@ -594,7 +594,7 @@ threatfusion-ai/
 | **[Data sources](docs/DATA_SOURCES.md)** | Attribution, source scope and redistribution notes |
 | **[ML dataset & evaluation](docs/ML_DATASET.md)** | Model methodology and evaluation history |
 | **[Deployment](docs/DEPLOYMENT.md)** | Public mode, Docker, refresh jobs and hosting |
-| **[Release notes](docs/RELEASE_NOTES_v0.1.0.md)** | v0.1.0 release-candidate scope |
+| **[Release notes](docs/RELEASE_NOTES_v0.1.0.md)** | Historical v0.1.0 portfolio-release notes (superseded framing) |
 
 ---
 

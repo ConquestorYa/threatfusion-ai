@@ -334,8 +334,8 @@ A public demo should also provide:
 - periodic CTI refresh outside the user request path
 - monitoring and log retention that does not record uploaded DNS content
 
-ThreatFusion AI remains an educational/portfolio security prototype and should
-not be presented as a production SIEM, EDR, or guaranteed malware detector.
+ThreatFusion AI is an early prototype (DEC-090) and should not be presented as
+a production SIEM, EDR, or guaranteed malware detector.
 
 
 ## Optional final-evaluation report

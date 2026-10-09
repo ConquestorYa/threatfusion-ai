@@ -1,6 +1,6 @@
 # Architecture
 
-ThreatFusion AI is a local-first educational cyber threat-analysis platform that combines public CTI, user-provided telemetry, deterministic matching, an auxiliary domain ML model, behavior signals, and analyst context.
+ThreatFusion AI is a local-first network investigation and triage tool (early prototype; see [PRODUCT_PLAN.md](PRODUCT_PLAN.md)) that combines public CTI, user-provided telemetry, deterministic matching, behavior signals and analyst context, with an experimental auxiliary domain ML model that is off by default.
 
 The runtime is intentionally passive: suspicious URLs and domains are treated as data and are not visited or resolved during analysis.
 

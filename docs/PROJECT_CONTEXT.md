@@ -59,20 +59,20 @@ ThreatFusion AI connects external intelligence with local telemetry so an analys
 
 ## Core goal
 
-ThreatFusion AI is an AI-assisted, multi-source cyber threat-intelligence and telemetry-triage platform.
+ThreatFusion AI aims to be a **useful, local-first network investigation and
+triage tool** for technically capable individual users and small teams who run
+Zeek: it correlates their telemetry with CTI and conservative behavior evidence
+and explains which client and destination deserve a look and why (DEC-090).
 
-Its portfolio value comes from combining:
+**Current status: early prototype.** The workflow runs end to end on synthetic
+and replayed data and passed the developer's manual acceptance, but it has not
+been validated on the user's own real traffic or by independent users, and
+detection efficacy is unmeasured. The installed default runs CTI-only; the
+lexical ML model is experimental and off by default. Status and gates are in
+[PRODUCT_PLAN.md](PRODUCT_PLAN.md).
 
-- CTI engineering;
-- safe local telemetry ingestion;
-- deterministic IOC matching;
-- measured ML experimentation;
-- explainable hybrid decisions;
-- privacy-conscious persistence;
-- analyst workflow design;
-- deployment and CI practices.
-
-It is an educational prototype, not a production security product.
+Earlier versions of this file described an "educational / portfolio" project.
+That framing is retired; it remains in dated history and the v0.1.0 notes.
 
 ## Earlier measured position (2026-10-06, before runtime repairs)
 
