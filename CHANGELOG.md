@@ -27,6 +27,9 @@ framing is retired. No release date or tag is set.
 
 ### Changed
 
+- The Model evaluation page is hidden in CTI-only mode, where no model runs
+  (DEC-091); it returns when a measured model ships.
+
 - Section G feedback: Turkish lookup placeholder, localized and more visible
   file-upload area, "What does this page do?" explainers on Collected
   connections and Model evaluation, and a setup note explaining what the free

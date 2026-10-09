@@ -600,3 +600,14 @@ def test_analyze_keeps_parser_dispatch_and_collapses_intake(
     assert app.session_state["analysis_audit_metadata"] == "audit"
     intake = next(item for item in app.expander if item.label == "New analysis")
     assert not intake.proto.expanded
+
+
+def test_cti_only_hides_the_model_evaluation_page(feedback_app, monkeypatch):
+    monkeypatch.setenv("THREATFUSION_CTI_ONLY", "1")
+    app = AppTest.from_string("import streamlit_app\nstreamlit_app.main()")
+    app.session_state["workspace_nav"] = "Model evaluation"
+    app.run(timeout=15)
+    assert not app.exception
+    assert all(b.key != "nav_model_evaluation" for b in app.button)
+    assert app.session_state["workspace_nav"] == "Quick lookup"
+    assert not any("Final holdout not evaluated" in item.value for item in app.markdown)

@@ -2,6 +2,11 @@
 
 Status date: 2026-10-06
 
+## Model evaluation hidden in CTI-only mode (2026-10-09, DEC-091)
+
+- User request. The page returns with a measured model; the reminder lives in
+  PRODUCT_PLAN (behavioral ML section).
+
 ## One product identity in the documents (2026-10-09, DEC-090)
 
 - A read-only product review found the documents disagreed on what the project

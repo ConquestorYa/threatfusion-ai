@@ -974,3 +974,14 @@ experimental and off by default. `RELEASE_NOTES_v0.1.0.md`,
 `RELEASE_CHECKLIST_v0.1.0.md`, earlier decisions, the changelog history and
 public-demo sections of `DEPLOYMENT.md` keep their wording as dated history.
 No runtime code, ML identity/threshold, roadmap order or hosting changes.
+
+## DEC-091: Hide Model evaluation where no model runs
+
+**Decision (2026-10-09):** At the user's request, the Model evaluation page is
+not listed in CTI-only mode. It shows a frozen model's holdout report, and in
+CTI-only mode no model is loaded, so it only displayed "not evaluated" and
+confused the user. Demo and ML-enabled modes keep the page.
+
+**Consequences:** The page code is unchanged. The PRODUCT_PLAN behavioral-ML
+section holds a reminder to bring it back, with the new model's evaluation,
+when a measured model reaches users.

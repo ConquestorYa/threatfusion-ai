@@ -134,6 +134,13 @@ and per-device baselines. Develop only on development captures; evaluate on
 untouched reserved inputs with the same discipline as other gates. Until then the
 lexical model stays an auxiliary signal and frozen identities do not change.
 
+**Reminder: restore the Model evaluation page (user request, 2026-10-09).** The
+page is hidden in CTI-only mode (the default installation) because no model runs
+there (`streamlit_app.py`, `if config.cti_only: pages.remove("Model evaluation")`).
+When a measured model ships to users (the behavioral model above, or a promoted
+lexical model), show the page again in the mode that runs it, extend it with
+that model's evaluation report, and tell the user it is back.
+
 ## Deferred ideas, not automatic next tasks
 
 - Active-file incremental tailing/shorter ingest latency, decided against rotation

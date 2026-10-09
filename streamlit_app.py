@@ -561,6 +561,10 @@ def main() -> None:
         pages.remove("Collected connections")
     if not config.history_enabled:
         pages.remove("Analysis history")
+    if config.cti_only:
+        # No model runs, so its evaluation page would only show an empty report.
+        # Restore it in this mode once a measured (behavioral) model ships.
+        pages.remove("Model evaluation")
     if local_root is not None:
         pages.append("Setup & CTI updates")
 
