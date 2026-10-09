@@ -246,8 +246,28 @@ cihaz/hedefin neden incelenmesi gerektiğini gösterdiğini görmek.
   - Kullanıcı (sohbet, 2026-10-09): "Genel olarak arayüz ile ilgili çok fazla
     şikayetim var… sitenin yapay zekadan yapıldığı çok belli oluyor." Arayüzün
     baştan, daha profesyonel bir görünümle yeniden tasarlanmasını istiyor.
-    → Yeniden tasarım yapıldı (DEC-088) ve Bölüm H'de kabul edildi. Yukarıdaki
-    iki madde yeni arayüzde hâlâ yanıt bekliyor.
+    → Yeniden tasarım yapıldı (DEC-088) ve Bölüm H'de kabul edildi.
+  - Kullanıcı (sohbet, 2026-10-09, Bölüm G cevabı):
+    1. Hızlı sorgu kutusundaki silik örnek metin İngilizce görünüyordu
+       (`example.com`). → Türkçe örnek yapıldı.
+    2. Telemetri sayfasındaki "Upload" düğmesi İngilizce ve belirsizdi. → Yükleme
+       alanı Türkçe ("Dosya seç / veya buraya sürükleyip bırak") ve belirgin
+       (renkli düğme, kesikli çerçeve) yapıldı.
+    3. "Toplanan bağlantılar sayfasından bir şey anlamadım." → Sayfanın üstüne
+       "Bu sayfa ne işe yarar?" açıklaması eklendi (veri nereden gelir, ne
+       yapılır, nasıl okunur).
+    4. "Model değerlendirmenin amacı ne?" → Aynı açıklama kutusu eklendi.
+    5. Kurulum sayfası iyi; "API girmek önemli mi, girmeyen ne yapabilir?" →
+       Anahtarlar eksikken ne kazanılacağını anlatan not eklendi.
+    Bu düzeltmeler bir sonraki güncellemede kısaca kontrol edilecek (aşağıda).
+
+### Bölüm G düzeltmelerini kontrol (güncellemeden sonra, ~5 dk)
+
+- [ ] Hızlı sorgu kutusundaki silik örnek Türkçe.
+- [ ] Telemetriyi analiz et sayfasında yükleme alanı Türkçe ve kolay fark ediliyor.
+- [ ] Toplanan bağlantılar ve Model değerlendirme sayfalarındaki "Bu sayfa ne
+      işe yarar?" açıklaması anlaşılır.
+- [ ] Kurulum sayfasında (anahtar eksikken) abuse.ch notu anlaşılır.
 
 
 ---

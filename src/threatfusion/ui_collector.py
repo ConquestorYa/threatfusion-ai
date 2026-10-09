@@ -89,10 +89,25 @@ def read_snapshot(root: Path):
     return payload
 
 
+COLLECTOR_GUIDE = """**What it is for:** Quick lookup checks one address you already suspect. This page works the other way round: it watches your network's Zeek logs by itself and answers *which device talked to which destination, and which of those deserve a look*.
+
+**Where the data comes from:** Zeek, a network monitor you run separately, writes `conn.log` (who connected to whom, on which port, for how long, with how many bytes) and `dns.log` (which names were looked up). ThreatFusion does not capture traffic itself. The `threatfusion-ai collect` command reads every completed log in the folder you gave it every 10 seconds and keeps the last 24 hours.
+
+**What it does with it:**
+1. Groups connections by device, destination and port.
+2. Compares each destination with your local CTI cache of known malicious addresses.
+3. Looks for behavior that often deserves attention: connections repeating at steady intervals (typical of malware check-ins, but also of updaters), very long two-way sessions and repeated failed connection attempts.
+4. Lists groups that need a look as **Review**; everything else stays visible as **Observe**.
+
+**How to read it:** Start at the top of the table; each row says why it was raised. A raised row is a reason to check, not proof of an infection; normal software can look the same. Activity you know is normal can be declared as expected and hidden."""
+
+
 @st.fragment(run_every="10s")
 def render_collector(state_dir: Path | None, *, public_mode: bool):
     if public_mode:
         return
+    with st.expander(tr("What does this page do?"), expanded=state_dir is None):
+        st.markdown(tr(COLLECTOR_GUIDE))
     st.caption(tr("Completed Zeek logs are collected automatically. This view refreshes every 10 seconds; active files wait for rotation."))
     if state_dir is None:
         st.info(tr("Configure a local collector to show automatically collected connections."))

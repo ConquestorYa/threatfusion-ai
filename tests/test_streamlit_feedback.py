@@ -273,7 +273,7 @@ def test_turkish_mode_localizes_quick_lookup_placeholder(feedback_app):
     lookup = app.text_input(key="quick_lookup_input")
     assert lookup.label == "URL, domain veya IP"
     assert lookup.proto.placeholder == (
-        "example.com, 143.20.185.213 veya https://example.com/yol"
+        "Örn. alanadi.com, 143.20.185.213 veya https://alanadi.com/sayfa"
     )
 
 

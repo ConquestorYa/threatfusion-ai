@@ -2,6 +2,20 @@
 
 Status date: 2026-10-06
 
+## P0 Section G feedback fixes (2026-10-09)
+
+- User Section G answers: Turkish lookup placeholder still showed
+  `example.com`; the telemetry upload control was English ("Upload") and easy
+  to miss; the Collected connections and Model evaluation pages were not
+  self-explanatory; asked whether API keys matter and how to encourage them.
+- Fixes: Turkish placeholder example; file-uploader texts swapped via CSS
+  variables (Streamlit hard-codes them) with the size taken from
+  `server.maxUploadSize`, and an accent-filled button inside a dashed accent
+  dropzone; "What does this page do?" explainers on both pages (expanded when
+  the page has no data); an info note on the setup page while ThreatFox/URLhaus
+  keys are missing (one free abuse.ch key covers both). 1,370 local tests pass.
+  Screenshot-checked in both themes. Needs the user's short re-check (checklist).
+
 ## P0 Section H accepted; soak rerun-3 running (2026-10-09)
 
 - The user checked every Section H item on the redesigned UI (`31fbf7f`

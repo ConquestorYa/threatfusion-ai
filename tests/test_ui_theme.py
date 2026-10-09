@@ -151,3 +151,33 @@ def test_static_folder_holds_only_public_font_assets() -> None:
     files = [p for p in (ROOT / "static").rglob("*") if p.is_file()]
     assert files and all(p.parent == ROOT / "static/fonts" for p in files)
     assert {p.suffix for p in files} <= {".woff2", ".txt", ".md"}
+
+
+def test_file_uploader_texts_follow_the_language(monkeypatch) -> None:
+    rendered: list[str] = []
+    monkeypatch.setattr(ui_theme.st, "markdown", lambda body, **kwargs: rendered.append(body))
+    monkeypatch.setattr(ui_theme, "tr", lambda text, **values: {
+        "Choose file": 'Dosya "seç"',
+    }.get(text, text).format(**values))
+    ui_theme.inject_theme_css("Dark")
+    css = "\n".join(rendered)
+    assert '--tf-upload-button:"Dosya \\"seç\\"";' in css
+    assert "up to 100 MB" in css  # From server.maxUploadSize, not hard-coded.
+    assert "content:var(--tf-upload-button)" in css and "content:var(--tf-upload-hint)" in css
+
+
+def test_collector_and_evaluation_pages_explain_themselves_in_turkish(tmp_path) -> None:
+    from streamlit.testing.v1 import AppTest
+    app = AppTest.from_string(
+        "from pathlib import Path\nimport streamlit as st\n"
+        "st.session_state['language_selector'] = '🇹🇷 Türkçe'\n"
+        "from threatfusion.ui_collector import render_collector\n"
+        "from threatfusion.ui_evaluation import _show_model_evaluation\n"
+        "render_collector(None, public_mode=False)\n"
+        f"_show_model_evaluation(Path({str(tmp_path / 'missing.json')!r}))\n"
+    ).run(timeout=15)
+    assert not app.exception
+    assert [e.label for e in app.expander][:2] == ["Bu sayfa ne işe yarar?"] * 2
+    text = "\n".join(m.value for m in app.markdown)
+    assert "Veri nereden geliyor" in text and "Neden boş olabilir" in text
+    assert "What it is for" not in text

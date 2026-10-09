@@ -290,3 +290,13 @@ def test_force_option_is_one_shot_and_disabled_while_running(managed, monkeypatc
     button(app, "Update CTI now").click().run(timeout=15)
     wait_finished(managed)
     assert seen == [True, False]
+
+
+def test_missing_abuse_ch_keys_explain_what_the_user_gains(managed):
+    app = local_app(managed)
+    note = next(i.value for i in app.info if "auth.abuse.ch" in i.value)
+    assert "Missing now: ThreatFox, URLhaus." in note
+    workspace.save_credentials(managed, {"THREATFOX_AUTH_KEY": "a-test", "URLHAUS_AUTH_KEY": "b-test"})
+    app = local_app(managed)
+    assert not any("auth.abuse.ch" in i.value for i in app.info)
+    assert "a-test" not in "\n".join(i.value for i in app.info)

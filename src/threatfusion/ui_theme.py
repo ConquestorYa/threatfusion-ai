@@ -143,10 +143,24 @@ def inject_theme_css(theme: str | None = None) -> None:
         "<style>:root{"
         + variables
         + f";color-scheme:{colors['scheme']};"
+        + _uploader_text_variables()
         + "}"
         + _CSS
         + "</style>",
         unsafe_allow_html=True,
+    )
+
+
+def _css_string(text: str) -> str:
+    return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def _uploader_text_variables() -> str:
+    """Streamlit hard-codes the file-uploader texts in English; CSS swaps them."""
+    limit = st.get_option("server.maxUploadSize")
+    return (
+        f"--tf-upload-button:{_css_string(tr('Choose file'))};"
+        f"--tf-upload-hint:{_css_string(tr('or drag and drop it here · up to {limit} MB', limit=limit))};"
     )
 
 
@@ -1010,9 +1024,44 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     margin-bottom:1rem;
 }
 
-[data-baseweb="input"],
-[data-baseweb="select"] > div,
 [data-testid="stFileUploaderDropzone"] {
+    background:var(--tf-cyan-soft)!important;
+    border:1.5px dashed color-mix(in srgb, var(--tf-cyan) 70%, var(--tf-border))!important;
+    border-radius:8px;
+    padding:1.25rem 1rem!important;
+    gap:.85rem;
+}
+[data-testid="stFileUploaderDropzone"]:hover {
+    border-color:var(--tf-cyan)!important;
+}
+[data-testid="stFileUploaderDropzone"] button {
+    background:var(--tf-cyan)!important;
+    border-color:var(--tf-cyan)!important;
+    color:var(--tf-on-accent)!important;
+    font-weight:600;
+}
+[data-testid="stFileUploaderDropzone"] button [data-testid="stMarkdownContainer"] p {
+    font-size:0!important;
+}
+[data-testid="stFileUploaderDropzone"] button [data-testid="stMarkdownContainer"] p::after {
+    content:var(--tf-upload-button);
+    font-size:.9rem;
+    color:var(--tf-on-accent);
+}
+[data-testid="stFileUploaderDropzone"] button [data-testid="stIconMaterial"] {
+    color:var(--tf-on-accent)!important;
+}
+[data-testid="stFileUploaderDropzoneInstructions"] span {
+    font-size:0!important;
+}
+[data-testid="stFileUploaderDropzoneInstructions"] span::after {
+    content:var(--tf-upload-hint);
+    font-size:.88rem;
+    color:var(--tf-text);
+}
+
+[data-baseweb="input"],
+[data-baseweb="select"] > div {
     background:var(--tf-input-bg)!important;
     color:var(--tf-text)!important;
     border-color:var(--tf-border)!important;

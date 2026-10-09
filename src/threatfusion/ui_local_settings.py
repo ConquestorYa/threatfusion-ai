@@ -99,6 +99,18 @@ def render_local_settings(root: Path) -> None:
                     or tr("None"),
                 )
             )
+            active = st.session_state.get("_local_session_keys", saved)
+            missing = [source for source, key in (("ThreatFox", KEY_NAMES[0]), ("URLhaus", KEY_NAMES[1]))
+                       if not active.get(key)]
+            if missing:
+                st.info(tr(
+                    "Without these keys only SGB's list is checked. One free abuse.ch key "
+                    "(about two minutes at [auth.abuse.ch](https://auth.abuse.ch/)) adds "
+                    "malware command-and-control servers (ThreatFox) and malware download "
+                    "addresses (URLhaus), the most useful sources for collected connections. "
+                    "Enter the same key in both fields. Missing now: {sources}.",
+                    sources=", ".join(missing),
+                ))
             with st.form("local_credentials", clear_on_submit=True):
                 _ = {
                     key: st.text_input(
