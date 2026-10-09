@@ -246,7 +246,8 @@ cihaz/hedefin neden incelenmesi gerektiğini gösterdiğini görmek.
   - Kullanıcı (sohbet, 2026-10-09): "Genel olarak arayüz ile ilgili çok fazla
     şikayetim var… sitenin yapay zekadan yapıldığı çok belli oluyor." Arayüzün
     baştan, daha profesyonel bir görünümle yeniden tasarlanmasını istiyor.
-    Ayrıntılı şikâyet listesi bekleniyor.
+    → Yeniden tasarım yapıldı (DEC-088) ve Bölüm H'de kabul edildi. Yukarıdaki
+    iki madde yeni arayüzde hâlâ yanıt bekliyor.
 
 
 ---
@@ -269,18 +270,18 @@ Arka plan özellikleri değişmedi; yalnızca görünüm ve sayfa düzeni deği�
    güncelleme artık **Kurulum ve CTI güncellemeleri** sayfasında. Dili de
    değiştirip birkaç yere bak.
 
-- [ ] Yazı tipi değişti (IBM Plex); logo, renkler ve çizgiler sade ve profesyonel görünüyor;
+- [x] Yazı tipi değişti (IBM Plex); logo, renkler ve çizgiler sade ve profesyonel görünüyor;
       "yapay zekâ yapmış" hissi yok ya da belirgin şekilde azaldı.
-- [ ] Açık temada her şey açık (tablolar, kutular, yan çubuk dahil); koyu
+- [x] Açık temada her şey açık (tablolar, kutular, yan çubuk dahil); koyu
       temada her şey koyu. Yarısı açık yarısı koyu bir alan yok.
-- [ ] Hiçbir yerde okunmayan, soluk kalan veya renk uyumsuz yazı yok.
-- [ ] Tema değiştirme düğmesi her iki yönde çalışıyor.
-- [ ] Soldaki **Sayfalar** listesiyle her sayfaya tek tıkla ulaşabiliyorum;
+- [x] Hiçbir yerde okunmayan, soluk kalan veya renk uyumsuz yazı yok.
+- [x] Tema değiştirme düğmesi her iki yönde çalışıyor.
+- [x] Soldaki **Sayfalar** listesiyle her sayfaya tek tıkla ulaşabiliyorum;
       her sayfanın başlığı en üstte, sayfanın değiştiği hemen belli oluyor.
-- [ ] Sol paneldeki **Durum** bölümü (CTI kaynakları ve güncellikleri) anlaşılır;
+- [x] Sol paneldeki **Durum** bölümü (CTI kaynakları ve güncellikleri) anlaşılır;
       kaynak ayrıntıları Kurulum sayfasındaki tabloda.
-- Kullanıcı (sohbet, `31fbf7f` sonrası): "şuan arayüz çok daha iyi." Maddelerin
-  tek tek işaretlenmesi bekleniyor.
+- Kullanıcı (sohbet, 2026-10-09, `31fbf7f` arayüzü): "Tam olarak herşeye
+  baktım. Herşey gayet iyi bölüm H komple okey." **Bölüm H geçti.**
 - Beğenmediğin yerleri ekran görüntüsüyle yaz (ör. "yan çubuk çok kalabalık",
   "logo olmamış", "bu renk koyu").
 ---

@@ -10,6 +10,11 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 The current unreleased state is the v0.1.0 portfolio-release candidate. The
 release date is added only when the final tag/release is created.
 
+### Verified
+
+- Manual acceptance Section H (redesigned UI) passed by the user on 2026-10-09;
+  Section G remains open.
+
 ### Removed
 
 - Render Blueprint `render.yaml` and Render-specific deployment instructions, at

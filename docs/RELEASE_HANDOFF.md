@@ -2,6 +2,17 @@
 
 Status date: 2026-10-06
 
+## P0 Section H accepted; soak rerun-3 running (2026-10-09)
+
+- The user checked every Section H item on the redesigned UI (`31fbf7f`
+  interface): "Herşey gayet iyi bölüm H komple okey." The redesign is accepted.
+  Only Section G (two free-form analyst/translation questions) remains for P0.
+- Soak rerun-2 was interrupted at ~2h20m by a host shutdown (laptop closed); no
+  verdict exists and its receipts are unchanged. Rerun-3 was declared into a new
+  root with identical acceptance/workload/candidate (runtime of `7957395`) and
+  started 2026-10-09 16:06 UTC under a temporary sleep/idle inhibitor; result
+  pending.
+
 ## P1 security review round 2 (2026-10-09)
 
 - Covered surfaces added after round 1 (see OPERATIONAL_CONFIDENCE.md): widget
