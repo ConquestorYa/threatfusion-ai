@@ -2,8 +2,8 @@
 
 ## Product direction and continuation
 
-- Start new development sessions with `docs/PRODUCT_PLAN.md`, then
-  `docs/PROJECT_CONTEXT.md`, the newest `docs/RELEASE_HANDOFF.md` section and
+- Start new development sessions with `docs/dev/PRODUCT_PLAN.md`, then
+  `docs/dev/PROJECT_CONTEXT.md`, the newest `docs/dev/RELEASE_HANDOFF.md` section and
   the relevant feature/ML/data contracts. The product plan is the current
   ordered work queue; older experiment "Next" notes are historical.
 - Keep the local web analyst workspace and Linux automation interface. Focus
@@ -41,6 +41,6 @@
   holdouts, present fresh-disjoint results as strict temporal evidence, or
   promote the augmented candidate without the required new untouched evidence.
 - Synthetic demo models are presentation assets, not measured runtime models.
-  See `docs/ML_DATASET.md`, `docs/PROJECT_CONTEXT.md` and
-  `docs/RELEASE_HANDOFF.md` for the current experiment and missing original
+  See `docs/evidence/ML_DATASET.md`, `docs/dev/PROJECT_CONTEXT.md` and
+  `docs/dev/RELEASE_HANDOFF.md` for the current experiment and missing original
   runtime artifact.

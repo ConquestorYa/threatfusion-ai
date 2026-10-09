@@ -2,7 +2,7 @@
 
 @AGENTS.md
 
-- Start each session from `docs/PRODUCT_PLAN.md` (current ordered work queue).
+- Start each session from `docs/dev/PRODUCT_PLAN.md` (current ordered work queue).
 - Use `.venv/bin/python` (private Python 3.12); run `.venv/bin/ruff check .` and
   `.venv/bin/python -m pytest -q` before committing.
 - Private experiments follow the `lab-experiment` project skill; receipts stay in

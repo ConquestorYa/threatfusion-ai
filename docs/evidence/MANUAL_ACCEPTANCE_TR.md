@@ -1,7 +1,7 @@
 # Kalan manuel testler (P0)
 
 Bu dosyada yalnızca **henüz yapılmamış** testler var. Tamamlananlar kayıt için
-[RELEASE_HANDOFF.md](RELEASE_HANDOFF.md) içine taşındı.
+[RELEASE_HANDOFF.md](../dev/RELEASE_HANDOFF.md) içine taşındı.
 
 **Nasıl işaretlenir:** Her maddenin başındaki `[ ]` içine `x` yaz: `[x]`.
 Bir şey beklenenden farklıysa maddenin altına kısa bir not yaz:
@@ -27,7 +27,7 @@ Toplam süre: yaklaşık **40–50 dakika**. Bölümleri ayrı günlerde de yapa
    threatfusion-ai stop
    ```
 
-2. [README.tr.md](../README.tr.md) içindeki **"Linux — tek komutla local
+2. [README.tr.md](../../README.tr.md) içindeki **"Linux — tek komutla local
    kurulum"** komutunu aynen tekrar çalıştır. Silip yeniden kurmana gerek yok;
    verilerin ve kayıtlı anahtarların korunur.
 3. Kurulum bitince uygulama tarayıcıda kendiliğinden açılır. Açılmazsa
@@ -272,6 +272,9 @@ cihaz/hedefin neden incelenmesi gerektiğini gösterdiğini görmek.
       sayfasındaki anahtar alanlarında ve "CTI'yı şimdi güncelle" sonrasındaki
       sonuçlarda PhishTank görünmüyor (kullanıcı onayıyla kaldırıldı, DEC-089).
 - Kullanıcı (sohbet, 2026-10-09, `21851e2`): "Bölüm G'yi kontrol ettim. Sorun yok." **Geçti.**
+- Düzeltme (2026-10-09): Bu onay sırasında kurulu sürüm `7c74742` idi; PhishTank
+  kaldırma maddesi o sürümde yoktu. Kullanıcı `ba7bd12`'ye güncelledikten sonra
+  PhishTank'ın görünmediğini tekrar kontrol etti.
 
 ---
 

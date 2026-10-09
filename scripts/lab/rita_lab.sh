@@ -10,7 +10,7 @@ case "${1:-help}" in
   status) exec docker compose -f "$COMPOSE" ps ;;
 esac
 if [[ ! -f "$ROOT/config.hjson" || ! -f "$ROOT/rita-env" || ! -f "$ROOT/http_extensions_list.csv" || ! -d "$ROOT/threat_intel_feeds" ]]; then
-  echo 'Lab-only RITA config files are missing; see docs/LOCAL_LAB.md.' >&2; exit 1
+  echo 'Lab-only RITA config files are missing; see docs/evidence/LOCAL_LAB.md.' >&2; exit 1
 fi
 docker compose -f "$COMPOSE" up -d --wait >&2
 ARGS=(--rm --network tf-rita-analysis --cap-drop ALL --security-opt no-new-privileges

@@ -1,6 +1,24 @@
-# v0.1.0 Release Handoff
+# Release handoff
 
-Status date: 2026-10-06
+Newest section first. Status date: 2026-10-09.
+
+## Documentation restructure and P2 Arm A start (2026-10-09, DEC-092)
+
+- READMEs rewritten for the Zeek network-investigation focus (EN/TR), new
+  `docs/ZEEK_SETUP.md` and `docs/USER_GUIDE.md`, rewritten architecture page;
+  evidence records moved to `docs/evidence/`, development notes to `docs/dev/`;
+  obsolete documents, the public-demo hosting stack and the Windows updater
+  removed. User-guide rules were checked against the code (DNS NXDOMAIN alone
+  does not raise Review; failed-attempt thresholds 20 distinct / 30 repeated in
+  300 s). Screenshots regenerated from synthetic demo data.
+- P2 Arm A (24 h, laptop only) is declared in the private lab
+  (`real-traffic-arm-a-24h-v1`, installed release `ba7bd12`, pinned Zeek 8.0.6,
+  conn + dns only). It starts automatically after soak rerun-3 ends. Observed
+  before start: system DNS uses DNS-over-TLS, so the DNS queue is expected to be
+  nearly empty (recorded as a coverage limit; no setting changed).
+- Correction: the user checked the Section G item "PhishTank removed" while
+  release `7c74742` (before the removal) was installed; it was re-checked after
+  updating to `ba7bd12`.
 
 ## Model evaluation hidden in CTI-only mode (2026-10-09, DEC-091)
 
@@ -384,7 +402,7 @@ lookup with no web or terminal error; the update took about 2 minutes.
   visible diagnostics; encrypted DNS/TCP reconstruction is not added. Supported
   single-question Suricata detailed/grouped v2/v3 exports retain every IP answer;
   missing endpoint direction evidence remains unattributed.
-- See [SOURCE_REVIEW_REPAIRS.md](SOURCE_REVIEW_REPAIRS.md) for contracts and
+- See SOURCE_REVIEW_REPAIRS.md for contracts and
   migration/manual-test implications. Earlier frozen collector measurements
   describe earlier source identities and are not new performance evidence for
   this revision. Wall-clock soak, broader faults, representative permitted

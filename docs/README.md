@@ -1,72 +1,44 @@
-# ThreatFusion AI Documentation
+# Documentation
 
-This directory contains the technical documentation behind the repository README. Start with [PRODUCT_PLAN.md](PRODUCT_PLAN.md) for the product goal, current status and work order.
+## Using ThreatFusion
 
-> Language note: the repository README is available in **[English](../README.md)** and **[Türkçe](../README.tr.md)**. Technical reference documents are kept in English to avoid maintaining two diverging specifications.
-
-## Start here
-
-**Continuing development in a new chat or with another AI? Read
-[PRODUCT_PLAN.md](PRODUCT_PLAN.md) first.** It defines the target product,
-implemented capability inventory, current checkpoint, ordered roadmap and a
-copyable continuation prompt. Read [AGENTS.md](../AGENTS.md) for operating rules.
-
-| Document | Use it for |
+| Document | Contents |
 | --- | --- |
-| [PRODUCT_PLAN.md](PRODUCT_PLAN.md) | Current product target, feature status, ordered work queue and AI continuation guide |
-| [SOURCE_REVIEW_REPAIRS.md](SOURCE_REVIEW_REPAIRS.md) | Latest correctness/privacy repairs, schema-3 migration and manual-test implications |
-| [INSTALL_LINUX.md](INSTALL_LINUX.md) | One-command private Python/dependency install and localhost demo/CTI-only start |
-| [TELEMETRY_COLLECTOR.md](TELEMETRY_COLLECTOR.md) | Private automatic completed Zeek logs, restart/rotation, limits and local UI |
-| [DNS_COLLECTION.md](DNS_COLLECTION.md) | Automatic TCP/UDP DNS transaction collection, private state migration and live controls |
-| [LOG_PREPARATION.md](LOG_PREPARATION.md) | Bounded completed-log preparation, explicit private DNS quarantine and coverage accounting |
-| [CONNECTION_CAPACITY.md](CONNECTION_CAPACITY.md) | Diverse collector targets, bounded snapshots, verified private full exports and recovery evidence |
-| [OPERATIONAL_CONFIDENCE.md](OPERATIONAL_CONFIDENCE.md) | P1 fault matrix, CTI-lock/memory repairs, wall-clock soak outcome and security review |
-| [MANUAL_ACCEPTANCE_TR.md](MANUAL_ACCEPTANCE_TR.md) | Turkish P0 manual acceptance checklist |
-| [REAL_TRAFFIC_EVALUATION.md](REAL_TRAFFIC_EVALUATION.md) | P2 real-traffic evaluation design (own traffic, labeled malware, blind overlay) |
-| [MULTIDAY_COLLECTION.md](MULTIDAY_COLLECTION.md) | Accelerated multi-day rotation, independent retention, own-process resources and recovery protocol |
-| [DNS_INVESTIGATION.md](DNS_INVESTIGATION.md) | Device/domain query timelines, scan health and private rotation/recovery/resource protocol |
-| [NETWORK_EVALUATION.md](NETWORK_EVALUATION.md) | Independent official IoT-23 protocol, aggregate observations and detection gaps |
-| [REVIEW_WORKLOAD.md](REVIEW_WORKLOAD.md) | Normal review burden, caching/shared resolvers, same-source native RITA and excluded corrupt inputs |
-| [CONNECTION_INVESTIGATION.md](CONNECTION_INVESTIGATION.md) | Bounded connection timelines, analyst workflow and two isolated live termination controls |
-| [TCP_ATTEMPT_REVIEW.md](TCP_ATTEMPT_REVIEW.md) | Sliding-window TCP failure diversity/retry review, private workflow and reserved evidence |
-| [TCP_TERMINATION.md](TCP_TERMINATION.md) | Partial/reset TCP payload coverage, failed-attempt counts and reserved comparison |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Current data flow, trust boundaries, runtime components and design principles |
-| [DATA_SOURCES.md](DATA_SOURCES.md) | CTI sources, attribution, redistribution boundaries and telemetry privacy |
-| [ML_DATASET.md](ML_DATASET.md) | Dataset construction, evaluation methodology, holdouts and model limitations |
-| [DEPLOYMENT.md](DEPLOYMENT.md) | Docker, public mode, sanitized runtime bundles and scheduled CTI refresh |
-| [RELEASE_NOTES_v0.1.0.md](RELEASE_NOTES_v0.1.0.md) | Historical v0.1.0 portfolio-release scope (superseded framing; see DEC-090) |
-| [RELEASE_CHECKLIST_v0.1.0.md](RELEASE_CHECKLIST_v0.1.0.md) | Historical v0.1.0 publication checklist |
-| [RELEASE_HANDOFF.md](RELEASE_HANDOFF.md) | Current release status, blockers and exact next steps |
-| [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) | Problem statement, goals, implemented scope and intended users |
-| [DECISIONS.md](DECISIONS.md) | Important technical and product decisions |
-| [UI_REVIEW.md](UI_REVIEW.md) | Manual Streamlit presentation/regression review flow |
+| [Linux installation](INSTALL_LINUX.md) | One-command install, start/stop, upgrades, keys |
+| [Zeek sensor setup](ZEEK_SETUP.md) | Producing logs: sensor placement, Docker recipe, privacy |
+| [User guide](USER_GUIDE.md) | Pages, collector, what gets flagged, investigation, limits |
+| [Architecture](ARCHITECTURE.md) | Data flow, evidence model, storage and privacy |
+| [Data sources](DATA_SOURCES.md) | CTI sources, licences and attribution |
 
-## Current product boundaries
+## Evidence
 
-ThreatFusion AI aims to be a useful local Zeek/CTI investigation tool; today it is an early prototype that has not been validated on real traffic or by independent users (DEC-090).
+What has been measured, how, and what failed. Each record names the exact
+commit and protocol it belongs to; later code needs new measurements.
 
-It currently implements:
+| Record | Question |
+| --- | --- |
+| [Real-traffic evaluation design](evidence/REAL_TRAFFIC_EVALUATION.md) | How usefulness on real traffic and on labeled malware will be measured (in progress) |
+| [Review workload](evidence/REVIEW_WORKLOAD.md) | How much normal synthetic traffic enters Review; comparison with RITA |
+| [Network evaluation](evidence/NETWORK_EVALUATION.md) | Independent IoT-23 captures: what was found and missed |
+| [Independent replay](evidence/INDEPENDENT_REPLAY.md) | Replays of independent captures through the collector |
+| [TCP termination](evidence/TCP_TERMINATION.md) / [TCP attempts](evidence/TCP_ATTEMPT_REVIEW.md) | Connection-state and failed-attempt rules on live controls |
+| [Connection investigation](evidence/CONNECTION_INVESTIGATION.md) / [DNS investigation](evidence/DNS_INVESTIGATION.md) / [DNS collection](evidence/DNS_COLLECTION.md) | Timeline, DNS identity and migration contracts with live controls |
+| [Expected connections](evidence/EXPECTED_CONNECTIONS.md) | Declaration rules and their constructed controls |
+| [Collector](evidence/TELEMETRY_COLLECTOR.md) / [capacity](evidence/CONNECTION_CAPACITY.md) / [log preparation](evidence/LOG_PREPARATION.md) | Collector contracts, capacity and large-file preparation |
+| [Multi-day collection](evidence/MULTIDAY_COLLECTION.md) / [operational confidence](evidence/OPERATIONAL_CONFIDENCE.md) | Rotation, retention, fault matrix, wall-clock soak, security reviews |
+| [Analyst review](evidence/ANALYST_REVIEW.md) | Review guidance and synthetic analyst tasks |
+| [ML dataset and evaluation](evidence/ML_DATASET.md) | The experimental domain model and why it is off |
+| [Local lab](evidence/LOCAL_LAB.md) | Isolated lab used for controls and RITA comparison |
+| [Manual acceptance](evidence/MANUAL_ACCEPTANCE_TR.md) | The developer's manual acceptance checklist (Turkish) |
 
-- multi-source CTI ingestion and normalization;
-- indexed passive URL/domain/IP lookup;
-- automatic network/DNS telemetry ingestion;
-- deterministic IOC correlation;
-- experimental ML domain scoring (off by default; CTI-only installations);
-- DNS behavior context;
-- explainable hybrid verdicts;
-- analyst feedback, suppression and history (trusted-model local mode only; disabled in CTI-only);
-- privacy-safe exports;
-- scheduled CTI refresh support;
-- Docker/public-mode packaging;
-- cross-platform CI and dependency auditing.
+Not yet measured: detection rate on real malware, false alarms on real traffic,
+usefulness for other users.
 
-It is not positioned as a production SIEM, EDR, IDS/IPS replacement, automated incident-response platform, or guaranteed malware detector.
+## Development
 
-## Documentation principles
-
-The documentation follows four rules:
-
-1. **Implemented behavior is separated from future work.**
-2. **Known IOC evidence is distinguished from contextual evidence and ML signals.**
-3. **ML scores are not described as calibrated malware probabilities.**
-4. **Privacy and third-party data boundaries are documented alongside functionality.**
+| Document | Contents |
+| --- | --- |
+| [Product plan](dev/PRODUCT_PLAN.md) | Goal, status and the ordered work queue |
+| [Decisions](dev/DECISIONS.md) | Numbered design decisions with reasons |
+| [Project context](dev/PROJECT_CONTEXT.md) | Current checkpoint and dated history |
+| [Release handoff](dev/RELEASE_HANDOFF.md) | Latest completed work, checks and limitations |

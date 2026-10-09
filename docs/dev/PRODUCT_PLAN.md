@@ -56,20 +56,20 @@ linked documents rather than being copied into this plan.
 
 | Area | Implemented behavior | Evidence / remaining qualification |
 | --- | --- | --- |
-| Linux installation and daily use | One-command private Python/dependencies, terminal command, desktop entry, loopback UI, stop/status/reopen and isolated demo | Clean Debian/Ubuntu CI; user manual walkthrough pending. [Install](INSTALL_LINUX.md) |
-| CTI | ThreatFox/URLhaus/SGB adapters (PhishTank removed, DEC-089), normalization, lifecycle/freshness, indexed lookup, manual and opt-in scheduled refresh, own-key handling | Scheduling runs while the managed app runs; upstream availability/licensing are separate. [Sources](DATA_SOURCES.md), [install](INSTALL_LINUX.md) |
-| Passive lookup | URL/domain/IP evidence, IDNA and IPv6 prefix context; no destination visit or DNS resolution | Supporting workflow, not a malware-content sandbox. [Architecture](ARCHITECTURE.md) |
-| Manual telemetry | Delimited tables/spreadsheets, Zeek DNS/connection logs, classic UDP DNS PCAP/PCAPNG, supported EVE, Pi-hole FTL, AdGuard and dnstop | Format-specific limits; adapters do not invent missing evidence. [Architecture](ARCHITECTURE.md), [repairs](SOURCE_REVIEW_REPAIRS.md) |
-| Continuous Zeek collection | Completed TSV/gzip conn/DNS archives, private checkpoints/window, deduplication/conflicts, bounded scans, rotation/restart and refreshed UI | Foreground collector; active files wait for closure, one sensor per state, no installed boot service. [Collector](TELEMETRY_COLLECTOR.md), [DNS](DNS_COLLECTION.md) |
-| Large input and reports | Private preparation/shards, explicit DNS quarantine, incomplete-input guards, bounded prioritized snapshots, verified full connection JSON.gz | Retention/omission limits are visible; not unlimited ingest or full DNS export. [Preparation](LOG_PREPARATION.md), [capacity](CONNECTION_CAPACITY.md) |
-| DNS/client triage | Independent client/target assessments, exact-domain versus infrastructure CTI, sustained periodic review, volume/NXDOMAIN/shape/IP-answer context | DNS caching/resolvers/normal polling limit interpretation; tunneling detector not implemented. [Roadmap](DETECTION_ROADMAP.md), [investigation](DNS_INVESTIGATION.md) |
-| Connection triage | Typed TCP sessions, long/periodic review, partial/reset payload coverage and a separate failed-attempt diversity/retry queue | Broad beaconing, jitter, sparse failures and UDP coverage still incomplete. [Termination](TCP_TERMINATION.md), [attempts](TCP_ATTEMPT_REVIEW.md) |
-| Analyst investigation | Bilingual tables, bounded DNS/connection timelines, next-check guidance, pre-filter counts, expiring expected declarations with CTI override | Reversible presentation context preserves original evidence; human time/usefulness not measured. [Analyst review](ANALYST_REVIEW.md), [context](EXPECTED_CONNECTIONS.md) |
-| History and reports | Aggregate history/feedback/suppression in eligible trusted-model local mode, explicit IP opt-ins, report aliases and spreadsheet-safe CSV | Managed CTI/demo history stays disabled. Aliases are not anonymization or stable assets. [Repairs](SOURCE_REVIEW_REPAIRS.md) |
-| Operational safeguards | Private state/schema-3 backups, local generation-bound identity display, all IP answers, explicit work/match budgets, failed-analysis retry, release privacy audit | 1,328 local tests for `d006771` (CI per newest handoff); CTI busy reads keep the last complete indicators with disclosure; complete security and enterprise qualification remain open. [Repairs](SOURCE_REVIEW_REPAIRS.md) |
-| Lab and comparison | Isolated local Zeek/RITA experiments, declared independent source/retention/recovery/resource methods and aggregate results | Some inspected sources are incomplete/missed; accelerated event days are not a wall-clock soak. [Lab](LOCAL_LAB.md), [replay](INDEPENDENT_REPLAY.md), [multi-day](MULTIDAY_COLLECTION.md) |
-| ML | Local lexical domain-model development/evaluation, provenance, trusted artifacts and explicit CTI-only operation | Original runtime artifact absent; augmented candidate experimental; collector ML disabled. [ML](ML_DATASET.md), [handoff](RELEASE_HANDOFF.md) |
-| Packaging/CI | Docker health, isolated synthetic public-mode/proxy tests, Linux/Windows quality/dependency checks | Packaging exists; no public site or hosted preview is authorized. [Deployment reference](DEPLOYMENT.md) |
+| Linux installation and daily use | One-command private Python/dependencies, terminal command, desktop entry, loopback UI, stop/status/reopen and isolated demo | Clean Debian/Ubuntu CI; user manual walkthrough pending. [Install](../INSTALL_LINUX.md) |
+| CTI | ThreatFox/URLhaus/SGB adapters (PhishTank removed, DEC-089), normalization, lifecycle/freshness, indexed lookup, manual and opt-in scheduled refresh, own-key handling | Scheduling runs while the managed app runs; upstream availability/licensing are separate. [Sources](../DATA_SOURCES.md), [install](../INSTALL_LINUX.md) |
+| Passive lookup | URL/domain/IP evidence, IDNA and IPv6 prefix context; no destination visit or DNS resolution | Supporting workflow, not a malware-content sandbox. [Architecture](../ARCHITECTURE.md) |
+| Manual telemetry | Delimited tables/spreadsheets, Zeek DNS/connection logs, classic UDP DNS PCAP/PCAPNG, supported EVE, Pi-hole FTL, AdGuard and dnstop | Format-specific limits; adapters do not invent missing evidence. [Architecture](../ARCHITECTURE.md), repairs |
+| Continuous Zeek collection | Completed TSV/gzip conn/DNS archives, private checkpoints/window, deduplication/conflicts, bounded scans, rotation/restart and refreshed UI | Foreground collector; active files wait for closure, one sensor per state, no installed boot service. [Collector](../evidence/TELEMETRY_COLLECTOR.md), [DNS](../evidence/DNS_COLLECTION.md) |
+| Large input and reports | Private preparation/shards, explicit DNS quarantine, incomplete-input guards, bounded prioritized snapshots, verified full connection JSON.gz | Retention/omission limits are visible; not unlimited ingest or full DNS export. [Preparation](../evidence/LOG_PREPARATION.md), [capacity](../evidence/CONNECTION_CAPACITY.md) |
+| DNS/client triage | Independent client/target assessments, exact-domain versus infrastructure CTI, sustained periodic review, volume/NXDOMAIN/shape/IP-answer context | DNS caching/resolvers/normal polling limit interpretation; tunneling detector not implemented. Roadmap, [investigation](../evidence/DNS_INVESTIGATION.md) |
+| Connection triage | Typed TCP sessions, long/periodic review, partial/reset payload coverage and a separate failed-attempt diversity/retry queue | Broad beaconing, jitter, sparse failures and UDP coverage still incomplete. [Termination](../evidence/TCP_TERMINATION.md), [attempts](../evidence/TCP_ATTEMPT_REVIEW.md) |
+| Analyst investigation | Bilingual tables, bounded DNS/connection timelines, next-check guidance, pre-filter counts, expiring expected declarations with CTI override | Reversible presentation context preserves original evidence; human time/usefulness not measured. [Analyst review](../evidence/ANALYST_REVIEW.md), [context](../evidence/EXPECTED_CONNECTIONS.md) |
+| History and reports | Aggregate history/feedback/suppression in eligible trusted-model local mode, explicit IP opt-ins, report aliases and spreadsheet-safe CSV | Managed CTI/demo history stays disabled. Aliases are not anonymization or stable assets. Repairs |
+| Operational safeguards | Private state/schema-3 backups, local generation-bound identity display, all IP answers, explicit work/match budgets, failed-analysis retry, release privacy audit | 1,328 local tests for `d006771` (CI per newest handoff); CTI busy reads keep the last complete indicators with disclosure; complete security and enterprise qualification remain open. Repairs |
+| Lab and comparison | Isolated local Zeek/RITA experiments, declared independent source/retention/recovery/resource methods and aggregate results | Some inspected sources are incomplete/missed; accelerated event days are not a wall-clock soak. [Lab](../evidence/LOCAL_LAB.md), [replay](../evidence/INDEPENDENT_REPLAY.md), [multi-day](../evidence/MULTIDAY_COLLECTION.md) |
+| ML | Local lexical domain-model development/evaluation, provenance, trusted artifacts and explicit CTI-only operation | Original runtime artifact absent; augmented candidate experimental; collector ML disabled. [ML](../evidence/ML_DATASET.md), [handoff](RELEASE_HANDOFF.md) |
+| Packaging/CI | Docker health, isolated synthetic public-mode/proxy tests, Linux/Windows quality/dependency checks | Packaging exists; no public site or hosted preview is authorized. Deployment reference |
 
 ## Current checkpoint
 
@@ -84,7 +84,7 @@ linked documents rather than being copied into this plan.
   ~290 MiB step at the CTI reload, flat afterwards. Security review fixed DNS
   rebinding to the local app and a ThreatFox redirect key leak. Next P1: lower
   the reload high-water and re-soak with several reloads. See
-  [OPERATIONAL_CONFIDENCE.md](OPERATIONAL_CONFIDENCE.md).
+  [OPERATIONAL_CONFIDENCE.md](../evidence/OPERATIONAL_CONFIDENCE.md).
 - Runtime repairs are merged to main at `35423bc`; 45 added regression cases,
   1,321 local tests and approximately 91% coverage. Six CI jobs passed at
   [run 37455481084](https://github.com/ConquestorYa/threatfusion-ai/actions/runs/37455481084).
@@ -94,7 +94,7 @@ linked documents rather than being copied into this plan.
   contain them; inventory before using a recipe, regenerate only permitted
   inputs, and do not substitute a synthetic/experimental model as a trusted one.
 - Collector state is schema 3; schema-1/2 backups and legacy first-answer
-  limitations are documented in [the repair contract](SOURCE_REVIEW_REPAIRS.md).
+  limitations are documented in the repair contract.
 - User manual testing has **not** been completed. Automated UI checks and
   synthetic tasks do not count as the user's acceptance or an analyst pilot.
 - Runtime correctness has improved; real detection efficacy, broad security,
@@ -102,7 +102,7 @@ linked documents rather than being copied into this plan.
 - No host is connected: the user removed the Render configuration, deleted the
   demo service and disconnected its Blueprint (2026-10-07, DEC-086). Publishing
   verified source to main does not authorize any deployment; see
-  [AGENTS.md](../AGENTS.md).
+  [AGENTS.md](../../AGENTS.md).
 
 ## Ordered roadmap and completion gates
 
@@ -112,9 +112,9 @@ Historical “Next” paragraphs in experiment documents are not this active que
 
 | Order / status | Work | Completion gate |
 | --- | --- | --- |
-| P0 — passed 2026-10-09 (sections A–H; Section G fixes re-checked by the user) ([MANUAL_ACCEPTANCE_TR.md](MANUAL_ACCEPTANCE_TR.md)) | Manual local workflow acceptance | User exercises install/start/stop/reopen, own-key CTI refresh/offline failure, completed conn/DNS collection, local identity/timelines and alias/IP exports. Record reproducible defects and fixes; do not mark passed without user results. Checklist: [MANUAL_ACCEPTANCE_TR.md](MANUAL_ACCEPTANCE_TR.md). |
+| P0 — passed 2026-10-09 (sections A–H; Section G fixes re-checked by the user) ([MANUAL_ACCEPTANCE_TR.md](../evidence/MANUAL_ACCEPTANCE_TR.md)) | Manual local workflow acceptance | User exercises install/start/stop/reopen, own-key CTI refresh/offline failure, completed conn/DNS collection, local identity/timelines and alias/IP exports. Record reproducible defects and fixes; do not mark passed without user results. Checklist: [MANUAL_ACCEPTANCE_TR.md](../evidence/MANUAL_ACCEPTANCE_TR.md). |
 | P1 — fault matrix and security reviews done; wall-clock soak rerun-3 pending | Operational confidence on the repaired source | Freeze this candidate; declare a bounded real wall-clock soak and broader permission/IO/database/resource faults before outcomes. Measure collector **and** web/representative CTI resources, exact retained counts, stale/coverage warnings, old-report preservation and recovery. No private data redistribution or physical host-disk exhaustion. |
-| P2 — partial evidence, more work planned | Analyst usefulness and independent traffic validation | Predeclare actual investigation tasks on permitted independent benign/suspicious windows. Measure review burden, missed cases, correct evidence interpretation, time/task success and effects of normal context. Compare native RITA on identical inputs/configuration with separate output units; preserve negative results. User chose own-traffic + labeled-malware arms (2026-10-07): [design](REAL_TRAFFIC_EVALUATION.md). |
+| P2 — partial evidence, more work planned | Analyst usefulness and independent traffic validation | Predeclare actual investigation tasks on permitted independent benign/suspicious windows. Measure review burden, missed cases, correct evidence interpretation, time/task success and effects of normal context. Compare native RITA on identical inputs/configuration with separate output units; preserve negative results. User chose own-traffic + labeled-malware arms (2026-10-07): [design](../evidence/REAL_TRAFFIC_EVALUATION.md). |
 | P3 — planned, evidence-gated | Focused detection coverage | Prioritize observed gaps in timing/size/jitter/retry/idle/sparse failures. Develop proper registrable-domain DNS tunneling aggregation and benign CDN/update/telemetry controls. Separate development from newly reserved evaluation inputs; regress old CTI/context behavior. Each new detector needs measured incremental usefulness. |
 | P4 — planned, no connector implemented | Versioned integration contract, then one pilot adapter | Define structured findings/coverage/provenance, stable event IDs and deduplication, time/source identity, privacy opt-in, authentication, backpressure/retry and schema compatibility. Select Wazuh or a generic SIEM/log destination from pilot needs; validate end-to-end delivery. Do not build many integrations before proving one. |
 | P5 — planned | Repeatable private pilot and release | Independent users install/use/recover, documented security fixes and realistic resource limits, upgrade/backup behavior, useful operator guide and release checklist. Tag/release only when appropriate. Public hosting is optional and requires a new explicit user request. |
@@ -160,14 +160,14 @@ that model's evaluation report, and tell the user it is back.
 
 Read in this order:
 
-1. [AGENTS.md](../AGENTS.md): authorization, local-only operation, publication
+1. [AGENTS.md](../../AGENTS.md): authorization, local-only operation, publication
    guard, data and frozen evidence restrictions.
 2. This plan: product target, current capability/status and active priorities.
 3. [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) and the **newest** section of
    [RELEASE_HANDOFF.md](RELEASE_HANDOFF.md): state and latest completed work.
-4. [ARCHITECTURE.md](ARCHITECTURE.md), [DECISIONS.md](DECISIONS.md),
-   [DATA_SOURCES.md](DATA_SOURCES.md) and [ML_DATASET.md](ML_DATASET.md).
-5. The relevant feature/protocol document, [CHANGELOG.md](../CHANGELOG.md), source
+4. [ARCHITECTURE.md](../ARCHITECTURE.md), [DECISIONS.md](DECISIONS.md),
+   [DATA_SOURCES.md](../DATA_SOURCES.md) and [ML_DATASET.md](../evidence/ML_DATASET.md).
+5. The relevant feature/protocol document, [CHANGELOG.md](../../CHANGELOG.md), source
    and tests for the chosen increment. Older measured outcomes remain attached
    to their original source/model/input identities.
 

@@ -52,7 +52,7 @@ Real managed CTI mode enables private local endpoint controls while analyst
 history stays disabled. In the collector view, **Show observed endpoint IPs
 locally; downloads keep aliases** reads an owner-only local mapping; it does
 not include that mapping in downloaded reports. Restart an updated collector
-to create this mapping. See [source review repairs](SOURCE_REVIEW_REPAIRS.md)
+to create this mapping. See source review repairs
 for schema backups, legacy DNS-answer coverage and export opt-ins.
 
 Updates are manual until you enable **Automatic updates while the app is
@@ -116,7 +116,7 @@ launcher path. `--no-integrations` skips command/menu/shell registration.
 Real CTI operation does **not** substitute the synthetic demo model for a
 measured detector or promote the experimental augmented candidate. A trusted
 production ML artifact is not distributed in the installer. See
-[ML_DATASET.md](ML_DATASET.md) for the original missing artifact, fresh-disjoint
+[ML_DATASET.md](evidence/ML_DATASET.md) for the original missing artifact, fresh-disjoint
 results and strict-temporal limitation.
 
 Use the operating-mode selector to choose **Synthetic demo** for offline
@@ -170,6 +170,7 @@ threshold. History/telemetry stay session-local in this managed profile; the
 
 ## Automatic Zeek connections and DNS
 
+First set up a Zeek sensor that writes rotated logs: [Zeek sensor setup](ZEEK_SETUP.md).
 In real CTI mode, use a separate terminal:
 
 ```bash
@@ -180,11 +181,11 @@ The local **Collected connections** page refreshes from private state.
 Completed TSV logs/archives are imported once; open logs wait for closure.
 TCP/UDP `dns.log` archives populate **Collected DNS observations** on that page;
 queries are kept separate from connection evidence. Schema-1 collector state is
-privately backed up before upgrading. See [DNS migration and limits](DNS_COLLECTION.md).
+privately backed up before upgrading. See [DNS migration and limits](evidence/DNS_COLLECTION.md).
 Ctrl+C stops collection; repeating the command resumes without duplicates.
 The web app and collector have separate lifetimes. No background system service
-is installed. Rules, limits and standalone operation are documented in
-[TELEMETRY_COLLECTOR.md](TELEMETRY_COLLECTOR.md).
+is installed. What is flagged, limits and investigation are explained in the
+[user guide](USER_GUIDE.md#collector).
 
 Uploaded telemetry remains session-local. Opting into this collector persists
 typed connection/DNS evidence privately in the installation's `collector/` directory,

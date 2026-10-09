@@ -98,7 +98,7 @@ def test_release_audit_rejects_local_data_artifact_paths(path):
 def test_release_audit_allows_code_docs_and_inert_fixtures():
     for path in (
         "src/threatfusion/ml_artifact.py",
-        "docs/ML_DATASET.md",
+        "docs/evidence/ML_DATASET.md",
         "tests/fixtures/dns.csv",
     ):
         assert scan_release_path(path) == ()

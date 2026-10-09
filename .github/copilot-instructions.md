@@ -2,17 +2,22 @@
 
 ## Project Goal
 
-ThreatFusion AI is a local-first network investigation and triage tool (early prototype; see docs/PRODUCT_PLAN.md) that combines multiple public cyber threat intelligence sources with user-provided network/DNS telemetry.
+ThreatFusion AI is a local network investigation tool for Zeek users (early
+prototype; see docs/dev/PRODUCT_PLAN.md). It reads completed Zeek connection and
+DNS logs, matches destinations against public CTI sources and flags device →
+destination groups with explainable behavior checks.
 
 The system should:
 
-- Normalize threat intelligence from multiple sources.
-- Match known indicators of compromise against DNS telemetry.
-- Use machine learning to identify previously unseen suspicious domains.
-- Group related indicators into possible threat campaigns.
-- Produce explainable risk scores.
-- Evaluate ML models using appropriate metrics.
-- Present findings through a web dashboard.
+- Normalize threat intelligence from multiple sources (SGB, ThreatFox, URLhaus).
+- Import completed Zeek logs safely and within explicit bounds.
+- Flag connection and DNS groups with reasons and coverage limits, never verdicts
+  presented as proof.
+- Keep all telemetry local; suspicious destinations are data, never visited.
+- Measure usefulness on predeclared, untouched evidence (see AGENTS.md).
+- Present findings in the local Streamlit workspace.
+
+ML (a lexical domain score) is experimental and off by default.
 
 ## Planned Stack
 

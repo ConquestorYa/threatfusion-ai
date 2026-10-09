@@ -181,7 +181,7 @@ disclose legacy first-answer coverage and enable an explicit local endpoint
 view through a private generation-bound mapping. Collector downloads keep
 aliases. CTI records are reused between polls until cache files change; failed
 analysis preserves the published snapshot and retries committed evidence.
-See [repair contracts](SOURCE_REVIEW_REPAIRS.md).
+See repair contracts.
 
 ## DNS investigation and operational status
 

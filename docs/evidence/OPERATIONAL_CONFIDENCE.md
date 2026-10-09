@@ -8,8 +8,8 @@ cache. No packets, destinations or CTI feeds are contacted. Results are
 engineering evidence for this host and workload; they are not detection
 efficacy, enterprise sizing, a security audit or the user's manual acceptance.
 
-Methods: [`scripts/lab/operational_faults.py`](../scripts/lab/operational_faults.py)
-and [`scripts/lab/wallclock_soak.py`](../scripts/lab/wallclock_soak.py). Each
+Methods: [`scripts/lab/operational_faults.py`](../../scripts/lab/operational_faults.py)
+and [`scripts/lab/wallclock_soak.py`](../../scripts/lab/wallclock_soak.py). Each
 writes `plan.json` plus its SHA-256 into a private 0700 root outside Git before
 any outcome, refuses a changed candidate/method/acceptance and never overwrites
 receipts. Amendments go into a new root that records the earlier plan/summary

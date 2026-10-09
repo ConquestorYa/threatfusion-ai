@@ -985,3 +985,30 @@ confused the user. Demo and ML-enabled modes keep the page.
 **Consequences:** The page code is unchanged. The PRODUCT_PLAN behavioral-ML
 section holds a reminder to bring it back, with the new model's evaluation,
 when a measured model reaches users.
+
+## DEC-092: Network-investigation README and a smaller documentation set
+
+**Decision (2026-10-09):** At the user's request, after the project's focus
+became Zeek-based network investigation, the READMEs were rewritten around that
+workflow and the documentation was reorganized:
+
+- user documents: README, `docs/INSTALL_LINUX.md`, new `docs/ZEEK_SETUP.md`
+  (the pinned Docker recipe used for the real-traffic test), new
+  `docs/USER_GUIDE.md` (replaces the per-feature collector/DNS/investigation/
+  expected/preparation pages as user documentation), `docs/ARCHITECTURE.md`
+  (rewritten), `docs/DATA_SOURCES.md`;
+- measurement records moved unchanged to `docs/evidence/` (including the old
+  feature pages, which contain predeclared controls), indexed in `docs/README.md`;
+- development notes moved to `docs/dev/` (plan, decisions, context, handoff);
+- deleted: v0.1.0 release notes/checklist, the old UI review, the public
+  deployment guide, the superseded detection roadmap and repair notes.
+
+The public-demo hosting stack (`Dockerfile.public-demo`, `deploy/`, proxy/serve
+scripts, `public_demo_hosting.py`, `deployment_bundle.py`, its CI job) and the
+Windows manual updater (`update_cti_database.py`) were removed. This reverses the
+part of DEC-086 that kept the demo image: no host is connected and the product is
+Linux + Zeek. The local demo mode (`demo_runtime.py`, `demo_cti.py`) and the
+installed-session check stay. The experimental ML code stays (user decision).
+
+**Consequences:** Paths in AGENTS.md, CLAUDE.md, the lab skill and scripts point
+to `docs/dev/` and `docs/evidence/`. Removed files remain in Git history.

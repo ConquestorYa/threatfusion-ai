@@ -13,6 +13,10 @@ framing is retired. No release date or tag is set.
 
 ### Documentation
 
+- READMEs rewritten around Zeek network investigation; new Zeek sensor setup
+  guide and user guide; evidence records in `docs/evidence/`, development notes
+  in `docs/dev/` (DEC-092).
+
 - One product identity across documents (DEC-090): a useful local investigation
   tool as the goal, early prototype as the stated status. README status badge
   changed from "v0.1.0 Release Candidate" to "Early prototype"; ML is described
@@ -41,6 +45,11 @@ framing is retired. No release date or tag is set.
   including the redesigned UI and the Section G fixes).
 
 ### Removed
+
+- Public-demo hosting stack and its CI job, deployment bundle builder and the
+  Windows manual CTI updater (DEC-092). Local demo mode is unchanged.
+- Obsolete documents: v0.1.0 release notes/checklist, old UI review, public
+  deployment guide, superseded detection roadmap and repair notes.
 
 - PhishTank source (DEC-089): it no longer issues keys and its public feed had
   failed since 2026-10-07. Older caches drop its rows on the next refresh.

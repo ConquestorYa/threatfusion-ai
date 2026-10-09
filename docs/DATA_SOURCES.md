@@ -50,13 +50,12 @@ Verified from current official source documentation:
   stores attribution and locally sampled evaluation inputs only; no CESNET
   corpus is committed to the repository.
 
-Public-demo policy:
+Demo and publication policy:
 
 - do not publish raw third-party feed dumps or the developer's live CTI cache
-- generate the hosted demo cache with
-  `scripts/generate_public_demo_cti_cache.py`
-- the synthetic public-demo cache contains only reserved documentation values,
-  not ThreatFox, URLhaus, SGB, Tranco, or CESNET records
+- the local demo mode builds its cache with `src/threatfusion/demo_cti.py`; it
+  contains only reserved documentation values, not ThreatFox, URLhaus, SGB,
+  Tranco, or CESNET records
 - keep source attribution when presenting results derived from locally fetched
   third-party data
 

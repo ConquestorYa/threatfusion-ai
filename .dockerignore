@@ -1,15 +1,12 @@
 # Only application/build inputs enter an image. Local work and data stay out.
 **
 !Dockerfile
-!Dockerfile.public-demo
 !requirements-runtime.txt
 !streamlit_app.py
 !src/
 !src/**
 !scripts/
 !scripts/*.py
-!deploy/
-!deploy/**
 !.streamlit/
 !.streamlit/config.toml
 !static/

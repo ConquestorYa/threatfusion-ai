@@ -4,8 +4,8 @@ Status date: 2026-10-06. This increment closes the completed-file DNS ingestion
 gap; it does not introduce a DNS tunneling detector or general UDP beaconing.
 
 Current schema/answer/identity repairs are specified in
-[SOURCE_REVIEW_REPAIRS.md](SOURCE_REVIEW_REPAIRS.md). Earlier live measurements
-below retain their original source scope; use [PRODUCT_PLAN.md](PRODUCT_PLAN.md)
+SOURCE_REVIEW_REPAIRS.md. Earlier live measurements
+below retain their original source scope; use [PRODUCT_PLAN.md](../dev/PRODUCT_PLAN.md)
 for current priorities.
 
 ## Local workflow

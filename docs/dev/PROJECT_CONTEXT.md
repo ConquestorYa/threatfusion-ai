@@ -25,7 +25,7 @@ a 616k-indicator cache. The final candidate passes all nine cases; 1,328 local
 tests pass. The 6-hour wall-clock soak completed 15/16 declared checks: the RSS
 growth limit failed because one CTI reload adds ~290 MiB that is not released
 (flat afterwards). A security review fixed DNS rebinding to the loopback app and
-a ThreatFox redirect key leak. See [OPERATIONAL_CONFIDENCE.md](OPERATIONAL_CONFIDENCE.md).
+a ThreatFox redirect key leak. See [OPERATIONAL_CONFIDENCE.md](../evidence/OPERATIONAL_CONFIDENCE.md).
 
 ### Previous checkpoint (2026-10-06)
 
@@ -35,7 +35,7 @@ report privacy/counts, private local identity controls, schema-3 legacy coverage
 SQLite maintenance, match/work limits, IPv6 lookup, IDNA details and JSON validation.
 **1,321 local tests / approximately 91% coverage and six CI jobs passed.**
 The 34 original local data hashes remain unchanged. See
-[repair contracts](SOURCE_REVIEW_REPAIRS.md) and the newest
+repair contracts and the newest
 [handoff](RELEASE_HANDOFF.md) for exact scope and limitations.
 
 The goal is a useful local network investigation workbench with the web UI and

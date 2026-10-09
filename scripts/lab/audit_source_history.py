@@ -13,14 +13,14 @@ from urllib.parse import unquote, urlsplit
 
 # Exclude the current independent replay document: these are earlier experiments.
 HISTORY = {
-    **{f"CTU-Honeypot-Capture-{n}-1": "docs/NETWORK_EVALUATION.md" for n in (4, 5)},
-    **{f"CTU-IoT-Malware-Capture-{n}-1": "docs/NETWORK_EVALUATION.md" for n in (44, 20)},
-    **{f"CTU-IoT-Malware-Capture-{n}-1": "docs/TCP_TERMINATION.md" for n in (34, 21)},
-    "CTU-IoT-Malware-Capture-8-1": "docs/TCP_ATTEMPT_REVIEW.md",
-    "CTU-IoT-Malware-Capture-42-1": "docs/REVIEW_WORKLOAD.md",
-    "CTU-Honeypot-Capture-7-1/Somfy-01": "docs/TCP_TERMINATION.md",
-    "CTU-Honeypot-Capture-7-1/Somfy-02": "docs/REVIEW_WORKLOAD.md",
-    "CTU-Honeypot-Capture-7-1/Somfy-03": "docs/REVIEW_WORKLOAD.md",
+    **{f"CTU-Honeypot-Capture-{n}-1": "docs/evidence/NETWORK_EVALUATION.md" for n in (4, 5)},
+    **{f"CTU-IoT-Malware-Capture-{n}-1": "docs/evidence/NETWORK_EVALUATION.md" for n in (44, 20)},
+    **{f"CTU-IoT-Malware-Capture-{n}-1": "docs/evidence/TCP_TERMINATION.md" for n in (34, 21)},
+    "CTU-IoT-Malware-Capture-8-1": "docs/evidence/TCP_ATTEMPT_REVIEW.md",
+    "CTU-IoT-Malware-Capture-42-1": "docs/evidence/REVIEW_WORKLOAD.md",
+    "CTU-Honeypot-Capture-7-1/Somfy-01": "docs/evidence/TCP_TERMINATION.md",
+    "CTU-Honeypot-Capture-7-1/Somfy-02": "docs/evidence/REVIEW_WORKLOAD.md",
+    "CTU-Honeypot-Capture-7-1/Somfy-03": "docs/evidence/REVIEW_WORKLOAD.md",
 }
 CURRENT = {
     "CTU-Normal-20", "CTU-Normal-21", "CTU-IoT-Malware-Capture-3-1",
@@ -48,7 +48,7 @@ def identity(url):
 def audit(plan, *, allow_known=(), prior_only=False):
     known = dict(HISTORY)
     if not prior_only:
-        known.update({key: "docs/INDEPENDENT_REPLAY.md" for key in CURRENT})
+        known.update({key: "docs/evidence/INDEPENDENT_REPLAY.md" for key in CURRENT})
     allowed = set(allow_known)
     rows = [{"case": s["name"], "capture_identity": identity(s["url"])} for s in plan["sources"]]
     overlap = {r["capture_identity"] for r in rows if r["capture_identity"] in known}

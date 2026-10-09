@@ -8,7 +8,7 @@ not be changed after outcomes are seen.
 
 ## Question
 
-[P2](PRODUCT_PLAN.md) asks whether ThreatFusion helps an analyst answer: *which
+[P2](../dev/PRODUCT_PLAN.md) asks whether ThreatFusion helps an analyst answer: *which
 client and destination deserve investigation, why, and what should be checked
 next?* That needs two separate measurements that earlier work could not supply:
 
