@@ -15,7 +15,7 @@ class IOCType(str, Enum):
     UNKNOWN = "unknown"
 
 
-@dataclass
+@dataclass(slots=True)
 class IOCRecord:
     value: str
     ioc_type: IOCType

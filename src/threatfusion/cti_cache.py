@@ -529,19 +529,37 @@ def _parse_tags(value: str) -> list[str]:
     return list(decoded)
 
 
-def _ioc_from_row(row: sqlite3.Row) -> IOCRecord:
+def _ioc_from_row(row: sqlite3.Row, shared: dict | None = None) -> IOCRecord:
     try:
         ioc_type = IOCType(str(row["ioc_type"]))
     except ValueError:
         ioc_type = IOCType.UNKNOWN
 
+    if shared is None:
+        source, threat_type = str(row["source"]), row["threat_type"]
+        first_seen, last_seen = _parse_datetime(row["first_seen"]), _parse_datetime(row["last_seen"])
+    else:
+        # Bulk loads repeat a handful of sources, threat types and refresh
+        # timestamps hundreds of thousands of times; share the immutable values.
+        def text(value):
+            return None if value is None else shared.setdefault(("t", value), value)
+
+        def moment(value):
+            key = ("d", value)
+            if key not in shared:
+                shared[key] = _parse_datetime(value)
+            return shared[key]
+
+        source, threat_type = text(str(row["source"])), text(row["threat_type"])
+        first_seen, last_seen = moment(row["first_seen"]), moment(row["last_seen"])
+
     return IOCRecord(
         value=str(row["value"]),
         ioc_type=ioc_type,
-        source=str(row["source"]),
-        first_seen=_parse_datetime(row["first_seen"]),
-        last_seen=_parse_datetime(row["last_seen"]),
-        threat_type=row["threat_type"],
+        source=source,
+        first_seen=first_seen,
+        last_seen=last_seen,
+        threat_type=threat_type,
         confidence=(
             float(row["confidence"])
             if row["confidence"] is not None
@@ -589,9 +607,12 @@ def load_ioc_records(
         clauses.append("active = 1")
     where_clause = f"WHERE {' AND '.join(clauses)}" if clauses else ""
 
+    shared: dict = {}
     with _connect(Path(db_path)) as connection:
         connection.row_factory = sqlite3.Row
-        rows = connection.execute(
+        # Stream rows: holding every sqlite3.Row next to the records doubled
+        # the peak memory of a large cache load.
+        return [_ioc_from_row(row, shared) for row in connection.execute(
             f"""
             SELECT *
             FROM cti_records
@@ -599,9 +620,7 @@ def load_ioc_records(
             ORDER BY id ASC
             """,
             parameters,
-        ).fetchall()
-
-    return [_ioc_from_row(row) for row in rows]
+        )]
 
 
 def lookup_ioc_records(

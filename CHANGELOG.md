@@ -254,6 +254,13 @@ release date is added only when the final tag/release is created.
 
 ### Fixed
 
+- Collector CTI reload memory (P1 soak failure: one-time ~300 MiB step): CTI
+  records use `__slots__`, bulk loads stream rows and share repeated sources,
+  threat types and timestamps, and the cached-analysis change check keeps a
+  count plus field hash instead of a field copy. With the 616k-indicator cache:
+  loader high-water 672 → 277 MiB; repeated in-process reloads plateau at
+  ~640 MiB instead of ~1,212 MiB. Loading is ~10% slower under the same load.
+
 - Switching to Collected connections, Analysis history or Model evaluation was
   hard to notice: the large primary-workspace cards stayed on top and the new
   page header appeared below the fold (user P0 section E). Secondary views now

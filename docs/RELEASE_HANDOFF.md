@@ -2,6 +2,20 @@
 
 Status date: 2026-10-06
 
+## P1: CTI reload memory reduction (2026-10-09)
+
+- Addresses the `wallclock-soak-v1` rerun failure (collector RSS growth 1.32 >
+  1.25 from a one-time CTI-reload step). Measured components with the 616k
+  cache: record objects with per-instance dicts, a transient `fetchall` of
+  every row, repeated source/timestamp values, and a ~134 MiB field copy used
+  for change detection.
+- Changes: `IOCRecord` slots; streamed load with shared immutable values; the
+  collector's indicator state is now a count plus an order-sensitive field hash
+  (in-place mutation still detected; tests updated). Same-condition loader:
+  6.5–7.4 s → ~7.7 s, high-water 672 → 277 MiB; six reloads plateau at ~640 MiB
+  (previously ~1,212 MiB). 1,366 local tests pass. A declared soak rerun on the
+  new candidate is needed before claiming the growth check passes.
+
 ## User feedback on redesign (2026-10-09)
 
 - After `31fbf7f` (IBM Plex fonts, single sidebar navigation, setup page) the

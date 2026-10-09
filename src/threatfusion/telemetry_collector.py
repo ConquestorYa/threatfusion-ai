@@ -50,13 +50,17 @@ _INDICATOR_VALUES = attrgetter(*(name for name in IOCRecord.__dataclass_fields__
 
 
 def _indicator_state(indicators):
-    """Immutable field view of the indicators used by the cached analysis.
+    """Count plus an order-sensitive hash of every indicator field.
 
-    Detects replaced and in-place changed records without deep-copying a real
-    several-hundred-thousand-record cache; strings/datetimes stay shared.
+    Detects replaced and in-place changed records (including list tags) while
+    keeping O(1) memory; a full field copy of a 600k-record cache cost ~130 MiB.
     """
-    return (tuple(map(_INDICATOR_VALUES, indicators)),
-            tuple(tuple(tuple(getattr(record, name)) for name in _INDICATOR_LISTS) for record in indicators))
+    count = digest = 0
+    for record in indicators:
+        fields = _INDICATOR_VALUES(record), tuple(tuple(getattr(record, name)) for name in _INDICATOR_LISTS)
+        digest = hash((digest, fields))
+        count += 1
+    return count, digest
 
 
 def _atomic(path: Path, content: str):

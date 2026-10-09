@@ -157,8 +157,8 @@ def test_unchanged_indicators_are_not_deep_copied_and_changed_content_recomputes
     first = [IOCRecord("198.51.100.77", IOCType.IPV4, "Synthetic", tags=["a"])]
     with module.ZeekCollector(source, state) as collector:
         assert collector.tick(indicators=first)["scan"]["analysis_recomputed"]
-        # Field view shares immutable values; a real cache is not deep-copied.
-        assert collector.cached_indicators[0][0][0] is first[0].value
+        # O(1) state: a count and a field hash, never a copy of the cache.
+        assert collector.cached_indicators[0] == 1 and isinstance(collector.cached_indicators[1], int)
         assert not collector.tick(indicators=first)["scan"]["analysis_recomputed"]
         reloaded = [IOCRecord("198.51.100.77", IOCType.IPV4, "Synthetic", tags=["a"])]
         assert not collector.tick(indicators=reloaded)["scan"]["analysis_recomputed"]
