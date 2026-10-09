@@ -213,3 +213,19 @@ def test_settings_import_requires_only_standard_library():
         text=True,
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_committed_source_archive_passes_the_installer_checks(tmp_path):
+    """The installer downloads GitHub's archive of a commit; it must extract."""
+    git = subprocess.run(["git", "-C", str(SOURCE), "rev-parse", "HEAD"], capture_output=True, text=True)
+    if git.returncode:
+        pytest.skip("not a git checkout")
+    archive = tmp_path / "source.tar.gz"
+    subprocess.run(["git", "-C", str(SOURCE), "archive", "--format=tar.gz", "--prefix=source/",
+                    "-o", str(archive), "HEAD"], check=True)
+    target = tmp_path / "out"
+    target.mkdir()
+    bootstrap.extract_source(archive, target)  # Rejects symlinks, e.g. a committed .venv link.
+    assert (target / "scripts/bootstrap_linux.py").is_file()
+    tracked = subprocess.run(["git", "-C", str(SOURCE), "ls-files", "-s"], capture_output=True, text=True, check=True)
+    assert not [line for line in tracked.stdout.splitlines() if line.startswith("120000 ")]
