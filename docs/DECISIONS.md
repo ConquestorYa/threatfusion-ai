@@ -932,3 +932,21 @@ moved to its own page (first page on a new install) with per-source details in a
 table. The main-area tab row and back buttons were removed so navigation lives
 in one place.
 
+
+## DEC-089: Remove PhishTank
+
+**Decision (2026-10-09):** At the user's request, remove the PhishTank source.
+PhishTank no longer issues new application keys, and since 2026-10-07 its
+keyless public feed redirected to a 404 image, so the user's cache never held a
+PhishTank record. The source only produced failure notes, a key field that
+could not be filled and an extra status card.
+
+**Consequences:** The collector, refresh job, key field, source card, outage
+notes and their tests are removed. `PhishTank` is a retired source: status
+views hide it and the next refresh deletes its rows from older caches
+(`remove_source`; a cache without such rows is not written). A status file
+written before the update no longer shows a PhishTank failure. Environment
+scrubbing and the release audit still treat `PHISHTANK_APP_KEY` as a secret.
+Phishing-URL coverage now comes only from URLhaus/SGB where they overlap; a
+replacement (e.g. OpenPhish) needs its terms and measured usefulness checked
+first. Historical documents keep their PhishTank references as history.

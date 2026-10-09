@@ -41,16 +41,14 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=6.0,
         help=(
-            "skip keyed/SGB sources refreshed more recently than this value; "
-            "the public PhishTank feed always uses a fixed 24-hour minimum"
+            "skip sources refreshed more recently than this value"
         ),
     )
     parser.add_argument(
         "--force",
         action="store_true",
         help=(
-            "refresh configured sources even when their cache is fresh; "
-            "does not bypass the public PhishTank 24-hour minimum"
+            "refresh configured sources even when their cache is fresh"
         ),
     )
     parser.add_argument(
@@ -78,7 +76,6 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     threatfox_key = _secret("THREATFOX_AUTH_KEY")
     urlhaus_key = _secret("URLHAUS_AUTH_KEY")
-    phishtank_key = _secret("PHISHTANK_APP_KEY")
     missing = [
         name
         for name, value in (
@@ -105,7 +102,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.db,
         threatfox_key=threatfox_key,
         urlhaus_key=urlhaus_key,
-        phishtank_key=phishtank_key,
         sgb_max_pages=args.sgb_max_pages,
         stale_after=timedelta(hours=args.stale_hours),
         force=args.force,
@@ -127,13 +123,6 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
 
     print("  IOC values and API keys were not printed.")
-    if phishtank_key is None:
-        print(
-            "  PhishTank public feed was used. For reliable automated "
-            "downloads, set PHISHTANK_APP_KEY."
-        )
-    else:
-        print("  PhishTank authenticated feed was used.")
     return 1 if any(item.status == "failed" for item in outcomes) else 0
 
 

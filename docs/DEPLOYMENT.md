@@ -60,9 +60,7 @@ THREATFUSION_CTI_STALE_HOURS_SGB=24
 ```
 
 ThreatFox, URLhaus, and SGB default to 24-hour stale thresholds and can be
-tuned independently. PhishTank uses the public keyless feed and is fixed at a
-24-hour refresh/freshness interval so the application stays comfortably within
-the public-feed download allowance.
+tuned independently. PhishTank was removed (DEC-089).
 
 The SQLite database must already contain the CTI cache, and the model directory
 must contain the trusted local `model.joblib` and `metadata.json` artifact.
@@ -265,21 +263,13 @@ python scripts/refresh_cti_cache.py
 ```
 
 The refresh now uses the current/full ThreatFox and URLhaus exports, completes
-the bounded SGB pagination before replacing its snapshot, and always includes
-the low-frequency public PhishTank feed. Only the abuse.ch feeds need
-credentials:
+the bounded SGB pagination before replacing its snapshot. Only the abuse.ch
+feeds need credentials:
 
 ```text
 THREATFOX_AUTH_KEY=...
 URLHAUS_AUTH_KEY=...
-PHISHTANK_APP_KEY=...  # optional, recommended for automated PhishTank downloads
 ```
-
-PhishTank can use the keyless public feed, but its official developer guidance
-recommends an application key for automated downloads. Set
-`PHISHTANK_APP_KEY` to use the authenticated feed path. Without it, redirects
-to access/security checks are reported clearly and the previous healthy cache is
-preserved. PhishTank is still never refreshed more than once every 24 hours.
 
 Failed or unexpectedly empty source refreshes preserve the previous healthy
 snapshot. Old inactive lifecycle rows are pruned after 90 days so a long-running
@@ -289,7 +279,7 @@ demo does not grow without bound.
 
 The Streamlit process does not refresh external CTI feeds on startup and does
 not run a process-local background refresh thread. Web startup therefore does
-not depend on ThreatFox, URLhaus, PhishTank, or SGB availability.
+not depend on ThreatFox, URLhaus, or SGB availability.
 
 For a local/private workspace, refresh the database explicitly before starting
 the web app when fresh CTI is needed:
@@ -300,8 +290,7 @@ python update_cti_database.py
 
 The convenience updater uses `THREATFUSION_DB_PATH` when it is set, otherwise
 it updates `data/threatfusion.sqlite`. It forces configured ThreatFox,
-URLhaus, and SGB sources, while the PhishTank public feed keeps its fixed
-24-hour minimum. Missing keyed-feed credentials are skipped. Existing healthy
+URLhaus, and SGB sources. Missing keyed-feed credentials are skipped. Existing healthy
 source snapshots are preserved independently when a refresh fails.
 
 The lower-level command remains available for advanced options:

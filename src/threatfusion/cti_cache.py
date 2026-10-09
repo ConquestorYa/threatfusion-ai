@@ -58,6 +58,11 @@ class CTILifecycleRecord:
     active: bool
 
 
+# PhishTank stopped issuing keys and its public feed has failed since
+# 2026-10-07; it was removed (DEC-089). Status views hide it and the next
+# refresh deletes its rows from older caches.
+RETIRED_SOURCES = ("PhishTank",)
+
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS cti_records (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -722,6 +727,20 @@ def prune_inactive_records(
     return deleted
 
 
+def remove_source(db_path: Path, source: str) -> int:
+    """Delete every record and the refresh row of a source that is no longer used."""
+    initialize_cti_cache(db_path, writer=True)
+    with _connect(Path(db_path)) as connection:
+        if not connection.execute(
+            "SELECT 1 FROM cti_refreshes WHERE source = ? UNION ALL "
+            "SELECT 1 FROM cti_records WHERE source = ? LIMIT 1", (source, source)
+        ).fetchone():
+            return 0  # No write: an untouched cache keeps its file unchanged.
+        deleted = connection.execute("DELETE FROM cti_records WHERE source = ?", (source,)).rowcount
+        connection.execute("DELETE FROM cti_refreshes WHERE source = ?", (source,))
+    return deleted
+
+
 def list_cti_lifecycle_records(
     db_path: Path,
     *,
@@ -773,7 +792,7 @@ def list_cti_cache_status(db_path: Path) -> list[CTICacheStatus]:
     with _connect(Path(db_path)) as connection:
         connection.row_factory = sqlite3.Row
         rows = connection.execute(
-            """
+            f"""
             SELECT
                 refreshes.source,
                 refreshes.refreshed_at,
@@ -790,8 +809,10 @@ def list_cti_cache_status(db_path: Path) -> list[CTICacheStatus]:
                 GROUP BY source
             ) AS history
                 ON history.source = refreshes.source
+            WHERE refreshes.source NOT IN ({",".join("?" for _ in RETIRED_SOURCES)})
             ORDER BY refreshes.source ASC
-            """
+            """,
+            RETIRED_SOURCES,
         ).fetchall()
 
     return [

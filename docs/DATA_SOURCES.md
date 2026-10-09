@@ -9,7 +9,6 @@ Treat all threat indicators as inert data only.
 | --- | --- | --- |
 | ThreatFox (abuse.ch) | Malicious IOC feed collection | `src/threatfusion/collectors/threatfox.py` (full current export + recent API fallback) |
 | URLhaus (abuse.ch) | Malware-distribution URL feed collection | `src/threatfusion/collectors/urlhaus.py` (full database dump) |
-| PhishTank | Verified online phishing URL collection | `src/threatfusion/collectors/phishtank.py` |
 | SGB (T.C. Siber Güvenlik Başkanlığı) | Malicious address feed collection | `src/threatfusion/collectors/sgb.py` (`SGB_API_URL`) |
 | Tranco | Benign-domain baseline input | `src/threatfusion/collectors/tranco.py` (`TrancoCollector`) |
 | CESNET / DomainRadar 2024 | Real-traffic benign-domain evaluation corpus | DOI `10.5281/zenodo.14332167`; `scripts/sample_cesnet_benign_domains.py` |
@@ -26,7 +25,7 @@ Treat all threat indicators as inert data only.
 Verified from current official source documentation:
 
 - The code contains feed endpoints and ingestion logic; it does **not** bundle a
-  copy of the live ThreatFox, URLhaus, PhishTank, SGB, or Tranco datasets.
+  copy of the live ThreatFox, URLhaus, SGB, or Tranco datasets.
 - ThreatFox and URLhaus are abuse.ch platforms governed by the abuse.ch Terms of
   Use and Fair Use Principles. The community APIs are intended for authenticated
   non-profit/fair-use access; commercial or for-profit use may require a
@@ -34,21 +33,11 @@ Verified from current official source documentation:
   - https://abuse.ch/terms-of-use/
   - https://threatfox.abuse.ch/api/
   - https://urlhaus.abuse.ch/api/
-- PhishTank provides a downloadable database containing verified, online
-  phishing URLs. ThreatFusion supports both the keyless public CSV feed and
-  the application-key feed path, sends a descriptive User-Agent, and limits
-  refreshes to at most once every 24 hours. PhishTank recommends an application
-  key for automated downloads; without one, the service can limit downloads or
-  redirect requests to additional access/security checks. ThreatFusion never
-  follows arbitrary redirects, treats feed contents as untrusted CTI input,
-  and never visits the listed URLs. The feed is not committed to this
-  repository. See:
-  - https://phishtank.org/developer_info.php
-- PhishTank status observed 2026-10-07: the keyless public URL answers HTTP 302 to a
-  `cdn.phishtank.com` path that returns HTTP 404 with an image body. The
-  collector refuses redirects, so keyless PhishTank refreshes fail fast and
-  previous data is kept; the managed UI reports this as an upstream outage,
-  not a key problem. Other sources are unaffected. Recheck before relying on it.
+- PhishTank was removed on 2026-10-09 (DEC-089). It no longer issues new
+  application keys, and since 2026-10-07 its keyless public URL redirected
+  (HTTP 302) to a `cdn.phishtank.com` path answering HTTP 404 with an image.
+  Its collector, key field and status card are gone; the next refresh deletes
+  any PhishTank rows from older local caches.
 - The SGB API documentation explicitly describes automated integration of its
   malicious-address intelligence into security products/systems, but this
   repository does not rely on that statement as a broad redistribution license.

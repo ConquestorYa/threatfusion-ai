@@ -22,16 +22,15 @@ New installations open in **real CTI mode with ML disabled**. The cache is
 initially empty; an empty cache or a missing match does not establish safety.
 The **Setup & CTI updates** page (sidebar **Pages** list) opens first on a new install:
 
-1. Enter your own ThreatFox and URLhaus API keys if you have them. PhishTank's
-   key is optional. SGB and public PhishTank can be attempted without keys.
+1. Enter your own ThreatFox and URLhaus API keys if you have them; one free
+   abuse.ch key covers both. SGB works without a key.
 2. Choose **Apply keys**. By default keys stay in the current browser session.
 3. Click **Update CTI now**. Each source updates independently. Failures retain
    its previous cache; the panel shows skipped sources, failures and safe counts.
 4. Run Quick Lookup or upload telemetry. After a cache update, run the analysis
    again: previously displayed results are snapshots.
 
-Source access and availability are not guaranteed. In particular, a public
-PhishTank download may be blocked upstream. The application does not visit IOC
+Source access and availability are not guaranteed. The application does not visit IOC
 destinations. Downloading permitted feeds does not grant redistribution rights;
 see [DATA_SOURCES.md](DATA_SOURCES.md).
 
@@ -62,7 +61,7 @@ this scheduler independently of browser reruns/tabs. It uses **only saved keys
 and public sources**, not another browser session's unsaved credentials.
 
 - Collection starts when due, including on the next app start after missed time.
-- Fresh sources are skipped; PhishTank has a minimum 24-hour refresh cadence.
+- Fresh sources are skipped.
 - Attempts are recorded even on failure to avoid tight retry loops while offline.
 - Manual, CLI and automatic refresh share a nonblocking process lock.
 - Closing a browser tab leaves the local server/scheduler running. Stopping the

@@ -6,18 +6,18 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import sqlite3
 
-from .collectors.phishtank import PhishTankCollector
 from .collectors.sgb import SGBCollector
 from .collectors.threatfox import ThreatFoxCollector
 from .collectors.urlhaus import URLhausCollector
 from .cti_cache import (
+    RETIRED_SOURCES,
     list_cti_cache_status,
     prune_inactive_records,
+    remove_source,
     replace_source_records,
 )
 from .models import IOCRecord
 
-PHISHTANK_PUBLIC_REFRESH_INTERVAL = timedelta(hours=24)
 ProgressCallback = Callable[[str, str, str | None], None]
 
 
@@ -121,7 +121,6 @@ def refresh_configured_sources(
     *,
     threatfox_key: str | None,
     urlhaus_key: str | None,
-    phishtank_key: str | None = None,
     sgb_max_pages: int = 100,
     stale_after: timedelta = timedelta(hours=6),
     force: bool = False,
@@ -150,20 +149,6 @@ def refresh_configured_sources(
                 lambda: URLhausCollector(urlhaus_key.strip()).fetch_full_urls(),
             )
         )
-    phishtank_app_key = (
-        phishtank_key.strip() if phishtank_key and phishtank_key.strip() else None
-    )
-    jobs.append(
-        (
-            "PhishTank",
-            lambda: (
-                PhishTankCollector(app_key=phishtank_app_key)
-                if phishtank_app_key is not None
-                else PhishTankCollector()
-            ).fetch_verified_online_urls(),
-        )
-    )
-
     jobs.append(
         (
             "SGB",
@@ -173,22 +158,12 @@ def refresh_configured_sources(
 
     outcomes: list[CTIRefreshOutcome] = []
     for source, fetcher in jobs:
-        source_stale_after = (
-            PHISHTANK_PUBLIC_REFRESH_INTERVAL if source == "PhishTank" else stale_after
-        )
-        public_feed_fresh = source == "PhishTank" and not _source_is_stale(
+        if not force and not _source_is_stale(
             db_path,
             source,
-            stale_after=source_stale_after,
+            stale_after=stale_after,
             now=reference,
-        )
-        normal_feed_fresh = not force and not _source_is_stale(
-            db_path,
-            source,
-            stale_after=source_stale_after,
-            now=reference,
-        )
-        if public_feed_fresh or normal_feed_fresh:
+        ):
             _emit_progress(progress, source, "skipped", "cache still fresh")
             outcomes.append(CTIRefreshOutcome(source=source, status="fresh"))
             continue
@@ -196,11 +171,6 @@ def refresh_configured_sources(
         fetch_detail = {
             "ThreatFox": "downloading full current export",
             "URLhaus": "downloading full export with recent-feed fallback",
-            "PhishTank": (
-                "downloading authenticated phishing feed"
-                if phishtank_app_key is not None
-                else "downloading public phishing feed"
-            ),
             "SGB": f"fetching paginated feed (up to {sgb_max_pages} pages)",
         }.get(source)
         _emit_progress(progress, source, "fetching", fetch_detail)
@@ -252,6 +222,8 @@ def refresh_configured_sources(
         )
 
     try:
+        for retired in RETIRED_SOURCES:
+            remove_source(db_path, retired)
         prune_inactive_records(db_path, older_than_days=90, now=reference)
     except (OSError, sqlite3.Error, ValueError):
         # Source snapshots have already committed independently. Maintenance

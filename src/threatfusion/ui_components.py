@@ -46,21 +46,10 @@ def source_status_html(row: dict[str, object]) -> str:
     except ValueError:
         updated = tr("Update time unavailable")
     source = str(row["Source"])
-    source_label = (
-        tr("PhishTank · Verified & Online")
-        if source == "PhishTank"
-        else source
-    )
-    if row.get("Upstream unavailable"):
-        updated = tr("Public keyless feed currently unavailable from the source")
+    source_label = source
     count = row.get("Records")
     if count is None:
         count_text = tr("No cached indicators")
-    elif source == "PhishTank":
-        count_text = tr(
-            "{count} verified & online phishing URLs",
-            count=f"{int(count):,}",
-        )
     else:
         count_text = tr("{count} active indicators", count=f"{int(count):,}")
     return (
@@ -94,13 +83,6 @@ def render_source_status(row: dict[str, object], *, details: bool = True) -> Non
                 count=f"{row.get('Inactive history', 0):,}",
             )
         )
-        if str(row["Source"]) == "PhishTank":
-            st.caption(
-                tr(
-                    "ThreatFusion uses PhishTank's verified-online public feed. "
-                    "Unverified, invalid, or offline archive submissions are not included."
-                )
-            )
         if row["Status"] == "Not cached":
             st.caption(tr("Refresh this source to enable its known-IOC matching."))
 

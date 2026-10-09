@@ -11,7 +11,9 @@ passed with the user; only the free-form Section G remains. P1: the CTI reload
 memory step was reduced (loader high-water 672 → 277 MiB, reload plateau ~640
 vs ~1,212 MiB) and a second security review found no new vulnerability. The
 declared soak rerun-2 was interrupted by a host shutdown (no verdict); rerun-3
-with unchanged acceptance is running. Next: soak verdict, Section G, then P2.
+with unchanged acceptance is running. Section G feedback was fixed and PhishTank
+was removed at the user's request (DEC-089). Next: soak verdict, the user's
+short re-check, then P2.
 
 ### Previous checkpoint (2026-10-07)
 

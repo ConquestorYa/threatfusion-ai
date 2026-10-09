@@ -99,7 +99,6 @@ def refresh_local_cti(install_dir: Path, environment: Mapping[str, str]) -> None
         install_dir / "runtime/cti/threatfusion.sqlite",
         threatfox_key=environment.get("THREATFOX_AUTH_KEY"),
         urlhaus_key=environment.get("URLHAUS_AUTH_KEY"),
-        phishtank_key=environment.get("PHISHTANK_APP_KEY"),
         progress=lambda source, stage, detail: print(
             f"  {source}: {stage}", flush=True
         ),

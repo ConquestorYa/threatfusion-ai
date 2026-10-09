@@ -129,10 +129,10 @@ def test_running_update_survives_reruns_disables_button_and_shows_progress(manag
 
     def refresh(path, **kwargs):
         calls.append(1)
-        kwargs["progress"]("PhishTank", "refreshed", "1 active records")
+        kwargs["progress"]("SGB", "refreshed", "1 active records")
         started.set()
         assert release.wait(10)
-        return (CTIRefreshOutcome("PhishTank", "refreshed", record_count=1),)
+        return (CTIRefreshOutcome("SGB", "refreshed", record_count=1),)
 
     monkeypatch.setattr(workspace, "refresh_configured_sources", refresh)
     app = local_app(managed)
@@ -146,7 +146,7 @@ def test_running_update_survives_reruns_disables_button_and_shows_progress(manag
         f"render_refresh_progress(Path({str(managed)!r}))"
     ).run(timeout=15)
     bar = progress.get("progress")[0]
-    assert "1/2 finished" in bar.proto.text and "50%" in bar.proto.text
+    assert "1/1 finished" in bar.proto.text and "99%" in bar.proto.text
     release.set()
     status = wait_finished(managed)
     assert calls == [1] and status["outcomes"][0]["status"] == "refreshed"
@@ -182,34 +182,30 @@ def test_other_sessions_mode_changes_are_respected(managed):
     assert app.selectbox(key="local_mode").value == "demo"
 
 
-def test_keyless_phishtank_outage_is_information_not_a_key_problem(managed, monkeypatch):
-    def refresh(path, **kwargs):
-        return (CTIRefreshOutcome("PhishTank", "failed", detail="redirected"),
-                CTIRefreshOutcome("SGB", "refreshed", record_count=3))
-
-    monkeypatch.setattr(workspace, "refresh_configured_sources", refresh)
-    status = workspace.refresh_workspace(managed, credentials={})
-    assert status["outcomes"][0] == {"source": "PhishTank", "status": "failed",
-                                     "record_count": 0, "public_feed": True}
+def test_status_written_before_phishtank_removal_is_ignored(managed):
+    """DEC-089: an old status file must not show a PhishTank failure."""
+    workspace.write_private_json(managed / "refresh-status.json", {
+        "attempted_at": "2026-10-08T20:00:00+00:00", "running": False, "outcomes": [
+            {"source": "SGB", "status": "refreshed", "record_count": 3},
+            {"source": "PhishTank", "status": "failed", "record_count": 0, "public_feed": True}]})
     app = local_app(managed)
     assert not app.exception
-    assert any("public keyless feed is currently unavailable" in str(i.value) for i in app.info)
-    assert not any("PhishTank" in str(w.value) for w in app.warning)
-    keyed = workspace.refresh_workspace(managed, credentials={"PHISHTANK_APP_KEY": "own-app-key"})
-    assert "public_feed" not in keyed["outcomes"][0]
+    shown = "\n".join(str(e.value) for e in [*app.warning, *app.info, *app.caption])
+    assert "PhishTank" not in shown
+    assert all(t.label != "PhishTank (optional)" for t in app.text_input)
+    assert ui._refresh_summary(workspace.read_private_json(managed / "refresh-status.json"))[0] == "success"
 
 
 @pytest.mark.parametrize("outcomes,failed,kind,text", [
-    ([("ThreatFox", "fresh"), ("PhishTank", "failed", True), ("SGB", "fresh")], False, "info", "already up to date"),
-    ([("PhishTank", "failed", True), ("SGB", "failed")], False, "warning", "No CTI source could be reached"),
+    ([("ThreatFox", "fresh"), ("SGB", "fresh")], False, "info", "already up to date"),
+    ([("URLhaus", "failed"), ("SGB", "failed")], False, "warning", "No CTI source could be reached"),
     ([("SGB", "refreshed"), ("ThreatFox", "failed")], False, "warning", "finished with problems"),
-    ([("SGB", "refreshed"), ("PhishTank", "failed", True)], False, "success", "1 source(s) downloaded"),
+    ([("SGB", "refreshed")], False, "success", "1 source(s) downloaded"),
     ([], True, "warning", "update failed"),
 ])
 def test_refresh_result_summary_explains_the_outcome(outcomes, failed, kind, text):
     status = {"failed": failed, "outcomes": [
-        {"source": o[0], "status": o[1], "record_count": 0} | ({"public_feed": True} if len(o) > 2 else {})
-        for o in outcomes]}
+        {"source": o[0], "status": o[1], "record_count": 0} for o in outcomes]}
     assert ui._refresh_summary(status)[0] == kind and text in ui._refresh_summary(status)[1]
 
 
@@ -226,15 +222,14 @@ def test_force_option_reaches_the_source_refresh(managed, monkeypatch):
     assert seen == [True, False]
 
 
-def test_offline_failures_do_not_blame_phishtank_or_keys(managed, monkeypatch):
+def test_offline_sgb_failure_does_not_blame_keys(managed, monkeypatch):
     monkeypatch.setattr(workspace, "refresh_configured_sources", lambda path, **kwargs: (
-        CTIRefreshOutcome("PhishTank", "failed"), CTIRefreshOutcome("SGB", "failed")))
+        CTIRefreshOutcome("SGB", "failed"),))
     workspace.refresh_workspace(managed, credentials={})
     app = local_app(managed)
     text = "\n".join(str(w.value) for w in app.warning)
     assert "Check your internet connection or source availability" in text
     assert "your key" not in text
-    assert not any("public keyless feed" in str(i.value) for i in app.info)
 
 
 def test_lookup_validation_messages_have_turkish_translations():
@@ -244,32 +239,6 @@ def test_lookup_validation_messages_have_turkish_translations():
     sources = "".join(Path("src/threatfusion", name).read_text() for name in ("quick_lookup.py", "normalization.py"))
     messages = set(re.findall(r'raise ValueError\("([^"]+)"\)', sources))
     assert len(messages) >= 10 and not messages - set(_TR)
-
-
-def test_upstream_outage_reaches_source_card_and_sits_under_the_button(managed):
-    from threatfusion.ui_components import source_status_html
-    outcomes = [{"source": "SGB", "status": "refreshed", "record_count": 3},
-                {"source": "PhishTank", "status": "failed", "record_count": 0, "public_feed": True}]
-    workspace.write_private_json(managed / "refresh-status.json",
-                                 {"attempted_at": "2026-10-08T20:00:00+00:00", "running": False,
-                                  "finished_at": "2026-10-08T20:01:00+00:00", "outcomes": outcomes})
-    assert ui.upstream_unavailable_sources(managed) == frozenset({"PhishTank"})
-    row = {"Source": "PhishTank", "Status": "Not cached", "Records": None, "Age": "Unknown",
-           "Upstream unavailable": True}
-    assert "Public keyless feed currently unavailable from the source" in source_status_html(row)
-    app = local_app(managed)
-    labels = [getattr(e, "label", None) or str(getattr(e, "value", "")) for e in app.main]
-    note = next(i for i, v in enumerate(labels) if "public keyless feed" in v)
-    assert labels.index("Update CTI now") < note < labels.index("Automatic updates while the app is running")
-
-
-def test_offline_attempt_does_not_mark_public_feeds_as_upstream_outages(managed):
-    workspace.write_private_json(managed / "refresh-status.json", {"outcomes": [
-        {"source": "SGB", "status": "failed", "record_count": 0},
-        {"source": "PhishTank", "status": "failed", "record_count": 0, "public_feed": True}]})
-    assert ui.upstream_unavailable_sources(managed) == frozenset()
-    (managed / "refresh-status.json").unlink()
-    assert ui.upstream_unavailable_sources(managed) == frozenset()
 
 
 def test_force_option_is_one_shot_and_disabled_while_running(managed, monkeypatch):

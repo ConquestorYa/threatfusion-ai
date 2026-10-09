@@ -60,7 +60,7 @@ devam ettiğini görmek. Önceki denemede burada "database is locked" hatası
   Yan panelde "Kayıtlı anahtarlar: ThreatFox, URLhaus" (İngilizcede "Saved
   keys") yazısını görmelisin. Görmüyorsan anahtarlarını aynı panelden tekrar gir ve
   "Anahtarları bu bilgisayara kaydet" kutusunu işaretleyip **Anahtarları
-  uygula**'ya bas. SGB ve PhishTank anahtar istemez.
+  uygula**'ya bas. SGB anahtar istemez.
 - Uygulamayı başlattığın **terminal penceresini açık tut**; hata çıkarsa orada
   görünür.
 
@@ -268,6 +268,9 @@ cihaz/hedefin neden incelenmesi gerektiğini gösterdiğini görmek.
 - [ ] Toplanan bağlantılar ve Model değerlendirme sayfalarındaki "Bu sayfa ne
       işe yarar?" açıklaması anlaşılır.
 - [ ] Kurulum sayfasında (anahtar eksikken) abuse.ch notu anlaşılır.
+- [ ] PhishTank her yerden kalktı: yan paneldeki kaynak listesinde, Kurulum
+      sayfasındaki anahtar alanlarında ve "CTI'yı şimdi güncelle" sonrasındaki
+      sonuçlarda PhishTank görünmüyor (kullanıcı onayıyla kaldırıldı, DEC-089).
 
 
 ---

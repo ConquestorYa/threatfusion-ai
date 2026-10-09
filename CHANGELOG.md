@@ -10,6 +10,12 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 The current unreleased state is the v0.1.0 portfolio-release candidate. The
 release date is added only when the final tag/release is created.
 
+### Fixed
+
+- An accidentally committed `.venv` symlink (in `4ba4119`) made the Linux
+  installer fail with `ValueError`; it is removed and each commit's archive is
+  now tested against the installer's extraction checks.
+
 ### Changed
 
 - Section G feedback: Turkish lookup placeholder, localized and more visible
@@ -23,6 +29,9 @@ release date is added only when the final tag/release is created.
   Section G remains open.
 
 ### Removed
+
+- PhishTank source (DEC-089): it no longer issues keys and its public feed had
+  failed since 2026-10-07. Older caches drop its rows on the next refresh.
 
 - Render Blueprint `render.yaml` and Render-specific deployment instructions, at
   the user's request (DEC-086). The host-independent `Dockerfile.public-demo`,

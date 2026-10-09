@@ -24,7 +24,6 @@ def test_default_config_is_local_mode() -> None:
         "ThreatFox": timedelta(hours=24),
         "URLhaus": timedelta(hours=24),
         "SGB": timedelta(hours=24),
-        "PhishTank": timedelta(hours=24),
     }
 
 
@@ -92,7 +91,6 @@ def test_cti_source_freshness_thresholds_are_configurable() -> None:
         "ThreatFox": timedelta(hours=6),
         "URLhaus": timedelta(hours=12.5),
         "SGB": timedelta(hours=48),
-        "PhishTank": timedelta(hours=24),
     }
 
 

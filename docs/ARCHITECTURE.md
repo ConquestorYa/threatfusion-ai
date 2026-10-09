@@ -49,7 +49,6 @@ flowchart LR
     subgraph SOURCES["CTI Sources"]
         TF[ThreatFox]
         UH[URLhaus]
-        PT[PhishTank]
         SGB[SGB]
     end
 
@@ -67,7 +66,6 @@ flowchart LR
 
     TF --> NORM[IOC normalization]
     UH --> NORM
-    PT --> NORM
     SGB --> NORM
     NORM --> CACHE[(SQLite CTI cache)]
 
@@ -161,7 +159,6 @@ Implemented collectors:
 
 - <code>collectors/threatfox.py</code>
 - <code>collectors/urlhaus.py</code>
-- <code>collectors/phishtank.py</code>
 - <code>collectors/sgb.py</code>
 
 All map supported values into the shared <code>IOCRecord</code> model.
@@ -183,7 +180,6 @@ Quick Lookup uses indexed candidate retrieval instead of loading the entire CTI 
 Feed refresh is separate from user analysis.
 
 - ThreatFox / URLhaus / SGB can refresh when stale.
-- PhishTank's public feed is limited to a 24-hour minimum refresh interval.
 - failed or empty refreshes preserve the previous healthy snapshot;
 - inactive lifecycle records are pruned after 90 days.
 

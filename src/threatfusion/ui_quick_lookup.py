@@ -361,7 +361,7 @@ def _render_signal_console(result: QuickLookupResult) -> None:
         f'<div class="tf-signal-node tf-signal-node--{cti_tone}">'
         f'<div class="tf-signal-node-label">{safe_text(tr("Local threat intelligence"))}</div>'
         f'<div class="tf-signal-node-value">{safe_text(cti_value)}</div>'
-        f'<div class="tf-signal-node-sub">{safe_text(tr("ThreatFox · URLhaus · PhishTank · SGB cache"))}</div>'
+        f'<div class="tf-signal-node-sub">{safe_text(tr("ThreatFox · URLhaus · SGB cache"))}</div>'
         '</div>'
         + (
             # No score means no model ran (e.g. CTI-only); do not show a model box.

@@ -68,7 +68,6 @@ from threatfusion.ui_local_settings import (
     needs_first_setup,
     render_local_settings,
     render_refresh_progress,
-    upstream_unavailable_sources,
     resolve_managed_config,
 )
 from threatfusion.ui_theme import (
@@ -101,7 +100,6 @@ def _show_system_status(
     *,
     cti_stale_after_by_source=None,
     cti_only=False,
-    upstream_unavailable=frozenset(),
 ) -> None:
     st.sidebar.markdown(f"### {tr('Status')}")
 
@@ -153,7 +151,7 @@ def _show_system_status(
     st.sidebar.markdown(f"### {tr('CTI sources')}")
     cached = {str(row["Source"]): row for row in status_rows}
     source_names = list(
-        dict.fromkeys(["ThreatFox", "URLhaus", "PhishTank", "SGB", *cached])
+        dict.fromkeys(["ThreatFox", "URLhaus", "SGB", *cached])
     )
     for source in source_names:
         row = cached.get(
@@ -168,8 +166,6 @@ def _show_system_status(
                 "Stale after": f"{(cti_stale_after_by_source or {}).get(source, timedelta(hours=24)).total_seconds() / 3600:g} h",
             },
         )
-        if source in upstream_unavailable:
-            row = dict(row, **{"Upstream unavailable": True})
         render_source_status(row, details=False)
 
 
@@ -586,7 +582,6 @@ def main() -> None:
         config.evaluation_report_path,
         cti_stale_after_by_source=config.cti_stale_after_by_source,
         cti_only=config.cti_only,
-        upstream_unavailable=upstream_unavailable_sources(local_root) if local_root else frozenset(),
     )
     if local_root is not None:
         render_refresh_progress(local_root)

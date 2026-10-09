@@ -8,6 +8,7 @@ from pathlib import Path
 import streamlit as st
 
 from .app_config import AppConfig, load_app_config
+from .cti_cache import RETIRED_SOURCES
 from .i18n import tr
 from .local_setup import prepare_local_environment, request_local_control
 from .local_workspace import (
@@ -81,7 +82,7 @@ def render_local_settings(root: Path) -> None:
             st.markdown(f"#### {tr('API keys')}")
             st.caption(
                 tr(
-                    "SGB and public PhishTank can be attempted without keys. ThreatFox and URLhaus require your own keys. Source access may fail; previous data is preserved."
+                    "SGB works without a key. ThreatFox and URLhaus require your own keys. Source access may fail; previous data is preserved."
                 )
             )
             st.caption(
@@ -92,7 +93,6 @@ def render_local_settings(root: Path) -> None:
                         for source, key in (
                             ("ThreatFox", KEY_NAMES[0]),
                             ("URLhaus", KEY_NAMES[1]),
-                            ("PhishTank", KEY_NAMES[2]),
                         )
                         if key in saved
                     )
@@ -119,7 +119,6 @@ def render_local_settings(root: Path) -> None:
                     for source, key in (
                         ("ThreatFox", KEY_NAMES[0]),
                         ("URLhaus", KEY_NAMES[1]),
-                        (tr("PhishTank (optional)"), KEY_NAMES[2]),
                     )
                 }
                 st.checkbox(
@@ -152,7 +151,7 @@ def render_local_settings(root: Path) -> None:
             st.checkbox(
                 tr("Download again even if sources are still fresh"),
                 key="local_force_refresh", disabled=running,
-                help=tr("Applies to the next update only and clears when it starts. Normally sources are downloaded again only when older than the update interval. PhishTank keeps its 24-hour limit."),
+                help=tr("Applies to the next update only and clears when it starts. Normally sources are downloaded again only when older than the update interval."),
             )
             st.button(tr("Update CTI now"), key="local_refresh_cti", disabled=running, type="primary",
                       help=tr("An update is already running.") if running else None,
@@ -177,7 +176,7 @@ def render_local_settings(root: Path) -> None:
                 )
                 st.caption(
                     tr(
-                        "Automatic refresh uses only saved keys and public sources. It stops with the app and catches up on the next start. PhishTank is checked at most once per 24 hours."
+                        "Automatic refresh uses only saved keys and public sources. It stops with the app and catches up on the next start."
                     )
                 )
                 if st.form_submit_button(tr("Save update settings")):
@@ -242,20 +241,6 @@ def _start_refresh(root: Path, saved: dict) -> None:
     st.session_state["local_force_refresh"] = False
 
 
-def upstream_unavailable_sources(root: Path) -> frozenset[str]:
-    """Keyless public feeds whose last attempt failed upstream (not offline)."""
-    try:
-        status = read_private_json(root / "refresh-status.json")
-    except (OSError, ValueError):
-        return frozenset()
-    outcomes = [item for item in status.get("outcomes", []) if isinstance(item, dict)]
-    attempted = [item for item in outcomes if item.get("source") != "Cache maintenance" and item.get("status") != "fresh"]
-    if attempted and all(item.get("status") == "failed" for item in attempted):
-        return frozenset()  # Everything failed: likely local connectivity.
-    return frozenset(str(item["source"]) for item in outcomes
-                     if item.get("status") == "failed" and item.get("public_feed"))
-
-
 def _next_download(root: Path, interval_hours: int) -> str | None:
     """Hours until the oldest fresh source is due, or None when one is due now."""
     from datetime import datetime, timedelta, timezone
@@ -268,8 +253,6 @@ def _next_download(root: Path, interval_hours: int) -> str | None:
         return None
     times = []
     for item in statuses:
-        if item.source == "PhishTank":
-            continue
         try:
             refreshed = datetime.fromisoformat(item.refreshed_at)
         except (TypeError, ValueError):
@@ -284,7 +267,7 @@ def _next_download(root: Path, interval_hours: int) -> str | None:
 
 def _refresh_summary(status: dict) -> tuple[str, str]:
     outcomes = [item for item in status.get("outcomes", []) if item.get("source") != "Cache maintenance"]
-    relevant = [item for item in outcomes if not (item.get("status") == "failed" and item.get("public_feed"))]
+    relevant = [item for item in outcomes if item.get("source") not in RETIRED_SOURCES]
     failed = [item for item in relevant if item.get("status") == "failed"]
     refreshed = [item for item in relevant if item.get("status") == "refreshed"]
     if status.get("failed"):
@@ -361,24 +344,14 @@ def _render_refresh_status(root: Path) -> None:
                 "Update failed. Check network access and retry; existing data is preserved."
             )
         )
-    attempted = [item for item in status.get("outcomes", [])
-                 if item.get("source") != "Cache maintenance" and item.get("status") != "fresh"]
-    # When every attempted source failed, the likely cause is local connectivity,
-    # not a withdrawn public feed.
-    unreachable = bool(attempted) and all(item.get("status") == "failed" for item in attempted)
     for item in status.get("outcomes", []):
         source, result = item["source"], item["status"]
+        if source in RETIRED_SOURCES:
+            continue  # A status file written before the source was removed.
         if source == "Cache maintenance" and result == "failed":
             st.warning(tr("Cache cleanup failed; completed source updates remain available. Retry maintenance later."))
             continue
-        if result == "failed" and item.get("public_feed") and not unreachable:
-            st.info(
-                tr(
-                    "{source}: the public keyless feed is currently unavailable from the source; nothing to fix on your side. Other sources are unaffected and previous data is kept.",
-                    source=source,
-                )
-            )
-        elif result == "failed" and source in {"SGB", "PhishTank"}:
+        if result == "failed" and source == "SGB":
             st.warning(
                 tr(
                     "{source}: update failed; previous cache preserved. Check your internet connection or source availability.",

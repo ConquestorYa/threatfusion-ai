@@ -155,6 +155,5 @@ def load_app_config(
                     24.0,
                 ),
             ),
-            ("PhishTank", 24.0),
         ),
     )

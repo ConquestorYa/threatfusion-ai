@@ -13,7 +13,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 
-KEY_NAMES = ("THREATFOX_AUTH_KEY", "URLHAUS_AUTH_KEY", "PHISHTANK_APP_KEY")
+KEY_NAMES = ("THREATFOX_AUTH_KEY", "URLHAUS_AUTH_KEY")
 INTERVALS = (6, 12, 24)
 
 
@@ -164,8 +164,7 @@ def refresh_workspace(
 ) -> dict:
     """Fixed feeds only, no inherited developer keys, and one refresh at a time.
 
-    ``force`` downloads sources that are still fresh; PhishTank keeps its own
-    24-hour public-feed limit.
+    ``force`` downloads sources that are still fresh.
     """
     import fcntl
 
@@ -187,7 +186,7 @@ def refresh_workspace(
         except BlockingIOError:
             return {"busy": True}
         # Record attempts even on failure to avoid retry loops while offline.
-        total = 2 + sum(
+        total = 1 + sum(
             bool(keys.get(name)) for name in ("THREATFOX_AUTH_KEY", "URLHAUS_AUTH_KEY")
         )
         status = {
@@ -204,7 +203,6 @@ def refresh_workspace(
                 root / "runtime/cti/threatfusion.sqlite",
                 threatfox_key=keys.get("THREATFOX_AUTH_KEY"),
                 urlhaus_key=keys.get("URLHAUS_AUTH_KEY"),
-                phishtank_key=keys.get("PHISHTANK_APP_KEY"),
                 stale_after=timedelta(hours=load_settings(root)["interval_hours"]),
                 progress=_progress_recorder(root, status, total, progress),
                 now=reference,
@@ -217,13 +215,6 @@ def refresh_workspace(
                     for k, v in asdict(item).items()
                     if k in {"source", "status", "record_count"}
                 }
-                | (
-                    # The keyless public feed can be withdrawn upstream; the
-                    # user has no key to check. Flag only the safe category.
-                    {"public_feed": True}
-                    if item.source == "PhishTank" and not keys.get("PHISHTANK_APP_KEY")
-                    else {}
-                )
                 for item in outcomes
             ]
             status["skipped"] = [

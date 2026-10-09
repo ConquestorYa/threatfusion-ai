@@ -218,8 +218,8 @@ def test_progress_records_safe_percentages_and_stale_running_is_ignored(root, mo
 
     monkeypatch.setattr(workspace, "refresh_configured_sources", refresh)
     status = workspace.refresh_workspace(root, credentials={"URLHAUS_AUTH_KEY": "own-key"})
-    assert [s["percent"] for s in snapshots] == [0, 47]
-    assert snapshots[1]["completed"] == 1 and snapshots[1]["total"] == 3
+    assert [s["percent"] for s in snapshots] == [0, 71]
+    assert snapshots[1]["completed"] == 1 and snapshots[1]["total"] == 2
     assert "key-bearing" not in (root / "refresh-status.json").read_text()
     assert not workspace.refresh_running(status) and "progress" not in status
     assert workspace.refresh_running({"running": True, "pid": os.getpid()})

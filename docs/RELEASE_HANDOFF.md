@@ -2,6 +2,20 @@
 
 Status date: 2026-10-06
 
+## PhishTank removed (2026-10-09, DEC-089)
+
+- User request: PhishTank accounts cannot be opened and the source never
+  supplied data in this project. The collector, refresh job, key field, source
+  card, outage notes and tests are removed; `RETIRED_SOURCES` hides old status
+  rows and the next refresh deletes PhishTank rows from older caches. An old
+  `refresh-status.json` no longer shows a PhishTank failure.
+- Also fixed: commit `4ba4119` accidentally contained a `.venv` symlink from a
+  worktree, which made the installer stop with `ValueError` (unsafe archive
+  entry). `7c74742` removed it and added a test that extracts each commit's
+  archive with the installer's checks.
+- 1,358 local tests pass (PhishTank-only tests were removed). Needs the user's
+  re-check (checklist, Section G fixes).
+
 ## P0 Section G feedback fixes (2026-10-09)
 
 - User Section G answers: Turkish lookup placeholder still showed

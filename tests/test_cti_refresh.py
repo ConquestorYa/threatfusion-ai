@@ -39,18 +39,6 @@ class FakeURLhausCollector:
         ]
 
 
-class FakePhishTankCollector:
-    def fetch_verified_online_urls(self):
-        return [
-            IOCRecord(
-                "https://phish.example/login",
-                IOCType.URL,
-                "PhishTank",
-                threat_type="phishing",
-            )
-        ]
-
-
 class FakeSGBCollector:
     def fetch_bounded_addresses(self, *, max_pages: int, progress=None):
         assert max_pages == 100
@@ -71,7 +59,6 @@ class FakeSGBCollector:
 def _patch_collectors(monkeypatch):
     monkeypatch.setattr(cti_refresh, "ThreatFoxCollector", FakeThreatFoxCollector)
     monkeypatch.setattr(cti_refresh, "URLhausCollector", FakeURLhausCollector)
-    monkeypatch.setattr(cti_refresh, "PhishTankCollector", FakePhishTankCollector)
     monkeypatch.setattr(cti_refresh, "SGBCollector", FakeSGBCollector)
 
 
@@ -91,13 +78,11 @@ def test_refresh_updates_all_configured_sources(tmp_path, monkeypatch):
     assert [(item.source, item.status) for item in outcomes] == [
         ("ThreatFox", "refreshed"),
         ("URLhaus", "refreshed"),
-        ("PhishTank", "refreshed"),
         ("SGB", "refreshed"),
     ]
     assert {item.source for item in load_ioc_records(db_path)} == {
         "ThreatFox",
         "URLhaus",
-        "PhishTank",
         "SGB",
     }
 
@@ -134,62 +119,25 @@ def test_refresh_emits_source_progress(tmp_path, monkeypatch):
     assert any(source == "SGB" and stage == "refreshed" for source, stage, _ in events)
 
 
-def test_public_phishtank_refresh_is_throttled_even_with_force(
-    tmp_path,
-    monkeypatch,
-):
+def test_retired_phishtank_rows_are_removed_and_hidden(tmp_path, monkeypatch):
+    """Caches from before DEC-089 drop PhishTank data on the next refresh."""
+    from threatfusion.cti_cache import list_cti_cache_status, remove_source
+
     _patch_collectors(monkeypatch)
     db_path = tmp_path / "cti.sqlite"
-    now = datetime(2026, 9, 26, 12, 0, tzinfo=timezone.utc)
-
-    first = cti_refresh.refresh_configured_sources(
-        db_path,
-        threatfox_key=None,
-        urlhaus_key=None,
-        force=True,
-        now=now,
+    replace_source_records(
+        db_path, "PhishTank", [IOCRecord("https://phish.example/a", IOCType.URL, "PhishTank")]
     )
-    second = cti_refresh.refresh_configured_sources(
-        db_path,
-        threatfox_key=None,
-        urlhaus_key=None,
-        force=True,
-        now=now + timedelta(hours=6),
-    )
-
-    assert (
-        next(item for item in first if item.source == "PhishTank").status == "refreshed"
-    )
-    assert next(item for item in second if item.source == "PhishTank").status == "fresh"
-
-
-def test_public_phishtank_refreshes_again_after_24_hours(
-    tmp_path,
-    monkeypatch,
-):
-    _patch_collectors(monkeypatch)
-    db_path = tmp_path / "cti.sqlite"
-    now = datetime(2026, 9, 26, 12, 0, tzinfo=timezone.utc)
-
-    cti_refresh.refresh_configured_sources(
-        db_path,
-        threatfox_key=None,
-        urlhaus_key=None,
-        force=True,
-        now=now,
-    )
+    assert [item.source for item in list_cti_cache_status(db_path)] == []
     outcomes = cti_refresh.refresh_configured_sources(
-        db_path,
-        threatfox_key=None,
-        urlhaus_key=None,
-        force=True,
-        now=now + timedelta(hours=24),
+        db_path, threatfox_key=None, urlhaus_key=None, force=True,
+        now=datetime(2026, 10, 9, tzinfo=timezone.utc),
     )
-
-    assert (
-        next(item for item in outcomes if item.source == "PhishTank").status
-        == "refreshed"
-    )
+    assert "PhishTank" not in {item.source for item in outcomes}
+    assert {item.source for item in load_ioc_records(db_path)} == {"SGB"}
+    before = db_path.stat().st_mtime_ns
+    assert remove_source(db_path, "PhishTank") == 0
+    assert db_path.stat().st_mtime_ns == before  # Nothing left: no write.
 
 
 def test_failed_source_preserves_previous_healthy_cache(tmp_path, monkeypatch):
@@ -210,7 +158,6 @@ def test_failed_source_preserves_previous_healthy_cache(tmp_path, monkeypatch):
             raise ValueError("upstream unavailable")
 
     monkeypatch.setattr(cti_refresh, "ThreatFoxCollector", FailingThreatFox)
-    monkeypatch.setattr(cti_refresh, "PhishTankCollector", FakePhishTankCollector)
     monkeypatch.setattr(cti_refresh, "SGBCollector", FakeSGBCollector)
 
     outcomes = cti_refresh.refresh_configured_sources(
@@ -288,7 +235,7 @@ def test_missing_keys_skip_keyed_collectors_without_a_fallback(tmp_path, monkeyp
         urlhaus_key=None,
         force=True,
     )
-    assert {item.source for item in outcomes} == {"PhishTank", "SGB"}
+    assert {item.source for item in outcomes} == {"SGB"}
 
 
 def test_fresh_source_is_skipped_without_fetching(tmp_path, monkeypatch):
@@ -306,7 +253,6 @@ def test_fresh_source_is_skipped_without_fetching(tmp_path, monkeypatch):
             raise AssertionError("fresh source must not be fetched")
 
     monkeypatch.setattr(cti_refresh, "ThreatFoxCollector", ForbiddenThreatFox)
-    monkeypatch.setattr(cti_refresh, "PhishTankCollector", FakePhishTankCollector)
     monkeypatch.setattr(cti_refresh, "SGBCollector", FakeSGBCollector)
 
     outcomes = cti_refresh.refresh_configured_sources(
@@ -343,7 +289,6 @@ def test_incomplete_sgb_snapshot_is_rejected_and_old_cache_is_preserved(
                 reached_source_end=False,
             )
 
-    monkeypatch.setattr(cti_refresh, "PhishTankCollector", FakePhishTankCollector)
     monkeypatch.setattr(cti_refresh, "SGBCollector", IncompleteSGB)
 
     outcomes = cti_refresh.refresh_configured_sources(
@@ -376,7 +321,6 @@ def test_sgb_page_progress_is_forwarded(tmp_path, monkeypatch) -> None:
                 reached_source_end=True,
             )
 
-    monkeypatch.setattr(cti_refresh, "PhishTankCollector", FakePhishTankCollector)
     monkeypatch.setattr(cti_refresh, "SGBCollector", FakeSGB)
 
     cti_refresh.refresh_configured_sources(

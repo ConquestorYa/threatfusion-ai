@@ -42,7 +42,7 @@ ThreatFusion dört farklı kanıt katmanını tek bir yerel akışta birleştiri
 
 | Katman | Rol |
 | --- | --- |
-| 🧭 **Tehdit İstihbaratı** | ThreatFox, URLhaus, PhishTank ve SGB ile deterministik eşleştirme |
+| 🧭 **Tehdit İstihbaratı** | ThreatFox, URLhaus ve SGB ile deterministik eşleştirme |
 | 🧠 **Makine Öğrenmesi** | Daha önce görülmemiş domainler için yardımcı sözcüksel risk sinyali |
 | 📡 **Telemetri Davranışı** | DNS hacmi, NXDOMAIN, yanıt-IP değişimi, zamanlama ve istemci yayılımı |
 | 🔎 **Analist Bağlamı** | Açıklanabilir sonuçlar, geçmiş incelemeler, suppression ve ilişkili aktivite |
@@ -94,7 +94,6 @@ Kaynak güncelliği, lifecycle geçmişi ve indeksli sorgu desteğine sahip yere
 
 - ThreatFox
 - URLhaus
-- PhishTank — doğrulanmış ve çevrimiçi
 - T.C. Siber Güvenlik Başkanlığı (SGB)
 
 </td>
@@ -146,7 +145,6 @@ flowchart LR
     subgraph CTI["Tehdit İstihbaratı"]
         TF[ThreatFox]
         UH[URLhaus]
-        PT[PhishTank]
         SGB[SGB]
     end
 
@@ -163,7 +161,6 @@ flowchart LR
 
     TF --> CACHE[(SQLite CTI Önbelleği)]
     UH --> CACHE
-    PT --> CACHE
     SGB --> CACHE
 
     CSV --> INGEST[Otomatik algılama + normalizasyon]
@@ -343,7 +340,6 @@ ThreatFusion kullanıcı sorgusunu feed yenilemesinden ayırır.
 
 ~~~text
 ThreatFox / URLhaus / SGB  -> eskiyse yenilenir
-PhishTank                  -> en fazla 24 saatte bir
 başarısız / boş refresh    -> eski sağlıklı snapshot korunur
 inactive lifecycle satırı  -> 90 gün sonra temizlenir
 ~~~
@@ -378,8 +374,8 @@ Tarayıcıda **http://127.0.0.1:8501** (veya sıradaki boş local port) açılı
 Yeni kurulum gerçek CTI modundadır; **ML kapalıdır** ve ilk cache boştur.
 İlk açılışta gelen **Kurulum ve CTI güncellemeleri** sayfasından kendi API
 anahtarlarını girip kaynakları güncelle ve isteğe bağlı 6/12/24 saatlik otomatik
-kontrolü aç. SGB ve public PhishTank anahtarsız denenebilir; ThreatFox/URLhaus
-kendi anahtarlarını gerektirir. Veriler ilk güncelleme talebinden sonra indirilir.
+kontrolü aç. SGB anahtarsız çalışır; ThreatFox/URLhaus
+kendi anahtarlarını gerektirir (tek bir ücretsiz abuse.ch anahtarı ikisine de yeter). Veriler ilk güncelleme talebinden sonra indirilir.
 
 Tekrar açmak için uygulamalar menüsündeki **ThreatFusion AI** veya yeni terminal:
 
@@ -521,7 +517,6 @@ ThreatFox ve URLhaus API/auth anahtarlarını environment variable olarak kullan
 ~~~powershell
 $env:THREATFOX_AUTH_KEY="YOUR_THREATFOX_KEY"
 $env:URLHAUS_AUTH_KEY="YOUR_URLHAUS_KEY"
-$env:PHISHTANK_APP_KEY="..."  # isteğe bağlı, otomatik indirmeler için önerilir
 ~~~
 
 Sitenin kullandığı CTI veritabanını tek komutla güncelle:
@@ -530,7 +525,7 @@ Sitenin kullandığı CTI veritabanını tek komutla güncelle:
 .\.venv\Scripts\python.exe update_cti_database.py
 ~~~
 
-Bu güncelleyici yapılandırılmış ThreatFox, URLhaus ve SGB kaynaklarını zorunlu yeniler. PhishTank, public feed için sabit 24 saatlik minimum yenileme aralığını korur. ThreatFox/URLhaus anahtarı eksikse o kaynak atlanır; SGB ve PhishTank güncellenmeye devam eder. Bir kaynak hata verirse önceki sağlam cache korunur.
+Bu güncelleyici yapılandırılmış ThreatFox, URLhaus ve SGB kaynaklarını zorunlu yeniler. ThreatFox/URLhaus anahtarı eksikse o kaynak atlanır; SGB güncellenmeye devam eder. Bir kaynak hata verirse önceki sağlam cache korunur.
 
 Ardından siteyi ayrı olarak başlat:
 

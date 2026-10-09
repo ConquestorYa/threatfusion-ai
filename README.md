@@ -42,7 +42,7 @@ ThreatFusion combines four evidence layers in one local workflow:
 
 | Layer | Role |
 | --- | --- |
-| 🧭 **Threat Intelligence** | Deterministic matching against ThreatFox, URLhaus, PhishTank and SGB |
+| 🧭 **Threat Intelligence** | Deterministic matching against ThreatFox, URLhaus and SGB |
 | 🧠 **Machine Learning** | Auxiliary lexical risk scoring for previously unseen domain names |
 | 📡 **Telemetry Behavior** | DNS volume, NXDOMAIN, response-IP churn, timing and client-spread context |
 | 🔎 **Analyst Context** | Explainable verdicts, prior review, suppression, history and related activity |
@@ -94,7 +94,6 @@ Local SQLite cache with source freshness, lifecycle history and indexed lookup.
 
 - ThreatFox
 - URLhaus
-- PhishTank — verified & online
 - T.C. Siber Güvenlik Başkanlığı (SGB)
 
 </td>
@@ -146,7 +145,6 @@ flowchart LR
     subgraph CTI["Threat Intelligence"]
         TF[ThreatFox]
         UH[URLhaus]
-        PT[PhishTank]
         SGB[SGB]
     end
 
@@ -163,7 +161,6 @@ flowchart LR
 
     TF --> CACHE[(SQLite CTI Cache)]
     UH --> CACHE
-    PT --> CACHE
     SGB --> CACHE
 
     CSV --> INGEST[Auto-detect + normalize]
@@ -341,7 +338,6 @@ ThreatFusion separates interactive analysis from feed maintenance.
 
 ~~~text
 ThreatFox / URLhaus / SGB  -> refresh when stale
-PhishTank                  -> maximum once every 24 hours
 failed / empty refresh     -> previous healthy snapshot preserved
 inactive lifecycle rows    -> pruned after 90 days
 ~~~
@@ -374,8 +370,8 @@ source code, an applications-menu shortcut and the `threatfusion-ai` command.
 It opens **http://127.0.0.1:8501** (or the next free port) in real CTI mode,
 with **ML disabled**. The **Setup & CTI updates** page (first page on a new install) lets you
 enter your own API keys, update feeds and enable optional 6/12/24-hour updates.
-SGB and public PhishTank can be attempted without keys; ThreatFox/URLhaus need
-your own keys. The first cache is empty until you request collection.
+SGB works without a key; ThreatFox/URLhaus need your own
+keys (one free abuse.ch key covers both). The first cache is empty until you request collection.
 
 Reopen from the applications menu or a new terminal:
 
@@ -516,7 +512,6 @@ ThreatFox and URLhaus use their API/auth keys from environment variables. Keep t
 ~~~powershell
 $env:THREATFOX_AUTH_KEY="YOUR_THREATFOX_KEY"
 $env:URLHAUS_AUTH_KEY="YOUR_URLHAUS_KEY"
-$env:PHISHTANK_APP_KEY="..."  # optional; recommended for automated downloads
 ~~~
 
 Update the same CTI database used by the app with one command:
@@ -525,7 +520,7 @@ Update the same CTI database used by the app with one command:
 .\.venv\Scripts\python.exe update_cti_database.py
 ~~~
 
-The updater forces the configured ThreatFox, URLhaus, and SGB sources to refresh. PhishTank still respects its fixed 24-hour public-feed minimum. Missing ThreatFox/URLhaus keys are skipped instead of preventing SGB/PhishTank updates, and a failed source keeps its previous healthy cache.
+The updater forces the configured ThreatFox, URLhaus, and SGB sources to refresh. Missing ThreatFox/URLhaus keys are skipped instead of preventing SGB updates, and a failed source keeps its previous healthy cache.
 
 Then start the site separately:
 
