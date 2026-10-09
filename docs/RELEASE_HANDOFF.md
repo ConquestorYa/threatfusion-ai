@@ -2,6 +2,13 @@
 
 Status date: 2026-10-06
 
+## P0 manual acceptance passed (2026-10-09)
+
+- The user re-checked the Section G fixes and the PhishTank removal on
+  `21851e2`: "Bölüm G'yi kontrol ettim. Sorun yok." With sections A–F and H
+  already passed, P0 is complete. Detection efficacy is not part of P0 and is
+  still unmeasured (P2).
+
 ## PhishTank removed (2026-10-09, DEC-089)
 
 - User request: PhishTank accounts cannot be opened and the source never

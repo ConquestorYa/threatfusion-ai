@@ -238,9 +238,9 @@ cihaz/hedefin neden incelenmesi gerektiğini gösterdiğini görmek.
 
 ## Bölüm G — Genel izlenim (serbest)
 
-- [ ] Bir analist gözüyle: "Hangi cihaza / hedefe neden bakmalıyım?" sorusuna
+- [x] Bir analist gözüyle: "Hangi cihaza / hedefe neden bakmalıyım?" sorusuna
       cevap bulabildim. Bulamadıysam nerede takıldığımı yazdım.
-- [ ] Anlamsız, kafa karıştırıcı veya çevrilmemiş Türkçe metin gördüm mü?
+- [x] Anlamsız, kafa karıştırıcı veya çevrilmemiş Türkçe metin gördüm mü?
       Gördüysem nerede olduğunu yazdım.
 - Ekledikleri / kafama takılanlar:
   - Kullanıcı (sohbet, 2026-10-09): "Genel olarak arayüz ile ilgili çok fazla
@@ -263,15 +263,15 @@ cihaz/hedefin neden incelenmesi gerektiğini gösterdiğini görmek.
 
 ### Bölüm G düzeltmelerini kontrol (güncellemeden sonra, ~5 dk)
 
-- [ ] Hızlı sorgu kutusundaki silik örnek Türkçe.
-- [ ] Telemetriyi analiz et sayfasında yükleme alanı Türkçe ve kolay fark ediliyor.
-- [ ] Toplanan bağlantılar ve Model değerlendirme sayfalarındaki "Bu sayfa ne
+- [x] Hızlı sorgu kutusundaki silik örnek Türkçe.
+- [x] Telemetriyi analiz et sayfasında yükleme alanı Türkçe ve kolay fark ediliyor.
+- [x] Toplanan bağlantılar ve Model değerlendirme sayfalarındaki "Bu sayfa ne
       işe yarar?" açıklaması anlaşılır.
-- [ ] Kurulum sayfasında (anahtar eksikken) abuse.ch notu anlaşılır.
-- [ ] PhishTank her yerden kalktı: yan paneldeki kaynak listesinde, Kurulum
+- [x] Kurulum sayfasında (anahtar eksikken) abuse.ch notu anlaşılır.
+- [x] PhishTank her yerden kalktı: yan paneldeki kaynak listesinde, Kurulum
       sayfasındaki anahtar alanlarında ve "CTI'yı şimdi güncelle" sonrasındaki
       sonuçlarda PhishTank görünmüyor (kullanıcı onayıyla kaldırıldı, DEC-089).
-
+- Kullanıcı (sohbet, 2026-10-09, `21851e2`): "Bölüm G'yi kontrol ettim. Sorun yok." **Geçti.**
 
 ---
 

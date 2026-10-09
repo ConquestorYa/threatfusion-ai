@@ -25,8 +25,8 @@ release date is added only when the final tag/release is created.
 
 ### Verified
 
-- Manual acceptance Section H (redesigned UI) passed by the user on 2026-10-09;
-  Section G remains open.
+- P0 manual acceptance passed by the user on 2026-10-09 (sections A–H,
+  including the redesigned UI and the Section G fixes).
 
 ### Removed
 

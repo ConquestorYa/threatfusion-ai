@@ -12,8 +12,8 @@ memory step was reduced (loader high-water 672 → 277 MiB, reload plateau ~640
 vs ~1,212 MiB) and a second security review found no new vulnerability. The
 declared soak rerun-2 was interrupted by a host shutdown (no verdict); rerun-3
 with unchanged acceptance is running. Section G feedback was fixed and PhishTank
-was removed at the user's request (DEC-089). Next: soak verdict, the user's
-short re-check, then P2.
+was removed at the user's request (DEC-089). The user re-checked these;
+P0 manual acceptance passed. Next: soak verdict, then P2.
 
 ### Previous checkpoint (2026-10-07)
 
