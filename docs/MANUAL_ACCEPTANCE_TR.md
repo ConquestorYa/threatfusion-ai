@@ -279,6 +279,8 @@ Arka plan özellikleri değişmedi; yalnızca görünüm ve sayfa düzeni deği�
       her sayfanın başlığı en üstte, sayfanın değiştiği hemen belli oluyor.
 - [ ] Sol paneldeki **Durum** bölümü (CTI kaynakları ve güncellikleri) anlaşılır;
       kaynak ayrıntıları Kurulum sayfasındaki tabloda.
+- Kullanıcı (sohbet, `31fbf7f` sonrası): "şuan arayüz çok daha iyi." Maddelerin
+  tek tek işaretlenmesi bekleniyor.
 - Beğenmediğin yerleri ekran görüntüsüyle yaz (ör. "yan çubuk çok kalabalık",
   "logo olmamış", "bu renk koyu").
 ---

@@ -2,6 +2,13 @@
 
 Status date: 2026-10-06
 
+## User feedback on redesign (2026-10-09)
+
+- After `31fbf7f` (IBM Plex fonts, single sidebar navigation, setup page) the
+  user reports the interface is "much better". Section H of the checklist still
+  needs item-by-item confirmation; functional sections A–F remain valid because
+  backend behavior did not change.
+
 ## Fonts and navigation after first redesign review (2026-10-09)
 
 - User: the redesign looked simpler and more professional, but fonts looked the
