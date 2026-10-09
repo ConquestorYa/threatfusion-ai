@@ -141,12 +141,18 @@ def _record_from_threatfox_item(item: Mapping[str, Any]) -> IOCRecord:
 
 def parse_threatfox_csv(content: str) -> list[IOCRecord]:
     """Parse ThreatFox's full CSV export with or without a header row."""
+    # The full export separates quoted cells with ", " (comma and space);
+    # without skipinitialspace every value kept a leading ` "` and no IOC
+    # could match (all rows became unknown-type).
     csv_rows = [
         row
         for row in csv.reader(
-            line
-            for line in content.splitlines()
-            if line.strip() and not line.lstrip().startswith("#")
+            (
+                line
+                for line in content.splitlines()
+                if line.strip() and not line.lstrip().startswith("#")
+            ),
+            skipinitialspace=True,
         )
         if row
     ]

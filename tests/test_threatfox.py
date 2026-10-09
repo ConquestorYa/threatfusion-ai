@@ -299,3 +299,20 @@ def test_oversized_full_export_is_rejected() -> None:
 
     with pytest.raises(ValueError, match="safe download limit"):
         ThreatFoxCollector("secret", session).fetch_full_iocs()
+
+
+def test_full_export_with_comma_space_separators_is_parsed() -> None:
+    """The real full.csv separates quoted cells with ", "; values must be clean."""
+    content = (
+        '# "first_seen_utc","ioc_id","ioc_value","ioc_type","threat_type","fk_malware",'
+        '"malware_alias","malware_printable","last_seen_utc","confidence_level",'
+        '"is_compromised","reference","tags","anonymous","reporter"\n'
+        '"2026-10-05 10:00:00", "1001", "c2.example.test", "domain", "botnet_cc", "win.x", '
+        '"None", "X", "", "75", "0", "", "tag1,tag2", "0", "someone"\n'
+        '"2026-10-05 11:00:00", "1002", "198.51.100.7:443", "ip:port", "botnet_cc", "win.x", '
+        '"None", "X", "", "100", "0", "", "", "0", "someone"\n'
+    )
+    domain, address = parse_threatfox_csv(content)
+    assert (domain.value, domain.ioc_type, domain.threat_type) == ("c2.example.test", IOCType.DOMAIN, "botnet_cc")
+    assert domain.tags == ["tag1", "tag2"] and domain.confidence == 0.75
+    assert (address.value, address.ioc_type) == ("198.51.100.7", IOCType.IPV4)

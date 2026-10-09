@@ -2,6 +2,18 @@
 
 Newest section first. Status date: 2026-10-09.
 
+## ThreatFox parsing defect fixed (2026-10-09)
+
+- Found while counting post-freeze CTI for the ML question: all 111,805 active
+  ThreatFox rows in the user's cache (111,602 in the developer cache) were stored
+  as ` "value"` with type `unknown`. Cause: the full export uses `", "` between
+  quoted cells and `csv.reader` ran without `skipinitialspace`. ThreatFox has
+  therefore never matched anything since the full-export path. Fixed with a
+  test on the real line format; a forced ThreatFox refresh repairs a cache.
+- Affected evidence: anything that relied on ThreatFox matches or ThreatFox ML
+  samples (DEC-082 already noted "no retained ThreatFox examples"). Those
+  records stay as they are; new measurements must use the fixed parser.
+
 ## Documentation restructure and P2 Arm A start (2026-10-09, DEC-092)
 
 - READMEs rewritten for the Zeek network-investigation focus (EN/TR), new
