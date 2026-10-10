@@ -229,6 +229,15 @@ def test_malformed_metadata_json_raises_value_error(tmp_path: Path) -> None:
         read_domain_snapshot(tmp_path)
 
 
+def test_unreadable_metadata_is_not_reported_as_invalid_json(tmp_path: Path) -> None:
+    write_domain_snapshot(make_snapshot(), tmp_path)
+    (tmp_path / "metadata.json").unlink()
+
+    with pytest.raises(ValueError, match="could not be read") as raised:
+        read_domain_snapshot(tmp_path)
+    assert "valid JSON" not in str(raised.value)
+
+
 def test_count_mismatch_raises_value_error(tmp_path: Path) -> None:
     write_domain_snapshot(make_snapshot(), tmp_path)
     metadata_path = tmp_path / "metadata.json"

@@ -25,6 +25,9 @@ framing is retired. No release date or tag is set.
 
 ### Fixed
 
+- The ML snapshot loader no longer reports a missing/unreadable `metadata.json`
+  as invalid JSON.
+
 - ThreatFox full-export parsing: the export separates quoted cells with ", ", and
   every stored ThreatFox value kept a leading ` "`, so all ThreatFox indicators
   were unknown-type and never matched. The next ThreatFox refresh stores clean

@@ -1192,3 +1192,25 @@ its checksum/freeze time before collecting an untouched holdout. Live re-fetches
 cannot reconstruct historical artifact identities or reproduce old metrics by
 assumption. Keep development and inspected holdout windows separate, and do not
 reuse the 120,000–140,000 CESNET window to select a successor.
+
+## ThreatFox absence and candidate 2 (2026-10-10)
+
+The augmented development snapshot's malicious side is 472,682 SGB and 493
+URLhaus domains, **no ThreatFox**: the ThreatFox full-export parser stored every
+row malformed (fixed in `3c054a3`). The frozen augmented model therefore never
+saw malware command-and-control domains from ThreatFox. Its post-freeze temporal
+evaluation (planned after the real-traffic capture, CESNET window offset 160,000)
+will report recall per source.
+
+Candidate 2 (`ml-candidate2-dev-v1`, private lab) was declared before training
+and frozen at `2026-10-10T09:02:35Z`, artifact
+`14acf4d0039ffb1dc2f85d1e9d10c3b4a8a54bd636f0e79fc33a7d7133fa3fb9`: same model
+family (`lr_char_2_6_plus_lexical_c4`), same FPR budgets (0.1 % / 0.5 % / 1 %),
+one training run. Malicious: 473,834 SGB + 39,152 ThreatFox domains from a frozen
+cache copy; URLhaus hostnames excluded (often compromised legitimate hosts).
+Benign: the existing development rows (Tranco L5PV4 + CESNET 100k–120k).
+Validation-selected thresholds 0.988905 / 0.953436 / 0.906982. It is
+development-only: no holdout result exists. Its evaluation needs indicators first
+seen after its freeze (at least seven days) and the untouched CESNET window at
+offset 200,000, declared separately and compared with the augmented model on the
+same holdout.

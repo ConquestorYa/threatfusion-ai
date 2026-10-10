@@ -106,8 +106,11 @@ def _load_metadata(metadata_path: Path) -> dict[str, Any]:
     try:
         with metadata_path.open("r", encoding="utf-8") as metadata_file:
             payload = json.load(metadata_file)
-    except (OSError, json.JSONDecodeError) as error:
+    except json.JSONDecodeError as error:
         raise ValueError("metadata.json is not valid JSON") from error
+    except OSError as error:
+        # A permission or missing-file problem is not a JSON problem.
+        raise ValueError(f"metadata.json could not be read ({type(error).__name__})") from error
 
     if not isinstance(payload, dict):
         raise ValueError(  # noqa: TRY004

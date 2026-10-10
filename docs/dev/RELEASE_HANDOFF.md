@@ -2,6 +2,21 @@
 
 Newest section first. Status date: 2026-10-09.
 
+## ML: candidate 2 trained; evaluations scheduled (2026-10-10)
+
+- Found that the frozen augmented model was trained without any ThreatFox domain
+  (parser defect). Candidate 2 adds 39,152 ThreatFox domains (SGB + ThreatFox,
+  URLhaus excluded), frozen 2026-10-10T09:02:35Z, artifact `14acf4d0…`. Details in
+  `docs/evidence/ML_DATASET.md`. No evaluation yet.
+- Deferred until the Arm A capture ends (network download would pollute it): the
+  CESNET 160k window and the one-shot temporal evaluation of the augmented model;
+  draft criteria (High tier FPR ≤ 1 %, recall ≥ 50 % to show a labelled Quick
+  Lookup hint) await the user's approval.
+- Method slips during training (no outcome affected, noted in the lab root): a
+  missing `/usr/bin/time` and a `chmod` that removed a directory's execute bit.
+  The second exposed a misleading loader message ("not valid JSON" for a read
+  error), fixed with a test.
+
 ## P1 complete; P2 Arm A running (2026-10-10)
 
 - Soak rerun-3 (plan `5093d989…`): 16/16 checks, collector peak 684 MiB, growth
