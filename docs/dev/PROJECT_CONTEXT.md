@@ -4,7 +4,16 @@ For the current target product and active work order, start with
 [PRODUCT_PLAN.md](PRODUCT_PLAN.md). This file also preserves dated development
 history; earlier “Next” notes are superseded by that plan's current queue.
 
-## Current checkpoint (2026-10-09)
+## Current checkpoint (2026-10-10)
+
+P0 and P1 are complete. The 6-hour wall-clock soak passed all 16 declared checks
+on the memory repair (collector peak 684 MiB, growth 1.11 ≤ 1.25). A ThreatFox
+parsing defect (all ThreatFox rows malformed, never matching) was fixed in
+`3c054a3`. P2 Arm A runs for 24 h on the user's laptop with DNS visible
+(declared as v3 after two pre-start amendments). Next: label Arm A's Review+
+groups, then the ML lookup-score evaluation on post-freeze data.
+
+### Previous checkpoint (2026-10-09)
 
 Manual acceptance: sections A–F and the redesigned two-theme UI (Section H)
 passed with the user; only the free-form Section G remains. P1: the CTI reload

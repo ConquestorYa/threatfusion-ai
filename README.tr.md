@@ -136,7 +136,7 @@ alarm verdi ([değerlendirme geçmişi](docs/evidence/ML_DATASET.md)).
 | --- | --- |
 | Sentetik normal ve simüle trafik | Normal güncelleyiciler ve yoklamalar da İncele'ye düşüyor: kurallar henüz yeterince seçici değil ([inceleme yükü](docs/evidence/REVIEW_WORKLOAD.md)) |
 | Dört bağımsız IoT-23 kaydı (2018–2019) | İki zararsız kayıtta 0 inceleme; iki zararlı kayıttan biri bir inceleme üretti, diğeri hiç üretmedi ([ağ değerlendirmesi](docs/evidence/NETWORK_EVALUATION.md)) |
-| Hata matrisi, 6 saatlik dayanıklılık testi, güvenlik incelemeleri | 9/9 hata senaryosu geçti; ilk dayanıklılık testi bir bellek kontrolünde kaldı (düzeltildi, yeniden ölçülüyor); iki güvenlik incelemesi ([operasyonel güven](docs/evidence/OPERATIONAL_CONFIDENCE.md)) |
+| Hata matrisi, 6 saatlik dayanıklılık testi, güvenlik incelemeleri | 9/9 hata senaryosu geçti; bellek düzeltmesinden sonra 6 saatlik dayanıklılık testi 16/16 kontrolü geçti (collector en fazla 684 MiB); iki güvenlik incelemesi ([operasyonel güven](docs/evidence/OPERATIONAL_CONFIDENCE.md)) |
 | **Henüz ölçülmedi** | Gerçek trafikte yanlış alarm (sürüyor), etiketli gerçek zararlı yazılımı yakalama, başka kullanıcılar için faydası |
 
 Plan: [gerçek trafik değerlendirmesi](docs/evidence/REAL_TRAFFIC_EVALUATION.md).

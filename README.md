@@ -27,7 +27,7 @@ malware checking in**, and it tells you the reason for every flag. It runs on
 your own Linux machine; your traffic never leaves it.
 
 > **Status: early prototype.** The full workflow works and has passed the
-> developer's manual acceptance on synthetic data. The first test on real
+> developer's manual acceptance on synthetic data. The first 24-hour test on real
 > traffic is running now. How well it catches real malware has **not** been
 > measured yet. It is not a SIEM, EDR, IDS or malware scanner.
 
@@ -131,7 +131,7 @@ false alarms ([evaluation history](docs/evidence/ML_DATASET.md)).
 | --- | --- |
 | Synthetic normal and simulated traffic | Normal updaters and polling also enter Review: the rules are not yet selective enough ([review workload](docs/evidence/REVIEW_WORKLOAD.md)) |
 | Four independent IoT-23 captures (2018–2019) | 0 reviews in two benign captures; one of two malicious captures produced one review, the other none ([network evaluation](docs/evidence/NETWORK_EVALUATION.md)) |
-| Fault matrix, 6-hour soak, security reviews | 9/9 fault cases pass; the first soak failed one memory check (fixed, re-measurement running); two security reviews ([operational confidence](docs/evidence/OPERATIONAL_CONFIDENCE.md)) |
+| Fault matrix, 6-hour soak, security reviews | 9/9 fault cases pass; after a memory fix the 6-hour soak passed 16/16 checks (collector peak 684 MiB); two security reviews ([operational confidence](docs/evidence/OPERATIONAL_CONFIDENCE.md)) |
 | **Not yet measured** | False alarms on real traffic (running), detection of labeled real malware, usefulness for other users |
 
 Plan: [real-traffic evaluation](docs/evidence/REAL_TRAFFIC_EVALUATION.md). All

@@ -50,6 +50,9 @@ framing is retired. No release date or tag is set.
 
 ### Verified
 
+- 6-hour wall-clock soak on the CTI-reload memory repair: 16/16 declared checks
+  (collector peak 684 MiB). P1 complete.
+
 - P0 manual acceptance passed by the user on 2026-10-09 (sections A–H,
   including the redesigned UI and the Section G fixes).
 

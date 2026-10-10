@@ -2,6 +2,20 @@
 
 Newest section first. Status date: 2026-10-09.
 
+## P1 complete; P2 Arm A running (2026-10-10)
+
+- Soak rerun-3 (plan `5093d989…`): 16/16 checks, collector peak 684 MiB, growth
+  1.11 (limit 1.25); hourly medians 514→684 MiB. Rerun-2 was interrupted by a
+  host shutdown (no verdict). Details in `docs/evidence/OPERATIONAL_CONFIDENCE.md`.
+- Arm A: v1 (`ba7bd12`) and v2 (`3c054a3`, DoT on) were superseded before any
+  capture (ThreatFox defect; then the user offered to disable system DoT). v3
+  started 2026-10-10T08:43:15Z on installed `3c054a3`, ThreatFox repaired
+  (105,910 clean rows), system DNS plain to the modem's resolver. The user must
+  restore Cloudflare DNS-over-TLS after the capture; the config file no longer
+  contains the Cloudflare lines.
+- My overnight waiter loop never exited (its pgrep pattern matched itself); it
+  had no effect on results.
+
 ## ThreatFox parsing defect fixed (2026-10-09)
 
 - Found while counting post-freeze CTI for the ML question: all 111,805 active

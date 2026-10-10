@@ -150,6 +150,36 @@ in-memory list) and (2) declare a new soak root with several reloads to show the
 level plateaus, both measured on a new candidate. Local test/audit runs
 overlapping the first hour are recorded as operator notes.
 
+## Soak reruns on the memory repair (`7957395`)
+
+**Rerun-2** (same protocol and acceptance) was interrupted after ~2 h 20 min by
+a host shutdown (laptop closed). No summary and no verdict; receipts kept.
+
+**Rerun-3 (plan `5093d989…`, summary `ebfe8b42…`): 16 of 16 declared checks
+passed; `all_passed` is true.** Same workload, limits and growth rule as the
+failed run; runtime identical to `7957395` (declared at `a5d6775`, docs/tests
+only). Operator notes record short overlapping test runs, screenshot captures
+and the user's app use; the host stayed awake under a sleep inhibitor.
+
+| Measure | Rerun-1 (failed) | Rerun-3 | Declared limit |
+| --- | ---: | ---: | ---: |
+| Collector RSS max | 1,253 MiB | **684 MiB** | 1.5 GiB |
+| Collector last-hour / second-hour median RSS | 1.32 | **1.11** | ≤ 1.25 |
+| Web RSS max / growth | 364 MiB / 1.11 | 361 MiB / 1.09 | 2 GiB / ≤ 1.25 |
+| State max | 74 MiB | 74 MiB | 512 MiB |
+| Snapshot age max | 18.9 s | 20.5 s | 60 s |
+| Persistent view gap max (reruns) | 10.1 s (2,162) | 10.2 s (2,162) | 60 s |
+| Fresh sessions / slowest | 24 of 24 / 2.1 s | 24 of 24 / 2.4 s | all / 60 s |
+| CTI change visible | 19.9 s | 19.9 s | 60 s |
+| Generated = imported, rejected | 115,200 = 115,200, 0 | 115,200 = 115,200, 0 | exact, 0 |
+| Final retained / capacity disclosed | 100,000 / yes | 100,000 / yes | 100k / yes |
+| fd / thread growth (collector, web) | −1, 0 / 0, 0 | −1, 0 / 0, 0 | ≤ 16 |
+
+Hourly collector RSS medians: 514, 618, 623, 668, 672, 684 MiB (previously 888,
+921, 939, 1,227, 1,219, 1,217). The CTI reload step is now small: the declared
+post-reload diagnostic is 1.02. The rise tracks retained rows growing to the
+100k cap. P1's wall-clock gate is met for this workload on this host.
+
 ## Security review (P1, 2026-10-07)
 
 A source review of the local attack surface covered HTML/Markdown rendering of
@@ -211,8 +241,8 @@ never processed for a refused session (bounded by the 100 MB upload limit).
   rates, not browser rendering cost. Physical disk exhaustion, power loss,
   filesystem corruption beyond the SQLite header and network filesystems are out
   of scope. Corrupt state is refused, not repaired.
-- The collector loads every active CTI indicator into memory (~0.65 GiB for
-  616k indicators before analysis). An indexed lookup design would lower this; it
-  is not implemented.
-- Representative permitted traffic, analyst usefulness, detection coverage and
-  the user's manual acceptance (P0) remain open.
+- The collector loads every active CTI indicator into memory (about 0.5–0.7 GiB
+  for ~616k indicators after the slots/streaming repair). An indexed lookup
+  design would lower this further; it is not implemented.
+- Representative permitted traffic, analyst usefulness and detection coverage
+  remain open (P2). Manual acceptance (P0) passed on 2026-10-09.
