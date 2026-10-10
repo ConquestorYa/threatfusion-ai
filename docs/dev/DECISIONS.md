@@ -1018,3 +1018,19 @@ theme, with English UI in `docs/screenshots/` for README.md and Turkish UI in
 `docs/screenshots/tr/` for README.tr.md. Capturing the Turkish set exposed nine
 untranslated UI strings (e.g. the sidebar "Status" heading); they were added and
 a test now requires a Turkish translation for every literal `tr()` string.
+
+## DEC-093: Question-less DNS rows no longer reject a collected file
+
+**Decision (2026-10-10):** P2 Arm A found the live collector rejecting whole
+completed `dns.log` hours because a few rows had no query name or no query type.
+Read-only reproduction attributed them to mDNS announcements (UDP 5353 multicast)
+and resolver replies without a question section, which a real Zeek sensor logs
+routinely. The strict collector now accepts rows with a name but no query type
+(type left empty; the DNS analysis already treats it as unknown) and skips rows
+without a query name, counting them in `counts.skipped_questionless_dns_rows`.
+Skipped rows carry no name to group or match; their answer addresses remain
+visible in `conn.log` if contacted, so they are not counted as coverage loss.
+All other identity checks (UID, timestamp, ports, transaction ID, TCP/UDP) stay
+strict. `prepare-logs` is unchanged (still opt-in quarantine). The Arm A run
+keeps the installed release; the defect and its fix are recorded there, and any
+re-import of the preserved logs is a separately declared amendment.

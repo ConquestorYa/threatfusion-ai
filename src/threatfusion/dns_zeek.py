@@ -49,8 +49,10 @@ def _transaction(row: dict[str, str], event: DNSEvent) -> ZeekDNSTransaction:
     protocol = row.get("proto", "")
     if protocol not in ("tcp", "udp"):
         raise ValueError("DNS collection requires TCP or UDP")
-    if len(event.query_name) > 1024 or not event.query_type:
-        raise ValueError("DNS collection requires a bounded query and query type")
+    # Zeek leaves qtype unset for question-less answers (e.g. mDNS
+    # announcements); the name and answers remain usable evidence.
+    if len(event.query_name) > 1024:
+        raise ValueError("DNS collection requires a bounded query")
     if any(
         value is not None and len(value) > 4096
         for value in (event.query_type, event.response_code)
@@ -191,8 +193,8 @@ def _parse_zeek_dns_log(
 
         query_name = _optional_zeek_text(row.get("query"))
         if query_name is None:
-            if transactions is not None:
-                raise ValueError("DNS collection requires query identity")
+            # Question-less responses carry no name to group or match; the
+            # collector counts them instead of rejecting the completed file.
             skipped_missing_query_name += 1
             continue
 
@@ -241,11 +243,18 @@ def parse_zeek_dns_log_with_diagnostics(content: str) -> DNSParseResult:
     return _parse_zeek_dns_log(content)
 
 
+def parse_zeek_dns_transactions_with_skips(
+    content: str,
+) -> tuple[tuple[ZeekDNSTransaction, ...], int]:
+    """Strict collector rows plus the number of skipped question-less rows."""
+    transactions: list[ZeekDNSTransaction] = []
+    result = _parse_zeek_dns_log(content, transactions)
+    return tuple(transactions), result.diagnostics.skipped_missing_query_name
+
+
 def parse_zeek_dns_transactions(content: str) -> tuple[ZeekDNSTransaction, ...]:
     """Strict completed-log collector rows; permissive upload parser is unchanged."""
-    transactions: list[ZeekDNSTransaction] = []
-    _parse_zeek_dns_log(content, transactions)
-    return tuple(transactions)
+    return parse_zeek_dns_transactions_with_skips(content)[0]
 
 
 def parse_zeek_dns_log(content: str) -> list[DNSEvent]:

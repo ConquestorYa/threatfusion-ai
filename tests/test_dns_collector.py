@@ -93,8 +93,6 @@ def test_predeclared_dns_operational_controls(paths, case):
         ("trans_id", "-1"),
         ("trans_id", "١"),
         ("proto", "icmp"),
-        ("qtype_name", "-"),
-        ("query", "-"),
     ],
 )
 def test_strict_collection_rejects_ambiguous_identity(field, value):
@@ -102,6 +100,28 @@ def test_strict_collection_rejects_ambiguous_identity(field, value):
     row[FIELDS.index(field)] = value
     with pytest.raises(ValueError):
         parse_zeek_dns_transactions(log([row]))
+
+
+def test_question_less_rows_are_counted_instead_of_rejecting_the_file(paths):
+    # Live sensors log mDNS announcements and replies without a question
+    # section; one such row must not discard a completed hour (P2 Arm A).
+    source, state = paths
+    good = list(cases(1)[0]["rows"][0])
+    no_type = list(good)
+    no_type[FIELDS.index("uid")] = "Cnotype"
+    no_type[FIELDS.index("qtype_name")] = "-"
+    no_query = list(good)
+    no_query[FIELDS.index("uid")] = "Cnoquery"
+    no_query[FIELDS.index("query")] = "-"
+    no_query[FIELDS.index("qtype_name")] = "-"
+    content = log([good, no_type, no_query])
+    assert len(parse_zeek_dns_transactions(content)) == 2
+    (source / "dns.log").write_text(content)
+    with module.ZeekCollector(source, state) as collector:
+        status = collector.tick(now=NOW)
+    assert status["counts"]["rejected_files"] == 0
+    assert status["counts"]["retained_dns_records"] == 2
+    assert status["counts"]["skipped_questionless_dns_rows"] == 1
 
 
 def test_upload_stays_permissive_while_collection_requires_transaction_identity():

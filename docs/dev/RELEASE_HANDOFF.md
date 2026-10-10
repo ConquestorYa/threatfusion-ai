@@ -1,6 +1,18 @@
 # Release handoff
 
-Newest section first. Status date: 2026-10-09.
+Newest section first. Status date: 2026-10-10.
+
+## Collector DNS defect found by Arm A (2026-10-10)
+
+- The running Arm A collector rejected two completed hourly `dns.log` files
+  (`format_or_limits`): a few question-less rows (mDNS announcements, replies
+  without a question section) failed strict validation and discarded the hour.
+  Connection import was unaffected. Arm A continues on the installed release
+  (A4 is expected to fail as measured); raw Zeek logs are preserved.
+- Fixed in source (DEC-093): such rows are accepted (no type) or skipped and
+  counted (no name); both real rejected files parse fully with the fix
+  (aggregate check only). Regression test added; ruff and 1,338 tests pass.
+  Not installed on the test laptop until the capture ends.
 
 ## ML: candidate 2 trained; evaluations scheduled (2026-10-10)
 
