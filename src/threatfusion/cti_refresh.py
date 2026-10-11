@@ -136,6 +136,25 @@ def _refresh_popular_sites(db_path, *, force, now, progress) -> CTIRefreshOutcom
     return CTIRefreshOutcome(source=source, status="refreshed", record_count=count)
 
 
+def _refresh_ip_owners(db_path, *, force, now, progress) -> CTIRefreshOutcome:
+    """Weekly public IP-to-network table: owner context, not threat data."""
+    from . import ip_owners
+
+    source = ip_owners.SOURCE
+    if not force and not ip_owners.ip_owner_table_is_stale(db_path, now=now):
+        _emit_progress(progress, source, "skipped", "IP owner table still fresh")
+        return CTIRefreshOutcome(source=source, status="fresh")
+    _emit_progress(progress, source, "fetching", "downloading the IP owner table")
+    try:
+        count = ip_owners.store_ip_owners(db_path, ip_owners.fetch_ip_owners(), refreshed_at=now)
+    except Exception as error:
+        detail = _safe_failure_detail(error)
+        _emit_progress(progress, source, "failed", f"{type(error).__name__}: {detail}")
+        return CTIRefreshOutcome(source=source, status="failed", error_type=type(error).__name__, detail=detail)
+    _emit_progress(progress, source, "refreshed", f"{count:,} network ranges")
+    return CTIRefreshOutcome(source=source, status="refreshed", record_count=count)
+
+
 def refresh_configured_sources(
     db_path: Path,
     *,
@@ -147,6 +166,7 @@ def refresh_configured_sources(
     now: datetime | None = None,
     progress: ProgressCallback | None = None,
     popular_sites: bool = False,
+    ip_owners: bool = False,
 ) -> tuple[CTIRefreshOutcome, ...]:
     """Refresh configured feeds independently while preserving old cache on failure."""
     reference = now or datetime.now(timezone.utc)
@@ -244,6 +264,8 @@ def refresh_configured_sources(
 
     if popular_sites:
         outcomes.append(_refresh_popular_sites(db_path, force=force, now=reference, progress=progress))
+    if ip_owners:
+        outcomes.append(_refresh_ip_owners(db_path, force=force, now=reference, progress=progress))
 
     try:
         for retired in RETIRED_SOURCES:

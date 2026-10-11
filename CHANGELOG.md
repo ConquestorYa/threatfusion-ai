@@ -76,6 +76,11 @@ framing is retired. No release date or tag is set.
 
 ### Added
 
+- Network owner and registry country for destination IPs (weekly iptoasn.com
+  table, local lookups); VirusTotal, AbuseIPDB and urlscan lookup buttons; one
+  desktop notification per new threat-list match (`--no-notify` to disable;
+  DEC-096).
+
 - Quick lookup: optional "Check site age" button (RDAP registration date;
   sends only the registrable domain, only on press; DEC-095).
 

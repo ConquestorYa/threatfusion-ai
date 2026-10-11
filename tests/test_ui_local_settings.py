@@ -146,7 +146,7 @@ def test_running_update_survives_reruns_disables_button_and_shows_progress(manag
         f"render_refresh_progress(Path({str(managed)!r}))"
     ).run(timeout=15)
     bar = progress.get("progress")[0]
-    assert "1/2 finished" in bar.proto.text and "50%" in bar.proto.text  # SGB + popular-site list
+    assert "1/3 finished" in bar.proto.text and "33%" in bar.proto.text  # SGB + popular sites + IP owners
     release.set()
     status = wait_finished(managed)
     assert calls == [1] and status["outcomes"][0]["status"] == "refreshed"

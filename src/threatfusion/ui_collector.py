@@ -19,7 +19,7 @@ from .dns_collection import validate_dns_snapshot
 from .ui_collected_dns import render_collected_dns
 from .collector_health import validate_collector_health
 from .ui_review_guidance import render_review_summary
-from .ui_simple_review import render_review_list
+from .ui_simple_review import ip_owner_lookup, render_review_list
 from .collector_reports import read_archive, validate_projection
 
 MAX_SNAPSHOT_BYTES = 64 * 1024 * 1024
@@ -104,7 +104,7 @@ COLLECTOR_GUIDE = """**What it is for:** Quick lookup checks one address you alr
 
 
 @st.fragment(run_every="10s")
-def render_collector(state_dir: Path | None, *, public_mode: bool):
+def render_collector(state_dir: Path | None, *, public_mode: bool, cti_db_path: Path | None = None):
     if public_mode:
         return
     if state_dir is None:
@@ -127,11 +127,18 @@ def render_collector(state_dir: Path | None, *, public_mode: bool):
         st.warning(tr("This snapshot is older than one minute. Check whether the collector is still running."))
     if counts["rejected_files"] or status.get("capacity_coverage_loss") or status.get("input_coverage_loss"):
         st.warning(tr("Some collected data is missing, so this list may be incomplete. Details shows why."))
+    try:
+        from .i18n import current_language
+        from .notifications import remember_language
+        remember_language(state_dir.parent, current_language())
+    except OSError:
+        pass  # Notifications then follow the system language.
     summary, details = st.tabs([tr("What to check"), tr("Details")])
     with summary:
         st.caption(tr("Last {hours} hours · threat lists + unusual behavior · updates every 10 s",
                       hours=status.get("window_seconds", 86400) // 3600))
-        render_review_list(_local_view(state_dir, payload), hidden_path=state_dir.parent / "review-hidden.json")
+        render_review_list(_local_view(state_dir, payload), hidden_path=state_dir.parent / "review-hidden.json",
+                           ip_owner=ip_owner_lookup(cti_db_path))
     with details:
         _render_details(state_dir, payload, status, counts)
 

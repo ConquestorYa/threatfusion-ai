@@ -12,6 +12,7 @@ Treat all threat indicators as inert data only.
 | SGB (T.C. Siber Güvenlik Başkanlığı) | Malicious address feed collection | `src/threatfusion/collectors/sgb.py` (`SGB_API_URL`) |
 | Tranco | Benign-domain baseline input; the app downloads the top 100,000 weekly (no key) as popular-site context, never as a verdict | `src/threatfusion/collectors/tranco.py`, `src/threatfusion/popular_domains.py` |
 | IANA RDAP bootstrap + registry RDAP servers | Optional site age in Quick lookup; runs only on the analyst's button press and sends only the registrable domain | `src/threatfusion/domain_age.py` |
+| iptoasn.com IP-to-ASN table (PDDL) | Network owner and registry country for addresses; weekly, no key, looked up locally | `src/threatfusion/ip_owners.py` |
 | CESNET / DomainRadar 2024 | Real-traffic benign-domain evaluation corpus | DOI `10.5281/zenodo.14332167`; `scripts/sample_cesnet_benign_domains.py` |
 | Local network/DNS telemetry (user-provided) | Runtime analysis input | CSV/TSV/TXT, Excel, Zeek, PCAP/PCAPNG, Suricata EVE, Pi-hole, AdGuard and dnstop ingestion modules |
 

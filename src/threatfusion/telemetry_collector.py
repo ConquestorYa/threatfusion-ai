@@ -512,6 +512,23 @@ def _cti_busy(error):
     return getattr(error, "sqlite_errorcode", None) in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED)
 
 
+_last_notified_snapshot = None
+
+
+def _notify(state_dir: Path) -> None:
+    global _last_notified_snapshot
+    from .notifications import NOTIFIED_FILE, notify_new_threats
+    try:
+        info = (state_dir / "connections.json").stat()
+        if (info.st_mtime_ns, info.st_size) == _last_notified_snapshot:
+            return
+        _last_notified_snapshot = (info.st_mtime_ns, info.st_size)
+        payload = json.loads((state_dir / "connections.json").read_text())
+        notify_new_threats(payload, state_dir.parent / NOTIFIED_FILE)
+    except (OSError, ValueError, TypeError, AttributeError):
+        pass  # A notification problem never stops collection.
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input-dir", type=Path, required=True)
@@ -522,6 +539,7 @@ def main(argv=None):
     parser.add_argument("--max-records", type=int, default=MAX_RECORDS)
     parser.add_argument("--poll-seconds", type=int, default=10)
     parser.add_argument("--once", action="store_true", help="Process one scan then exit")
+    parser.add_argument("--no-notify", action="store_true", help="No desktop notification for threat-list matches")
     args = parser.parse_args(argv)
     if not 1 <= args.poll_seconds <= 3600:
         parser.error("Polling interval must be between 1 and 3600 seconds")
@@ -555,6 +573,8 @@ def main(argv=None):
                 status = collector.tick(indicators=indicators, rules=rules, cti_reload_deferred=deferred,
                                         popular_domains=cti_reader.popular if cti_reader else EMPTY_POPULAR)
                 print(json.dumps(status["counts"]), flush=True)
+                if not args.no_notify:
+                    _notify(args.state_dir)
                 if args.once:
                     return 0
                 time.sleep(args.poll_seconds)

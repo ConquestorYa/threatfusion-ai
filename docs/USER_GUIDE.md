@@ -34,6 +34,11 @@ One free key from [auth.abuse.ch](https://auth.abuse.ch/) covers both abuse.ch
 sources. Keys stay in the browser session unless you choose to save them in a
 private owner-only file. A failed update keeps the previous data.
 
+The same update also downloads two public context lists without a key, weekly:
+the Tranco popular-site list and the iptoasn.com IP owner table (which network,
+and its registry country, an address belongs to). They are context, not threat
+data, and lookups in them stay on your computer.
+
 ## Collector
 
 ```bash
@@ -112,10 +117,13 @@ rather than an alarm.
 **What to check** is an alarm list, one row per item: name (for connections,
 the DNS names that pointed to the address), a short label such as *Long
 connection · 2.0 h open* or *Frequent lookups · 66 lookups*, device IP →
-destination IP:port, and time. Items on a threat list come first (🔴).
+destination IP:port with the network owner under it (for example *FASTLY · US*;
+the country is where the network is registered, not where the server is), and
+time. Items on a threat list come first (🔴).
 **Why? What to do?** opens the reason, a short action, other names sharing the
-addresses, and a VirusTotal search link (an outside site: the name is sent there
-only when you click). **I know this, hide it** moves an item to *Hidden*
+addresses, and VirusTotal, AbuseIPDB (IP reports from other users) and urlscan
+(a screenshot of the site, so you need not open it) buttons. These are outside
+sites: the name or IP is sent there only when you click. **I know this, hide it** moves an item to *Hidden*
 (stored privately next to the collector state; *Show again* undoes it); items on
 a threat list cannot be hidden. A name looked up from several addresses of the
 same computer appears once. Real IPs are shown on your own screen; downloads
@@ -196,6 +204,15 @@ This does not raise the 100,000-record analysis window.
 Hitting a limit is shown as coverage loss. The collector holds the active CTI
 indicators in memory: about 0.5–0.9 GiB with roughly 630,000 indicators.
 
+### Desktop notification
+
+When the collector sees traffic to a threat-list match, it shows one desktop
+notification (Linux `notify-send`), once per match, in the language last chosen
+in the app. Only threat-list matches notify, never behavior reviews. The
+notification can appear on a lock screen, so it names a domain only when the
+traffic named one and never shows an IP. Start the collector with
+`--no-notify` to turn it off.
+
 ## Analyze telemetry (upload)
 
 Auto-detect handles: CSV/TSV/TXT and Excel with DNS columns, Zeek `dns.log` and
@@ -217,6 +234,9 @@ Only the registrable domain is sent (`example.com`, never the full hostname or
 URL), and only when you press the button. Most malicious sites are days old, so
 "very new" (30 days or less) is a strong reason to look closer; it is context,
 not a verdict. Some country extensions have no public RDAP service.
+
+For an IP, Quick lookup shows the network owner from the local table. Both
+domains and IPs get the outside lookup buttons (VirusTotal, AbuseIPDB, urlscan).
 
 ## Modes
 

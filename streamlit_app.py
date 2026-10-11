@@ -623,7 +623,7 @@ def main() -> None:
 
     if page == "Collected connections":
         render_collector(local_root / "collector" if local_root else config.collector_state_dir,
-                         public_mode=not collector_available)
+                         public_mode=not collector_available, cti_db_path=db_path)
         return
 
     if page == "Quick lookup":

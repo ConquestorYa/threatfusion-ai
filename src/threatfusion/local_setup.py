@@ -103,6 +103,7 @@ def refresh_local_cti(install_dir: Path, environment: Mapping[str, str]) -> None
             f"  {source}: {stage}", flush=True
         ),
         popular_sites=True,
+        ip_owners=True,
     )
     for outcome in outcomes:
         if outcome.status == "refreshed":

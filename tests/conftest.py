@@ -22,3 +22,22 @@ def _no_registry_lookup(monkeypatch):
 
     monkeypatch.setattr(domain_age, "_new_session", refuse)
     monkeypatch.setattr(domain_age, "_bootstrap_cache", None)
+
+
+@pytest.fixture(autouse=True)
+def _no_ip_owner_download(monkeypatch):
+    """Tests never download the public IP owner table."""
+    from threatfusion import ip_owners
+
+    def refuse(*args, **kwargs):
+        raise RuntimeError("network access is disabled in tests")
+
+    monkeypatch.setattr(ip_owners, "fetch_ip_owners", refuse)
+
+
+@pytest.fixture(autouse=True)
+def _no_desktop_notifications(monkeypatch):
+    """Tests never show a real desktop notification."""
+    from threatfusion import notifications
+
+    monkeypatch.setattr(notifications, "desktop_available", lambda: False)

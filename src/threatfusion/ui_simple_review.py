@@ -8,6 +8,7 @@ name, so one computer with several addresses does not repeat the same name.
 """
 from __future__ import annotations
 
+import ipaddress
 import json
 import os
 import tempfile
@@ -210,17 +211,64 @@ def _show(value) -> str:
     return text
 
 
-def _render_item(item, hidden, hidden_path):
+@st.cache_resource(show_spinner=False)
+def _ip_owner_reader(db_path: str):
+    from .ip_owners import IPOwnerReader
+    return IPOwnerReader(Path(db_path))
+
+
+def ip_owner_lookup(cti_db_path: Path | None):
+    if cti_db_path is None:
+        return None
+    reader = _ip_owner_reader(str(cti_db_path))
+    if not reader:
+        _ip_owner_reader.clear()  # table not downloaded yet; look again on the next render
+        return None
+    return reader.lookup
+
+
+def _address_of(item) -> str | None:
+    """The real destination IP of an item, when this screen shows one (not an alias)."""
+    where = item.get("where") or ()
+    candidates = [where[1]] if len(where) > 1 and where[0] == "address" else []
+    for value in [*candidates, item.get("title")]:
+        try:
+            return str(ipaddress.ip_address(str(value)))
+        except ValueError:
+            continue
+    return None
+
+
+def lookup_links(name: str | None, address: str | None) -> list[tuple[str, str]]:
+    """Outside lookup sites: VirusTotal for the name (or IP), AbuseIPDB for the IP, urlscan for both."""
+    links = []
+    primary = name or address
+    if primary:
+        links.append(("VirusTotal", "https://www.virustotal.com/gui/search/" + quote(str(primary), safe="")))
+    if address:
+        links.append(("AbuseIPDB", "https://www.abuseipdb.com/check/" + quote(address, safe="")))
+    if name and name != address:
+        links.append(("urlscan", "https://urlscan.io/domain/" + quote(str(name), safe="")))
+    elif address:
+        links.append(("urlscan", "https://urlscan.io/ip/" + quote(address, safe="")))
+    return links
+
+
+def _render_item(item, hidden, hidden_path, ip_owner=None):
     with st.container(border=True):
         icon = "🔴" if item["threat"] else "🟡"
         name = item["title"] if not item["unnamed"] else _show(item["title"])
         left, middle, right = st.columns([5, 4, 2])
         left.markdown(f"{icon} **{name}**  \n{tr(item['label'])} · {tr(item['metric'][0], **item['metric'][1])}")
         devices = ", ".join(dict.fromkeys(_show(d) for d in item["devices"] if d))
+        address = _address_of(item)
         if item["where"] and item["where"][0] == "address":
             middle.markdown(f"`{devices}` → `{_show(item['where'][1])}:{item['where'][2]}`")
         else:
             middle.markdown(f"`{devices}`")
+        owner = ip_owner(address) if ip_owner and address else None
+        if owner:
+            middle.caption(owner.label)
         right.markdown(item["when"] or "")
         with st.expander(tr("Why? What to do?")):
             st.markdown(" ".join(tr(s) for s in item["what"]))
@@ -232,13 +280,15 @@ def _render_item(item, hidden, hidden_path):
                 facts.append(tr("Lists: {sources}", sources=", ".join(item["sources"])))
             if facts:
                 st.caption(" · ".join(facts))
-            columns = st.columns(2)
             target = item["title"] if not str(item["title"]).startswith(("Host ", "Device ")) else None
-            if target:
-                columns[0].link_button(tr("Look up on VirusTotal (outside site)"),
-                                       "https://www.virustotal.com/gui/search/" + quote(str(target), safe=""))
+            links = lookup_links(target, address)
+            if links:
+                st.caption(tr("Look up on outside sites (opens in a new tab; the name or IP is sent to that site):"))
+            columns = st.columns(len(links) + 1)
+            for column, (label, url) in zip(columns, links):
+                column.link_button(label, url)
             if not item["threat"] and hidden_path is not None:
-                if columns[1].button(tr("I know this, hide it"), key="hide-" + item_key(item)):
+                if columns[-1].button(tr("I know this, hide it"), key="hide-" + item_key(item)):
                     try:
                         save_hidden(hidden_path, hidden | {item_key(item)})
                     except OSError:
@@ -246,7 +296,7 @@ def _render_item(item, hidden, hidden_path):
                     st.rerun(scope="fragment")
 
 
-def render_review_list(view, *, hidden_path: Path | None = None) -> None:
+def render_review_list(view, *, hidden_path: Path | None = None, ip_owner=None) -> None:
     items = build_review_items(view)
     hidden = load_hidden(hidden_path)
     # Items on a threat list can never be hidden.
@@ -266,7 +316,7 @@ def render_review_list(view, *, hidden_path: Path | None = None) -> None:
                                                                   else item["kind"] == wanted)]
         st.caption(tr("A flag means look, not danger. Most are normal programs."))
         for item in shown[:200]:
-            _render_item(item, hidden, hidden_path)
+            _render_item(item, hidden, hidden_path, ip_owner)
         if len(shown) > 200:
             st.caption(tr("Showing the first 200. Details lists everything."))
     if muted and hidden_path is not None:

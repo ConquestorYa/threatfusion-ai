@@ -13,6 +13,7 @@ from .domain_age import DomainAge, lookup_domain_age, rdap_domain
 from .i18n import tr, translate_dataframe
 from .popular_domains import load_suffix_rules
 from .quick_lookup import QuickLookupResult
+from .ui_simple_review import ip_owner_lookup, lookup_links
 from .ui_theme import metric_card, safe_text, section_label
 
 
@@ -525,6 +526,33 @@ def _render_domain_age(result: QuickLookupResult, db_path: Path) -> None:
                   domain=domain))
 
 
+def _render_ip_owner(result: QuickLookupResult, db_path: Path) -> None:
+    lookup = ip_owner_lookup(db_path)
+    owner = lookup(result.normalized_ip) if lookup else None
+    section_label(tr("Network owner"))
+    if owner is None:
+        st.caption(tr("Owner unknown (private address, or the IP owner table is not downloaded yet)."))
+        return
+    st.markdown(
+        '<div class="tf-signal-node tf-signal-node--info">'
+        f'<div class="tf-signal-node-label">{safe_text(tr("Network owner"))} · AS{owner.asn}</div>'
+        f'<div class="tf-signal-node-value">{safe_text(owner.label)}</div>'
+        f'<div class="tf-signal-node-sub">{safe_text(tr("Country is where the network is registered, not where the server is. Owners are often hosting or CDN companies."))}</div></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def _render_outside_links(result: QuickLookupResult) -> None:
+    name = None if result.normalized_ip else result.normalized_domain
+    links = lookup_links(name, result.normalized_ip)
+    if not links:
+        return
+    section_label(tr("Look up elsewhere"))
+    st.caption(tr("Look up on outside sites (opens in a new tab; the name or IP is sent to that site):"))
+    for column, (label, url) in zip(st.columns(len(links)), links):
+        column.link_button(label, url, width="stretch")
+
+
 def render_quick_lookup_empty_state() -> None:
     """Nothing to show yet; the passive-lookup caption above already explains."""
 
@@ -550,7 +578,11 @@ def render_quick_lookup_result(result: QuickLookupResult, *, registry_db_path: P
     _render_graphic_overview(result)
     _render_reasons(result)
     if registry_db_path is not None:
-        _render_domain_age(result, registry_db_path)
+        if result.normalized_ip is not None:
+            _render_ip_owner(result, registry_db_path)
+        else:
+            _render_domain_age(result, registry_db_path)
+        _render_outside_links(result)
 
     section_label(tr("Threat intelligence evidence"))
     _render_evidence_state(result)

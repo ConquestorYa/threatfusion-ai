@@ -107,6 +107,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         force=args.force,
         progress=show_progress,
         popular_sites=True,
+        ip_owners=True,
     )
 
     print("Summary")

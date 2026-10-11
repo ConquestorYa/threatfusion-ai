@@ -1075,3 +1075,22 @@ Hidden in public mode; tests cannot reach a registry.
 
 Rejected: automatic lookups for every collected name (it would send browsing
 history to registries) and third-party RDAP/WHOIS proxies.
+
+## DEC-096: IP owners, outside lookup buttons, desktop notification
+
+**Decision (2026-10-11):** The user chose three features from a comparison with
+popular tools (VirusTotal, AbuseIPDB, GlassWire, Little Snitch).
+
+1. Network owner: the public-domain iptoasn.com table is downloaded weekly into
+   the CTI cache (about 580,000 ranges) and looked up locally; shown under each
+   destination IP and in Quick lookup for IPs. Registry country, not location.
+2. Outside lookups: VirusTotal, AbuseIPDB (IP) and urlscan buttons; the name or
+   IP leaves the computer only on click, which the button caption states.
+3. Desktop notification: one `notify-send` per new threat-list match (never
+   for behavior reviews), recorded so it is not repeated or retried every poll.
+   It never shows an IP and names a domain only when the traffic named one,
+   because notifications can appear on a lock screen. `--no-notify` disables it.
+
+Rejected for now: lookalike-domain warnings (frequent false alarms on real
+sites), first-seen destination alerts (too noisy), new-device alerts (the sensor
+sees one computer) and blocking (needs a DNS filter the user does not run).

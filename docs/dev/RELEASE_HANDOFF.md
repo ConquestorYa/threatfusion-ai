@@ -2,6 +2,18 @@
 
 Newest section first. Status date: 2026-10-11.
 
+## IP owners, outside lookups, desktop notification (2026-10-11, DEC-096)
+
+- Network owner under each destination IP and in Quick lookup (iptoasn.com,
+  weekly, local lookups); VirusTotal/AbuseIPDB/urlscan buttons; one desktop
+  notification per new threat-list match.
+- Verified: unit/UI tests (no network or real notification in tests), a live
+  download (582,354 ranges, 5.5 s, +58 MB in the CTI cache, well-known public
+  IPs resolved correctly), screenshots of both screens, one real test
+  notification on the development desktop. Not a detection measurement.
+- `ml-age-dev-v1` (site age as a signal, development grade) is running; see
+  ML_DATASET.md when it finishes.
+
 ## Quick lookup site age (2026-10-11, DEC-095)
 
 - "Check site age" button asks the registry's RDAP server when the domain was
