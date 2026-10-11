@@ -2,6 +2,20 @@
 
 Newest section first. Status date: 2026-10-11.
 
+## ML strict temporal evaluation failed; candidate 3 in development (2026-10-11)
+
+- `ml-lookup-temporal-v2`: augmented model on post-freeze indicators + untouched
+  CESNET 160k–180k, popular-site gated. High tier: FPR 1.14 % (limit 0.1 %),
+  recall 12.9 % (limit 50 %), ThreatFox recall 1.9 %; own-traffic High hits 1
+  (limit 3). Score stays off; Model evaluation page stays hidden. Details in
+  `docs/evidence/ML_DATASET.md`.
+- `ml-candidate3-dev-v1` (plan `6b3b331f…`, freeze 2026-10-11T14:27:15Z):
+  SGB + ThreatFox domains, benign Tranco + CESNET 100k–120k + new 240k–340k,
+  same model family, one run. Evaluate candidates 2 and 3 together after
+  2026-10-18 on CESNET 200k–220k + own-traffic names (declare first).
+- UI: compact alarm list with real IPs, short labels, hide and VirusTotal link
+  (`84b892d`).
+
 ## Arm A defect fixes (2026-10-11, DEC-094)
 
 - Connections show DNS names; DNS rows show names sharing answers; local names

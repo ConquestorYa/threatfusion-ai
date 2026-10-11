@@ -1214,3 +1214,35 @@ development-only: no holdout result exists. Its evaluation needs indicators firs
 seen after its freeze (at least seven days) and the untouched CESNET window at
 offset 200,000, declared separately and compared with the augmented model on the
 same holdout.
+
+## Strict temporal evaluation of the augmented model: failed (2026-10-11)
+
+Private root `ml-lookup-temporal-v2` (plan sha256 `e92b53c2…`, summary
+`f5c7940c…`, commit `84b892d`). Frozen augmented artifact `643b5adc…`,
+thresholds unchanged. Malicious: CTI indicators first seen after the freeze
+(2026-10-03T20:41:49Z), minus development domains: 5,558 (SGB 1,193, ThreatFox
+4,245, URLhaus 120). Benign: untouched CESNET window 160k–180k (19,772 after
+overlap removal). Primary configuration: the runtime popular-site context
+(registrable domain in the Tranco top 100k gets no hint). Criteria declared
+before the run, stricter than the never-declared draft.
+
+| High tier (primary, popular-gated) | Result | Limit | Pass |
+| --- | --- | --- | --- |
+| False-positive rate, CESNET | 1.14 % (225 / 19,772) | ≤ 0.1 % | ✗ |
+| High-tier hits in the user's own 24 h (621 names) | 1 (raw, ungated: 25) | ≤ 3 | ✓ |
+| Recall | 12.9 % | ≥ 50 % | ✗ |
+| Recall per source (n ≥ 50) | SGB 52.7 %, ThreatFox 1.9 %, URLhaus 6.7 % | each ≥ 25 % | ✗ |
+
+Medium tier: recall 25.7 %, FPR 2.5 %; low tier: 32.2 %, 3.6 %. The
+ungated reference is almost identical on CESNET (FPR 1.15 %, recall 13.0 %):
+only 11.5 % of CESNET names have a popular registrable domain.
+
+**Decision:** the score stays off; Quick Lookup shows no ML hint and the Model
+evaluation page stays hidden. The CESNET 160k–180k window and these
+post-freeze indicators are now inspected and must not be used for development.
+
+**Reading:** ThreatFox recall is near zero because this model was trained while
+the ThreatFox parser was broken (no ThreatFox domains in training; candidate 2
+fixes that). The High threshold, calibrated mostly on Tranco names, is far too
+permissive for real-traffic long-tail names. The popular-site gate removes most
+false hits on the user's own traffic but does little on CESNET.
