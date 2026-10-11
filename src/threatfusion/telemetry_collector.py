@@ -384,9 +384,10 @@ class ZeekCollector:
                 records.append(ConnectionRecord(**values))
             result = analyze_connection_records(records, indicators)
             dns_payloads = [r[0] for r in self.db.execute("SELECT payload FROM records WHERE kind='dns' ORDER BY timestamp, hash")]
-            dns_identity = []
-            dns_snapshot = build_dns_snapshot(dns_payloads, indicators, generated_at=now, selection_identity=dns_identity)
-            self.analysis_cache = result, dns_snapshot, len(records), len(dns_payloads), dns_identity
+            dns_identity, address_names = [], {}
+            dns_snapshot = build_dns_snapshot(dns_payloads, indicators, generated_at=now,
+                                              selection_identity=dns_identity, address_names=address_names)
+            self.analysis_cache = result, dns_snapshot, len(records), len(dns_payloads), dns_identity, address_names
             self.cached_indicators = indicator_state
             completions = set()
             for finding in result.connection_findings:
@@ -396,7 +397,7 @@ class ZeekCollector:
                     except (OverflowError, ValueError):
                         pass  # Unrepresentable ends cannot qualify as expected.
             self.completion_epochs = tuple(sorted(completions))
-        result, dns_snapshot, conn_count, dns_count, dns_identity = self.analysis_cache
+        result, dns_snapshot, conn_count, dns_count, dns_identity, address_names = self.analysis_cache
         counts["retained_records"] = conn_count
         counts["retained_total_records"] = conn_count + dns_count
         counts["retained_dns_records"] = dns_count
@@ -443,6 +444,8 @@ class ZeekCollector:
             base_report, reference = self.report_cache[1:]
         else:
             base_report = connection_report_payload(result, expected_rules=effective_rules, generated_at=now, evaluated_at=now)
+            for row, finding in zip(base_report["findings"], result.connection_findings, strict=True):
+                row["DNS names"] = ", ".join(address_names.get(finding.responder_ip, ()))
             reference = None
             if capacity_loss:
                 base_report["limitations"].append("Collector capacity dropped evidence; expected-activity declarations are disabled for one ingestion window.")

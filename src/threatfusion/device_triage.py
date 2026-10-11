@@ -113,7 +113,7 @@ def build_device_findings(
                 priority = "observe"
             if not coverage and assessment.behavior.periodic_query_pattern:
                 reasons.append("sustained_periodic_dns")
-                if priority == "observe":
+                if priority == "observe" and "local_network_name" not in reasons:
                     priority = "review"
             findings.append(DeviceFinding(
                 client_ip=client, assessment=assessment, priority=priority,

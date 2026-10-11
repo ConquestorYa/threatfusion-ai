@@ -8,6 +8,7 @@ from enum import Enum
 
 from .dns import DNSEvent
 from .dns_behavior import DomainBehavior, aggregate_dns_behavior
+from .dns_names import is_local_name
 from .matching import DNSIOCMatch
 from .models import IOCType
 from .normalization import normalize_ioc_value
@@ -264,8 +265,16 @@ def assess_dns_domains(
         if tier == "high" and not strong_corroboration:
             reasons.append("ml_high_uncorroborated")
 
+        local_name = is_local_name(behavior.domain)
+        if local_name:
+            reasons.append("local_network_name")
+
         if exact_domain_ioc:
             verdict = HybridVerdict.KNOWN_THREAT
+        elif local_name and not contextual_ioc:
+            # mDNS/DNS-SD and reverse lookups stay on the local network; their
+            # volume and answer counts describe discovery, not a destination.
+            verdict = HybridVerdict.LOW
         elif (
             tier == "high" and strong_corroboration
         ) or (

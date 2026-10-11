@@ -127,6 +127,7 @@ _REASON_LABELS = {
         "High ML score has no independent corroborating threat signal"
     ),
     "high_query_volume": "High DNS query volume",
+    "local_network_name": "Local network name (mDNS, reverse lookup or local zone)",
     "multi_client_observation": "Observed from multiple clients",
     "response_ip_churn": "Multiple response IPs observed",
     "query_type_diversity": "Multiple DNS query types observed",

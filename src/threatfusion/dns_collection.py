@@ -7,6 +7,7 @@ from dataclasses import asdict, replace
 from datetime import datetime
 
 from .dns import DNSEvent
+from .dns_names import names_by_address, names_sharing_addresses
 from .dns_zeek import ZeekDNSTransaction
 from .reporting import build_device_report
 from .runtime_analysis import analyze_dns_events
@@ -23,7 +24,8 @@ def transaction_payload(record: ZeekDNSTransaction) -> str:
 
 
 def build_dns_snapshot(
-    payloads: list[str], indicators, *, generated_at: datetime, selection_identity=None
+    payloads: list[str], indicators, *, generated_at: datetime, selection_identity=None,
+    address_names=None,
 ):
     by_key = {}
     conflicts = set()
@@ -86,6 +88,12 @@ def build_dns_snapshot(
             generated_at=generated_at,
         )
     )
+    shared = names_sharing_addresses(events)
+    for row in report["findings"]:
+        row["Same addresses as"] = ", ".join(shared.get(row["Target"].casefold().rstrip("."), ()))
+    if address_names is not None:
+        # Caller-private: lets connection groups show which names led to an address.
+        address_names.update(names_by_address(events))
     return {
         "policy": POLICY_ID,
         "coverage": {
