@@ -49,6 +49,7 @@ def build_device_findings(
     ml_scores: Mapping[str, float] | None = None,
     ml_thresholds: MLThresholds | None = None,
     behavior_config: BehaviorHeuristicConfig | None = None,
+    popular_domains: frozenset[str] = frozenset(),
 ) -> tuple[DeviceFinding, ...]:
     """Assess each observed client independently without scoring ML again.
 
@@ -81,6 +82,7 @@ def build_device_findings(
         assessments = assess_dns_domains(
             client_events, by_match[client], ml_scores=scores,
             ml_thresholds=ml_thresholds, behavior_config=behavior_config,
+            popular_domains=popular_domains,
         )
         for assessment in assessments:
             domain_events = by_domain[assessment.domain]
@@ -113,7 +115,7 @@ def build_device_findings(
                 priority = "observe"
             if not coverage and assessment.behavior.periodic_query_pattern:
                 reasons.append("sustained_periodic_dns")
-                if priority == "observe" and "local_network_name" not in reasons:
+                if priority == "observe" and not {"local_network_name", "popular_site"} & set(reasons):
                     priority = "review"
             findings.append(DeviceFinding(
                 client_ip=client, assessment=assessment, priority=priority,

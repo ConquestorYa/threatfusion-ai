@@ -760,6 +760,8 @@ _TR: dict[str, str] = {
     "Low ML score tier": "Düşük ML skor seviyesi",
     "High DNS query volume": "Yüksek DNS sorgu hacmi",
     "Local network name (mDNS, reverse lookup or local zone)": "Ev ağına ait ad (mDNS, ters adres sorgusu veya yerel bölge)",
+    "Popular site (Tranco top 100,000): context, not a verdict": "Popüler site (Tranco ilk 100.000): bağlam, hüküm değil",
+    "All DNS names for this address are popular sites: context, not a verdict": "Bu adresin tüm DNS adları popüler siteler: bağlam, hüküm değil",
     "Observed from multiple clients": "Birden fazla istemciden gözlendi",
     "Multiple response IPs observed": "Birden fazla yanıt IP gözlendi",
     "Multiple DNS query types observed": "Birden fazla DNS sorgu türü gözlendi",

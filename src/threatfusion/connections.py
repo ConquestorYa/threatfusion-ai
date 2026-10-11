@@ -73,7 +73,9 @@ def connection_identity_index(records: tuple[ConnectionRecord, ...]):
     return by_uid, conflicts, duplicates
 
 
-def analyze_connections(records: tuple[ConnectionRecord, ...]) -> tuple[ConnectionFinding, ...]:
+def analyze_connections(
+    records: tuple[ConnectionRecord, ...], popular_responders: frozenset[str] = frozenset(),
+) -> tuple[ConnectionFinding, ...]:
     """Group observation direction, protocol and responder port; never infer domains.
 
     Repeated identical UIDs count once. Conflicting UIDs are excluded entirely,
@@ -147,6 +149,14 @@ def analyze_connections(records: tuple[ConnectionRecord, ...]) -> tuple[Connecti
               and not set(coverage) - {"unconfirmed_or_incomplete_sessions", "reset_terminated_sessions", "partially_closed_sessions"}
               and score is not None and score >= PERIODICITY_SCORE):
             reasons.append("sustained_periodic_payload_connections")
+        # Duration/timing rules describe ordinary push and sync channels too;
+        # when every DNS name for the address is a popular site, keep the
+        # evidence visible as an observation. CTI context is applied later and
+        # still surfaces these groups.
+        priority = "review" if reasons else "observe"
+        if reasons and target in popular_responders:
+            reasons.append("popular_site_destination")
+            priority = "observe"
         def total(field):
             values = [getattr(r, field) for r in unique]
             return sum(values) if values and all(v is not None for v in values) else None
@@ -156,7 +166,7 @@ def analyze_connections(records: tuple[ConnectionRecord, ...]) -> tuple[Connecti
             len({r.uid for r in rows if r.uid in conflicts}), first, last,
             max(durations) if durations else None,
             total("originator_bytes"), total("responder_bytes"), interval, score,
-            "review" if reasons else "observe", tuple(reasons), tuple(coverage),
+            priority, tuple(reasons), tuple(coverage),
             len(payload_sessions), resets, partial_closes, failed,
         ))
     return tuple(sorted(findings, key=lambda f: (

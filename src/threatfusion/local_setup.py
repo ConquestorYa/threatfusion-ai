@@ -102,6 +102,7 @@ def refresh_local_cti(install_dir: Path, environment: Mapping[str, str]) -> None
         progress=lambda source, stage, detail: print(
             f"  {source}: {stage}", flush=True
         ),
+        popular_sites=True,
     )
     for outcome in outcomes:
         if outcome.status == "refreshed":

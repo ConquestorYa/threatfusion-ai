@@ -106,6 +106,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         stale_after=timedelta(hours=args.stale_hours),
         force=args.force,
         progress=show_progress,
+        popular_sites=True,
     )
 
     print("Summary")

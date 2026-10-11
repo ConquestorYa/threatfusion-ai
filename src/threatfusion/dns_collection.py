@@ -25,7 +25,7 @@ def transaction_payload(record: ZeekDNSTransaction) -> str:
 
 def build_dns_snapshot(
     payloads: list[str], indicators, *, generated_at: datetime, selection_identity=None,
-    address_names=None,
+    address_names=None, popular_domains=frozenset(),
 ):
     by_key = {}
     conflicts = set()
@@ -74,7 +74,7 @@ def build_dns_snapshot(
         events.append(DNSEvent(**values))
         legacy += payload.get("answer_coverage") != "all-ip-answers-v1"
         transports[payload["protocol"]] += 1
-    result = analyze_dns_events(events, indicators, None)
+    result = analyze_dns_events(events, indicators, None, popular_domains=popular_domains)
     total = len(result.device_findings)
     if selection_identity is not None:
         # Caller-private mapping; never add raw clients to the snapshot envelope.

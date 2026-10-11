@@ -128,6 +128,7 @@ _REASON_LABELS = {
     ),
     "high_query_volume": "High DNS query volume",
     "local_network_name": "Local network name (mDNS, reverse lookup or local zone)",
+    "popular_site": "Popular site (Tranco top 100,000): context, not a verdict",
     "multi_client_observation": "Observed from multiple clients",
     "response_ip_churn": "Multiple response IPs observed",
     "query_type_diversity": "Multiple DNS query types observed",
@@ -196,6 +197,7 @@ def connection_finding_rows(
         "long_bidirectional_tcp_session": "Long bidirectional TCP session (at least 1 hour)",
         "sustained_periodic_connections": "Sustained periodic successful TCP connections",
         "sustained_periodic_payload_connections": "Sustained periodic bidirectional TCP with incomplete or reset termination",
+        "popular_site_destination": "All DNS names for this address are popular sites: context, not a verdict",
     }
     limits = {
         "missing_connection_uid": "Connection identity unavailable",

@@ -30,6 +30,7 @@ from .dns_collection import build_dns_snapshot, transaction_payload
 from .expected_connections import MAX_RULE_BYTES, parse_expected_connections
 from .network_telemetry import parse_zeek_conn_log_with_diagnostics
 from .reporting import connection_report_payload
+from .popular_domains import is_popular
 from .runtime_analysis import analyze_connection_records
 from .log_preparation import MANIFEST, STAGING, prepared_context
 from .collector_reports import MAX_GROUPS, SLOTS, project_snapshot, snapshot_group_ids, write_archive, prune_archives
@@ -162,6 +163,7 @@ class ZeekCollector:
         self.db = None
         self.analysis_cache = None
         self.cached_indicators = None
+        self.cached_popular = None
         self.preparation_cache = {}
         self.report_cache = None
         self.archive_signature = None
@@ -268,7 +270,8 @@ class ZeekCollector:
             self.db.execute(f"DELETE FROM {table} WHERE rowid IN (SELECT rowid FROM {table} ORDER BY ingested DESC LIMIT -1 OFFSET ?)", (MAX_LEDGER_FILES,))
         return trimmed + capacity
 
-    def tick(self, *, indicators=(), rules=(), now: datetime | None = None, cti_reload_deferred=False):
+    def tick(self, *, indicators=(), rules=(), now: datetime | None = None, cti_reload_deferred=False,
+             popular_domains=frozenset()):
         now = now or datetime.now(timezone.utc)
         if now.tzinfo is None or now.utcoffset() is None:
             raise ValueError("Collector clock must be aware")
@@ -372,7 +375,8 @@ class ZeekCollector:
             counts["trimmed_records"] += self._prune(epoch)
         indicator_state = _indicator_state(indicators)
         recomputed = (self.analysis_cache is None or counts["new_records"] or counts["trimmed_records"]
-                      or indicator_state != self.cached_indicators)
+                      or indicator_state != self.cached_indicators
+                      or hash(popular_domains) != self.cached_popular)
         if recomputed:
             # Imports are already committed. Failed analysis must force retry;
             # the previous published snapshot remains intact until success.
@@ -382,13 +386,18 @@ class ZeekCollector:
                 values = json.loads(payload)
                 values["timestamp"] = datetime.fromisoformat(values["timestamp"]) if values["timestamp"] else None
                 records.append(ConnectionRecord(**values))
-            result = analyze_connection_records(records, indicators)
             dns_payloads = [r[0] for r in self.db.execute("SELECT payload FROM records WHERE kind='dns' ORDER BY timestamp, hash")]
             dns_identity, address_names = [], {}
             dns_snapshot = build_dns_snapshot(dns_payloads, indicators, generated_at=now,
-                                              selection_identity=dns_identity, address_names=address_names)
+                                              selection_identity=dns_identity, address_names=address_names,
+                                              popular_domains=popular_domains)
+            popular_responders = frozenset(
+                address for address, names in address_names.items()
+                if names and all(is_popular(name, popular_domains) for name in names))
+            result = analyze_connection_records(records, indicators, popular_responders=popular_responders)
             self.analysis_cache = result, dns_snapshot, len(records), len(dns_payloads), dns_identity, address_names
             self.cached_indicators = indicator_state
+            self.cached_popular = hash(popular_domains)
             completions = set()
             for finding in result.connection_findings:
                 if finding.last_seen is not None and finding.max_duration_seconds is not None:
@@ -543,7 +552,8 @@ def main(argv=None):
                         time.sleep(args.poll_seconds)
                         continue
                     indicators, deferred = cti_reader.records, True
-                status = collector.tick(indicators=indicators, rules=rules, cti_reload_deferred=deferred)
+                status = collector.tick(indicators=indicators, rules=rules, cti_reload_deferred=deferred,
+                                        popular_domains=cti_reader.popular if cti_reader else frozenset())
                 print(json.dumps(status["counts"]), flush=True)
                 if args.once:
                     return 0

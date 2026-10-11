@@ -10,7 +10,7 @@ Treat all threat indicators as inert data only.
 | ThreatFox (abuse.ch) | Malicious IOC feed collection | `src/threatfusion/collectors/threatfox.py` (full current export + recent API fallback) |
 | URLhaus (abuse.ch) | Malware-distribution URL feed collection | `src/threatfusion/collectors/urlhaus.py` (full database dump) |
 | SGB (T.C. Siber Güvenlik Başkanlığı) | Malicious address feed collection | `src/threatfusion/collectors/sgb.py` (`SGB_API_URL`) |
-| Tranco | Benign-domain baseline input | `src/threatfusion/collectors/tranco.py` (`TrancoCollector`) |
+| Tranco | Benign-domain baseline input; the app downloads the top 100,000 weekly (no key) as popular-site context, never as a verdict | `src/threatfusion/collectors/tranco.py`, `src/threatfusion/popular_domains.py` |
 | CESNET / DomainRadar 2024 | Real-traffic benign-domain evaluation corpus | DOI `10.5281/zenodo.14332167`; `scripts/sample_cesnet_benign_domains.py` |
 | Local network/DNS telemetry (user-provided) | Runtime analysis input | CSV/TSV/TXT, Excel, Zeek, PCAP/PCAPNG, Suricata EVE, Pi-hole, AdGuard and dnstop ingestion modules |
 

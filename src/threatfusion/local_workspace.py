@@ -186,7 +186,8 @@ def refresh_workspace(
         except BlockingIOError:
             return {"busy": True}
         # Record attempts even on failure to avoid retry loops while offline.
-        total = 1 + sum(
+        # SGB and the popular-site list need no key.
+        total = 2 + sum(
             bool(keys.get(name)) for name in ("THREATFOX_AUTH_KEY", "URLHAUS_AUTH_KEY")
         )
         status = {
@@ -207,6 +208,7 @@ def refresh_workspace(
                 progress=_progress_recorder(root, status, total, progress),
                 now=reference,
                 force=bool(force),
+                popular_sites=True,
             )
             # Persist only safe aggregates. Never retain exception URLs or bodies.
             status["outcomes"] = [

@@ -9,6 +9,7 @@ from enum import Enum
 from .dns import DNSEvent
 from .dns_behavior import DomainBehavior, aggregate_dns_behavior
 from .dns_names import is_local_name
+from .popular_domains import is_popular
 from .matching import DNSIOCMatch
 from .models import IOCType
 from .normalization import normalize_ioc_value
@@ -186,6 +187,7 @@ def assess_dns_domains(
     ml_thresholds: MLThresholds | None = None,
     behavior_config: BehaviorHeuristicConfig | None = None,
     ml_probabilities: Mapping[str, float] | None = None,
+    popular_domains: frozenset[str] = frozenset(),
 ) -> list[HybridAssessment]:
     """Combine known IOC evidence, ML tiers, and local DNS behavior.
 
@@ -268,10 +270,19 @@ def assess_dns_domains(
         local_name = is_local_name(behavior.domain)
         if local_name:
             reasons.append("local_network_name")
+        # A URL listed on a popular shared platform does not list the platform;
+        # answer churn and volume are ordinary for large sites and CDNs.
+        popular_context = (
+            not local_name and not exact_domain_ioc and tier is None
+            and not {"response_ip", "response_ip_network"} & set(match_types)
+            and is_popular(behavior.domain, popular_domains)
+        )
+        if popular_context:
+            reasons.append("popular_site")
 
         if exact_domain_ioc:
             verdict = HybridVerdict.KNOWN_THREAT
-        elif local_name and not contextual_ioc:
+        elif (local_name and not contextual_ioc) or popular_context:
             # mDNS/DNS-SD and reverse lookups stay on the local network; their
             # volume and answer counts describe discovery, not a destination.
             verdict = HybridVerdict.LOW

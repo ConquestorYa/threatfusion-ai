@@ -118,6 +118,7 @@ def analyze_dns_events(
     *,
     behavior_config: BehaviorHeuristicConfig | None = None,
     connections: Iterable[ConnectionRecord] = (),
+    popular_domains: frozenset[str] = frozenset(),
 ) -> RuntimeAnalysisResult:
     """Run the local ThreatFusion analysis pipeline over DNS events.
 
@@ -151,6 +152,7 @@ def analyze_dns_events(
         ml_scores=ml_scores if artifact is not None else None,
         ml_thresholds=artifact.thresholds if artifact is not None else None,
         behavior_config=behavior_config,
+        popular_domains=popular_domains,
     )
 
     connection_findings = analyze_connections(connection_list)
@@ -164,6 +166,7 @@ def analyze_dns_events(
             ml_scores=ml_scores if artifact is not None else None,
             ml_thresholds=artifact.thresholds if artifact is not None else None,
             behavior_config=behavior_config,
+            popular_domains=popular_domains,
         ),
         connection_findings=connection_findings,
         connection_timelines=build_timelines(connection_list, connection_findings),
@@ -173,6 +176,7 @@ def analyze_dns_events(
 
 def analyze_connection_records(
     connections: Iterable[ConnectionRecord], indicators: Iterable[IOCRecord] = (),
+    *, popular_responders: frozenset[str] = frozenset(),
 ) -> RuntimeAnalysisResult:
     """Connection-only collector analysis, without applying DNS-domain limits.
 
@@ -186,7 +190,7 @@ def analyze_connection_records(
         raise ValueError("Connection input exceeds the event analysis limit")
     events = [DNSEvent(r.responder_ip, r.timestamp, r.originator_ip, response_ip=r.responder_ip) for r in records]
     _validate_event_metadata(events)
-    findings = analyze_connections(records)
+    findings = analyze_connections(records, popular_responders)
     return RuntimeAnalysisResult(
         events=tuple(events), matches=tuple(match_dns_events(events, indicators)),
         ml_scores={}, assessments=(), device_findings=(), connection_findings=findings,

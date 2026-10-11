@@ -20,6 +20,7 @@ class CTICacheReader:
         self.path = Path(path)
         self.signature = None
         self.records = None
+        self.popular = frozenset()
 
     def _signature(self):
         values = []
@@ -35,6 +36,9 @@ class CTICacheReader:
         signature = self._signature()
         if self.records is None or signature != self.signature:
             self.records = load_ioc_records(self.path)
+            from .popular_domains import load_popular_domains
+
+            self.popular = load_popular_domains(self.path)
             # Initialization may write schema metadata. Concurrent later changes
             # force another read rather than marking an older view as current.
             after = self._signature()
