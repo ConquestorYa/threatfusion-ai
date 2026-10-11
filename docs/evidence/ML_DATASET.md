@@ -1246,3 +1246,36 @@ the ThreatFox parser was broken (no ThreatFox domains in training; candidate 2
 fixes that). The High threshold, calibrated mostly on Tranco names, is far too
 permissive for real-traffic long-tail names. The popular-site gate removes most
 false hits on the user's own traffic but does little on CESNET.
+
+## Backdated temporal backtest of the candidate-3 recipe: failed (2026-10-11)
+
+Private root `ml-backtest-v1` (plan `9ca5f496…`, summary `4d3420db…`, commit
+`7c3c20b`). The user asked not to wait a week, so the recipe was tested
+backdated: trained only on SGB + ThreatFox domains first seen up to
+2026-10-03T20:41:49Z (505,573 malicious; 169,228 benign: Tranco, CESNET
+100k–120k and new CESNET 240k–340k), three model families compared on the
+development test split only (rule declared in advance; chosen:
+`lr_char_2_6_plus_lexical_c4`, development-test High recall 60.7 % at FPR
+0.098 %), then evaluated once on indicators first seen after the cutoff and the
+untouched CESNET 200k–220k window. One method note: the first run stopped on a
+broken download before any evaluation output and resumed from its receipts.
+
+| High tier (popular-gated) | Result | Limit | Pass |
+| --- | --- | --- | --- |
+| CESNET false-positive rate | 0.23 % (45 / 19,929) | ≤ 0.1 % | ✗ |
+| High-tier hits in the user's own 24 h (621 names) | 0 (ungated: 8) | ≤ 3 | ✓ |
+| Recall | 16.3 % (906 / 5,558) | ≥ 50 % | ✗ |
+| Recall per source | SGB 58.3 %, ThreatFox 4.7 %, URLhaus 9.2 % | each ≥ 25 % | ✗ |
+
+Compared with the augmented model on the same malicious set, false positives
+fell about five-fold (1.14 % → 0.23 %) and recall rose slightly (12.9 % →
+16.3 %). Caveat: this malicious set was used in the previous evaluation and
+motivated the recipe, so even this result may be optimistic.
+
+**Conclusion.** Name-only (lexical) models do not reach the bar for new
+indicators. The random development split (60.7 %) overstates real performance
+because campaigns share names; new ThreatFox domains are lexically unlike older
+ones (4.7 %). The score stays off; candidate 3 (`9c4aeae1…`, trained on all data
+to 2026-10-11) is not promoted. Further lexical iteration is not planned. Next
+directions: connection-behavior features from Zeek (needs the labeled 7-day
+run) and, as a separate non-ML question for the user, domain-age context.

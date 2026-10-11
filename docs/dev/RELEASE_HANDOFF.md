@@ -9,6 +9,7 @@ Newest section first. Status date: 2026-10-11.
   recall 12.9 % (limit 50 %), ThreatFox recall 1.9 %; own-traffic High hits 1
   (limit 3). Score stays off; Model evaluation page stays hidden. Details in
   `docs/evidence/ML_DATASET.md`.
+- Backdated backtest of the candidate-3 recipe (`ml-backtest-v1`) also failed: High FPR 0.23 %, recall 16.3 % (ThreatFox 4.7 %). Lexical iteration stops; see ML_DATASET.md.
 - `ml-candidate3-dev-v1` (plan `6b3b331f…`, freeze 2026-10-11T14:27:15Z):
   SGB + ThreatFox domains, benign Tranco + CESNET 100k–120k + new 240k–340k,
   same model family, one run. Evaluate candidates 2 and 3 together after
