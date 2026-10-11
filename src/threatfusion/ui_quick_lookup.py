@@ -487,6 +487,9 @@ def _render_age_result(age: DomainAge) -> None:
     elif age.status == "not_found":
         tone, value = "review", tr("Not in the registry")
         sub = tr("Not registered, or a name on a shared platform the registry does not list.")
+    elif age.status == "shared_platform":
+        tone, value = "review", tr("Shared platform · {platform}", platform=age.platform)
+        sub = tr("Anyone can open a free name on this platform, so it has no registration date of its own. Often used for phishing pages.")
     elif age.status == "unsupported":
         tone, value, sub = "info", tr("No registry data"), tr("This extension has no public RDAP service.")
     else:

@@ -233,7 +233,10 @@ domain's official registry (RDAP, found through IANA) when it was registered.
 Only the registrable domain is sent (`example.com`, never the full hostname or
 URL), and only when you press the button. Most malicious sites are days old, so
 "very new" (30 days or less) is a strong reason to look closer; it is context,
-not a verdict. Some country extensions have no public RDAP service.
+not a verdict. Some country extensions have no public RDAP service. A name on a
+shared platform where anyone can open a free name (for example `name.web.app`)
+has no registry entry of its own; the result then says *Shared platform* and
+names the platform, a common pattern for phishing pages.
 
 For an IP, Quick lookup shows the network owner from the local table. Both
 domains and IPs get the outside lookup buttons (VirusTotal, AbuseIPDB, urlscan).

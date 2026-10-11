@@ -7,6 +7,7 @@ import pytest
 import requests
 
 from threatfusion import domain_age
+from tests.test_streamlit_feedback import feedback_app  # noqa: F401,F811
 
 NOW = datetime(2026, 10, 11, tzinfo=timezone.utc)
 BOOTSTRAP = {"services": [[["test"], ["http://insecure.example/", "https://rdap.registry.test/rdap"]],
@@ -132,3 +133,36 @@ def record(domain, **kwargs):
 def test_tests_cannot_reach_a_registry():
     with pytest.raises(RuntimeError, match="network access is disabled"):
         domain_age.lookup_domain_age("example.test", suffix_rules=RULES)
+
+
+def test_site_age_stays_turkish_through_the_whole_app_flow(feedback_app, monkeypatch, tmp_path):  # noqa: F811
+    from streamlit.testing.v1 import AppTest
+
+    from threatfusion import ui_quick_lookup
+    from threatfusion.quick_lookup import analyze_quick_lookup
+
+    app_module = feedback_app[0]
+    monkeypatch.setattr(app_module, "analyze_quick_lookup_from_cache", lambda value, db, artifact: analyze_quick_lookup(value, [], None))
+    monkeypatch.setattr(ui_quick_lookup, "lookup_domain_age",
+                        lambda domain, **kw: domain_age.DomainAge(domain, "found", NOW, 340, "Example Registrar"))
+    app = AppTest.from_string("import streamlit_app\nstreamlit_app.main()")
+    app.session_state["language_selector"] = "🇹🇷 Türkçe"
+    app.run(timeout=15)
+    app.text_input(key="quick_lookup_input").input("fujei.example.com").run(timeout=15)
+    app.button(key="quick_lookup_analyze").click().run(timeout=15)
+    next(b for b in app.button if b.label == "Site yaşını öğren").click().run(timeout=15)
+    assert not app.exception
+    cards = " ".join(m.value for m in app.markdown if "Site" in m.value)
+    assert "Eski site · 11 aylık" in cards and "Established" not in cards
+
+
+def test_a_name_on_a_shared_platform_reports_the_platform():
+    rules = RULES | {"pages.test"}
+    session = _Session({domain_age.BOOTSTRAP_URL: (200, BOOTSTRAP),
+                        "https://rdap.registry.test/rdap/domain/shop.pages.test": (400,),
+                        "https://rdap.registry.test/rdap/domain/pages.test": (200, _domain("2015-01-01T00:00:00Z"))})
+    age = domain_age.lookup_domain_age("login.shop.pages.test", suffix_rules=rules, session=session, now=NOW)
+    assert (age.status, age.domain, age.platform, age.tier) == ("shared_platform", "shop.pages.test", "pages.test", None)
+    gone = _Session({domain_age.BOOTSTRAP_URL: (200, BOOTSTRAP)} | {
+        f"https://rdap.registry.test/rdap/domain/{d}": (404,) for d in ("shop.pages.test", "pages.test")})
+    assert domain_age.lookup_domain_age("shop.pages.test", suffix_rules=rules, session=gone, now=NOW).status == "not_found"

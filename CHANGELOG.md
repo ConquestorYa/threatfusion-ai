@@ -25,6 +25,10 @@ framing is retired. No release date or tag is set.
 
 ### Fixed
 
+- Site age on a shared-platform name (for example `*.web.app`) showed "lookup
+  failed"; it now reports the platform (the registry answered 400 for names
+  below a registered domain).
+
 - The ML snapshot loader no longer reports a missing/unreadable `metadata.json`
   as invalid JSON.
 

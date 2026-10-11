@@ -415,6 +415,8 @@ _TR: dict[str, str] = {
     "Enter a URL, domain or IP before checking it.": "Kontrol etmeden önce bir URL, domain veya IP gir.",
     "Checking local threat signals…": "Yerel tehdit sinyalleri kontrol ediliyor…",
     "Site age": "Site yaşı",
+    "Shared platform · {platform}": "Paylaşımlı platform · {platform}",
+    "Anyone can open a free name on this platform, so it has no registration date of its own. Often used for phishing pages.": "Bu platformda herkes ücretsiz ad açabilir, bu yüzden adın kendi kayıt tarihi yok. Oltalama sayfalarında sık kullanılır.",
     "Network owner": "Ağ sahibi",
     "Owner unknown (private address, or the IP owner table is not downloaded yet).": "Sahibi bilinmiyor (özel adres ya da IP sahibi listesi henüz indirilmedi).",
     "Country is where the network is registered, not where the server is. Owners are often hosting or CDN companies.": "Ülke, ağın kayıtlı olduğu yerdir; sunucunun bulunduğu yer değildir. Sahip çoğu zaman bir barındırma veya CDN şirketidir.",

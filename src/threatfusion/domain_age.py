@@ -36,11 +36,12 @@ _new_session = requests.Session  # replaced in tests so nothing reaches a regist
 @dataclass(frozen=True)
 class DomainAge:
     domain: str
-    status: str  # found | not_found | unsupported | error
+    status: str  # found | not_found | shared_platform | unsupported | error
     registered_at: datetime | None = None
     age_days: int | None = None
     registrar: str | None = None
     server: str | None = None
+    platform: str | None = None  # shared_platform: the registered parent (e.g. a free hosting service)
 
     @property
     def tier(self) -> str | None:
@@ -76,7 +77,8 @@ def _get(session: requests.Session, url: str, max_bytes: int, label: str) -> tup
         # Registries may redirect between their own servers; never leave HTTPS.
         if not _https(response.url or url) or any(not _https(r.url) for r in response.history):
             raise ValueError(f"{label} redirected away from HTTPS")
-        if response.status_code == 404:
+        if response.status_code in (400, 404):
+            # 404: not registered; 400: some registries refuse names below a registered domain.
             return 404, b""
         response.raise_for_status()
         return response.status_code, read_bounded_response_bytes(response, max_bytes=max_bytes, label=label)
@@ -137,7 +139,11 @@ def parse_rdap_domain(domain: str, payload: dict, *, now: datetime, server: str 
 
 def lookup_domain_age(name: str, *, suffix_rules: frozenset[str] = frozenset(),
                       session: requests.Session | None = None, now: datetime | None = None) -> DomainAge:
-    """One RDAP lookup for the registrable domain of `name` (network; button only)."""
+    """RDAP lookup for the registrable domain of `name` (network; button only).
+
+    Only when the registry does not know that domain, its parent domains are
+    asked too (at most a few requests, each sending only a shorter name).
+    """
     domain = rdap_domain(name, suffix_rules)
     if domain is None:
         return DomainAge(name, "unsupported")
@@ -150,6 +156,14 @@ def lookup_domain_age(name: str, *, suffix_rules: frozenset[str] = frozenset(),
         status, body = _get(session, f"{base}domain/{domain}", MAX_RESPONSE_BYTES, "RDAP response")
         server = urlsplit(base).hostname
         if status == 404:
+            # A name on a shared platform (Public Suffix List private section, e.g. a free
+            # hosting service) has no registry entry of its own; its parent does.
+            labels = domain.split(".")
+            for index in range(1, len(labels) - 1):
+                parent = ".".join(labels[index:])
+                status, _ = _get(session, f"{base}domain/{parent}", MAX_RESPONSE_BYTES, "RDAP response")
+                if status != 404:
+                    return DomainAge(domain, "shared_platform", server=server, platform=parent)
             return DomainAge(domain, "not_found", server=server)
         payload = json.loads(body)
         if not isinstance(payload, dict):
