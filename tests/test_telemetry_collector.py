@@ -201,6 +201,8 @@ def test_collector_ui_bilingual_snapshot_and_public_boundary(paths):
         "from pathlib import Path\nfrom threatfusion.ui_collector import render_collector\n"
         f"render_collector(Path({str(state)!r}), public_mode=False)\n"
     ).run(timeout=15)
+    assert not app.exception and app.dataframe[0].value.iloc[0]["Originator"] == "192.0.2.1"
+    app.checkbox(key="collector_local_ips").set_value(False).run(timeout=15)
     assert not app.exception and app.dataframe[0].value.iloc[0]["Originator"] == "Host 001"
     assert app.selectbox(key="collector_timeline_group").value == 1
     assert app.dataframe[-1].value.iloc[0]["Zeek states"] == "SF: 1"
@@ -264,7 +266,7 @@ def test_complete_managed_application_exposes_collector_but_hosted_profile_does_
     app = AppTest.from_file(str(application))
     app.session_state["workspace_nav"] = "Collected connections"
     app.run(timeout=20)
-    assert not app.exception and app.dataframe[0].value.iloc[0]["Originator"] == "Host 001"
+    assert not app.exception and app.dataframe[0].value.iloc[0]["Originator"] == "192.0.2.1"
     monkeypatch.delenv("THREATFUSION_LOCAL_INSTALL_DIR")
     monkeypatch.delenv("THREATFUSION_LOCAL_LOOPBACK")
     monkeypatch.setenv("THREATFUSION_PUBLIC_MODE", "1")

@@ -67,12 +67,12 @@ def test_review_tab_renders_in_both_languages(monkeypatch):
               "render_review_list(ui_collector.read_snapshot(Path('/x')))\n")
     app = AppTest.from_string(script).run(timeout=15)
     assert not app.exception
-    assert any(m.label == "Worth a look" and m.value == "5" for m in app.metric)
-    assert any("What to do" in md.value for md in app.markdown)
+    assert any(m.label == "To check" and m.value == "5" for m in app.metric)
+    assert any("Long connection" in md.value for md in app.markdown)
     app.session_state["language_selector"] = "🇹🇷 Türkçe"
     app.run(timeout=15)
     assert not app.exception
-    assert any("Ne yapmalı" in md.value for md in app.markdown)
+    assert any("Uzun bağlantı" in md.value for md in app.markdown)
 
 
 def test_semicolon_label_stays_one_sentence_and_sources_are_listed():
@@ -82,3 +82,33 @@ def test_semicolon_label_stays_one_sentence_and_sources_are_listed():
     (item,) = build_review_items(view)
     assert item["what"] == ["This name was looked up very often.", "It was looked up at very regular intervals."]
     assert item["sources"] == ["ThreatFox", "URLhaus"]
+
+
+def test_short_labels_and_metrics():
+    items = {item["title"]: item for item in build_review_items(VIEW)}
+    assert items["push.example.test"]["label"] == "Long connection"
+    assert items["cdn.example.test"]["label"] == "Frequent lookups"
+    assert items["cdn.example.test"]["metric"] == ("{count} lookups", {"count": 0})
+    assert items["Host 006"]["metric"][1] == {"ports": 25, "failed": 40}
+
+
+def test_hidden_items_persist_privately_and_threats_cannot_be_hidden(tmp_path):
+    from threatfusion.ui_simple_review import item_key, load_hidden, save_hidden
+
+    path = tmp_path / "review-hidden.json"
+    assert load_hidden(path) == set()
+    items = build_review_items(VIEW)
+    save_hidden(path, {item_key(item) for item in items})
+    assert oct(path.stat().st_mode & 0o777) == "0o600"
+    assert load_hidden(path) == {item_key(item) for item in items}
+    path.write_text("not json")
+    assert load_hidden(path) == set()
+
+    save_hidden(path, {item_key(item) for item in items})
+    script = ("from pathlib import Path\nfrom threatfusion.ui_simple_review import render_review_list\n"
+              "from tests.test_simple_review import VIEW\n"
+              f"render_review_list(VIEW, hidden_path=Path({str(path)!r}))\n")
+    app = AppTest.from_string(script).run(timeout=15)
+    assert not app.exception
+    metrics = {m.label: m.value for m in app.metric}
+    assert metrics["To check"] == "2" and metrics["Hidden"] == "3"  # two threat items stay visible

@@ -109,11 +109,17 @@ rather than an alarm.
 
 ### The two tabs
 
-**What to check** lists only what needs a look, in plain words: the name (for
-connections, the DNS names that pointed to the address), what happened, what to
-do, the device and the time. A name looked up from several addresses of the same
-computer appears once. Items on a threat list come first, marked 🔴.
-**Details** keeps the full technical view below.
+**What to check** is an alarm list, one row per item: name (for connections,
+the DNS names that pointed to the address), a short label such as *Long
+connection · 2.0 h open* or *Frequent lookups · 66 lookups*, device IP →
+destination IP:port, and time. Items on a threat list come first (🔴).
+**Why? What to do?** opens the reason, a short action, other names sharing the
+addresses, and a VirusTotal search link (an outside site: the name is sent there
+only when you click). **I know this, hide it** moves an item to *Hidden*
+(stored privately next to the collector state; *Show again* undoes it); items on
+a threat list cannot be hidden. A name looked up from several addresses of the
+same computer appears once. Real IPs are shown on your own screen; downloads
+keep aliases. **Details** keeps the full technical view.
 
 ### Investigating a group
 

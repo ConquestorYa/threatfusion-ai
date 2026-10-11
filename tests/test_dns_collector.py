@@ -340,6 +340,9 @@ def test_collector_dns_ui_bilingual_filters_and_public_boundary(paths):
     ).run(timeout=20)
     assert not app.exception
     assert app.dataframe[0].value.iloc[0]["Target"] == "updates.test"
+    # Real addresses on the user's own screen by default; unticked shows aliases.
+    assert app.dataframe[0].value.iloc[0]["Device"] == "192.0.2.11"
+    app.checkbox(key="collector_local_ips").set_value(False).run(timeout=20)
     assert app.dataframe[0].value.iloc[0]["Device"] == "Device 001"
     app.session_state["language_selector"] = "🇹🇷 Türkçe"
     app.run(timeout=20)

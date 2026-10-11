@@ -129,11 +129,20 @@ def render_collector(state_dir: Path | None, *, public_mode: bool):
         st.warning(tr("Some collected data is missing, so this list may be incomplete. Details shows why."))
     summary, details = st.tabs([tr("What to check"), tr("Details")])
     with summary:
-        st.caption(tr("Your network over the last {hours} hours, checked against threat lists and for unusual behavior. "
-                      "Updates every 10 seconds.", hours=status.get("window_seconds", 86400) // 3600))
-        render_review_list(payload)
+        st.caption(tr("Last {hours} hours · threat lists + unusual behavior · updates every 10 s",
+                      hours=status.get("window_seconds", 86400) // 3600))
+        render_review_list(_local_view(state_dir, payload), hidden_path=state_dir.parent / "review-hidden.json")
     with details:
         _render_details(state_dir, payload, status, counts)
+
+
+def _local_view(state_dir, payload):
+    """Real IPs on this screen (the user's own machine); downloads keep aliases."""
+    from .collector_identity import local_identity_view
+    try:
+        return local_identity_view(state_dir, payload)
+    except (OSError, ValueError, TypeError, KeyError):
+        return payload
 
 
 def _render_details(state_dir, payload, status, counts):
@@ -178,7 +187,7 @@ def _render_details(state_dir, payload, status, counts):
                       reviews=coverage["omitted_review_groups"], cti=coverage["omitted_cti_groups"]))
     render_review_summary(payload["findings"], coverage)
     view = payload
-    if st.checkbox(tr("Show observed endpoint IPs locally; downloads keep aliases"), value=False, key="collector_local_ips"):
+    if st.checkbox(tr("Show observed endpoint IPs locally; downloads keep aliases"), value=True, key="collector_local_ips"):
         from .collector_identity import local_identity_view
         try:
             view = local_identity_view(state_dir, payload)
