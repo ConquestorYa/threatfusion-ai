@@ -27,8 +27,9 @@ vermesine" benzeyen** bağlantıları işaretler. Her işaretin nedenini de söy
 Kendi Linux bilgisayarında çalışır; trafiğin bilgisayarından dışarı çıkmaz.
 
 > **Durum: erken prototip.** İş akışının tamamı çalışıyor ve geliştiricinin
-> sentetik veriyle yaptığı manuel kabul testlerinden geçti. Gerçek trafikle ilk
-> test şu an sürüyor. Gerçek zararlı yazılımı ne kadar yakaladığı **henüz
+> sentetik veriyle yaptığı manuel kabul testlerinden geçti. Gerçek trafikle yapılan ilk
+> 24 saatlik test çok fazla işaret üretti (59 grup, hepsi zararsız) ve sayfanın
+> anlaşılmasının zor olduğunu gösterdi; düzeltmeler sürüyor. Gerçek zararlı yazılımı ne kadar yakaladığı **henüz
 > ölçülmedi.** SIEM, EDR, IDS ya da virüs tarayıcı değildir.
 
 ## Ne yapar
@@ -137,7 +138,8 @@ alarm verdi ([değerlendirme geçmişi](docs/evidence/ML_DATASET.md)).
 | Sentetik normal ve simüle trafik | Normal güncelleyiciler ve yoklamalar da İncele'ye düşüyor: kurallar henüz yeterince seçici değil ([inceleme yükü](docs/evidence/REVIEW_WORKLOAD.md)) |
 | Dört bağımsız IoT-23 kaydı (2018–2019) | İki zararsız kayıtta 0 inceleme; iki zararlı kayıttan biri bir inceleme üretti, diğeri hiç üretmedi ([ağ değerlendirmesi](docs/evidence/NETWORK_EVALUATION.md)) |
 | Hata matrisi, 6 saatlik dayanıklılık testi, güvenlik incelemeleri | 9/9 hata senaryosu geçti; bellek düzeltmesinden sonra 6 saatlik dayanıklılık testi 16/16 kontrolü geçti (collector en fazla 684 MiB); iki güvenlik incelemesi ([operasyonel güven](docs/evidence/OPERATIONAL_CONFIDENCE.md)) |
-| **Henüz ölçülmedi** | Gerçek trafikte yanlış alarm (sürüyor), etiketli gerçek zararlı yazılımı yakalama, başka kullanıcılar için faydası |
+| Bir laptop, 24 saat normal gerçek trafik | 59 inceleme grubu, hepsi zararsız; yalnızca 3'ü ekrandaki bilgiyle karara bağlanabildi; toplayıcı bir düzeltmeye kadar DNS saatlerini kaçırdı ([gerçek trafik değerlendirmesi](docs/evidence/REAL_TRAFFIC_EVALUATION.md#arm-a-first-24-hours-results)) |
+| **Henüz ölçülmedi** | Bir haftalık gerçek trafikte yanlış alarm, etiketli gerçek zararlı yazılımı yakalama, başka kullanıcılar için faydası |
 
 Plan: [gerçek trafik değerlendirmesi](docs/evidence/REAL_TRAFFIC_EVALUATION.md).
 Tüm kayıtlar: [dokümantasyon](docs/README.md#evidence).

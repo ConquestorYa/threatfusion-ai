@@ -28,7 +28,8 @@ your own Linux machine; your traffic never leaves it.
 
 > **Status: early prototype.** The full workflow works and has passed the
 > developer's manual acceptance on synthetic data. The first 24-hour test on real
-> traffic is running now. How well it catches real malware has **not** been
+> traffic flagged far too much (59 groups, all benign) and showed that the page
+> is hard to use; fixes are in progress. How well it catches real malware has **not** been
 > measured yet. It is not a SIEM, EDR, IDS or malware scanner.
 
 ## What it does
@@ -132,7 +133,8 @@ false alarms ([evaluation history](docs/evidence/ML_DATASET.md)).
 | Synthetic normal and simulated traffic | Normal updaters and polling also enter Review: the rules are not yet selective enough ([review workload](docs/evidence/REVIEW_WORKLOAD.md)) |
 | Four independent IoT-23 captures (2018–2019) | 0 reviews in two benign captures; one of two malicious captures produced one review, the other none ([network evaluation](docs/evidence/NETWORK_EVALUATION.md)) |
 | Fault matrix, 6-hour soak, security reviews | 9/9 fault cases pass; after a memory fix the 6-hour soak passed 16/16 checks (collector peak 684 MiB); two security reviews ([operational confidence](docs/evidence/OPERATIONAL_CONFIDENCE.md)) |
-| **Not yet measured** | False alarms on real traffic (running), detection of labeled real malware, usefulness for other users |
+| One laptop, 24 h of normal real traffic | 59 groups for review, all benign; only 3 decidable from the screen alone; the collector dropped DNS hours until a fix ([real-traffic evaluation](docs/evidence/REAL_TRAFFIC_EVALUATION.md#arm-a-first-24-hours-results)) |
+| **Not yet measured** | False alarms over a full week, detection of labeled real malware, usefulness for other users |
 
 Plan: [real-traffic evaluation](docs/evidence/REAL_TRAFFIC_EVALUATION.md). All
 records: [documentation](docs/README.md#evidence).

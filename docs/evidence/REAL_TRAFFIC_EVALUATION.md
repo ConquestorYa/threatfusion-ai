@@ -1,7 +1,78 @@
-# P2 real-traffic evaluation design (v1, not yet declared)
+# P2 real-traffic evaluation
 
-Status: **design only.** No traffic has been captured or acquired for this
-protocol and no result exists. Each arm becomes evidence only after its private
+Status: **Arm A first 24 h measured (2026-10-11): 3 of 5 limits failed.**
+Results below; the design that follows is unchanged.
+
+## Arm A, first 24 hours: results
+
+Private roots `real-traffic-arm-a-24h-v3` (capture, release `3c054a3`) and its
+declared amendment `real-traffic-arm-a-24h-v4-dns-reimport` (labels, release
+`4df7f35`). One laptop on Wi-Fi (own traffic plus multicast it hears), normal use
+including a ~10 GB game download and a short Tor Browser window, system
+DNS-over-TLS disabled for the window. 2026-10-10 08:43Z to 2026-10-11 08:43Z.
+
+**Why two roots.** During the capture the installed collector rejected 16 of 25
+completed DNS hours: a few question-less rows (mDNS announcements, replies
+without a question section) failed strict validation and the whole hour was
+dropped. The defect was fixed in source during the capture (DEC-093) but not
+installed. After the capture, before any labeling or inspection of findings,
+the same preserved Zeek logs were re-imported with the fixed release so the DNS
+queue was complete. The live-run outcome is kept as A4 for `3c054a3`.
+
+| Limit | Result | Pass |
+| --- | --- | --- |
+| A1 ≤ 5 Review+ groups per client-day | **59** (18 connection, 40 DNS, 1 TCP-attempt pattern) | ✗ |
+| A2 ≥ 80 % decided from the shown evidence alone | **3 of 59 (5 %)** | ✗ |
+| A3 every Review+ group labeled with minutes | 59/59, 22 minutes in total | ✓ |
+| A4 collector healthy | live run on `3c054a3`: 16 rejected files ✗; re-import on `4df7f35`: 0 rejected, no coverage loss ✓ (same-data repair check, not new evidence) | ✗ / ✓ |
+| A5 ≤ 5 unclear places on the page | **8**; the user reported the page as not understood overall | ✗ |
+
+All 59 groups were labeled *explained benign*; none suspicious or unexplained.
+No malware was expected, so this measures review burden, not detection.
+Volume: 31,070 connection records, 13,857 DNS records, 626,537 CTI indicators
+loaded; no capture hour without a rotated connection file.
+
+**Where the 59 came from** (aggregate categories, no names published):
+
+| Rule | Groups | What the benign causes were |
+| --- | --- | --- |
+| Long session ≥ 1 h | 15 | push/notification channels, app sync channels kept open, shared-CDN addresses |
+| Periodic successful TCP | 3 | background app polling |
+| DNS: high query volume (+ many response IPs) | 24 (5 of them local `.local`/`.arpa` names) | browser and app background services, large CDNs, a game-download CDN burst, local mDNS service discovery, reverse-address lookups |
+| DNS: hostname appears in a malicious-URL IOC | 12 | large shared hosting/CDN domains where one uploaded file is listed, not the domain |
+| DNS: other signal combinations (many response IPs/query types, IP churn; two "algorithmically random") | 4 | CDN and service names |
+| TCP attempt pattern | 1 | benign failed attempts |
+
+**How the labels were reached.** The labeling analyst is the product owner and
+not a network specialist. Connection groups showed only pseudonyms or IPs, so the
+user needed a lab-only helper that printed which DNS names answered with that IP.
+For most names Claude explained what the service was (from general knowledge or
+one targeted aggregate lookup, recorded in the operator notes); `ekran_yetti=h`
+reflects that. One DNS name was a third-party download CDN reached via a CNAME
+from the game platform; other subdomains of that CDN appear in ThreatFox/SGB,
+the queried one does not.
+
+**Product defects found** (to fix before the 7-day run; measured on new days):
+
+1. Connection groups do not show the DNS names that resolved to the
+   destination, nor the CNAME origin of a DNS name.
+2. Local-only names (`.local` mDNS/DNS-SD, reverse `*.arpa`) enter the DNS
+   Review queue.
+3. A hostname that merely hosts a listed URL on a large shared platform is shown
+   as a CTI-backed Review with no distinction from a listed domain.
+4. One laptop appears as several "devices" (IPv4 plus IPv6 addresses), so the
+   same name is queued repeatedly (40 DNS groups covered 25 distinct names).
+5. Long-session and DNS-volume rules flag ordinary push, sync and CDN traffic.
+6. The page language (guidance blocks, coverage text, timelines, wide tables) is
+   not understandable for this user; a decision needs: what it is, why it was
+   flagged, what to do.
+7. Fixed during the run: question-less DNS rows rejected whole files (DEC-093).
+
+**Limits.** One client, one non-independent analyst, one day; the explanations
+came partly from Claude, so A2 measures the product screen, not the analyst.
+Results belong to `4df7f35` (labels) and `3c054a3` (live collection). Browser
+DNS-over-HTTPS and the Tor window stay invisible.
+ Each arm becomes evidence only after its private
 `plan.json` is declared under the `lab-experiment` protocol, against the exact
 commit it measures. Limits below are proposals for that declaration; they must
 not be changed after outcomes are seen.

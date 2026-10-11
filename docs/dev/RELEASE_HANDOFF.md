@@ -1,6 +1,19 @@
 # Release handoff
 
-Newest section first. Status date: 2026-10-10.
+Newest section first. Status date: 2026-10-11.
+
+## P2 Arm A 24 h measured: 3 of 5 limits failed (2026-10-11)
+
+- Capture 2026-10-10 08:43Z → 2026-10-11 08:43Z on the laptop; labels on the
+  declared re-import (`real-traffic-arm-a-24h-v4-dns-reimport`, release
+  `4df7f35`) after the live collector lost 16 DNS hours (DEC-093).
+- 59 Review+ groups (A1 ≤ 5 ✗), all labeled benign in 22 minutes (A3 ✓); only
+  3 decidable from the screen (A2 ✗); 8 unclear places (A5 ✗); collector A4 ✗ on
+  `3c054a3`, ✓ on re-import. Details and the defect list:
+  `docs/evidence/REAL_TRAFFIC_EVALUATION.md`.
+- Next: fix the defects (names on connections and CNAME origin, local-name and
+  shared-host noise, per-address devices, a much simpler page), then the 7-day
+  run on new, untouched days. Do not tune on these 24 hours.
 
 ## Collector DNS defect found by Arm A (2026-10-10)
 
