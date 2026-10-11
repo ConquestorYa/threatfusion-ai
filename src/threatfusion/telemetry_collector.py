@@ -30,7 +30,7 @@ from .dns_collection import build_dns_snapshot, transaction_payload
 from .expected_connections import MAX_RULE_BYTES, parse_expected_connections
 from .network_telemetry import parse_zeek_conn_log_with_diagnostics
 from .reporting import connection_report_payload
-from .popular_domains import is_popular
+from .popular_domains import EMPTY as EMPTY_POPULAR, is_popular
 from .runtime_analysis import analyze_connection_records
 from .log_preparation import MANIFEST, STAGING, prepared_context
 from .collector_reports import MAX_GROUPS, SLOTS, project_snapshot, snapshot_group_ids, write_archive, prune_archives
@@ -271,7 +271,7 @@ class ZeekCollector:
         return trimmed + capacity
 
     def tick(self, *, indicators=(), rules=(), now: datetime | None = None, cti_reload_deferred=False,
-             popular_domains=frozenset()):
+             popular_domains=EMPTY_POPULAR):
         now = now or datetime.now(timezone.utc)
         if now.tzinfo is None or now.utcoffset() is None:
             raise ValueError("Collector clock must be aware")
@@ -553,7 +553,7 @@ def main(argv=None):
                         continue
                     indicators, deferred = cti_reader.records, True
                 status = collector.tick(indicators=indicators, rules=rules, cti_reload_deferred=deferred,
-                                        popular_domains=cti_reader.popular if cti_reader else frozenset())
+                                        popular_domains=cti_reader.popular if cti_reader else EMPTY_POPULAR)
                 print(json.dumps(status["counts"]), flush=True)
                 if args.once:
                     return 0

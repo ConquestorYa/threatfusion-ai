@@ -2,6 +2,19 @@
 
 Newest section first. Status date: 2026-10-11.
 
+## Arm A defect fixes (2026-10-11, DEC-094)
+
+- Connections show DNS names; DNS rows show names sharing answers; local names
+  (`.local`, `*.arpa`) stay Observe; popular-site context from weekly Tranco top
+  100,000 + Public Suffix List (registrable domain; user subdomains on shared
+  platforms are not popular); a plain "What to check" tab (DNS grouped by name)
+  with the technical view under "Details".
+- Development replay on the same 24 h (not evidence): 59 → 6 items. Next: user
+  updates and restarts the collector; then the 7-day run on new days (declare
+  first), measuring the new list.
+- Known limits: abuse of popular services moves to Observe; connection and DNS
+  aliases are still independent ("Sistem" vs "Cihaz"); Details is unchanged.
+
 ## P2 Arm A 24 h measured: 3 of 5 limits failed (2026-10-11)
 
 - Capture 2026-10-10 08:43Z → 2026-10-11 08:43Z on the laptop; labels on the

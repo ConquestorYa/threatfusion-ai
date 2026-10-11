@@ -124,10 +124,10 @@ def _refresh_popular_sites(db_path, *, force, now, progress) -> CTIRefreshOutcom
     if not force and not popular_domains.popular_list_is_stale(db_path, now=now):
         _emit_progress(progress, source, "skipped", "popular-site list still fresh")
         return CTIRefreshOutcome(source=source, status="fresh")
-    _emit_progress(progress, source, "fetching", "downloading the popular-site list")
+    _emit_progress(progress, source, "fetching", "downloading the popular-site and public-suffix lists")
     try:
-        list_id, domains = popular_domains.fetch_popular_domains()
-        count = popular_domains.store_popular_domains(db_path, list_id, domains, refreshed_at=now)
+        list_id, domains, suffix_rules = popular_domains.fetch_popular_domains()
+        count = popular_domains.store_popular_domains(db_path, list_id, domains, suffix_rules, refreshed_at=now)
     except Exception as error:
         detail = _safe_failure_detail(error)
         _emit_progress(progress, source, "failed", f"{type(error).__name__}: {detail}")

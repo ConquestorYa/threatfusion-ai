@@ -20,7 +20,9 @@ class CTICacheReader:
         self.path = Path(path)
         self.signature = None
         self.records = None
-        self.popular = frozenset()
+        from .popular_domains import EMPTY
+
+        self.popular = EMPTY
 
     def _signature(self):
         values = []

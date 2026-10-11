@@ -1034,3 +1034,31 @@ All other identity checks (UID, timestamp, ports, transaction ID, TCP/UDP) stay
 strict. `prepare-logs` is unchanged (still opt-in quarantine). The Arm A run
 keeps the installed release; the defect and its fix are recorded there, and any
 re-import of the preserved logs is a separately declared amendment.
+
+## DEC-094: Arm A defect fixes — names, local names, popular-site context, plain review list
+
+**Decision (2026-10-11):** After Arm A failed A1/A2/A5 (59 Review+, all benign),
+the user asked to fix the six listed defects.
+
+1. Connection rows show the DNS names whose answers contained the address; DNS
+   rows show other names sharing answers (CNAME origin). Shared edges answered for
+   more than 50 names are skipped.
+2. `.local`, `*.arpa` and local-zone names stay Observe without a CTI match.
+3. Popular-site context: weekly Tranco top 100,000 plus the Public Suffix List
+   (no key; opt-in for library callers, never downloaded in tests). Popularity is
+   decided on the registrable domain (PSL including the private section), so a
+   user's subdomain on a dynamic-DNS or user-content platform is not popular. A
+   popular name without an exact-domain or answer-IP indicator stays Observe;
+   long/periodic connection groups whose DNS names are all popular become
+   observations with the reason shown. Without both lists, no context applies.
+4. A plain-language "What to check" tab groups DNS items by name across
+   addresses; the technical view moves unchanged to "Details".
+
+Rejected: matching any parent domain against Tranco (it exempted user-owned
+subdomains of shared platforms, a common malware hosting pattern). Accepted
+risk: abuse of popular services moves to Observe; documented in the guide.
+
+Evidence status: a development replay on the same Arm A 24 h (counts only,
+`real-traffic-arm-a-dev-check-1`) went from 59 to 6 items; it is not evidence
+because the fixes were designed against those days. The 7-day run on new days
+is the measurement.

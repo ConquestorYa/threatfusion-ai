@@ -80,6 +80,25 @@ DNS observations are grouped by **device → domain** and reach Review when:
 Frequent "no such domain" answers, changing answers and random-looking names are
 shown as context; on their own they do not raise a group.
 
+**Context that keeps ordinary traffic out of Review** (added after the first
+real-traffic test, [results](evidence/REAL_TRAFFIC_EVALUATION.md#arm-a-first-24-hours-results)):
+
+- **Local names** (`.local` mDNS/DNS-SD announcements, reverse `*.arpa`
+  lookups, local zones) stay Observe unless a CTI list matches.
+- **Popular sites.** The CTI update also downloads, weekly and without a key,
+  the public [Tranco](https://tranco-list.eu/) top 100,000 and the
+  [Public Suffix List](https://publicsuffix.org/). When a name's registrable
+  domain is in the top 100,000, volume and changing answers stay Observe, and a
+  listed URL on that site is shown as context (the site hosts a listed file; it
+  is not itself listed). A user's own subdomain on a shared platform (dynamic
+  DNS, user pages, tunnels) is its own registrable domain and is **not**
+  popular. A connection whose DNS names are all popular sites is an
+  observation with that reason shown. An exact domain or address on a CTI list
+  always wins.
+- **Limitation.** Attackers also use popular services; this context trades
+  some of that visibility for a usable list. It has not yet been measured on new
+  days.
+
 Groups that need a look appear as **Review**; everything else stays visible as
 **Observe**. A connection with a CTI match is marked and always shown, even when
 its behavior is Observe; DNS groups with a CTI match go to the top as
@@ -87,6 +106,14 @@ its behavior is Observe; DNS groups with a CTI match go to the top as
 rules: updaters repeat on timers, chat and notification apps keep long sessions.
 That is why each row explains its reason, and why the result is a queue to check
 rather than an alarm.
+
+### The two tabs
+
+**What to check** lists only what needs a look, in plain words: the name (for
+connections, the DNS names that pointed to the address), what happened, what to
+do, the device and the time. A name looked up from several addresses of the same
+computer appears once. Items on a threat list come first, marked 🔴.
+**Details** keeps the full technical view below.
 
 ### Investigating a group
 

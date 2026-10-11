@@ -17,6 +17,7 @@ from .hybrid_assessment import (
 from .matching import DNSIOCMatch
 from .models import IOCType
 from .normalization import normalize_ioc_value
+from .popular_domains import EMPTY, PopularSites
 
 POLICY_ID = "dns-device-triage-v1"
 # Engineering coverage gates, not measured malware-detection thresholds.
@@ -49,7 +50,7 @@ def build_device_findings(
     ml_scores: Mapping[str, float] | None = None,
     ml_thresholds: MLThresholds | None = None,
     behavior_config: BehaviorHeuristicConfig | None = None,
-    popular_domains: frozenset[str] = frozenset(),
+    popular_domains: PopularSites = EMPTY,
 ) -> tuple[DeviceFinding, ...]:
     """Assess each observed client independently without scoring ML again.
 

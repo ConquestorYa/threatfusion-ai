@@ -22,6 +22,7 @@ from .matching import DNSIOCMatch, match_dns_events
 from .ml_artifact import TrainedMLArtifact, predict_domain_scores
 from .ml_dataset import normalize_domain_candidate
 from .models import IOCRecord
+from .popular_domains import EMPTY, PopularSites
 
 MAX_DNS_EVENTS = 100_000
 MAX_UNIQUE_QUERY_NAMES = 25_000
@@ -118,7 +119,7 @@ def analyze_dns_events(
     *,
     behavior_config: BehaviorHeuristicConfig | None = None,
     connections: Iterable[ConnectionRecord] = (),
-    popular_domains: frozenset[str] = frozenset(),
+    popular_domains: PopularSites = EMPTY,
 ) -> RuntimeAnalysisResult:
     """Run the local ThreatFusion analysis pipeline over DNS events.
 

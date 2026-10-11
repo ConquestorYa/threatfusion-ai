@@ -14,27 +14,43 @@ from threatfusion.matching import match_dns_events
 from threatfusion.models import IOCRecord, IOCType
 from threatfusion.ui_collector import read_snapshot
 
-POPULAR = frozenset({"cdn-platform.test", "push-service.test"})
+RULES = frozenset({"test", "dyn-host.test", "*.wild.test", "!www.wild.test"})
+POPULAR = popular_domains.PopularSites(frozenset({"cdn-platform.test", "push-service.test", "dyn-host.test",
+                                                  "www.wild.test"}), RULES)
 
 
-def test_name_or_parent_domain_is_popular():
-    assert popular_domains.is_popular("files.cdn-platform.test.", POPULAR)
-    assert popular_domains.is_popular("cdn-platform.test", POPULAR)
+@pytest.mark.parametrize("name, registrable", [
+    ("files.cdn-platform.test.", "cdn-platform.test"), ("cdn-platform.test", "cdn-platform.test"),
+    ("a.user1.dyn-host.test", "user1.dyn-host.test"), ("dyn-host.test", None), ("test", None),
+    ("a.b.wild.test", "a.b.wild.test"), ("b.wild.test", None), ("x.www.wild.test", "www.wild.test"),
+    ("a.example.unlisted", "example.unlisted"),
+])
+def test_registrable_domain_follows_the_public_suffix_algorithm(name, registrable):
+    assert popular_domains.registrable_domain(name, RULES) == registrable
+
+
+def test_popularity_is_decided_by_registrable_domain():
+    assert popular_domains.is_popular("files.cdn-platform.test", POPULAR)
     assert not popular_domains.is_popular("cdn-platform.test.evil.test", POPULAR)
-    assert not popular_domains.is_popular("test", frozenset({"test"}))
-    assert not popular_domains.is_popular("x.cdn-platform.test", frozenset())
+    # A user's own subdomain on a shared (dynamic DNS) platform is not popular.
+    assert not popular_domains.is_popular("c2.user1.dyn-host.test", POPULAR)
+    assert not popular_domains.is_popular("files.cdn-platform.test", popular_domains.PopularSites(POPULAR.domains))
+    assert not popular_domains.is_popular("files.cdn-platform.test", popular_domains.EMPTY)
 
 
 def test_store_load_and_staleness(tmp_path):
     db = tmp_path / "cti.sqlite"
-    assert popular_domains.load_popular_domains(db) == frozenset()
+    assert popular_domains.load_popular_domains(db) == popular_domains.EMPTY
     cti_cache.initialize_cti_cache(db)
-    assert popular_domains.load_popular_domains(db) == frozenset()
-    with pytest.raises(ValueError):
-        popular_domains.store_popular_domains(db, "ABCD", ["a.test"], refreshed_at=NOW)
+    assert popular_domains.load_popular_domains(db) == popular_domains.EMPTY
     names = [f"site{i}.test" for i in range(popular_domains.MIN_DOMAINS)]
-    assert popular_domains.store_popular_domains(db, "ABCD", names + ["SITE1.test"], refreshed_at=NOW) == len(names)
-    assert "site7.test" in popular_domains.load_popular_domains(db)
+    rules = [f"suffix{i}.test" for i in range(popular_domains.MIN_SUFFIX_RULES)] + ["test"]
+    for small in ((["a.test"], rules), (names, ["test"])):
+        with pytest.raises(ValueError):
+            popular_domains.store_popular_domains(db, "ABCD", *small, refreshed_at=NOW)
+    assert popular_domains.store_popular_domains(db, "ABCD", names + ["SITE1.test"], rules, refreshed_at=NOW) == len(names)
+    loaded = popular_domains.load_popular_domains(db)
+    assert popular_domains.is_popular("www.site7.test", loaded)
     assert not popular_domains.popular_list_is_stale(db, now=NOW + timedelta(days=6))
     assert popular_domains.popular_list_is_stale(db, now=NOW + timedelta(days=7))
     # The CTI cache loader still sees no indicators from this table.
@@ -105,7 +121,7 @@ def test_collector_uses_dns_names_to_mark_popular_destinations(tmp_path):
     with module.ZeekCollector(source, state) as collector:
         status = collector.tick(now=NOW, popular_domains=POPULAR)
         assert status["counts"]["review_groups"] == 1
-        assert collector.tick(now=NOW, popular_domains=frozenset())["counts"]["review_groups"] == 2
+        assert collector.tick(now=NOW, popular_domains=popular_domains.EMPTY)["counts"]["review_groups"] == 2
     by_names = {r["DNS names"]: r for r in read_snapshot(state)["findings"]}
     assert by_names["rare-host.test"]["Queue priority"] == "Review"
 
@@ -115,8 +131,9 @@ def test_refresh_job_is_opt_in_and_failure_keeps_the_previous_list(tmp_path):
 
     db = tmp_path / "cti.sqlite"
     names = [f"site{i}.test" for i in range(popular_domains.MIN_DOMAINS)]
+    rules = [f"suffix{i}.test" for i in range(popular_domains.MIN_SUFFIX_RULES)] + ["test"]
     cti_cache.initialize_cti_cache(db)
-    popular_domains.store_popular_domains(db, "ABCD", names, refreshed_at=datetime(2020, 1, 1, tzinfo=timezone.utc))
+    popular_domains.store_popular_domains(db, "ABCD", names, rules, refreshed_at=datetime(2020, 1, 1, tzinfo=timezone.utc))
     import threatfusion.cti_refresh as refresh_module
 
     original = refresh_module._fetch_complete_sgb
@@ -128,4 +145,16 @@ def test_refresh_job_is_opt_in_and_failure_keeps_the_previous_list(tmp_path):
     finally:
         refresh_module._fetch_complete_sgb = original
     assert outcomes[-1].source == "Tranco" and outcomes[-1].status == "failed"  # network refused in tests
-    assert len(popular_domains.load_popular_domains(db)) == len(names)
+    assert len(popular_domains.load_popular_domains(db).domains) == len(names)
+
+
+def test_listed_url_on_a_user_subdomain_of_a_shared_platform_stays_review():
+    events = _volume_events("c2.user1.dyn-host.test")
+    url = IOCRecord("http://c2.user1.dyn-host.test/gate.php", IOCType.URL, "URLhaus")
+    assessed = _assess(events, [url])["c2.user1.dyn-host.test"]
+    assert assessed.verdict is HybridVerdict.REVIEW and "popular_site" not in assessed.reasons
+
+
+def test_public_suffix_list_parsing():
+    text = "// comment\n\ncom\n*.ck\n!www.ck\n// ===BEGIN PRIVATE DOMAINS===\nduckdns.org\nçok.test\n"
+    assert popular_domains.parse_public_suffix_list(text) == ["com", "*.ck", "!www.ck", "duckdns.org", "çok.test".encode("idna").decode()]

@@ -19,6 +19,7 @@ from .dns_collection import validate_dns_snapshot
 from .ui_collected_dns import render_collected_dns
 from .collector_health import validate_collector_health
 from .ui_review_guidance import render_review_summary
+from .ui_simple_review import render_review_list
 from .collector_reports import read_archive, validate_projection
 
 MAX_SNAPSHOT_BYTES = 64 * 1024 * 1024
@@ -106,10 +107,9 @@ COLLECTOR_GUIDE = """**What it is for:** Quick lookup checks one address you alr
 def render_collector(state_dir: Path | None, *, public_mode: bool):
     if public_mode:
         return
-    with st.expander(tr("What does this page do?"), expanded=state_dir is None):
-        st.markdown(tr(COLLECTOR_GUIDE))
-    st.caption(tr("Completed Zeek logs are collected automatically. This view refreshes every 10 seconds; active files wait for rotation."))
     if state_dir is None:
+        with st.expander(tr("What does this page do?"), expanded=True):
+            st.markdown(tr(COLLECTOR_GUIDE))
         st.info(tr("Configure a local collector to show automatically collected connections."))
         st.code("threatfusion-ai collect --input-dir /path/to/zeek/logs", language="shell")
         return
@@ -123,9 +123,24 @@ def render_collector(state_dir: Path | None, *, public_mode: bool):
         return
     status = payload["collector"]
     counts = status["counts"]
-    st.caption(tr("Collector snapshot: {time}", time=status["updated_at"]))
     if (datetime.now(timezone.utc) - datetime.fromisoformat(status["updated_at"])).total_seconds() > 60:
         st.warning(tr("This snapshot is older than one minute. Check whether the collector is still running."))
+    if counts["rejected_files"] or status.get("capacity_coverage_loss") or status.get("input_coverage_loss"):
+        st.warning(tr("Some collected data is missing, so this list may be incomplete. Details shows why."))
+    summary, details = st.tabs([tr("What to check"), tr("Details")])
+    with summary:
+        st.caption(tr("Your network over the last {hours} hours, checked against threat lists and for unusual behavior. "
+                      "Updates every 10 seconds.", hours=status.get("window_seconds", 86400) // 3600))
+        render_review_list(payload)
+    with details:
+        _render_details(state_dir, payload, status, counts)
+
+
+def _render_details(state_dir, payload, status, counts):
+    with st.expander(tr("What does this page do?")):
+        st.markdown(tr(COLLECTOR_GUIDE))
+    st.caption(tr("Completed Zeek logs are collected automatically. This view refreshes every 10 seconds; active files wait for rotation."))
+    st.caption(tr("Collector snapshot: {time}", time=status["updated_at"]))
     columns = st.columns(4)
     columns[0].metric(tr("Retained connections"), counts["retained_records"])
     columns[1].metric(tr("Connection reviews"), counts["review_groups"])

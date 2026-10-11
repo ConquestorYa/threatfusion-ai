@@ -9,7 +9,7 @@ from enum import Enum
 from .dns import DNSEvent
 from .dns_behavior import DomainBehavior, aggregate_dns_behavior
 from .dns_names import is_local_name
-from .popular_domains import is_popular
+from .popular_domains import EMPTY, PopularSites, is_popular
 from .matching import DNSIOCMatch
 from .models import IOCType
 from .normalization import normalize_ioc_value
@@ -187,7 +187,7 @@ def assess_dns_domains(
     ml_thresholds: MLThresholds | None = None,
     behavior_config: BehaviorHeuristicConfig | None = None,
     ml_probabilities: Mapping[str, float] | None = None,
-    popular_domains: frozenset[str] = frozenset(),
+    popular_domains: PopularSites = EMPTY,
 ) -> list[HybridAssessment]:
     """Combine known IOC evidence, ML tiers, and local DNS behavior.
 

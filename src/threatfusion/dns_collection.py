@@ -9,6 +9,7 @@ from datetime import datetime
 from .dns import DNSEvent
 from .dns_names import names_by_address, names_sharing_addresses
 from .dns_zeek import ZeekDNSTransaction
+from .popular_domains import EMPTY
 from .reporting import build_device_report
 from .runtime_analysis import analyze_dns_events
 
@@ -25,7 +26,7 @@ def transaction_payload(record: ZeekDNSTransaction) -> str:
 
 def build_dns_snapshot(
     payloads: list[str], indicators, *, generated_at: datetime, selection_identity=None,
-    address_names=None, popular_domains=frozenset(),
+    address_names=None, popular_domains=EMPTY,
 ):
     by_key = {}
     conflicts = set()
