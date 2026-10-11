@@ -211,6 +211,13 @@ Paste a URL, domain or IP. ThreatFusion checks the local CTI cache only: it does
 not open the page, resolve the name or download anything. No match does not
 mean the target is safe.
 
+**Site age (optional):** for a domain, the "Check site age" button asks the
+domain's official registry (RDAP, found through IANA) when it was registered.
+Only the registrable domain is sent (`example.com`, never the full hostname or
+URL), and only when you press the button. Most malicious sites are days old, so
+"very new" (30 days or less) is a strong reason to look closer; it is context,
+not a verdict. Some country extensions have no public RDAP service.
+
 ## Modes
 
 - **Real CTI (default):** your own CTI cache; ML is off.

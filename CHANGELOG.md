@@ -76,6 +76,9 @@ framing is retired. No release date or tag is set.
 
 ### Added
 
+- Quick lookup: optional "Check site age" button (RDAP registration date;
+  sends only the registrable domain, only on press; DEC-095).
+
 - P1 security review round 2 (callbacks under a foreign Host, static serving,
   theme script, background refresh, control socket): no new vulnerability; a
   test keeps the statically served folder limited to font assets.

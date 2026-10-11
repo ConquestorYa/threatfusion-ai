@@ -2,6 +2,13 @@
 
 Newest section first. Status date: 2026-10-11.
 
+## Quick lookup site age (2026-10-11, DEC-095)
+
+- "Check site age" button asks the registry's RDAP server when the domain was
+  registered; only the registrable domain is sent, only on press. Context only.
+- Verified: unit/UI tests with a fake registry (no network in tests) and a live
+  check on three benign public domains. Not a detection measurement.
+
 ## ML strict temporal evaluation failed; candidate 3 in development (2026-10-11)
 
 - `ml-lookup-temporal-v2`: augmented model on post-freeze indicators + untouched

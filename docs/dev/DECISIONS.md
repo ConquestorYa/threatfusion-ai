@@ -1062,3 +1062,16 @@ Evidence status: a development replay on the same Arm A 24 h (counts only,
 `real-traffic-arm-a-dev-check-1`) went from 59 to 6 items; it is not evidence
 because the fixes were designed against those days. The 7-day run on new days
 is the measurement.
+
+## DEC-095: Optional site age (RDAP) in Quick lookup
+
+**Decision (2026-10-11):** After the lexical ML backtest failed, the user
+approved registration age as a lookup signal. A "Check site age" button asks
+the RDAP server IANA lists for the domain's TLD. It sends only the registrable
+domain (Public Suffix List), only on the button press, over HTTPS only (a
+redirect to plain HTTP is refused), with bounded responses. Age is shown as
+context (very new ≤ 30 days, young ≤ 180 days); it never changes the verdict.
+Hidden in public mode; tests cannot reach a registry.
+
+Rejected: automatic lookups for every collected name (it would send browsing
+history to registries) and third-party RDAP/WHOIS proxies.

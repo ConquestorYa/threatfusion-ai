@@ -704,7 +704,10 @@ def main() -> None:
 
         lookup_result = st.session_state.get("quick_lookup_result")
         if lookup_result is not None:
-            render_quick_lookup_result(lookup_result)
+            render_quick_lookup_result(
+                lookup_result,
+                registry_db_path=None if config.public_mode else db_path,
+            )
         else:
             render_quick_lookup_empty_state()
         return

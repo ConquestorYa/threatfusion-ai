@@ -149,6 +149,19 @@ def load_popular_domains(db_path: Path) -> PopularSites:
         raise
 
 
+def load_suffix_rules(db_path: Path) -> frozenset[str]:
+    """Only the Public Suffix List rules (no popular-domain set); empty when absent."""
+    if not Path(db_path).exists():
+        return frozenset()
+    try:
+        with closing(sqlite3.connect(db_path)) as db:
+            return frozenset(row[0] for row in db.execute("SELECT rule FROM public_suffix_rules"))
+    except sqlite3.OperationalError as error:
+        if "no such table" in str(error):
+            return frozenset()
+        raise
+
+
 def registrable_domain(name: str, suffix_rules: frozenset[str]) -> str | None:
     """Public Suffix List algorithm (including the private section)."""
     labels = [label for label in name.strip().casefold().rstrip(".").split(".")]

@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 
 from .dashboard import format_timestamp, reason_label
+from .domain_age import DomainAge, lookup_domain_age, rdap_domain
 from .i18n import tr, translate_dataframe
+from .popular_domains import load_suffix_rules
 from .quick_lookup import QuickLookupResult
 from .ui_theme import metric_card, safe_text, section_label
 
@@ -459,11 +462,74 @@ def _render_evidence_state(result: QuickLookupResult) -> None:
     )
 
 
+_AGE_TONES = {"very_new": ("danger", "Very new site"), "new": ("review", "Young site"),
+              "established": ("safe", "Established site")}
+
+
+def _age_text(days: int) -> str:
+    if days < 60:
+        return tr("{count} days old", count=days)
+    if days < 730:
+        return tr("{count} months old", count=days // 30)
+    return tr("{count} years old", count=days // 365)
+
+
+def _render_age_result(age: DomainAge) -> None:
+    if age.status == "found" and age.age_days is not None:
+        tone, label = _AGE_TONES[age.tier]
+        sub = tr("Registered {date}", date=age.registered_at.date().isoformat())
+        if age.registrar:
+            sub += f" · {age.registrar}"
+        value = f"{tr(label)} · {_age_text(age.age_days)}"
+    elif age.status == "found":
+        tone, value, sub = "info", tr("Registered"), tr("The registry did not publish a registration date.")
+    elif age.status == "not_found":
+        tone, value = "review", tr("Not in the registry")
+        sub = tr("Not registered, or a name on a shared platform the registry does not list.")
+    elif age.status == "unsupported":
+        tone, value, sub = "info", tr("No registry data"), tr("This extension has no public RDAP service.")
+    else:
+        tone, value, sub = "info", tr("Lookup failed"), tr("The registry did not answer. Try again later.")
+    st.markdown(
+        f'<div class="tf-signal-node tf-signal-node--{tone}">'
+        f'<div class="tf-signal-node-label">{safe_text(tr("Site age"))} · {safe_text(age.domain)}</div>'
+        f'<div class="tf-signal-node-value">{safe_text(value)}</div>'
+        f'<div class="tf-signal-node-sub">{safe_text(sub)}</div></div>',
+        unsafe_allow_html=True,
+    )
+    if age.tier == "very_new":
+        st.caption(tr("Most malicious sites are only days old. New is not proof: check before trusting it."))
+
+
+def _render_domain_age(result: QuickLookupResult, db_path: Path) -> None:
+    if result.normalized_ip is not None:
+        return
+    section_label(tr("Site age"))
+    rules = st.session_state.get("_tf_suffix_rules")
+    if rules is None:
+        rules = st.session_state["_tf_suffix_rules"] = load_suffix_rules(db_path)
+    domain = rdap_domain(result.normalized_domain, rules)
+    if domain is None:
+        st.caption(tr("Site age is not available for this name."))
+        return
+    ages = st.session_state.setdefault("_tf_domain_ages", {})
+    if domain in ages:
+        _render_age_result(ages[domain])
+        return
+    if st.button(tr("Check site age"), key=f"domain_age_{domain}", icon="🗓️"):
+        with st.spinner(tr("Asking the registry…")):
+            ages[domain] = lookup_domain_age(domain, suffix_rules=rules)
+        _render_age_result(ages[domain])
+        return
+    st.caption(tr("Sends only {domain} to the official domain registry (RDAP). Nothing is sent until you press.",
+                  domain=domain))
+
+
 def render_quick_lookup_empty_state() -> None:
     """Nothing to show yet; the passive-lookup caption above already explains."""
 
 
-def render_quick_lookup_result(result: QuickLookupResult) -> None:
+def render_quick_lookup_result(result: QuickLookupResult, *, registry_db_path: Path | None = None) -> None:
     if result.uses_plain_http:
         st.warning(
             tr(
@@ -483,6 +549,8 @@ def render_quick_lookup_result(result: QuickLookupResult) -> None:
     _render_outcome_banner(result)
     _render_graphic_overview(result)
     _render_reasons(result)
+    if registry_db_path is not None:
+        _render_domain_age(result, registry_db_path)
 
     section_label(tr("Threat intelligence evidence"))
     _render_evidence_state(result)
