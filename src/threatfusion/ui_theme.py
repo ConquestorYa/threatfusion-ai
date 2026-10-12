@@ -235,9 +235,7 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     width:2.65rem;
     height:2.65rem;
     flex:0 0 auto;
-    background:var(--tf-logo);
-    -webkit-mask:var(--tf-brand-logo) center / contain no-repeat;
-    mask:var(--tf-brand-logo) center / contain no-repeat;
+    background:var(--tf-brand-logo) center / contain no-repeat;
 }
 .tf-sidebar-brand-title { font-size:1rem; font-weight:650; color:var(--tf-text); }
 .tf-sidebar-brand-sub { color:var(--tf-muted); font-size:.75rem; margin-top:.1rem; }
@@ -263,9 +261,7 @@ h3 { font-size:1.06rem!important; line-height:1.4!important; }
     flex:0 0 auto;
     width:3.8rem;
     height:3.8rem;
-    background:var(--tf-logo);
-    -webkit-mask:var(--tf-brand-logo) center / contain no-repeat;
-    mask:var(--tf-brand-logo) center / contain no-repeat;
+    background:var(--tf-brand-logo) center / contain no-repeat;
 }
 .st-key-utility_dock {
     margin-top:.15rem;

@@ -47,6 +47,9 @@ framing is retired. No release date or tag is set.
 
 ### Changed
 
+- New logo: a shield where threat intelligence and local network telemetry fuse
+  into one point; full colour, also the browser-tab icon and README header.
+
 - The Model evaluation page is hidden in CTI-only mode, where no model runs
   (DEC-091); it returns when a measured model ships.
 

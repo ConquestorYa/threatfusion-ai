@@ -2,17 +2,25 @@
 
 from urllib.parse import quote
 
-# A compact monochrome mark used as a CSS mask so the active theme tints it:
-# two overlapping rings (threat intelligence and local telemetry) with the
-# filled overlap where evidence from both meets.
+# A shield with two sources (threat intelligence and local network telemetry)
+# fusing into one point. Full colour on purpose: the gradient shield and white
+# strokes read on both the dark and the light theme, down to favicon size.
 _THREATFUSION_LOGO_SVG = """
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <defs><clipPath id="a"><circle cx="46" cy="64" r="34"/></clipPath></defs>
-  <g fill="none" stroke="#000" stroke-width="8">
-    <circle cx="46" cy="64" r="34"/>
-    <circle cx="82" cy="64" r="34"/>
+  <defs>
+    <linearGradient id="tf-shield" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22D3EE"/>
+      <stop offset="1" stop-color="#6366F1"/>
+    </linearGradient>
+  </defs>
+  <path d="M64 6 110 22v36c0 32-20 54-46 64C38 112 18 90 18 58V22Z" fill="url(#tf-shield)"/>
+  <g fill="none" stroke="#fff" stroke-width="7.5" stroke-linecap="round">
+    <path d="M40 38c0 26 24 22 24 44"/>
+    <path d="M88 38c0 26-24 22-24 44"/>
   </g>
-  <circle cx="82" cy="64" r="34" fill="#000" clip-path="url(#a)"/>
+  <circle cx="40" cy="36" r="7.5" fill="#fff"/>
+  <circle cx="88" cy="36" r="7.5" fill="#fff"/>
+  <circle cx="64" cy="84" r="12" fill="#FBBF24" stroke="#fff" stroke-width="5.5"/>
 </svg>
 """.strip()
 

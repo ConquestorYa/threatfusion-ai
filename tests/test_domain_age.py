@@ -119,6 +119,7 @@ def test_quick_lookup_button_sends_nothing_until_pressed(tmp_path, monkeypatch):
     assert any("example.test" in c.value for c in app.caption)
     next(b for b in app.button if b.label == "Check site age").click().run(timeout=15)
     assert not app.exception and calls == ["example.test"]
+    assert not [b for b in app.button if b.label == "Check site age"]  # the result replaces the button
     assert any("Very new site" in md.value for md in app.markdown)
 
 

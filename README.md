@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/assets/logo.svg" alt="ThreatFusion AI logo" width="96">
+
 # ThreatFusion AI
 
 ### Local network investigation for Zeek users

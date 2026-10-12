@@ -89,11 +89,12 @@ def test_safe_text_escapes_dynamic_html() -> None:
     assert safe_text("<script>alert(1)</script>") == "&lt;script&gt;alert(1)&lt;/script&gt;"
 
 
-def test_brand_logo_is_simple_vector_without_text_and_theme_tinted() -> None:
+def test_brand_logo_is_simple_vector_without_text_or_scripts() -> None:
     assert THREATFUSION_LOGO_DATA_URI.startswith("data:image/svg+xml")
     assert "base64" not in THREATFUSION_LOGO_DATA_URI
-    assert "<text" not in _THREATFUSION_LOGO_SVG and _THREATFUSION_LOGO_SVG.count("<circle") == 4
-    assert palette("Dark")["logo"] != palette("Light")["logo"]
+    for forbidden in ("<text", "<script", "href", "<image", "@import"):
+        assert forbidden not in _THREATFUSION_LOGO_SVG
+    assert _THREATFUSION_LOGO_SVG.count("<circle") == 3
 
 
 def test_controls_have_no_emoji_and_switch_theme_once() -> None:

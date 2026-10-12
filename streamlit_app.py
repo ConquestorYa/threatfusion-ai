@@ -12,6 +12,7 @@ import streamlit as st
 _PROJECT_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(_PROJECT_ROOT / "src"))
 
+from threatfusion.brand_assets import _THREATFUSION_LOGO_SVG
 from threatfusion.app_config import load_app_config
 from threatfusion.audit import capture_analysis_audit_metadata
 from threatfusion.campaign import find_related_activity
@@ -527,7 +528,7 @@ def _render_navigation(pages: list[str], current: str) -> None:
 def main() -> None:
     st.set_page_config(
         page_title="ThreatFusion AI",
-        page_icon=":material/shield:",
+        page_icon=_THREATFUSION_LOGO_SVG,
         layout="wide",
     )
 

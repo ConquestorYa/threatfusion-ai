@@ -523,8 +523,7 @@ def _render_domain_age(result: QuickLookupResult, db_path: Path) -> None:
     if st.button(tr("Check site age"), key=f"domain_age_{domain}", icon="🗓️"):
         with st.spinner(tr("Asking the registry…")):
             ages[domain] = lookup_domain_age(domain, suffix_rules=rules)
-        _render_age_result(ages[domain])
-        return
+        st.rerun()  # show the result in place of the button
     st.caption(tr("Sends only {domain} to the official domain registry (RDAP). Nothing is sent until you press.",
                   domain=domain))
 
