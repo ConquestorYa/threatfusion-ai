@@ -1,6 +1,6 @@
 # Release handoff
 
-Newest section first. Status date: 2026-10-12.
+Newest section first. Status date: 2026-10-13.
 
 ## Review marks, new logo, P2 7-day run started (2026-10-12)
 
@@ -12,7 +12,10 @@ Newest section first. Status date: 2026-10-12.
   pinned P2 collector.
 - New full-colour logo (also favicon and README); site age reports shared
   platforms (`*.web.app`, `*.duckdns.org`).
-- `ml-age-dev-v2` (amendment of v1 after a shutdown) is running.
+- `ml-age-dev-v2` finished 2026-10-13: domain age ≤ 7 days is precise (FPR
+  0.088 %) but catches only 10.7 % of new indicators (limit 50 %); failed,
+  development grade. Nothing promoted; next ML direction is behavior on the P2
+  data. See ML_DATASET.md.
 
 ## IP owners, outside lookups, desktop notification (2026-10-11, DEC-096)
 

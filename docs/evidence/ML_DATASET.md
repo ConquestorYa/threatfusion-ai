@@ -1279,3 +1279,34 @@ ones (4.7 %). The score stays off; candidate 3 (`9c4aeae1…`, trained on all da
 to 2026-10-11) is not promoted. Further lexical iteration is not planned. Next
 directions: connection-behavior features from Zeek (needs the labeled 7-day
 run) and, as a separate non-ML question for the user, domain-age context.
+
+## Domain age as a signal: failed, development grade (2026-10-13)
+
+Private root `ml-age-dev-v2` (plan `f53c25c3…`, amendment of `ml-age-dev-v1`
+which stopped on a shutdown with no receipts; summary `451f9292…`). Rule: flag
+a name when its registrable domain was registered at most D days ago (RDAP, the
+same `domain_age.py` the app uses). D was chosen on development data only
+(CESNET 240k–340k benign, 1,500 SGB + 1,500 ThreatFox malicious): the highest
+recall with false-positive rate ≤ 0.1 % among age-known benign names. Chosen
+D = 7 days (development: recall 10.9 %, FPR 0.074 %). Then evaluated once on
+the `ml-backtest-v1` evaluation set. **Grade: development** — that set was
+already evaluated once for the lexical model.
+
+| Age ≤ 7 days | Result | Limit | Pass |
+| --- | --- | --- | --- |
+| CESNET false-positive rate (age-known) | 0.088 % (9 / 10,225); all rows 0.045 % | ≤ 0.1 % | ✓ |
+| Recall | 10.7 % (594 / 5,558) | ≥ 50 % | ✗ |
+| Recall per source | SGB 34.4 %, ThreatFox 4.1 %, URLhaus 9.2 % | each ≥ 25 % | ✗ |
+
+RDAP coverage: 4,654 found, 2,076 not found, 318 errors (rate limits); about
+half of the benign names and 70 % of the evaluated malicious names had a known
+age. Secondary combinations with the backtest lexical model all broke the FPR
+limit (best recall: age ≤ 7 d or lexical High, 22.1 % at FPR 0.53 %).
+
+**Reading.** A very new domain is a precise warning (603 flags, 594 of them on
+indicators) but most indicators are not new: phishing kits (SGB) often are,
+malware infrastructure (ThreatFox) mostly is not (older or compromised domains,
+shared platforms). Age stays what DEC-095 made it: context on a button, never a
+verdict. Nothing is promoted; no model ships. Name and age signals together are
+below the bar, so the next ML direction is connection behavior from the labeled
+P2 7-day run (ends 2026-10-18).
