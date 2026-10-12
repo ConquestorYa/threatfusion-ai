@@ -123,9 +123,13 @@ time. Items on a threat list come first (🔴).
 **Why? What to do?** opens the reason, a short action, other names sharing the
 addresses, and VirusTotal, AbuseIPDB (IP reports from other users) and urlscan
 (a screenshot of the site, so you need not open it) buttons. These are outside
-sites: the name or IP is sent there only when you click. **I know this, hide it** moves an item to *Hidden*
-(stored privately next to the collector state; *Show again* undoes it); items on
-a threat list cannot be hidden. A name looked up from several addresses of the
+sites: the name or IP is sent there only when you click. Each item has three one-click marks, stored privately next to the
+collector state: **I know this** hides it from now on (also when the same name
+or address comes back; *Known → Show again* undoes it), **Not sure** keeps it
+with a badge, and **Suspicious** pins it on top and, with a collector of this
+version, sends a desktop notification when that name is seen again (once per
+day). Clicking a selected mark again removes it. Items on a threat list always
+stay visible. *Not marked* filters what is left to decide. A name looked up from several addresses of the
 same computer appears once. Real IPs are shown on your own screen; downloads
 keep aliases. **Details** keeps the full technical view.
 

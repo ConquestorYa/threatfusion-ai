@@ -12,7 +12,7 @@ import ipaddress
 import json
 import os
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote
 
@@ -202,6 +202,46 @@ def save_hidden(path: Path, hidden: set[str]) -> None:
         Path(temporary).unlink(missing_ok=True)
 
 
+LABELS = ("known", "unsure", "suspicious")
+MAX_LABELS = 20_000
+
+
+def load_labels(path: Path | None, legacy_hidden: Path | None = None) -> dict[str, dict]:
+    """Item key -> {"label", "at"}; items hidden with the older button count as known."""
+    labels: dict[str, dict] = {}
+    for key in load_hidden(legacy_hidden):
+        labels[key] = {"label": "known", "at": None}
+    if path is None:
+        return labels
+    try:
+        values = json.loads(path.read_text()).get("labels", {})
+    except (OSError, ValueError, AttributeError):
+        return labels
+    if isinstance(values, dict):
+        for key, entry in values.items():
+            if isinstance(key, str) and isinstance(entry, dict) and entry.get("label") in LABELS:
+                labels[key] = {"label": entry["label"], "at": entry.get("at") if isinstance(entry.get("at"), str) else None}
+    return labels
+
+
+def save_label(path: Path, key: str, label: str | None, *, now: datetime | None = None) -> dict[str, dict]:
+    """Set or clear (None) one label; private file, atomic replace."""
+    labels = load_labels(path)
+    if label is None:
+        labels.pop(key, None)
+    elif label in LABELS:
+        labels[key] = {"label": label, "at": (now or datetime.now(timezone.utc)).isoformat()}
+    kept = dict(sorted(labels.items(), key=lambda item: item[1].get("at") or "")[-MAX_LABELS:])
+    descriptor, temporary = tempfile.mkstemp(dir=path.parent, prefix=".review-labels-")
+    try:
+        with os.fdopen(descriptor, "w") as handle:
+            json.dump({"schema_version": 1, "labels": kept}, handle, indent=1)
+        os.replace(temporary, path)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
+    return kept
+
+
 def _show(value) -> str:
     text = str(value or "")
     if text.startswith("Host "):
@@ -254,12 +294,41 @@ def lookup_links(name: str | None, address: str | None) -> list[tuple[str, str]]
     return links
 
 
-def _render_item(item, hidden, hidden_path, ip_owner=None):
+def _rerun() -> None:
+    """Redraw only the auto-refreshing collector fragment when possible, else the page."""
+    try:
+        st.rerun(scope="fragment")
+    except st.errors.StreamlitAPIException:
+        st.rerun()
+
+
+_BADGES = {"suspicious": "🟣 Suspicious", "unsure": "⚪ Not sure", "known": "✓ I know this"}
+_BUTTONS = (("known", "✓ I know this"), ("unsure", "? Not sure"), ("suspicious", "⚠ Suspicious"))
+
+
+def _render_label_buttons(item, labels, labels_path):
+    key = item_key(item)
+    current = (labels.get(key) or {}).get("label")
+    row = st.container(horizontal=True, gap="small")
+    for label, text in _BUTTONS:
+        selected = current == label
+        if row.button(tr(text), key=f"label-{label}-{key}", type="primary" if selected else "secondary",
+                         help=tr("Click again to remove the mark") if selected else None):
+            try:
+                save_label(labels_path, key, None if selected else label)
+            except OSError:
+                st.warning(tr("Could not save. Check the folder permissions."))
+            _rerun()
+
+
+def _render_item(item, labels, labels_path, ip_owner=None):
     with st.container(border=True):
         icon = "🔴" if item["threat"] else "🟡"
         name = item["title"] if not item["unnamed"] else _show(item["title"])
+        badge = _BADGES.get((labels.get(item_key(item)) or {}).get("label"))
         left, middle, right = st.columns([5, 4, 2])
-        left.markdown(f"{icon} **{name}**  \n{tr(item['label'])} · {tr(item['metric'][0], **item['metric'][1])}")
+        left.markdown(f"{icon} **{name}**" + (f" · {tr(badge)}" if badge else "")
+                      + f"  \n{tr(item['label'])} · {tr(item['metric'][0], **item['metric'][1])}")
         devices = ", ".join(dict.fromkeys(_show(d) for d in item["devices"] if d))
         address = _address_of(item)
         if item["where"] and item["where"][0] == "address":
@@ -270,6 +339,8 @@ def _render_item(item, hidden, hidden_path, ip_owner=None):
         if owner:
             middle.caption(owner.label)
         right.markdown(item["when"] or "")
+        if labels_path is not None:
+            _render_label_buttons(item, labels, labels_path)
         with st.expander(tr("Why? What to do?")):
             st.markdown(" ".join(tr(s) for s in item["what"]))
             st.markdown("**" + tr(ADVICE[item["advice"]]) + "**")
@@ -284,49 +355,50 @@ def _render_item(item, hidden, hidden_path, ip_owner=None):
             links = lookup_links(target, address)
             if links:
                 st.caption(tr("Look up on outside sites (opens in a new tab; the name or IP is sent to that site):"))
-            columns = st.columns(len(links) + 1)
-            for column, (label, url) in zip(columns, links):
-                column.link_button(label, url)
-            if not item["threat"] and hidden_path is not None:
-                if columns[-1].button(tr("I know this, hide it"), key="hide-" + item_key(item)):
-                    try:
-                        save_hidden(hidden_path, hidden | {item_key(item)})
-                    except OSError:
-                        st.warning(tr("Could not save. Check the folder permissions."))
-                    st.rerun(scope="fragment")
+                for column, (label, url) in zip(st.columns(len(links)), links):
+                    column.link_button(label, url)
 
 
-def render_review_list(view, *, hidden_path: Path | None = None, ip_owner=None) -> None:
+def render_review_list(view, *, labels_path: Path | None = None, legacy_hidden_path: Path | None = None,
+                       ip_owner=None) -> None:
     items = build_review_items(view)
-    hidden = load_hidden(hidden_path)
-    # Items on a threat list can never be hidden.
-    visible = [item for item in items if item["threat"] or item_key(item) not in hidden]
+    labels = load_labels(labels_path, legacy_hidden_path)
+    label_of = {item_key(item): (labels.get(item_key(item)) or {}).get("label") for item in items}
+    # "I know this" hides an item; items on a threat list always stay visible.
+    visible = [item for item in items if item["threat"] or label_of[item_key(item)] != "known"]
     muted = [item for item in items if item not in visible]
-    columns = st.columns(3)
-    columns[0].metric(tr("To check"), len(visible))
-    columns[1].metric(tr("On a threat list"), sum(item["threat"] for item in items))
-    columns[2].metric(tr("Hidden"), len(muted))
+    # Suspicious items stay on top.
+    visible.sort(key=lambda item: label_of[item_key(item)] != "suspicious")
+    columns = st.columns(4)
+    columns[0].metric(tr("To check"), sum(not label_of[item_key(item)] for item in visible))
+    columns[1].metric(tr("Suspicious"), sum(label == "suspicious" for label in label_of.values()))
+    columns[2].metric(tr("On a threat list"), sum(item["threat"] for item in items))
+    columns[3].metric(tr("Known"), len(muted))
     if not visible:
         st.success(tr("Nothing to check. Everything collected is under Details."))
     else:
-        choice = st.radio(tr("Show"), ["All", "Threat lists", "Connections", "Name lookups"], horizontal=True,
-                          format_func=tr, key="review_filter", label_visibility="collapsed")
-        wanted = {"All": None, "Threat lists": "threat", "Connections": "connection", "Name lookups": "dns"}[choice]
-        shown = [item for item in visible if wanted is None or (item["threat"] if wanted == "threat"
-                                                                  else item["kind"] == wanted)]
-        st.caption(tr("A flag means look, not danger. Most are normal programs."))
+        options = ["All", "Not marked", "Suspicious", "Threat lists", "Connections", "Name lookups"]
+        choice = st.radio(tr("Show"), options, horizontal=True, format_func=tr, key="review_filter",
+                          label_visibility="collapsed")
+        tests = {"All": lambda item: True, "Not marked": lambda item: not label_of[item_key(item)],
+                 "Suspicious": lambda item: label_of[item_key(item)] == "suspicious",
+                 "Threat lists": lambda item: item["threat"], "Connections": lambda item: item["kind"] == "connection",
+                 "Name lookups": lambda item: item["kind"] == "dns"}
+        shown = [item for item in visible if tests[choice](item)]
+        st.caption(tr("A flag means look, not danger. Most are normal programs. Mark each one: "
+                      "I know this hides it next time, Suspicious keeps it on top."))
         for item in shown[:200]:
-            _render_item(item, hidden, hidden_path, ip_owner)
+            _render_item(item, labels, labels_path, ip_owner)
         if len(shown) > 200:
             st.caption(tr("Showing the first 200. Details lists everything."))
-    if muted and hidden_path is not None:
-        with st.expander(tr("Hidden ({count})", count=len(muted))):
+    if muted and labels_path is not None:
+        with st.expander(tr("Known ({count})", count=len(muted))):
             for item in muted:
                 left, right = st.columns([4, 1])
                 left.markdown(f"{item['title']} · {tr(item['label'])}")
                 if right.button(tr("Show again"), key="unhide-" + item_key(item)):
                     try:
-                        save_hidden(hidden_path, hidden - {item_key(item)})
+                        save_label(labels_path, item_key(item), None)
                     except OSError:
                         st.warning(tr("Could not save. Check the folder permissions."))
-                    st.rerun(scope="fragment")
+                    _rerun()

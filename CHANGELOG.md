@@ -83,6 +83,9 @@ framing is retired. No release date or tag is set.
 
 ### Added
 
+- Review items get three one-click marks (I know this / Not sure / Suspicious);
+  suspicious items stay on top and notify when seen again (DEC-097).
+
 - Network owner and registry country for destination IPs (weekly iptoasn.com
   table, local lookups); VirusTotal, AbuseIPDB and urlscan lookup buttons; one
   desktop notification per new threat-list match (`--no-notify` to disable;

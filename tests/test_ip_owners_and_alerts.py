@@ -182,3 +182,24 @@ def test_collector_loop_notifies_from_its_snapshot_once(tmp_path, monkeypatch):
     (state / "connections.json").write_text("not json")
     telemetry_collector._notify(state)  # a broken snapshot never raises
     assert len(sent) == 1 and (tmp_path / notifications.NOTIFIED_FILE).exists()
+
+
+def test_a_name_marked_suspicious_notifies_when_seen_again_once_per_day(tmp_path):
+    import json
+
+    (tmp_path / notifications.LABELS_FILE).write_text(json.dumps({"labels": {
+        "dns:busy.example.test": {"label": "suspicious", "at": "2026-10-10T09:00:00+00:00"},
+        "connection:Host 004": {"label": "suspicious", "at": "2026-10-10T09:00:00+00:00"},
+        "dns:old.example.test": {"label": "suspicious", "at": "2026-10-11T00:00:00+00:00"},
+        "dns:other.example.test": {"label": "known", "at": "2026-10-10T09:00:00+00:00"}}}))
+    view = {"findings": [], "dns": {"report": {"findings": [
+        {"Target": "busy.example.test", "Queue priority": "Review", "Evidence": "", "Last observed": "2026-10-10T11:00:00+00:00"},
+        {"Target": "old.example.test", "Queue priority": "Review", "Evidence": "", "Last observed": "2026-10-10T11:00:00+00:00"},
+        {"Target": "other.example.test", "Queue priority": "Review", "Evidence": "", "Last observed": "2026-10-10T11:00:00+00:00"}]}}}
+    sent = []
+    path = tmp_path / notifications.NOTIFIED_FILE
+    assert notifications.notify_new_threats(view, path, send=lambda t, b: sent.append((t, b))) == 1
+    assert sent[0][0].startswith("ThreatFusion: seen again") and "busy.example.test" in sent[0][1]
+    assert notifications.notify_new_threats(view, path, send=lambda t, b: sent.append((t, b))) == 0
+    view["dns"]["report"]["findings"][0]["Last observed"] = "2026-10-11T08:00:00+00:00"
+    assert notifications.notify_new_threats(view, path, send=lambda t, b: sent.append((t, b))) == 1  # next day

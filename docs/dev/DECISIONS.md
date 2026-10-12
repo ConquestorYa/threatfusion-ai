@@ -1094,3 +1094,14 @@ popular tools (VirusTotal, AbuseIPDB, GlassWire, Little Snitch).
 Rejected for now: lookalike-domain warnings (frequent false alarms on real
 sites), first-seen destination alerts (too noisy), new-device alerts (the sensor
 sees one computer) and blocking (needs a DNS filter the user does not run).
+
+## DEC-097: Three one-click marks on review items
+
+**Decision (2026-10-12):** "I know this, hide it" becomes three marks: known
+(hidden from now on), not sure, suspicious (pinned on top; desktop notification
+when a marked name appears again after the mark, once per name per day). Marks
+are stored in a private `review-labels.json` beside the collector state; items
+hidden with the older button count as known. Threat-list items stay visible
+whatever the mark. The marks are also the labels of the P2 7-day run, so they
+must exist before it ends. Unnamed connections are keyed by the address shown on
+screen; the collector's notification only matches names.

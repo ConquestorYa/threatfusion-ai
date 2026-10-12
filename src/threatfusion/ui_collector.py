@@ -137,7 +137,8 @@ def render_collector(state_dir: Path | None, *, public_mode: bool, cti_db_path: 
     with summary:
         st.caption(tr("Last {hours} hours · threat lists + unusual behavior · updates every 10 s",
                       hours=status.get("window_seconds", 86400) // 3600))
-        render_review_list(_local_view(state_dir, payload), hidden_path=state_dir.parent / "review-hidden.json",
+        render_review_list(_local_view(state_dir, payload), labels_path=state_dir.parent / "review-labels.json",
+                           legacy_hidden_path=state_dir.parent / "review-hidden.json",
                            ip_owner=ip_owner_lookup(cti_db_path))
     with details:
         _render_details(state_dir, payload, status, counts)

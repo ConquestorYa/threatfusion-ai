@@ -92,23 +92,51 @@ def test_short_labels_and_metrics():
     assert items["Host 006"]["metric"][1] == {"ports": 25, "failed": 40}
 
 
-def test_hidden_items_persist_privately_and_threats_cannot_be_hidden(tmp_path):
-    from threatfusion.ui_simple_review import item_key, load_hidden, save_hidden
+def test_labels_persist_privately_and_older_hidden_items_count_as_known(tmp_path):
+    from threatfusion.ui_simple_review import item_key, load_labels, save_hidden, save_label
 
-    path = tmp_path / "review-hidden.json"
-    assert load_hidden(path) == set()
+    path, legacy = tmp_path / "review-labels.json", tmp_path / "review-hidden.json"
+    assert load_labels(path) == {}
     items = build_review_items(VIEW)
-    save_hidden(path, {item_key(item) for item in items})
+    save_label(path, item_key(items[2]), "suspicious")
+    save_label(path, item_key(items[3]), "unsure")
+    save_label(path, item_key(items[3]), "bogus")  # unknown labels are ignored
     assert oct(path.stat().st_mode & 0o777) == "0o600"
-    assert load_hidden(path) == {item_key(item) for item in items}
+    save_hidden(legacy, {item_key(items[4])})
+    labels = load_labels(path, legacy)
+    assert {k: v["label"] for k, v in labels.items()} == {
+        item_key(items[2]): "suspicious", item_key(items[3]): "unsure", item_key(items[4]): "known"}
+    save_label(path, item_key(items[2]), None)
+    assert item_key(items[2]) not in load_labels(path)
     path.write_text("not json")
-    assert load_hidden(path) == set()
+    assert load_labels(path) == {}
 
-    save_hidden(path, {item_key(item) for item in items})
-    script = ("from pathlib import Path\nfrom threatfusion.ui_simple_review import render_review_list\n"
-              "from tests.test_simple_review import VIEW\n"
-              f"render_review_list(VIEW, hidden_path=Path({str(path)!r}))\n")
-    app = AppTest.from_string(script).run(timeout=15)
+
+_LIST_SCRIPT = (
+    "import streamlit as st\nfrom pathlib import Path\n"
+    "from threatfusion.ui_simple_review import render_review_list\n"
+    "from tests.test_simple_review import VIEW\n"
+    "@st.fragment\ndef page():\n    render_review_list(VIEW, labels_path=Path({path!r}))\npage()\n"
+)
+
+
+def test_one_click_labels_hide_known_pin_suspicious_and_keep_threats(tmp_path):
+    from threatfusion.ui_simple_review import load_labels
+
+    path = tmp_path / "review-labels.json"
+    app = AppTest.from_string(_LIST_SCRIPT.format(path=str(path))).run(timeout=15)
     assert not app.exception
-    metrics = {m.label: m.value for m in app.metric}
-    assert metrics["To check"] == "2" and metrics["Hidden"] == "3"  # two threat items stay visible
+    metrics = lambda: {m.label: m.value for m in app.metric}  # noqa: E731
+    assert metrics() == {"To check": "5", "Suspicious": "0", "On a threat list": "2", "Known": "0"}
+    app.button(key="label-known-dns:cdn.example.test").click().run(timeout=15)
+    app.button(key="label-suspicious-attempt:Host 006").click().run(timeout=15)
+    app.button(key="label-known-dns:listed.example.test").click().run(timeout=15)  # a threat stays visible
+    assert not app.exception
+    assert metrics() == {"To check": "2", "Suspicious": "1", "On a threat list": "2", "Known": "1"}
+    first = next(md.value for md in app.markdown if md.value.startswith(("🔴", "🟡")))
+    assert "Host 006" in first and "Suspicious" in first  # suspicious is pinned on top
+    assert {k: v["label"] for k, v in load_labels(path).items()} == {
+        "dns:cdn.example.test": "known", "attempt:Host 006": "suspicious", "dns:listed.example.test": "known"}
+    app.button(key="label-suspicious-attempt:Host 006").click().run(timeout=15)  # click again: unmark
+    app.button(key="unhide-dns:cdn.example.test").click().run(timeout=15)
+    assert metrics()["Suspicious"] == "0" and metrics()["Known"] == "0"

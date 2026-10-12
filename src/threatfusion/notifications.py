@@ -21,10 +21,14 @@ MAX_NAMES_IN_BODY = 3
 _THREAT_LABELS = ("Exact known-domain IOC match", "Response IP matches known threat infrastructure",
                   "Response IPv6 address falls within a known threat network")
 
+LABELS_FILE = "review-labels.json"  # written by the web app's review list, beside NOTIFIED_FILE
+
 _TEXT = {
     "en": ("ThreatFusion: threat list match", "{count} new: {names}", "an address", "Open Collected connections."),
     "tr": ("ThreatFusion: tehdit listesi eşleşmesi", "{count} yeni: {names}", "bir adres", "Toplanan bağlantılar'ı aç."),
 }
+_SUSPICIOUS_TITLE = {"en": "ThreatFusion: seen again (you marked it suspicious)",
+                     "tr": "ThreatFusion: yeniden görüldü (şüpheli işaretlemiştin)"}
 
 
 def threat_alerts(payload: dict) -> dict[str, str | None]:
@@ -40,6 +44,30 @@ def threat_alerts(payload: dict) -> dict[str, str | None]:
         evidence = str(row.get("Evidence") or "")
         if row.get("Queue priority") == "Investigate" or any(label in evidence for label in _THREAT_LABELS):
             alerts[f"dns:{row.get('Target')}"] = row.get("Target")
+    return alerts
+
+
+def suspicious_alerts(payload: dict, labels_path: Path) -> dict[str, str]:
+    """Names the user marked suspicious that appear again after the mark; once per name per day."""
+    try:
+        labels = json.loads(labels_path.read_text()).get("labels", {})
+    except (OSError, ValueError, AttributeError):
+        return {}
+    marked = {}
+    for key, entry in labels.items() if isinstance(labels, dict) else ():
+        kind, _, name = str(key).partition(":")
+        if (kind in ("dns", "connection") and isinstance(entry, dict) and entry.get("label") == "suspicious"
+                and name and not name.startswith(("Host ", "Device "))):
+            marked[name] = str(entry.get("at") or "")
+    alerts = {}
+    rows = [(n, row.get("Last observed")) for row in payload.get("findings", ())
+            for n in str(row.get("DNS names") or "").split(", ") if n]
+    rows += [(row.get("Target"), row.get("Last observed"))
+             for row in (payload.get("dns") or {}).get("report", {}).get("findings", ())]
+    for name, last in rows:
+        last = str(last or "")
+        if name in marked and last > marked[name]:
+            alerts[f"suspicious:{name}:{last[:10]}"] = name
     return alerts
 
 
@@ -105,20 +133,26 @@ def message(names: list[str | None], language: str = "en") -> tuple[str, str]:
 
 
 def notify_new_threats(payload: dict, state_path: Path, *, send=None) -> int:
-    """Notify once per new threat-list match; returns how many were new."""
-    alerts = threat_alerts(payload)
-    known = _load(state_path)
-    new = [key for key in alerts if key not in set(known)]
+    """Notify once per new threat-list match (and per suspicious-marked name seen again
+    that day); returns how many were new."""
+    groups = [(None, threat_alerts(payload)),
+              (_SUSPICIOUS_TITLE, suspicious_alerts(payload, state_path.parent / LABELS_FILE))]
+    known = set(_load(state_path))
+    fresh = [(title, {k: v for k, v in alerts.items() if k not in known}) for title, alerts in groups]
+    new = [key for _, alerts in fresh for key in alerts]
     if not new:
         return 0
     if send is None:
         if not desktop_available():
             return 0
         send = _send
-    title, body = message([alerts[key] for key in new], _language(state_path.parent))
-    send(title, body)
+    language = _language(state_path.parent)
+    for titles, alerts in fresh:
+        if alerts:
+            title, body = message(list(alerts.values()), language)
+            send(titles[language] if titles else title, body)
     # Recorded even when sending failed: one attempt per match, never a retry every poll.
-    _save(state_path, known + new)
+    _save(state_path, _load(state_path) + new)
     return len(new)
 
 

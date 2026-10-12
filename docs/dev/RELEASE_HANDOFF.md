@@ -1,6 +1,18 @@
 # Release handoff
 
-Newest section first. Status date: 2026-10-11.
+Newest section first. Status date: 2026-10-12.
+
+## Review marks, new logo, P2 7-day run started (2026-10-12)
+
+- P2 `real-traffic-p2-7d-v1` started 2026-10-11T19:56Z (user ran `kur.sh`;
+  systemd --user units; collector pinned to release 3b1ab34, so app updates do
+  not change the measured candidate). Ends 2026-10-18T19:56Z; then `kaldir.sh`.
+- Review items: known / not sure / suspicious marks (DEC-097); the suspicious
+  re-notification needs a collector of this version, so it is inactive in the
+  pinned P2 collector.
+- New full-colour logo (also favicon and README); site age reports shared
+  platforms (`*.web.app`, `*.duckdns.org`).
+- `ml-age-dev-v2` (amendment of v1 after a shutdown) is running.
 
 ## IP owners, outside lookups, desktop notification (2026-10-11, DEC-096)
 
