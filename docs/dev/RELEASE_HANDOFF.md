@@ -1,6 +1,15 @@
 # Release handoff
 
-Newest section first. Status date: 2026-10-13.
+Newest section first. Status date: 2026-10-14.
+
+## Behavior ML v1 failed; views ready without a model (2026-10-14, DEC-099)
+
+- Experimental behavior views shipped (5bc55a2) but only show results when a
+  locally trained model is installed; none is installed.
+- v1 (MCFP + user traffic) failed: 41 % of held-out MCFP malware captures,
+  3 % of 2023–2026 malware captures. Causes and v2 plan in ML_DATASET.md.
+- P2 v2 started 2026-10-13T21:24Z (ends 2026-10-20T21:24Z); collector healthy.
+- CTU-SME-11 labeled Zeek logs are downloading into the private lab.
 
 ## Local discovery chatter filtered; P2 restarted as v2 (2026-10-13, DEC-098)
 

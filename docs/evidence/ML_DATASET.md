@@ -1310,3 +1310,38 @@ shared platforms). Age stays what DEC-095 made it: context on a button, never a
 verdict. Nothing is promoted; no model ships. Name and age signals together are
 below the bar, so the next ML direction is connection behavior from the labeled
 P2 7-day run (ends 2026-10-18).
+
+## Connection-behavior model v1: failed (2026-10-14)
+
+Private roots `ml-behavior-dev-v1-amend-1` (plan `fb3b1d4a…`, summary
+`83d047f5…`) and `ml-behavior-recent-v1-amend-1` (plan `b8878e60…`, summary
+`9a200e03…`). Amendments of the v1 roots: the first run crashed writing a numpy
+bool after development scoring and before any evaluation output (dev candidate
+results were seen; rules unchanged). Model: random forest family over 23
+behavior features per (device, destination, port, protocol, 24 h window)
+(`ml_behavior.py`). Training: Stratosphere MCFP malware captures (2011–2021,
+infected host's groups to non-popular destinations labeled malicious), MCFP
+normal captures and three days of the user's traffic. Captures split by number
+60/15/25 %. Chosen on development data: extra-trees, leaf 10, line 0.991
+(development: 86 % of malware captures, 1 flag per normal host-day).
+
+| Evaluation | Result | Limit | Pass |
+| --- | --- | --- | --- |
+| MCFP held-out malware captures caught | 41.0 % (16 / 39); 56 % of malicious groups | ≥ 50 % | ✗ |
+| MCFP held-out normal host-days, flags per day | 0.0 (only 1 host-day had groups) | ≤ 1 | ✓ (thin) |
+| Recent malware 2023–2026 (Malware-Traffic-Analysis.net), captures caught | 3.0 % (5 / 168); 2024–2026: 0 / 82 | ≥ 50 % | ✗ |
+
+**Reading.** The model does not generalize. Two causes are visible in the
+aggregates: (1) label shortcut — malware groups to popular names were dropped
+as ambiguous, so "popular name" (31 % of importance) and "has a name" separate
+the classes without describing behavior; (2) length shift — MCFP captures last
+hours to days, recent captures minutes, so span/active-hours features never look
+like training malware. The normal side had too little held-out data.
+
+**Decision.** Not installed; the app shows "no model". The recent set
+(Malware-Traffic-Analysis 2023–2026) is now inspected: later use is development
+grade unless new posts after 2026-10-14 are used. Next (v2): per-flow expert
+labels from CTU-SME-11 (2023, CC BY 4.0) instead of capture heuristics, no
+dropped classes, training windows of random length (minutes to a day),
+synthetic jittered beacons injected into real benign traffic, first-seen and
+DNS features, and P2 v2 days for the user's false flags.
