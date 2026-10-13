@@ -56,6 +56,7 @@ from threatfusion.ui_components import (
     render_source_status,
 )
 from threatfusion.ui_evaluation import _show_model_evaluation
+from threatfusion.ui_behavior import model_path as behavior_model_path, render_behavior_evaluation
 from threatfusion.ui_device_triage import render_device_triage
 from threatfusion.ui_connections import render_connections
 from threatfusion.ui_collector import render_collector
@@ -562,9 +563,9 @@ def main() -> None:
         pages.remove("Collected connections")
     if not config.history_enabled:
         pages.remove("Analysis history")
-    if config.cti_only:
+    if config.cti_only and not (local_root is not None and behavior_model_path(local_root).exists()):
         # No model runs, so its evaluation page would only show an empty report.
-        # Restore it in this mode once a measured (behavioral) model ships.
+        # With a local behavior model, the page shows that model's evaluation.
         pages.remove("Model evaluation")
     if local_root is not None:
         pages.append("Setup & CTI updates")
@@ -708,6 +709,8 @@ def main() -> None:
             render_quick_lookup_result(
                 lookup_result,
                 registry_db_path=None if config.public_mode else db_path,
+                collector_state_dir=None if config.public_mode
+                else (local_root / "collector" if local_root else config.collector_state_dir),
             )
         else:
             render_quick_lookup_empty_state()
@@ -717,7 +720,10 @@ def main() -> None:
         _show_history(db_path)
         return
     if page == "Model evaluation":
-        _show_model_evaluation(config.evaluation_report_path)
+        if config.cti_only and local_root is not None:
+            render_behavior_evaluation(local_root)
+        else:
+            _show_model_evaluation(config.evaluation_report_path)
         return
 
     if config.public_mode:

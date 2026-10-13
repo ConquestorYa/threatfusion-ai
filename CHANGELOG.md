@@ -52,6 +52,11 @@ framing is retired. No release date or tag is set.
 
 ### Changed
 
+- Experimental behavior ML (DEC-099): "Deneysel ML" tab in Collected connections,
+  a behavior card in Quick lookup and a score column in collected DNS, shown only
+  when a locally trained model is installed; the Model evaluation page shows its
+  measured results.
+
 - New logo: a shield where threat intelligence and local network telemetry fuse
   into one point; full colour, also the browser-tab icon and README header.
 

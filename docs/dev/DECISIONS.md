@@ -1121,3 +1121,19 @@ logs exceeded the 16 MiB import limit and the rest filled the 100,000-record
 window, so the user's own review items were trimmed out. This traffic never
 leaves the local network and is not evidence about the internet destinations
 ThreatFusion reviews.
+
+## DEC-099: Experimental behavior model, local only
+
+**Decision (2026-10-14):** a connection-behavior model (`ml_behavior.py`: timing
+regularity, sizes, durations, failures, port and DNS-name context per device,
+destination, port and 24 h window; no addresses, names or time of day) is shown
+as an experimental hint: a "Deneysel ML" tab in Collected connections (score
+0–100 with a level, plain reasons, a connection-rhythm strip, marks and next
+steps), a card in Quick lookup when this computer talked to the looked-up
+destination, and a score column in the collected DNS table. The Model evaluation
+page returns in CTI-only mode when a model is installed and shows its measured
+results and limits. The model is a JSON random forest scored in pure Python (no
+pickle) at `<install>/ml/behavior-model.json`; it is trained in the private lab
+partly from the user's own traffic and is never committed or downloaded. It never
+changes the review list. Levels: High at or above the model's declared line,
+Medium from 50, Low below.

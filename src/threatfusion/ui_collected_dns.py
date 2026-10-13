@@ -9,7 +9,7 @@ from .i18n import tr, translate_dataframe
 from .ui_dns_timeline import render_dns_timeline
 
 
-def render_collected_dns(block, *, revision=None):
+def render_collected_dns(block, *, revision=None, behavior_scores=None):
     if block is None:
         st.caption(tr("Restart the updated collector to include DNS logs."))
         return
@@ -71,6 +71,9 @@ def render_collected_dns(block, *, revision=None):
         row["Coverage limits"] = "; ".join(
             tr(text) for text in row["Coverage limits"].split("; ")
         )
+        if behavior_scores:
+            score = behavior_scores.get(str(row.get("Target") or "").strip().rstrip(".").lower())
+            row[tr("Behavior score (ML)")] = f"{score[0]} · {tr(score[1])}" if score else "–"
     if rows:
         st.dataframe(
             translate_dataframe(pd.DataFrame(display)),

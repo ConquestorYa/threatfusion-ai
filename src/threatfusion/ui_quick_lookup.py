@@ -559,7 +559,8 @@ def render_quick_lookup_empty_state() -> None:
     """Nothing to show yet; the passive-lookup caption above already explains."""
 
 
-def render_quick_lookup_result(result: QuickLookupResult, *, registry_db_path: Path | None = None) -> None:
+def render_quick_lookup_result(result: QuickLookupResult, *, registry_db_path: Path | None = None,
+                               collector_state_dir: Path | None = None) -> None:
     if result.uses_plain_http:
         st.warning(
             tr(
@@ -585,6 +586,9 @@ def render_quick_lookup_result(result: QuickLookupResult, *, registry_db_path: P
         else:
             _render_domain_age(result, registry_db_path)
         _render_outside_links(result)
+        from .ui_behavior import render_lookup_behavior
+        render_lookup_behavior(None if result.normalized_ip else result.normalized_domain, result.normalized_ip,
+                               collector_state_dir, registry_db_path)
 
     section_label(tr("Threat intelligence evidence"))
     _render_evidence_state(result)

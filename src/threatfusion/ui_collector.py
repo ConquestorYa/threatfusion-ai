@@ -133,15 +133,18 @@ def render_collector(state_dir: Path | None, *, public_mode: bool, cti_db_path: 
         remember_language(state_dir.parent, current_language())
     except OSError:
         pass  # Notifications then follow the system language.
-    summary, details = st.tabs([tr("What to check"), tr("Details")])
+    summary, behavior, details = st.tabs([tr("What to check"), tr("Experimental ML"), tr("Details")])
     with summary:
         st.caption(tr("Last {hours} hours · threat lists + unusual behavior · updates every 10 s",
                       hours=status.get("window_seconds", 86400) // 3600))
         render_review_list(_local_view(state_dir, payload), labels_path=state_dir.parent / "review-labels.json",
                            legacy_hidden_path=state_dir.parent / "review-hidden.json",
                            ip_owner=ip_owner_lookup(cti_db_path))
+    with behavior:
+        from .ui_behavior import render_behavior_tab
+        render_behavior_tab(state_dir, cti_db_path=cti_db_path, ip_owner=ip_owner_lookup(cti_db_path))
     with details:
-        _render_details(state_dir, payload, status, counts)
+        _render_details(state_dir, payload, status, counts, cti_db_path)
 
 
 def _local_view(state_dir, payload):
@@ -153,7 +156,7 @@ def _local_view(state_dir, payload):
         return payload
 
 
-def _render_details(state_dir, payload, status, counts):
+def _render_details(state_dir, payload, status, counts, cti_db_path=None):
     with st.expander(tr("What does this page do?")):
         st.markdown(tr(COLLECTOR_GUIDE))
     st.caption(tr("Completed Zeek logs are collected automatically. This view refreshes every 10 seconds; active files wait for rotation."))
@@ -222,7 +225,8 @@ def _render_details(state_dir, payload, status, counts):
     revision = status.get("selection_revision", status["updated_at"])
     render_timeline(rows[:500], payload.get("timelines", {}), key="collector", revision=revision)
     render_attempts(view.get("attempts"))
-    render_collected_dns(view.get("dns"), revision=revision)
+    from .ui_behavior import name_scores, scored
+    render_collected_dns(view.get("dns"), revision=revision, behavior_scores=name_scores(scored(state_dir, cti_db_path)))
     if coverage:
         reference = dict(payload["full_report"])
         failure_message = tr("Full report changed or is unavailable. Refresh this page and retry; no unverified archive is served.")
