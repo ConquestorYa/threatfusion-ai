@@ -25,6 +25,11 @@ framing is retired. No release date or tag is set.
 
 ### Fixed
 
+- The collector no longer keeps other devices' local discovery chatter (mDNS,
+  LLMNR, NetBIOS, SSDP, broadcast/multicast). On campus Wi-Fi it had filled the
+  collection window and emptied the review list; the Zeek guide adds a matching
+  capture filter (DEC-098).
+
 - Site age on a shared-platform name (for example `*.web.app`) showed "lookup
   failed"; it now reports the platform (the registry answered 400 for names
   below a registered domain).

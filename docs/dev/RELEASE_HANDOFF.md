@@ -2,6 +2,20 @@
 
 Newest section first. Status date: 2026-10-13.
 
+## Local discovery chatter filtered; P2 restarted as v2 (2026-10-13, DEC-098)
+
+- P2 v1 failed A4 on 2026-10-13: ~2 h on campus Wi-Fi produced ~1.16M DNS-log
+  rows from ~990 other devices (mDNS/LLMNR/NetBIOS). Three hourly logs were
+  rejected (16 MiB limit) and the rest filled the 100k window, trimming every
+  review item, so the review list was empty. Kept as a result (plan
+  `on_failure`); v1 logs stay private and serve as ML development data.
+- Fix: the collector skips local discovery rows (`skipped_local_discovery_rows`);
+  the Zeek guide adds a matching capture filter. Verified: unit tests, and the
+  pinned Zeek image with the filter on a crafted pcap (multicast, broadcast and
+  unicast mDNS dropped; a unicast HTTPS flow kept).
+- `real-traffic-p2-7d-v2` is prepared with this release and the Zeek filter;
+  the user starts it with its `kur.sh` (stops v1 first).
+
 ## Review marks, new logo, P2 7-day run started (2026-10-12)
 
 - P2 `real-traffic-p2-7d-v1` started 2026-10-11T19:56Z (user ran `kur.sh`;

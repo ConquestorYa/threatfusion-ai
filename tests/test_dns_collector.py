@@ -367,3 +367,22 @@ def test_old_snapshot_without_dns_stays_readable(paths):
     payload["collector"]["policy"] = "closed-zeek-collector-v1"
     (state / "connections.json").write_text(json.dumps(payload))
     assert "dns" not in read_snapshot(state)
+
+
+def test_local_discovery_dns_rows_are_skipped_by_the_collector(paths):
+    source, state = paths
+    base = int(NOW.timestamp()) - 4000
+    rows = [[base + i, f"M{i}", "10.20.0.7", 5353, "224.0.0.251", 5353, "udp", 0, f"printer{i}.local",
+             "PTR", "NOERROR", "-"] for i in range(40)]
+    rows += [[base + 100 + i, f"L{i}", "10.20.0.8", 50000 + i, "224.0.0.252", 5355, "udp", 7, f"desk{i}",
+              "A", "-", "-"] for i in range(10)]
+    rows.append([base + 500, "D1", "192.0.2.10", 51000, "192.0.2.1", 53, "udp", 9, "example.com", "A",
+                 "NOERROR", "93.184.216.34"])
+    (source / "dns.log").write_text(log(rows))
+    with module.ZeekCollector(source, state) as collector:
+        counts = collector.tick(now=NOW)["counts"]
+    assert counts["rejected_files"] == 0
+    assert counts["retained_dns_records"] == 1
+    assert counts["skipped_local_discovery_rows"] == 50
+    # Uploads and prepared shards keep every row.
+    assert len(parse_zeek_dns_transactions(log(rows))) == 51

@@ -22,10 +22,10 @@ from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from .connections import ConnectionRecord
+from .connections import ConnectionRecord, is_local_discovery
 from .models import IOCRecord
 from .cti_cache import CTICacheReader
-from .dns_zeek import parse_zeek_dns_transactions_with_skips
+from .dns_zeek import parse_zeek_dns_collection
 from .dns_collection import build_dns_snapshot, transaction_payload
 from .expected_connections import MAX_RULE_BYTES, parse_expected_connections
 from .network_telemetry import parse_zeek_conn_log_with_diagnostics
@@ -280,7 +280,8 @@ class ZeekCollector:
         indicators = tuple(indicators)
         counts = {"imported_files": 0, "duplicate_files": 0, "unchanged_files": 0,
                   "open_files": 0, "rejected_files": 0, "new_records": 0, "trimmed_records": 0,
-                  "new_dns_records": 0, "new_connection_records": 0, "skipped_questionless_dns_rows": 0}
+                  "new_dns_records": 0, "new_connection_records": 0, "skipped_questionless_dns_rows": 0,
+                  "skipped_local_discovery_rows": 0}
         # Finish directory validation before committing any file from this scan.
         inventory = sorted(_candidates(self.root))
         manifests = [path for path in inventory if path.name == MANIFEST]
@@ -328,14 +329,16 @@ class ZeekCollector:
                     counts["duplicate_files"] += 1
                     continue
                 if kind == "dns":
-                    records, skipped = parse_zeek_dns_transactions_with_skips(text)
+                    records, skipped, local = parse_zeek_dns_collection(text)
                     timestamps = [r.event.timestamp for r in records]
                 else:
                     parsed = parse_zeek_conn_log_with_diagnostics(text)
                     if (parsed.diagnostics.skipped_missing_query_name or parsed.diagnostics.invalid_timestamps
                         or parsed.diagnostics.invalid_response_ips or parsed.diagnostics.invalid_connection_fields):
                         raise ValueError("Collector source contains invalid records")
-                    records = parsed.connections
+                    records = [r for r in parsed.connections
+                               if not is_local_discovery(r.responder_ip, r.responder_port, r.protocol)]
+                    local = len(parsed.connections) - len(records)
                     timestamps = [r.timestamp for r in records]
                 if any(timestamp and timestamp.timestamp() > epoch + 300 for timestamp in timestamps):
                     raise ValueError("Collector source is ahead of the trusted clock")
@@ -363,6 +366,7 @@ class ZeekCollector:
                 counts["new_dns_records" if kind == "dns" else "new_connection_records"] += inserted
                 counts["trimmed_records"] += trimmed
                 counts["imported_files"] += 1
+                counts["skipped_local_discovery_rows"] += local
                 if kind == "dns":
                     counts["skipped_questionless_dns_rows"] += skipped
             except (ValueError, OSError, UnicodeError, EOFError, zlib.error) as error:

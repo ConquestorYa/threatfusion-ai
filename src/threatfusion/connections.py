@@ -1,6 +1,7 @@
 """Typed passive Zeek connection evidence and conservative review context."""
 from __future__ import annotations
 
+import ipaddress
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
@@ -11,6 +12,25 @@ LONG_SESSION_SECONDS = 3600
 MIN_TIMESTAMPS = 20
 MIN_SPAN_SECONDS = 1800
 PERIODICITY_SCORE = 0.85
+# Local-network discovery chatter: NetBIOS name/datagram, SSDP, WS-Discovery,
+# mDNS, LLMNR. On a busy shared network (campus, office) a laptop hears these
+# from hundreds of other devices; they never leave the local network.
+LOCAL_DISCOVERY_UDP_PORTS = frozenset({137, 138, 1900, 3702, 5353, 5355})
+
+
+def is_local_discovery(responder_ip: str | None, responder_port: int | str | None, protocol: str | None) -> bool:
+    """Multicast/broadcast or local name-service traffic, which is not internet evidence."""
+    try:
+        address = ipaddress.ip_address(str(responder_ip or "").strip())
+    except ValueError:
+        address = None
+    if address is not None and (address.is_multicast or address == ipaddress.IPv4Address("255.255.255.255")):
+        return True
+    try:
+        port = int(responder_port) if responder_port not in (None, "", "-") else None
+    except (TypeError, ValueError):
+        port = None
+    return str(protocol or "").lower() == "udp" and port in LOCAL_DISCOVERY_UDP_PORTS
 
 
 @dataclass(frozen=True)

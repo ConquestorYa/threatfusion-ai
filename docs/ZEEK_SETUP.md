@@ -12,7 +12,7 @@ Zeek only sees packets that pass through the interface it listens on.
 
 | Placement | What is visible | Needs | Status |
 | --- | --- | --- | --- |
-| This computer's own interface | This computer's traffic only (a Wi-Fi card in normal mode never sees other devices) | Nothing extra | Validated |
+| This computer's own interface | This computer's traffic, plus other devices' local broadcast/multicast chatter on the same network (filtered out below) | Nothing extra | Validated |
 | This computer as gateway for a wired PC | That PC's traffic on the shared Ethernet port | Ethernet cable, NetworkManager connection sharing | Not yet validated |
 | This computer's Wi-Fi hotspot | Devices you join to the hotspot | A Wi-Fi card that supports AP mode alongside client mode | Not yet validated |
 | Whole network | Every device | Router/switch port mirroring, or an OpenWrt router | Not yet validated |
@@ -52,10 +52,19 @@ docker run -d --name tf-zeek --restart unless-stopped --network host \
   --cap-add NET_RAW --cap-add NET_ADMIN \
   -v ~/zeek-sensor:/w -w /w/logs \
   zeek/zeek@sha256:f0582e7ba4a81fb55145fc03eddb6aefe70dbceee1d47df69f9bb781be952f6d \
-  zeek -b -C -i wlp63s0 /w/threatfusion.zeek
+  zeek -b -C -i wlp63s0 /w/threatfusion.zeek \
+  -f 'not ether multicast and not (udp port 137 or udp port 138 or udp port 1900 or udp port 3702 or udp port 5353 or udp port 5355)'
 ```
 
 - `-b` loads only the two scripts above: no HTTP, TLS, certificate or file logs.
+- `-f …` drops local-network discovery chatter (broadcast/multicast frames,
+  NetBIOS, SSDP, WS-Discovery, mDNS, LLMNR). On a busy shared network such as
+  campus Wi-Fi, hundreds of other devices announce themselves this way; in the
+  project's own test one afternoon produced over a million such DNS-log rows,
+  which made hourly logs too large to import and filled the collector window.
+  None of it leaves the local network. The collector also skips these rows
+  (`skipped_local_discovery_rows`) for sensors set up without the filter, but
+  only Zeek's filter keeps the files small.
 - `-C` ignores checksums; a computer capturing its own outgoing packets usually
   sees invalid checksums because the network card computes them later.
 - Hourly rotation matters. The collector imports a log only after Zeek closes it

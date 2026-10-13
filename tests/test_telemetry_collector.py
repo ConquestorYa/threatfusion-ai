@@ -278,3 +278,38 @@ def test_complete_managed_application_exposes_collector_but_hosted_profile_does_
     public.run(timeout=20)
     assert not public.exception and all(b.key != "nav_collector" for b in public.button)
     assert not public.dataframe
+
+
+def test_local_discovery_chatter_is_not_retained(paths):
+    """Campus Wi-Fi: hundreds of other devices' mDNS/LLMNR/NetBIOS/SSDP never fill the window."""
+    source, state = paths
+    base = int(NOW.timestamp()) - 9000
+    chatter = [[base + i, f"M{i}", f"10.20.{i // 250}.{i % 250 + 1}", 5353, responder, port, "udp",
+                0, 50, 0, "S0", 0]
+               for i, (responder, port) in enumerate([("224.0.0.251", 5353), ("ff02::fb", 5353),
+                                                      ("224.0.0.252", 5355), ("10.20.255.255", 137),
+                                                      ("239.255.255.250", 1900), ("255.255.255.255", 67)] * 50)]
+    own = [[base + i * 300, f"C{i}", "192.0.2.1", 40000 + i, "198.51.100.1", 443, "tcp", 1, 100, 200, "SF", 0]
+           for i in range(12)]
+    rows = chatter + own
+    (source / "conn.log").write_text("#separator \\x09\n#path\tconn\n#fields\t" + "\t".join(FIELDS) + "\n"
+                                     + "".join("\t".join(map(str, row)) + "\n" for row in rows)
+                                     + "#close\t2026-10-04-18-00-00\n")
+    with module.ZeekCollector(source, state) as collector:
+        counts = collector.tick(now=NOW)["counts"]
+    assert counts["rejected_files"] == 0
+    assert counts["retained_records"] == 12
+    assert counts["skipped_local_discovery_rows"] == 300
+
+
+def test_local_discovery_rule_keeps_ordinary_traffic():
+    from threatfusion.connections import is_local_discovery
+
+    assert is_local_discovery("224.0.0.251", 5353, "udp")
+    assert is_local_discovery("ff02::1:3", 5355, "udp")
+    assert is_local_discovery("192.168.1.255", "137", "udp")
+    assert is_local_discovery("255.255.255.255", 67, "udp")
+    assert not is_local_discovery("192.168.1.1", 53, "udp")
+    assert not is_local_discovery("198.51.100.1", 443, "tcp")
+    assert not is_local_discovery("198.51.100.1", 5353, "tcp")
+    assert not is_local_discovery("not-an-ip", None, None)

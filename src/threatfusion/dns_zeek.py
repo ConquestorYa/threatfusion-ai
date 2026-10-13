@@ -7,6 +7,7 @@ import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
+from .connections import is_local_discovery
 from .dns import DNSEvent, DNSParseDiagnostics, DNSParseResult, parse_response_ips
 
 
@@ -122,7 +123,7 @@ def _response_code(row: dict[str, str]) -> str | None:
 
 
 def _parse_zeek_dns_log(
-    content: str, transactions: list[ZeekDNSTransaction] | None = None
+    content: str, transactions: list[ZeekDNSTransaction] | None = None, local_skips: list[int] | None = None
 ) -> DNSParseResult:
     """Parse a Zeek dns.log text export without networking."""
     if content is None or not content.strip():
@@ -191,6 +192,9 @@ def _parse_zeek_dns_log(
         row = dict(zip(fields, values, strict=False))
         total_rows += 1
 
+        if local_skips is not None and is_local_discovery(row.get("id.resp_h"), row.get("id.resp_p"), row.get("proto")):
+            local_skips[0] += 1
+            continue
         query_name = _optional_zeek_text(row.get("query"))
         if query_name is None:
             # Question-less responses carry no name to group or match; the
@@ -250,6 +254,15 @@ def parse_zeek_dns_transactions_with_skips(
     transactions: list[ZeekDNSTransaction] = []
     result = _parse_zeek_dns_log(content, transactions)
     return tuple(transactions), result.diagnostics.skipped_missing_query_name
+
+
+def parse_zeek_dns_collection(content: str) -> tuple[tuple[ZeekDNSTransaction, ...], int, int]:
+    """Collector rows without local discovery chatter (mDNS, LLMNR, NetBIOS):
+    transactions, skipped question-less rows, skipped local-discovery rows."""
+    transactions: list[ZeekDNSTransaction] = []
+    local = [0]
+    result = _parse_zeek_dns_log(content, transactions, local)
+    return tuple(transactions), result.diagnostics.skipped_missing_query_name, local[0]
 
 
 def parse_zeek_dns_transactions(content: str) -> tuple[ZeekDNSTransaction, ...]:

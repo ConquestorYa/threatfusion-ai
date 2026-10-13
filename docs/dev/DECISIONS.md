@@ -1105,3 +1105,19 @@ hidden with the older button count as known. Threat-list items stay visible
 whatever the mark. The marks are also the labels of the P2 7-day run, so they
 must exist before it ends. Unnamed connections are keyed by the address shown on
 screen; the collector's notification only matches names.
+
+## DEC-098: Local discovery chatter is not collected
+
+**Decision (2026-10-13):** the collector skips connection and DNS rows that are
+local-network discovery traffic: multicast or limited-broadcast destinations,
+and UDP to NetBIOS (137/138), SSDP (1900), WS-Discovery (3702), mDNS (5353) or
+LLMNR (5355). They are counted in `counts.skipped_local_discovery_rows`. The
+Zeek setup guide adds a matching capture filter (`-f`) so the files stay small.
+Uploads and prepared shards keep every row.
+
+**Why:** in the P2 run, about two hours on campus Wi-Fi produced ~1.16M DNS-log
+rows from ~990 other devices (mDNS 77 %, LLMNR 13 %, NetBIOS 10 %). Three hourly
+logs exceeded the 16 MiB import limit and the rest filled the 100,000-record
+window, so the user's own review items were trimmed out. This traffic never
+leaves the local network and is not evidence about the internet destinations
+ThreatFusion reviews.
