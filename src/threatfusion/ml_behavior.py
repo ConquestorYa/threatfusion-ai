@@ -2,8 +2,11 @@
 
 One group is (device, destination IP, port, protocol) within a 24-hour window.
 Features describe timing regularity, sizes, durations, failures, the port and
-whether the destination had a (popular) DNS name. No destination address, name
-or time of day enters the model, so it cannot memorize a network.
+whether the destination had a DNS name and how random that name looks. No
+destination address, name or time of day enters the model, so it cannot
+memorize a network. Whether a name is popular is kept for the plain-language
+reasons only: schema 1 learned "popular name = harmless" as a shortcut.
+DNS resolver traffic (port 53/853) is out of scope; the DNS views cover it.
 
 The model is a random forest stored as plain JSON (no pickle) and scored here in
 pure Python. It is trained locally (`scripts/lab`) and never shipped in Git: it
@@ -23,7 +26,7 @@ from statistics import median
 from .connections import is_local_discovery
 
 MODEL_KIND = "threatfusion-behavior-forest"
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 WINDOW_SECONDS = 86400
 MIN_CONNECTIONS = 4
 MAX_MODEL_BYTES = 32 * 1024 * 1024
@@ -34,9 +37,10 @@ FEATURES = (
     "log_connections", "log_span", "active_hours", "log_interval_median", "interval_cv",
     "interval_regular_share", "interval_mad_ratio", "log_out_bytes_median", "log_in_bytes_median",
     "out_bytes_cv", "in_bytes_cv", "out_bytes_mode_share", "log_duration_median", "duration_cv",
-    "failed_share", "empty_share", "log_bytes_ratio", "port_web", "port_dns", "port_low",
-    "protocol_udp", "has_name", "popular_name",
+    "failed_share", "empty_share", "log_bytes_ratio", "port_web", "port_low", "protocol_udp",
+    "has_name", "log_rate", "name_entropy", "name_digit_share",
 )
+DNS_PORTS = frozenset({53, 853})
 
 
 @dataclass(frozen=True)
@@ -85,10 +89,28 @@ def scorable(responder: str, port: int | None, protocol: str) -> bool:
         address = ipaddress.ip_address(responder)
     except ValueError:
         return False
-    return address.is_global and not is_local_discovery(responder, port, protocol)
+    return address.is_global and port not in DNS_PORTS and not is_local_discovery(responder, port, protocol)
 
 
-def group_features(rows: list[Connection], *, named: bool, popular: bool) -> dict[str, float]:
+def _name_shape(name: str) -> tuple[float, float]:
+    """Character entropy and digit share of the longest label below the top-level domain."""
+    labels = [label for label in name.lower().rstrip(".").split(".")[:-1] if label]
+    if not labels:
+        return 0.0, 0.0
+    label = max(labels, key=len)
+    counts = Counter(label)
+    entropy = -sum(n / len(label) * math.log2(n / len(label)) for n in counts.values())
+    return entropy, sum(ch.isdigit() for ch in label) / len(label)
+
+
+def name_randomness(names) -> tuple[float, float]:
+    """The most random-looking of a destination's names (entropy, digit share); zeros without a name."""
+    shapes = [_name_shape(n) for n in names]
+    return max(shapes) if shapes else (0.0, 0.0)
+
+
+def group_features(rows: list[Connection], *, names=(), popular: bool = False) -> dict[str, float]:
+    """Model features (FEATURES) plus `popular_name`, which only feeds `reasons`."""
     rows = sorted(rows, key=lambda r: r.timestamp)
     times = [r.timestamp for r in rows]
     gaps = [b - a for a, b in zip(times, times[1:]) if b - a > 0]
@@ -99,6 +121,7 @@ def group_features(rows: list[Connection], *, named: bool, popular: bool) -> dic
     durations = [float(r.duration or 0) for r in rows]
     port, protocol = rows[0].port, rows[0].protocol
     mode_count = Counter(out_bytes).most_common(1)[0][1]
+    entropy, digits = name_randomness(names)
     return {
         "log_connections": _log(len(rows)),
         "log_span": _log(times[-1] - times[0]),
@@ -119,10 +142,12 @@ def group_features(rows: list[Connection], *, named: bool, popular: bool) -> dic
         "empty_share": sum(not r.out_bytes and not r.in_bytes for r in rows) / len(rows),
         "log_bytes_ratio": max(-10.0, min(10.0, _log(median(out_bytes)) - _log(median(in_bytes)))),
         "port_web": float(port in WEB_PORTS),
-        "port_dns": float(port in (53, 853)),
         "port_low": float(port is not None and port < 1024),
         "protocol_udp": float(protocol == "udp"),
-        "has_name": float(named),
+        "has_name": float(bool(names)),
+        "log_rate": _log(len(rows) / max(0.25, (times[-1] - times[0]) / 3600)),
+        "name_entropy": entropy,
+        "name_digit_share": digits,
         "popular_name": float(popular),
     }
 
@@ -144,7 +169,7 @@ def build_groups(connections: list[Connection], names: dict[str, set[str]], is_p
         if len(rows) < MIN_CONNECTIONS:
             continue
         responder_names = names.get(responder, set())
-        features = group_features(rows, named=bool(responder_names),
+        features = group_features(rows, names=responder_names,
                                   popular=any(is_popular_name(n) for n in responder_names))
         groups.append(Group(originator, responder, port, protocol, end - index * window_seconds, len(rows),
                             min(r.timestamp for r in rows), max(r.timestamp for r in rows), features))
@@ -213,11 +238,11 @@ def reasons(features: dict[str, float]) -> list[str]:
         found.append("all_day")
     if not features["has_name"]:
         found.append("no_name")
-    elif not features["popular_name"]:
+    elif not features.get("popular_name"):
         found.append("rare_name")
     if features["failed_share"] >= 0.5:
         found.append("failing")
-    if not features["port_web"] and not features["port_dns"]:
+    if not features["port_web"]:
         found.append("unusual_port")
     if features["log_out_bytes_median"] <= math.log1p(300) and features["log_connections"] >= math.log1p(8):
         found.append("small")

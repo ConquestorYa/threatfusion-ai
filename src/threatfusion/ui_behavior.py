@@ -343,9 +343,9 @@ FEATURE_NAMES = {
     "out_bytes_cv": "Sent-size variation", "in_bytes_cv": "Received-size variation",
     "out_bytes_mode_share": "Same size each time", "log_duration_median": "Connection length",
     "duration_cv": "Length variation", "failed_share": "Failed attempts", "empty_share": "Empty connections",
-    "log_bytes_ratio": "Sent vs received", "port_web": "Web port", "port_dns": "DNS port",
+    "log_bytes_ratio": "Sent vs received", "port_web": "Web port",
     "port_low": "System port", "protocol_udp": "UDP", "has_name": "Has a website name",
-    "popular_name": "Popular website",
+    "log_rate": "Connections per hour", "name_entropy": "Random-looking name", "name_digit_share": "Digits in name",
 }
 FEATURE_NAMES_TR = {
     "log_connections": "Bağlantı sayısı", "log_span": "Zaman aralığı", "active_hours": "Aktif saatler",
@@ -356,8 +356,8 @@ FEATURE_NAMES_TR = {
     "out_bytes_mode_share": "Her seferinde aynı boyut", "log_duration_median": "Bağlantı süresi",
     "duration_cv": "Süre değişkenliği (bağlantı)", "failed_share": "Başarısız denemeler",
     "empty_share": "Boş bağlantılar", "log_bytes_ratio": "Gönderilen / alınan", "port_web": "Web portu",
-    "port_dns": "DNS portu", "port_low": "Sistem portu", "protocol_udp": "UDP",
-    "has_name": "Site adı var", "popular_name": "Popüler site",
+    "port_low": "Sistem portu", "protocol_udp": "UDP", "has_name": "Site adı var",
+    "log_rate": "Saatteki bağlantı", "name_entropy": "Rastgele görünen ad", "name_digit_share": "Addaki rakamlar",
 }
 LIMITS = """- The malware recordings are Windows lab infections from 2011–2021; new malware can behave differently.
 - Some connections in those recordings are ordinary background traffic, so the labels are approximate.

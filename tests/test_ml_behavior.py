@@ -27,9 +27,23 @@ def test_groups_keep_internet_destinations_only():
     groups = mb.build_groups(rows, {"1.1.1.1": {"one.one.one.one"}}, lambda name: True)
     assert [(g.responder, g.connections) for g in groups] == [("1.1.1.1", 30)]
     features = groups[0].features
-    assert set(features) == set(mb.FEATURES)
+    assert set(features) == set(mb.FEATURES) | {"popular_name"}
+    assert "popular_name" not in mb.FEATURES  # schema 1 learned it as a shortcut
     assert features["interval_regular_share"] == 1.0 and features["has_name"] == 1.0
     assert features["popular_name"] == 1.0 and features["port_web"] == 1.0
+    assert features["name_entropy"] > 1.5 and features["name_digit_share"] == 0.0
+
+
+def test_dns_resolver_traffic_is_out_of_scope():
+    rows = _connections("8.8.8.8", port=53, protocol="udp") + _connections("9.9.9.9", port=853)
+    assert mb.build_groups(rows, {}, lambda name: False) == []
+
+
+def test_random_looking_names_score_higher_than_words():
+    plain, = mb.name_randomness(["www.example.com"])[:1]
+    random_, digits = mb.name_randomness(["www.example.com", "x7k2q9vz4m1p.top"])
+    assert random_ > plain and digits > 0.3
+    assert mb.name_randomness([]) == (0.0, 0.0)
 
 
 def test_groups_split_into_two_windows_from_the_newest_connection():
