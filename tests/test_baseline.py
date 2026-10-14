@@ -24,8 +24,19 @@ def test_destinations_are_new_only_after_the_learning_period():
     assert not b.is_new("10.0.0.2", keys, LEARNING_DAYS)
     assert b.is_new("10.0.0.2", {"ip:3.3.3.3"}, LEARNING_DAYS)
     # During learning nothing is new.
-    b.update([_c(0, "4.4.4.4", device="10.0.0.9")], {})
-    assert not b.is_new("10.0.0.9", {"ip:4.4.4.4"}, 0)
+    fresh = Baseline()
+    fresh.update([_c(0, "4.4.4.4", device="10.0.0.9")], {})
+    assert not fresh.is_new("10.0.0.9", {"ip:4.4.4.4"}, 0)
+
+
+def test_memory_survives_address_changes_of_the_same_computer():
+    b = Baseline()
+    # Three days at home (one address), then the laptop joins another network (new address).
+    b.update([_c(d, "1.1.1.1", device="192.168.1.20") for d in range(3)], {})
+    b.update([_c(3, "1.1.1.1", device="10.40.7.88"), _c(3, "5.5.5.5", device="10.40.7.88")], {})
+    assert not b.learning("10.40.7.88", 3)
+    assert not b.is_new("10.40.7.88", {"ip:1.1.1.1"}, 3)
+    assert b.is_new("10.40.7.88", {"ip:5.5.5.5"}, 3)
 
 
 def test_updates_are_idempotent_and_skip_local_destinations():

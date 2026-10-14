@@ -11,7 +11,14 @@ Newest section first. Status date: 2026-10-14.
   The Experimental ML tab now lists destinations that are new for the device
   and repeat at rhythm ≥ 0.8 (`ui_new_destinations.py`): development burden 0.5
   per normal device-day. No malware-catch claim (2/6 SME-11 C2 units were new).
-- Binding check: replay P2 v2 days after 2026-10-20 (`baseline-burden-v2`).
+- Binding check: replay P2 v2 days after 2026-10-20 (`baseline-burden-v2`,
+  amended three times before any P2 v2 read: display fix, one card per site
+  with site-wide marks, memory across all devices).
+- The memory is judged across all devices of the sensor: the user's laptop
+  showed 10 originator addresses (network changes, rotating IPv6 privacy
+  addresses), so per-address memory would never have finished learning.
+- Collector page refresh: the local identity view is built once per refresh
+  (1.35 s → 0.80 s on a real 1.8 MB snapshot).
 
 ## Behavior ML v2 failed; next: rhythm score and own-baseline (2026-10-14)
 

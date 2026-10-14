@@ -2,10 +2,13 @@
 
 The app keeps a small private file of destinations per device (registrable
 domain when a DNS name is known, the IP address otherwise) with the first and
-last day each was seen. A destination is *new* when no key of it was seen
-before the day it first appeared, once the device has a few earlier days of
-history (the learning period). New destinations that keep being called are
-worth a look; one-off new sites are normal browsing.
+last day each was seen. A destination is *new* when no device of this sensor
+used any key of it before the day it first appeared, once the sensor has a few
+earlier days of history (the learning period). The memory is judged across all
+devices together: a laptop's own address changes between networks and IPv6
+privacy addresses rotate daily, so per-address memory would never finish
+learning. New destinations that keep being called are worth a look; one-off
+new sites are normal browsing.
 
 The file is derived from the user's own traffic: it stays in the install
 directory (0600) and never leaves the computer. It is only updated while the
@@ -92,17 +95,17 @@ class Baseline:
                 device["seen"] = dict(newest)
 
     def history_days(self, device: str, before: int) -> int:
-        return sum(day < before for day in self.devices.get(device, {}).get("days", ()))
+        """Days with traffic before `before`, across all devices (see the module note)."""
+        return len({day for entry in self.devices.values() for day in entry.get("days", ()) if day < before})
 
     def learning(self, device: str, day: int) -> bool:
         return self.history_days(device, day) < LEARNING_DAYS
 
     def first_day(self, device: str, keys: set[str]) -> int | None:
-        seen = self.devices.get(device, {}).get("seen", {})
-        days = [seen[key][0] for key in keys if key in seen]
+        days = [entry["seen"][key][0] for entry in self.devices.values() for key in keys if key in entry.get("seen", {})]
         return min(days) if days else None
 
     def is_new(self, device: str, keys: set[str], day: int) -> bool:
-        """New on `day` (or later): no key was seen earlier, and the device is past its learning period."""
+        """New on `day` (or later): no device used a key earlier, and the sensor is past its learning period."""
         first = self.first_day(device, keys)
         return first is not None and first >= day and not self.learning(device, first)

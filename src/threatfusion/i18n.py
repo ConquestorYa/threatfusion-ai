@@ -239,7 +239,7 @@ _TR: dict[str, str] = {
     "{count} of {devices} device(s) have enough history.": "{devices} cihazdan {count} tanesinin yeterli geçmişi var.",
     "Rhythm": "Ritim",
     "Why it is listed": "Neden listede",
-    "First time this device used it": "Bu cihaz ilk kez kullanıyor",
+    "First time seen on this computer": "Bu bilgisayarda ilk kez görüldü",
     "Repeats {every}": "{every} tekrarlıyor",
     "about every {n} h": "yaklaşık {n} saatte bir",
     "about every {n} min": "yaklaşık {n} dakikada bir",

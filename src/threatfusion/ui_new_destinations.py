@@ -28,15 +28,15 @@ REFRESH_SECONDS = 300
 MAX_SHOWN = 20
 MAX_TIMES = 500
 
-GUIDE = """**What is this?** ThreatFusion remembers which sites and addresses each of your devices has used before. This list shows destinations that are **new** for the device and that it **keeps calling at a steady rhythm**, the way a program that "calls home" does. New apps and updaters can look the same.
+GUIDE = """**What is this?** ThreatFusion remembers which sites and addresses your devices have used before. This list shows destinations that are **new** and that it **keeps calling at a steady rhythm**, the way a program that "calls home" does. New apps and updaters can look the same.
 
-**Learning:** a device needs 3 earlier days before anything counts as new. The memory only grows while ThreatFusion is open, and it never leaves this computer.
+**Learning:** ThreatFusion needs 3 earlier days of traffic before anything counts as new. The memory covers all devices it sees together, so a laptop that changes networks keeps its memory. The memory only grows while ThreatFusion is open, and it never leaves this computer.
 
 **How was it tested?** On public research recordings (CTU-SME-11) and a few days of this computer's traffic: about 0.5 entries per normal device per day. It is a reason to look, not a malware verdict."""
 
-GUIDE_TR = """**Bu nedir?** ThreatFusion her cihazının daha önce hangi sitelerle ve adreslerle konuştuğunu hatırlar. Bu liste, cihaz için **yeni** olan ve cihazın **düzenli bir ritimle aramaya devam ettiği** hedefleri gösterir; "eve telefon eden" bir program böyle davranır. Yeni uygulamalar ve güncelleyiciler de aynı görünebilir.
+GUIDE_TR = """**Bu nedir?** ThreatFusion cihazlarının daha önce hangi sitelerle ve adreslerle konuştuğunu hatırlar. Bu liste **yeni** olan ve cihazın **düzenli bir ritimle aramaya devam ettiği** hedefleri gösterir; "eve telefon eden" bir program böyle davranır. Yeni uygulamalar ve güncelleyiciler de aynı görünebilir.
 
-**Öğrenme:** Bir şeyin yeni sayılması için cihazın en az 3 günlük geçmişi olmalı. Bu hafıza yalnızca ThreatFusion açıkken büyür ve bilgisayardan hiç çıkmaz.
+**Öğrenme:** Bir şeyin yeni sayılması için en az 3 günlük trafik geçmişi gerekir. Hafıza gördüğü tüm cihazları birlikte kapsar; böylece ağ değiştiren bir dizüstü bilgisayar hafızasını kaybetmez. Bu hafıza yalnızca ThreatFusion açıkken büyür ve bilgisayardan hiç çıkmaz.
 
 **Nasıl test edildi?** Herkese açık araştırma kayıtlarında (CTU-SME-11) ve bu bilgisayarın birkaç günlük trafiğinde: normal bir cihazda günde yaklaşık 0,5 kayıt. Bakmak için bir sebeptir, zararlı yazılım kararı değildir."""
 
@@ -169,7 +169,7 @@ def _card(row, labels, labels_path, ip_owner, suspicious_sites=frozenset()):
                             count=len(row["others"]), addresses=", ".join(row["others"][:5])))
         right.metric(tr("Rhythm"), f"{round(row['score'] * 100)}/100")
         st.markdown("**" + tr("Why it is listed") + ":** " + " · ".join((
-            tr("First time this device used it"), tr("Repeats {every}", every=_every(row["interval"])),
+            tr("First time seen on this computer"), tr("Repeats {every}", every=_every(row["interval"])),
             tr("{count} connections", count=row["connections"]))))
         if row["times"]:
             st.caption(tr("Connection rhythm · {count} connections, {first} – {last}", count=row["connections"],
