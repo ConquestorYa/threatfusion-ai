@@ -2,6 +2,17 @@
 
 Newest section first. Status date: 2026-10-14.
 
+## "New for this computer" list in the ML tab (2026-10-14)
+
+- `rhythm.py` (fixed beaconing score) failed alone: normal traffic has
+  near-perfect rhythms, so a ≤ 1/day line is 0.99 and catches nothing.
+- `baseline.py` remembers each device's destinations (private
+  `<install>/ml/baseline.json`, 0600, only while the app runs; 3 learning days).
+  The Experimental ML tab now lists destinations that are new for the device
+  and repeat at rhythm ≥ 0.8 (`ui_new_destinations.py`): development burden 0.5
+  per normal device-day. No malware-catch claim (2/6 SME-11 C2 units were new).
+- Binding check: replay P2 v2 days after 2026-10-20 (`baseline-burden-v2`).
+
 ## Behavior ML v2 failed; next: rhythm score and own-baseline (2026-10-14)
 
 - Feature schema 2 (8130bb9) drops the popularity shortcut. v2 (CTU-SME-11 +

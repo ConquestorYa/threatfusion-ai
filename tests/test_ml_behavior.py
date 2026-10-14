@@ -139,7 +139,8 @@ def test_tab_explains_when_no_model_exists(tmp_path):
         "from pathlib import Path\nfrom threatfusion.ui_behavior import render_behavior_tab\n"
         f"render_behavior_tab(Path({str(tmp_path / 'collector')!r}))\n"
     ).run(timeout=15)
-    assert not app.exception and "No behavior model" in app.info[0].value
+    assert not app.exception and any("No behavior model" in c.value for c in app.caption)
+    assert any("New for this computer" in m.value for m in app.markdown)
 
 
 def test_model_evaluation_page_reports_the_measured_results(tmp_path):
@@ -204,3 +205,32 @@ def test_name_scores_take_the_strongest_group_per_name():
     rows = [{"score": 0.9, "names": ["a.test"]}, {"score": 0.6, "names": ["a.test", "b.test"]}]
     assert name_scores((model, rows)) == {"a.test": (90, "High"), "b.test": (60, "Medium")}
     assert name_scores(None) == {}
+
+
+def test_new_destination_with_a_steady_rhythm_is_listed_after_learning(tmp_path):
+    from threatfusion.baseline import Baseline
+    state = _collector_with_beacon(tmp_path)
+    (tmp_path / "ml" / "behavior-model.json").unlink()
+    today = int(datetime.now(timezone.utc).timestamp() // 86400)
+    history = Baseline()
+    history.update([mb.Connection((today - d) * 86400 + 100, "192.0.2.1", "8.8.4.4", 443, "tcp", 0.1, 1, 1, "SF")
+                    for d in (3, 4, 5)], {})
+    history.save(tmp_path / "ml" / "baseline.json")
+    script = ("from pathlib import Path\nfrom threatfusion.ui_behavior import render_behavior_tab\n"
+              f"render_behavior_tab(Path({str(state)!r}))\n")
+    app = AppTest.from_string(script).run(timeout=20)
+    assert not app.exception
+    assert any("1.1.1.1" in m.value for m in app.markdown)
+    assert {m.label: m.value for m in app.metric}["Rhythm"].endswith("/100")
+    app.button(key="new-known-new:1.1.1.1:8081").click().run(timeout=20)
+    assert not app.exception and not any(m.value.startswith("#### 1.1.1.1") for m in app.markdown)
+    # The memory now includes the beacon, so it stays known on later days.
+    assert "ip:1.1.1.1" in Baseline.load(tmp_path / "ml" / "baseline.json").devices["192.0.2.1"]["seen"]
+
+
+def test_new_destinations_wait_for_three_days_of_history(tmp_path):
+    state = _collector_with_beacon(tmp_path)
+    app = AppTest.from_string(
+        "from pathlib import Path\nfrom threatfusion.ui_new_destinations import render_new_destinations\n"
+        f"render_new_destinations(Path({str(state)!r}))\n").run(timeout=20)
+    assert not app.exception and "Learning what is normal" in app.info[0].value

@@ -11,6 +11,14 @@ The current unreleased state is an early prototype of a local Zeek/CTI
 investigation tool (DEC-090); the earlier v0.1.0 portfolio-release-candidate
 framing is retired. No release date or tag is set.
 
+### Added
+
+- Experimental ML tab: "New for this computer" lists destinations a device
+  never used before that it keeps calling at a steady rhythm. It learns each
+  device's normal destinations locally (3 days, private file, never uploaded).
+  A reason to look, not a malware verdict; measured at about 0.5 entries per
+  normal device-day in development.
+
 ### Documentation
 
 - READMEs rewritten around Zeek network investigation; new Zeek sensor setup

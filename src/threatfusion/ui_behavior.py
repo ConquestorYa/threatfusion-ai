@@ -236,11 +236,12 @@ def render_behavior_tab(state_dir: Path, *, cti_db_path: Path | None = None, ip_
     install_dir = state_dir.parent
     path = model_path(install_dir)
     st.caption(tr("Experimental · a machine-learning hint beside What to check, never a verdict"))
+    from .ui_new_destinations import render_new_destinations
+    render_new_destinations(state_dir, cti_db_path=cti_db_path, ip_owner=ip_owner)
     if not path.exists():
-        st.info(tr("No behavior model on this computer yet. It is trained locally from public malware "
-                   "recordings and this computer's own traffic, and is never downloaded from the internet."))
-        with st.expander(tr("What is this?")):
-            st.markdown(_guide())
+        st.markdown("### " + tr("Behavior model"))
+        st.caption(tr("No behavior model on this computer yet. It is trained locally from public malware "
+                      "recordings and this computer's own traffic, and is never downloaded from the internet."))
         return
     try:
         modified = path.stat().st_mtime

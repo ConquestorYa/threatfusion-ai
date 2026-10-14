@@ -1374,3 +1374,34 @@ public data is too scarce and too capture-specific for a supervised verdict.
 beaconing score, checked against synthetic beacons and SME-11 C2), and the app
 learns this computer's own baseline ("unusual for this computer") and the
 user's review marks, which need no malware labels.
+
+## Rhythm score: failed alone (2026-10-14)
+
+Private root `ml-rhythm-v1` (plan `7bcb61f9…`, summary `927dd0e0…`). A fixed
+RITA-style score (`rhythm.py`: Bowley skew and MAD regularity of gaps and sent
+sizes, coverage, small payloads; no training). One line set on development
+benign data (MCFP normal dev, the user's dev day; ≤ 1 flag per day): it rose
+to **0.990**, because normal traffic already contains near-perfect rhythms
+(updaters, push and sync). At that line: 0 % of synthetic beacons at any
+jitter, 0 / 7 CTU-SME-11 C2 units, 0 / 52 recent captures, 0 false flags.
+**Reading:** rhythm cannot separate call-home malware from normal software on
+its own. Not shown as a detector.
+
+## New for this computer + rhythm (2026-10-14)
+
+Private roots `baseline-burden-v1` (plan `abc46914…`, summary `e3fbe87a…`) and
+`baseline-burden-v2` (plan `5302983f…`, amendment). Each device is replayed day
+by day with a memory of earlier days only (`baseline.py`: registrable domain,
+or the IP without a name; 3 learning days).
+
+| Measure (development) | Result | Limit | Pass |
+| --- | --- | --- | --- |
+| New destinations with ≥ 4 connections per normal SME-11 device-day | 14.7 (max 163) | ≤ 10 | ✗ |
+| … of those also rhythm ≥ 0.8, per normal SME-11 device-day / user day | 0.5 / 0.0 (1 day) | ≤ 1 | ✓ |
+| SME-11 C2 destinations that were new when first seen (after learning) | 2 / 6 | ≥ 50 % for any catch claim | ✗ |
+
+**Decision.** The full list is too long. The app shows only the narrow list
+(new for the device **and** steady rhythm) in the Experimental ML tab, as "a
+reason to look, not a malware verdict", with no catch claim. Its burden is
+development grade (the narrowing was chosen after seeing v1); the binding check
+replays the untouched P2 v2 days (≤ 1 entry per active day) after the run ends.
