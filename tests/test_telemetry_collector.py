@@ -220,6 +220,26 @@ def test_collector_ui_bilingual_snapshot_and_public_boundary(paths):
     assert not public.exception and not public.dataframe and not public.metric
 
 
+def test_collector_page_revalidates_the_local_identity_view_once_per_refresh(paths):
+    source, state = paths
+    (source / "conn.log").write_text(text(long=True))
+    with module.ZeekCollector(source, state) as collector:
+        collector.tick(now=datetime.now(timezone.utc))
+    app = AppTest.from_string(
+        "from pathlib import Path\nimport threatfusion.collector_identity as identity\n"
+        "from threatfusion.ui_collector import render_collector\n"
+        "original = identity.local_identity_view\ncalls = []\n"
+        "def counted(*args):\n    calls.append(1)\n    return original(*args)\n"
+        "identity.local_identity_view = counted\n"
+        "try:\n"
+        f"    render_collector(Path({str(state)!r}), public_mode=False)\n"
+        "finally:\n    identity.local_identity_view = original\n"
+        "import streamlit as st\nst.caption(f'identity calls: {len(calls)}')\n"
+    ).run(timeout=15)
+    assert not app.exception and app.dataframe[0].value.iloc[0]["Originator"] == "192.0.2.1"
+    assert app.caption[-1].value == "identity calls: 1"
+
+
 def test_real_process_sigterm_releases_lock_and_restart_is_idempotent(paths):
     source, state = paths
     (source / "conn.log").write_text(text())

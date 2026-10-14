@@ -134,29 +134,31 @@ def render_collector(state_dir: Path | None, *, public_mode: bool, cti_db_path: 
     except OSError:
         pass  # Notifications then follow the system language.
     summary, behavior, details = st.tabs([tr("What to check"), tr("Experimental ML"), tr("Details")])
+    # One revalidated local view per refresh, shared by the review list and Details.
+    local_view = _local_view(state_dir, payload)
     with summary:
         st.caption(tr("Last {hours} hours · threat lists + unusual behavior · updates every 10 s",
                       hours=status.get("window_seconds", 86400) // 3600))
-        render_review_list(_local_view(state_dir, payload), labels_path=state_dir.parent / "review-labels.json",
+        render_review_list(local_view or payload, labels_path=state_dir.parent / "review-labels.json",
                            legacy_hidden_path=state_dir.parent / "review-hidden.json",
                            ip_owner=ip_owner_lookup(cti_db_path))
     with behavior:
         from .ui_behavior import render_behavior_tab
         render_behavior_tab(state_dir, cti_db_path=cti_db_path, ip_owner=ip_owner_lookup(cti_db_path))
     with details:
-        _render_details(state_dir, payload, status, counts, cti_db_path)
+        _render_details(state_dir, payload, status, counts, cti_db_path, local_view=local_view)
 
 
 def _local_view(state_dir, payload):
-    """Real IPs on this screen (the user's own machine); downloads keep aliases."""
+    """Real IPs on this screen (the user's own machine); downloads keep aliases. None if unavailable."""
     from .collector_identity import local_identity_view
     try:
         return local_identity_view(state_dir, payload)
     except (OSError, ValueError, TypeError, KeyError):
-        return payload
+        return None
 
 
-def _render_details(state_dir, payload, status, counts, cti_db_path=None):
+def _render_details(state_dir, payload, status, counts, cti_db_path=None, *, local_view=None):
     with st.expander(tr("What does this page do?")):
         st.markdown(tr(COLLECTOR_GUIDE))
     st.caption(tr("Completed Zeek logs are collected automatically. This view refreshes every 10 seconds; active files wait for rotation."))
@@ -199,10 +201,9 @@ def _render_details(state_dir, payload, status, counts, cti_db_path=None):
     render_review_summary(payload["findings"], coverage)
     view = payload
     if st.checkbox(tr("Show observed endpoint IPs locally; downloads keep aliases"), value=True, key="collector_local_ips"):
-        from .collector_identity import local_identity_view
-        try:
-            view = local_identity_view(state_dir, payload)
-        except (OSError, ValueError, TypeError, KeyError):
+        if local_view is not None:
+            view = local_view
+        else:
             st.warning(tr("Private identity mapping is unavailable or changed. Restart the updated collector; aliases remain visible."))
     reviews = st.checkbox(tr("Show only connection reviews"), value=True, key="collector_reviews_only")
     expected = st.checkbox(tr("Include declared expected activity"), value=False, key="collector_show_expected")
