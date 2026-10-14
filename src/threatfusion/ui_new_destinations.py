@@ -18,7 +18,7 @@ import streamlit as st
 
 from .baseline import Baseline, day_of, destination_keys, simple_registrable
 from .i18n import tr
-from .ml_behavior import WINDOW_SECONDS
+from .ml_behavior import WINDOW_SECONDS, scorable
 from .rhythm import rhythms
 from .ui_simple_review import _rerun, item_key, load_labels, lookup_links, save_label
 
@@ -77,12 +77,12 @@ def new_destinations(db_path: str, baseline_path: str, cti_db: str | None, bucke
     for values in times.values():
         values.sort()
     rows = []
-    learning = set()
-    devices = {c.originator for c in connections if c.originator}
+    today = day_of(time.time())
+    devices = {c.originator for c in connections if c.originator and scorable(c.responder, c.port, c.protocol)}
+    learning = {device for device in devices if base.learning(device, today)}
     for group in rhythms(connections):
         day = day_of(group.first_seen)
         if base.learning(group.originator, day):
-            learning.add(group.originator)
             continue
         listed = sorted(names.get(group.responder, ()))
         keys = destination_keys(group.responder, listed, registrable)
@@ -173,9 +173,12 @@ def render_new_destinations(state_dir: Path, *, cti_db_path: Path | None = None,
     shown.sort(key=lambda r: ((labels.get(item_key(_item(r))) or {}).get("label") != "suspicious", -r["score"]))
     if shown:
         st.caption(tr("{count} new destination(s) called at a steady rhythm in the last 48 hours.", count=len(shown)))
-    elif result["learning"] and len(result["learning"]) == result["devices"]:
+    elif result["learning"]:
         st.info(tr("Learning what is normal for this computer. New destinations are shown after 3 days of "
                    "history while ThreatFusion is open."))
+        if len(result["learning"]) < result["devices"]:
+            st.caption(tr("{count} of {devices} device(s) have enough history.",
+                          count=result["devices"] - len(result["learning"]), devices=result["devices"]))
     else:
         st.success(tr("No new destination is calling at a steady rhythm."))
     for row in shown[:MAX_SHOWN]:

@@ -234,3 +234,18 @@ def test_new_destinations_wait_for_three_days_of_history(tmp_path):
         "from pathlib import Path\nfrom threatfusion.ui_new_destinations import render_new_destinations\n"
         f"render_new_destinations(Path({str(state)!r}))\n").run(timeout=20)
     assert not app.exception and "Learning what is normal" in app.info[0].value
+
+
+def test_learning_is_shown_even_when_a_device_has_no_rhythm_groups(tmp_path):
+    from threatfusion.baseline import Baseline
+    state = _collector_with_beacon(tmp_path)
+    today = int(datetime.now(timezone.utc).timestamp() // 86400)
+    history = Baseline()
+    history.update([mb.Connection((today - d) * 86400 + 100, "192.0.2.1", "1.1.1.1", 8081, "tcp", 0.1, 1, 1, "SF")
+                    for d in (3, 4, 5)], {})
+    history.save(tmp_path / "ml" / "baseline.json")
+    app = AppTest.from_string(
+        "from pathlib import Path\nfrom threatfusion.ui_new_destinations import render_new_destinations\n"
+        f"render_new_destinations(Path({str(state)!r}))\n").run(timeout=20)
+    # The only device has history and its beacon is known: nothing new, no learning notice.
+    assert not app.exception and not app.info and app.success
