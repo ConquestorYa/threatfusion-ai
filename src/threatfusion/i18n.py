@@ -234,6 +234,8 @@ _TR: dict[str, str] = {
     "{count} new destination(s) called at a steady rhythm in the last 48 hours.": "Son 48 saatte {count} yeni hedef düzenli bir ritimle arandı.",
     "Learning what is normal for this computer. New destinations are shown after 3 days of history while ThreatFusion is open.": "Bu bilgisayar için neyin normal olduğu öğreniliyor. ThreatFusion açıkken 3 günlük geçmiş birikince yeni hedefler gösterilecek.",
     "No new destination is calling at a steady rhythm.": "Düzenli ritimle aranan yeni bir hedef yok.",
+    "Also {count} other address(es) of the same site: {addresses}": "Aynı sitenin {count} başka adresi daha: {addresses}",
+    "{count} hidden because you marked the same site as known elsewhere.": "Aynı siteyi başka bir yerde tanıdık olarak işaretlediğin için {count} kayıt gizlendi.",
     "{count} of {devices} device(s) have enough history.": "{devices} cihazdan {count} tanesinin yeterli geçmişi var.",
     "Rhythm": "Ritim",
     "Why it is listed": "Neden listede",

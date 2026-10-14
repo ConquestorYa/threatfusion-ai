@@ -249,3 +249,31 @@ def test_learning_is_shown_even_when_a_device_has_no_rhythm_groups(tmp_path):
         f"render_new_destinations(Path({str(state)!r}))\n").run(timeout=20)
     # The only device has history and its beacon is known: nothing new, no learning notice.
     assert not app.exception and not app.info and app.success
+
+
+def test_marks_apply_to_the_whole_site_and_addresses_of_one_site_share_a_card(tmp_path):
+    from threatfusion.ui_new_destinations import group_by_site, marked_sites
+    from threatfusion.baseline import simple_registrable
+    rows = [{"device": "d", "address": a, "port": 443, "domain": "cdn.test" if a != "9.9.9.9" else None, "score": s}
+            for a, s in (("1.1.1.1", 0.9), ("2.2.2.2", 0.95), ("9.9.9.9", 0.85))]
+    cards = group_by_site(rows)
+    assert [(c["address"], c["others"]) for c in cards] == [("2.2.2.2", ["1.1.1.1:443"]), ("9.9.9.9", [])]
+    labels = {"connection:api.cdn.test": {"label": "known"}, "new:evil.example:8080": {"label": "suspicious"},
+              "dns:8.8.8.8": {"label": "known"}, "ml:1.2.3.4:443": {"label": "suspicious"}}
+    assert marked_sites(labels, simple_registrable) == ({"cdn.test"}, {"evil.example"})
+
+
+def test_a_site_marked_known_on_another_list_hides_its_new_entry(tmp_path):
+    from threatfusion.baseline import Baseline
+    from threatfusion.ui_simple_review import save_label
+    state = _collector_with_beacon(tmp_path)
+    today = int(datetime.now(timezone.utc).timestamp() // 86400)
+    history = Baseline()
+    history.update([mb.Connection((today - d) * 86400 + 100, "192.0.2.1", "8.8.4.4", 443, "tcp", 0.1, 1, 1, "SF")
+                    for d in (3, 4, 5)], {})
+    history.save(tmp_path / "ml" / "baseline.json")
+    save_label(tmp_path / "review-labels.json", "connection:1.1.1.1", "known")  # an IP title: not a site
+    script = ("from pathlib import Path\nfrom threatfusion.ui_new_destinations import render_new_destinations\n"
+              f"render_new_destinations(Path({str(state)!r}))\n")
+    app = AppTest.from_string(script).run(timeout=20)
+    assert not app.exception and any(m.value.startswith("#### 1.1.1.1") for m in app.markdown)

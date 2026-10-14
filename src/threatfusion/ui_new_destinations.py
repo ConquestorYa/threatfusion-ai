@@ -92,13 +92,52 @@ def new_destinations(db_path: str, baseline_path: str, cti_db: str | None, bucke
         start = bisect_right(own, group.window_end - WINDOW_SECONDS)
         rows.append({"device": group.originator, "address": group.responder, "port": group.port,
                      "protocol": group.protocol, "name": listed[0] if listed else None, "names": listed,
+                     "domain": registrable(listed[0]) if listed else None,
                      "connections": group.connections, "first": group.first_seen, "last": group.last_seen,
                      "interval": group.interval, "score": group.score,
                      "times": own[start:bisect_right(own, group.window_end)][-MAX_TIMES:]})
     best = {}
     for row in sorted(rows, key=lambda r: -r["score"]):
         best.setdefault((row["device"], row["address"], row["port"]), row)
-    return {"rows": list(best.values()), "learning": sorted(learning), "devices": len(devices)}
+    return {"rows": group_by_site(list(best.values())), "learning": sorted(learning), "devices": len(devices)}
+
+
+def group_by_site(rows: list[dict]) -> list[dict]:
+    """One card per device and site: addresses of the same registrable domain join the strongest row."""
+    cards: dict[tuple, dict] = {}
+    for row in sorted(rows, key=lambda r: -r["score"]):
+        key = (row["device"], row["domain"]) if row.get("domain") else (row["device"], row["address"], row["port"])
+        if key in cards:
+            cards[key]["others"].append(f"{row['address']}:{row['port']}")
+        else:
+            cards[key] = {**row, "others": []}
+    return list(cards.values())
+
+
+def _title_domain(title: str, registrable) -> str | None:
+    """Registrable domain of a review item's title ("name", "name:port"); None for addresses."""
+    from ipaddress import ip_address
+    head, _, tail = title.rpartition(":")
+    name = head if head and tail.isdigit() else title
+    try:
+        ip_address(name)
+        return None
+    except ValueError:
+        pass
+    return registrable(name) if "." in name else None
+
+
+def marked_sites(labels: dict, registrable) -> tuple[set[str], set[str]]:
+    """Sites (registrable domains) the user marked as known and as suspicious, on any list."""
+    known, suspicious = set(), set()
+    for key, entry in labels.items():
+        _, _, title = key.partition(":")
+        domain = _title_domain(title, registrable)
+        if domain and entry.get("label") == "known":
+            known.add(domain)
+        elif domain and entry.get("label") == "suspicious":
+            suspicious.add(domain)
+    return known, suspicious - known
 
 
 def _item(row) -> dict:
@@ -113,17 +152,21 @@ def _every(seconds: float) -> str:
     return tr("about every {n} s", n=round(seconds))
 
 
-def _card(row, labels, labels_path, ip_owner):
+def _card(row, labels, labels_path, ip_owner, suspicious_sites=frozenset()):
     from .ui_behavior import _clock, _rhythm_chart
     item = _item(row)
     current = (labels.get(item_key(item)) or {}).get("label")
+    shown_mark = current or ("suspicious" if row.get("domain") in suspicious_sites else None)
     with st.container(border=True):
         left, right = st.columns([3, 1])
-        badge = {"suspicious": " · " + tr("🟣 Suspicious"), "unsure": " · " + tr("⚪ Not sure")}.get(current, "")
+        badge = {"suspicious": " · " + tr("🟣 Suspicious"), "unsure": " · " + tr("⚪ Not sure")}.get(shown_mark, "")
         left.markdown(f"#### {row['name'] or row['address']}{badge}")
         owner = ip_owner(row["address"]) if ip_owner else None
         left.markdown(f"`{row['device']}` → `{row['address']}:{row['port']}/{row['protocol']}`"
                       + (f" · {owner.label}" if owner else ""))
+        if row.get("others"):
+            left.caption(tr("Also {count} other address(es) of the same site: {addresses}",
+                            count=len(row["others"]), addresses=", ".join(row["others"][:5])))
         right.metric(tr("Rhythm"), f"{round(row['score'] * 100)}/100")
         st.markdown("**" + tr("Why it is listed") + ":** " + " · ".join((
             tr("First time this device used it"), tr("Repeats {every}", every=_every(row["interval"])),
@@ -168,9 +211,20 @@ def render_new_destinations(state_dir: Path, *, cti_db_path: Path | None = None,
     labels_path = install_dir / "review-labels.json"
     labels = load_labels(labels_path)
     rows = result["rows"]
-    hidden = [r for r in rows if (labels.get(item_key(_item(r))) or {}).get("label") == "known"]
-    shown = [r for r in rows if r not in hidden]
-    shown.sort(key=lambda r: ((labels.get(item_key(_item(r))) or {}).get("label") != "suspicious", -r["score"]))
+    known_sites, suspicious_sites = marked_sites(labels, _registrable(str(cti_db_path) if cti_db_path else None))
+
+    def mark(row):
+        own = (labels.get(item_key(_item(row))) or {}).get("label")
+        if own:
+            return own
+        if row.get("domain") in known_sites:
+            return "known_site"
+        return "suspicious" if row.get("domain") in suspicious_sites else None
+
+    hidden = [r for r in rows if mark(r) == "known"]
+    hidden_by_site = [r for r in rows if mark(r) == "known_site"]
+    shown = [r for r in rows if mark(r) not in ("known", "known_site")]
+    shown.sort(key=lambda r: (mark(r) != "suspicious", -r["score"]))
     if shown:
         st.caption(tr("{count} new destination(s) called at a steady rhythm in the last 48 hours.", count=len(shown)))
     elif result["learning"]:
@@ -182,8 +236,10 @@ def render_new_destinations(state_dir: Path, *, cti_db_path: Path | None = None,
     else:
         st.success(tr("No new destination is calling at a steady rhythm."))
     for row in shown[:MAX_SHOWN]:
-        _card(row, labels, labels_path, ip_owner)
+        _card(row, labels, labels_path, ip_owner, suspicious_sites)
     if hidden:
         st.caption(tr("{count} you marked as known are hidden.", count=len(hidden)))
+    if hidden_by_site:
+        st.caption(tr("{count} hidden because you marked the same site as known elsewhere.", count=len(hidden_by_site)))
     with st.expander(tr("What is this?")):
         st.markdown(_guide())
