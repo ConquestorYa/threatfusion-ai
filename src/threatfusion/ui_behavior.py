@@ -40,15 +40,15 @@ ADVICE = """1. **Do you recognize it?** Updaters, chat, music, cloud sync and ga
 2. **Which program is it?** While it is active, this command shows the program talking to that address (add `sudo` to see every program):
 """
 
-GUIDE = """**What is this?** An experimental machine-learning model looks at *how* your devices talk to each destination, not at names or threat lists: how regularly connections repeat, how much is sent each time, how long they last, whether they fail, the port, and whether the destination had a popular website name. Malware that "calls home" often has a recognizable rhythm.
+GUIDE = """**What is this?** An experimental machine-learning model looks at *how* your devices talk to each destination, not at names or threat lists: how regularly connections repeat, how much is sent each time, how long they last, whether they fail, the port, and whether the destination had a website name and how random it looks. Malware that "calls home" often has a recognizable rhythm.
 
-**How was it tested?** It learned from public research recordings of real malware (Stratosphere Lab, Czech Technical University) and normal computers, plus a few days of this computer's own traffic. It was then tested once on recordings it had never seen.
+**How was it tested?** It learned from public research recordings of real malware and normal computers (Stratosphere Lab, Czech Technical University; Malware-Traffic-Analysis.net), plus a few days of this computer's own traffic. It was then tested once on recordings it had never seen.
 
 **How to use it:** A high score is a reason to look, not proof. Updaters, chat apps and sync tools can look similar. Mark what you recognize; your marks help the next version. This tab does not change What to check."""
 
-GUIDE_TR = """**Bu nedir?** Deneysel bir makine öğrenmesi modeli, cihazlarının her hedefle *nasıl* konuştuğuna bakar; adlara ya da tehdit listelerine değil: bağlantılar ne kadar düzenli tekrarlıyor, her seferinde ne kadar veri gidiyor, ne kadar sürüyor, başarısız oluyor mu, hangi port kullanılıyor ve hedefin popüler bir site adı var mı. "Eve telefon eden" zararlı yazılımların çoğunun tanınabilir bir ritmi vardır.
+GUIDE_TR = """**Bu nedir?** Deneysel bir makine öğrenmesi modeli, cihazlarının her hedefle *nasıl* konuştuğuna bakar; adlara ya da tehdit listelerine değil: bağlantılar ne kadar düzenli tekrarlıyor, her seferinde ne kadar veri gidiyor, ne kadar sürüyor, başarısız oluyor mu, hangi port kullanılıyor, hedefin bir site adı var mı ve bu ad ne kadar rastgele görünüyor. "Eve telefon eden" zararlı yazılımların çoğunun tanınabilir bir ritmi vardır.
 
-**Nasıl test edildi?** Gerçek zararlı yazılımların ve normal bilgisayarların herkese açık araştırma kayıtlarından (Stratosphere Lab, Çek Teknik Üniversitesi) ve bu bilgisayarın birkaç günlük kendi trafiğinden öğrendi. Sonra hiç görmediği kayıtlarda bir kez test edildi.
+**Nasıl test edildi?** Gerçek zararlı yazılımların ve normal bilgisayarların herkese açık araştırma kayıtlarından (Stratosphere Lab, Çek Teknik Üniversitesi; Malware-Traffic-Analysis.net) ve bu bilgisayarın birkaç günlük kendi trafiğinden öğrendi. Sonra hiç görmediği kayıtlarda bir kez test edildi.
 
 **Nasıl kullanılır?** Yüksek puan bakmak için bir sebeptir, kanıt değildir. Güncelleyiciler, sohbet ve eşitleme programları benzer görünebilir. Tanıdıklarını işaretle; işaretlerin bir sonraki sürümün daha iyi öğrenmesine yardım eder. Bu sekme Bakılacaklar listesini değiştirmez."""
 
@@ -360,7 +360,7 @@ FEATURE_NAMES_TR = {
     "port_low": "Sistem portu", "protocol_udp": "UDP", "has_name": "Site adı var",
     "log_rate": "Saatteki bağlantı", "name_entropy": "Rastgele görünen ad", "name_digit_share": "Addaki rakamlar",
 }
-LIMITS = """- The malware recordings are Windows lab infections from 2011–2021; new malware can behave differently.
+LIMITS = """- The malware recordings are lab infections from 2011–2024; new malware can behave differently.
 - Some connections in those recordings are ordinary background traffic, so the labels are approximate.
 - This computer's own traffic was assumed to be normal and covers only a few days. A stricter check on new days of this computer's traffic is running.
 - A group needs at least 4 connections to the same destination within a day; single or rare connections are not scored."""
