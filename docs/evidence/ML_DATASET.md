@@ -1345,3 +1345,32 @@ labels from CTU-SME-11 (2023, CC BY 4.0) instead of capture heuristics, no
 dropped classes, training windows of random length (minutes to a day),
 synthetic jittered beacons injected into real benign traffic, first-seen and
 DNS features, and P2 v2 days for the user's false flags.
+
+## Connection-behavior model v2: failed (2026-10-14)
+
+Private root `ml-behavior-dev-v2` (plan `e73a4585…`). Feature schema 2
+(`ml_behavior.py`, commit 8130bb9): `popular_name` removed from model inputs,
+DNS resolver traffic (53/853) out of scope, new rate and name-randomness
+features. Training adds CTU-SME-11 (Zenodo 7958259, CC BY 4.0; 8 devices with
+complete archives, per-flow expert labels) and Malware-Traffic-Analysis.net
+2023–2024, with 1 h / 6 h / 24 h training windows. Chosen on MCFP development
+captures: random forest, leaf 5, depth 24, line 0.867.
+
+| Test | Result | Limit | Pass |
+| --- | --- | --- | --- |
+| T1 CTU-SME-11 leave-one-device-out, malware units caught | 57 % (4 / 7: Redline, Remcos exfiltration, Octo, honeypot attacker; missed Trickbot, AgentTesla, Remcos tool access) | ≥ 50 % | ✓ |
+| T2 MCFP held-out malware captures caught | 54.7 % (35 / 64) | ≥ 50 % | ✓ |
+| T3 Recent malware 2025–2026 captures caught (development grade) | 17.3 % (9 / 52) | ≥ 50 % | ✗ |
+| T4 False flags per day: MCFP normal held-out / user eval day | 0.33 (6 host-days) / 0.0 (1 day) | ≤ 1 | ✓ |
+| T5 Synthetic beacons caught, jitter 0 / 10 / 20 % | 8 / 27 / 20 % | ≥ 70 % | ✗ |
+
+**Reading.** Removing the popularity shortcut helped (recent 3 % → 17 %;
+MCFP 41 % → 55 %), but the model still learns what lab malware captures look
+like — byte sizes lead the importance — not command-and-control rhythm: a
+perfectly regular synthetic beacon is caught 8 % of the time. Labeled C2 in
+public data is too scarce and too capture-specific for a supervised verdict.
+
+**Decision.** Not installed. Next: rhythm is scored directly (a measured
+beaconing score, checked against synthetic beacons and SME-11 C2), and the app
+learns this computer's own baseline ("unusual for this computer") and the
+user's review marks, which need no malware labels.

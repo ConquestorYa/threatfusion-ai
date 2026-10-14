@@ -2,6 +2,16 @@
 
 Newest section first. Status date: 2026-10-14.
 
+## Behavior ML v2 failed; next: rhythm score and own-baseline (2026-10-14)
+
+- Feature schema 2 (8130bb9) drops the popularity shortcut. v2 (CTU-SME-11 +
+  MCFP + MTA 2023–2024) passed SME-11 leave-one-device-out (57 %), MCFP
+  held-out (55 %) and false flags (≤ 0.33/day) but failed recent malware
+  2025–2026 (17 %) and synthetic beacons (8–27 %). Not installed.
+- User-approved queue: unusual-for-this-computer baseline, learning from
+  review marks, grouping similar connections. LLM explanation deferred by the
+  user.
+
 ## Behavior ML v1 failed; views ready without a model (2026-10-14, DEC-099)
 
 - Experimental behavior views shipped (5bc55a2) but only show results when a
