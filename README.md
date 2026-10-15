@@ -31,7 +31,8 @@ your own Linux machine; your traffic never leaves it.
 > **Status: early prototype.** The full workflow works: install, CTI updates,
 > continuous Zeek collection, a plain review list and investigation. The first
 > 24-hour test on real traffic flagged far too much; those defects were fixed
-> and a **7-day test on real traffic is running until 2026-10-21**. How well it
+> and a **7-day test on real traffic** is under way (restarted after a
+> collector defect it found was fixed). How well it
 > catches real malware has **not** been measured yet. It is not a SIEM, EDR,
 > IDS or malware scanner.
 
@@ -168,7 +169,7 @@ also off. Full history: [ML evaluation](docs/evidence/ML_DATASET.md).
 | One laptop, 24 h of normal real traffic | 59 groups for review, all benign; only 3 decidable from the screen alone. Fixed: names on connections, popular-site and local-name context, a plain review list ([results](docs/evidence/REAL_TRAFFIC_EVALUATION.md#arm-a-first-24-hours-results)) |
 | First 7-day run on campus Wi-Fi | Failed collector health: other devices' local discovery chatter filled the window. Fixed (collector filter + Zeek capture filter) and restarted ([status](docs/evidence/REAL_TRAFFIC_EVALUATION.md)) |
 | Machine learning on public malware recordings | Malware-recognition models failed; "New for this computer" passed its development burden check ([ML evaluation](docs/evidence/ML_DATASET.md)) |
-| **In progress / not yet measured** | 7-day false alarms on real traffic (ends 2026-10-21), detection of labeled real malware, usefulness for other users |
+| **In progress / not yet measured** | 7-day false alarms on real traffic (in progress), detection of labeled real malware, usefulness for other users |
 
 All records: [documentation](docs/README.md#evidence).
 

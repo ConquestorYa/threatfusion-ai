@@ -31,8 +31,8 @@ Kendi Linux bilgisayarında çalışır; trafiğin bilgisayarından dışarı ç
 > **Durum: erken prototip.** İş akışının tamamı çalışıyor: kurulum, CTI
 > güncellemeleri, sürekli Zeek toplama, sade bir inceleme listesi ve inceleme
 > ekranları. Gerçek trafikle yapılan ilk 24 saatlik test çok fazla işaret
-> üretti; bu kusurlar düzeltildi ve **gerçek trafikle 7 günlük test 21 Ekim
-> 2026'ya kadar sürüyor**. Gerçek zararlı yazılımı ne kadar yakaladığı **henüz
+> üretti; bu kusurlar düzeltildi ve **gerçek trafikle 7 günlük test** sürüyor (bulduğu bir
+> toplayıcı hatası düzeltildikten sonra yeniden başlatıldı). Gerçek zararlı yazılımı ne kadar yakaladığı **henüz
 > ölçülmedi.** SIEM, EDR, IDS ya da virüs tarayıcı değildir.
 
 ## Ne yapar
@@ -174,7 +174,7 @@ Eski alan adı puanı modeli de kapalı. Tüm geçmiş:
 | Bir laptop, 24 saat normal gerçek trafik | 59 inceleme grubu, hepsi zararsız; yalnızca 3'ü ekrandaki bilgiyle karara bağlanabildi. Düzeltildi: bağlantılarda adlar, popüler site ve yerel ad bağlamı, sade bir inceleme listesi ([sonuçlar](docs/evidence/REAL_TRAFFIC_EVALUATION.md#arm-a-first-24-hours-results)) |
 | Kampüs Wi-Fi'ında ilk 7 günlük deneme | Toplayıcı sağlık kontrolü başarısız: diğer cihazların yerel ağ duyuruları pencereyi doldurdu. Düzeltildi (toplayıcı filtresi + Zeek yakalama filtresi) ve yeniden başlatıldı ([durum](docs/evidence/REAL_TRAFFIC_EVALUATION.md)) |
 | Herkese açık zararlı kayıtlarıyla makine öğrenmesi | Zararlıyı tanıyan modeller başarısız; "Bu bilgisayar için yeni" geliştirme yük kontrolünü geçti ([ML değerlendirmesi](docs/evidence/ML_DATASET.md)) |
-| **Sürüyor / henüz ölçülmedi** | Gerçek trafikte 7 günlük yanlış alarm (21 Ekim 2026'da bitiyor), etiketli gerçek zararlıyı yakalama, başka kullanıcılar için faydası |
+| **Sürüyor / henüz ölçülmedi** | Gerçek trafikte 7 günlük yanlış alarm (sürüyor), etiketli gerçek zararlıyı yakalama, başka kullanıcılar için faydası |
 
 Tüm kayıtlar: [dokümantasyon](docs/README.md#evidence).
 

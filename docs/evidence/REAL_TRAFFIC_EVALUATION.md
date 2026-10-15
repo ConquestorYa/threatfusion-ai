@@ -1,7 +1,7 @@
 # P2 real-traffic evaluation
 
-Status (2026-10-16): **the 7-day run is in progress (v2, 2026-10-13T21:24Z to
-2026-10-20T21:24Z); results are added when it ends.**
+Status (2026-10-16): **7-day run v2 was interrupted by a collector defect; v3 is
+prepared on the fixed release and starts when the user runs it.**
 
 - Arm A, first 24 h (2026-10-11): 3 of 5 limits failed; results below. The
   product defects found were fixed before the 7-day run (DEC-094).
@@ -11,6 +11,12 @@ Status (2026-10-16): **the 7-day run is in progress (v2, 2026-10-13T21:24Z to
   rejected and the collection window filled up. Kept as a result; fixed by
   DEC-098 (collector skips local discovery, Zeek capture filter), then
   restarted as v2 on new days.
+- 7-day run v2 (started 2026-10-13T21:24Z): from 2026-10-14T16:00Z the
+  collector exited on every start. A popular host's many URLhaus URLs pushed
+  the DNS IOC evidence over its 250,000-match safety limit, so the review list
+  stopped updating (records were still imported; Zeek kept logging). Kept as a
+  result; fixed in `cbe021a` (at most 20 indicators per matched name or
+  address); v3 measures the fix on new days.
 
 The design that follows is unchanged.
 
