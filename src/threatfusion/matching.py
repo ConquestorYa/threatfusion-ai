@@ -12,6 +12,11 @@ from .normalization import normalize_ioc_value
 
 MAX_IOC_MATCHES = 250_000
 MAX_MATCH_LOOKUPS = 1_000_000
+# Indicators kept per matched name or address. URLhaus lists thousands of file
+# URLs on popular hosts (github.com, raw.githubusercontent.com); expanding each
+# of them for every lookup of such a host exceeded MAX_IOC_MATCHES and stopped
+# the collector. A few records per source are enough evidence.
+MAX_RECORDS_PER_KEY = 20
 
 
 def _safe_normalize_ioc_value(value: str, ioc_type: IOCType) -> str | None:
@@ -59,6 +64,24 @@ def _normalized_event_ip(event: DNSEvent) -> tuple[str, str] | None:
     return str(address), "ipv4" if address.version == 4 else "ipv6"
 
 
+def _evidence_sample(records: list[IOCRecord]) -> list[IOCRecord]:
+    """At most MAX_RECORDS_PER_KEY records, every source represented, original order kept."""
+    chosen, sources = [], set()
+    for record in records:  # first record of each source
+        if record.source not in sources:
+            sources.add(record.source)
+            chosen.append(record)
+    picked = {id(r) for r in chosen}
+    for record in records:
+        if len(chosen) >= MAX_RECORDS_PER_KEY:
+            break
+        if id(record) not in picked:
+            chosen.append(record)
+            picked.add(id(record))
+    order = {id(r): i for i, r in enumerate(records)}
+    return sorted(chosen[:max(MAX_RECORDS_PER_KEY, len(sources))], key=lambda r: order[id(r)])
+
+
 def match_dns_events(
     events: Iterable[DNSEvent],
     indicators: Iterable[IOCRecord],
@@ -101,6 +124,11 @@ def match_dns_events(
             if normalized:
                 network = ipaddress.IPv6Network(normalized)
                 ipv6_networks[(network.prefixlen, int(network.network_address))].append((order, indicator))
+
+    for index in (domain_index, url_hostname_index, ipv4_index, ipv6_index):
+        for key, records in index.items():
+            if len(records) > MAX_RECORDS_PER_KEY:
+                index[key] = _evidence_sample(records)
 
     matches: list[DNSIOCMatch] = []
     prefixes = sorted({prefix for prefix, _ in ipv6_networks})

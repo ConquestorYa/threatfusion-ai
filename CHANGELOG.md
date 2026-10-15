@@ -40,6 +40,12 @@ framing is retired. No release date or tag is set.
 
 ### Fixed
 
+- The collector stopped when a popular host appeared often in DNS: URLhaus
+  lists thousands of file URLs on hosts such as github.com, and every lookup was
+  expanded to every listed URL until the 250,000-match safety limit stopped
+  collection (P2 v2, 2026-10-14). At most 20 indicators per matched name or
+  address are now kept as evidence, every source represented.
+
 - Turkish interface: timeline charts showed English times ("08 PM", "Fri 16");
   they now use a language-neutral UTC axis. "IP owners" is translated and the
   last CTI update attempt is shown in local time.

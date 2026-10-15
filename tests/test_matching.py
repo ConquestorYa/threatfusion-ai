@@ -247,3 +247,20 @@ def test_no_networking_is_performed(monkeypatch: pytest.MonkeyPatch) -> None:
     matches = match_dns_events([event], indicators)
 
     assert [match.match_type for match in matches] == ["query_domain", "response_ip"]
+
+
+def test_popular_host_with_thousands_of_url_iocs_stays_within_the_match_limit() -> None:
+    # Regression (P2 v2, 2026-10-14): URLhaus lists thousands of file URLs on
+    # popular hosts; 300 lookups x 3,000 records exceeded 250,000 matches and
+    # stopped the collector.
+    from threatfusion.matching import MAX_RECORDS_PER_KEY
+    urls = [IOCRecord(f"https://github.com/u{i}/r/raw/a.exe", IOCType.URL, "URLhaus") for i in range(3000)]
+    urls.append(IOCRecord("https://github.com/x/y/z.bin", IOCType.URL, "ThreatFox"))
+    events = [DNSEvent(query_name="github.com") for _ in range(300)]
+
+    matches = match_dns_events(events, urls)
+
+    per_event = [m for m in matches if m.event is events[0]]
+    assert len(per_event) == MAX_RECORDS_PER_KEY
+    assert {m.indicator.source for m in per_event} == {"URLhaus", "ThreatFox"}
+    assert len(matches) == 300 * MAX_RECORDS_PER_KEY

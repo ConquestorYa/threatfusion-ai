@@ -2,6 +2,20 @@
 
 Newest section first. Status date: 2026-10-14.
 
+## Collector stopped by the IOC match limit; P2 v2 interrupted (2026-10-16)
+
+- Found while finishing the screenshots: the P2 v2 collector (release 49024ec)
+  had been restarting and exiting since 2026-10-14T16:00Z (286 restarts), with
+  "Collector stopped: check private state…". Reproduced on a private copy of
+  its state: `match_dns_events` raised "IOC evidence exceeds the 250000 match
+  limit" because URLhaus lists thousands of URLs on popular hosts and each
+  lookup expanded to all of them. Records kept being imported; the snapshot
+  step failed, so the review list stopped updating.
+- Fix: `matching.MAX_RECORDS_PER_KEY = 20` (every source kept); regression test.
+  The fixed source completes on the same state copy.
+- P2 v2's frozen candidate has this defect: per its `on_failure` the run is
+  kept as a result and the fix is measured on new days in a new root.
+
 ## Documentation and screenshots refreshed (2026-10-16, DEC-100)
 
 - README.md/README.tr.md and docs updated end to end (7-day test status,
