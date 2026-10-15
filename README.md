@@ -28,11 +28,12 @@ ThreatFusion reads your **Zeek** network logs, checks every destination against
 malware checking in**, and it tells you the reason for every flag. It runs on
 your own Linux machine; your traffic never leaves it.
 
-> **Status: early prototype.** The full workflow works and has passed the
-> developer's manual acceptance on synthetic data. The first 24-hour test on real
-> traffic flagged far too much (59 groups, all benign) and showed that the page
-> is hard to use; fixes are in progress. How well it catches real malware has **not** been
-> measured yet. It is not a SIEM, EDR, IDS or malware scanner.
+> **Status: early prototype.** The full workflow works: install, CTI updates,
+> continuous Zeek collection, a plain review list and investigation. The first
+> 24-hour test on real traffic flagged far too much; those defects were fixed
+> and a **7-day test on real traffic is running until 2026-10-21**. How well it
+> catches real malware has **not** been measured yet. It is not a SIEM, EDR,
+> IDS or malware scanner.
 
 ## What it does
 
@@ -43,38 +44,50 @@ of those conversations deserve a closer look?**
    `dns.log` and keeps the last 24 hours.
 2. **Check.** Every destination is compared with SGB, ThreatFox and URLhaus, and
    every device → destination group is checked for suspicious behavior.
-3. **Explain.** Groups that deserve a look appear as **Review**, each with its
-   reason, timeline and byte counts. Everything else stays visible as **Observe**.
+3. **Explain.** **What to check** lists only what deserves a look, threat-list
+   matches first, each with its reason, the device, the destination's network
+   owner and one-click marks: *I know this*, *Not sure*, *Suspicious*.
 
 | Check | Flags a group when | Typical cause |
 | --- | --- | --- |
-| CTI match | The destination is on a CTI list | Known malicious server |
+| CTI match | The destination (domain or IP) is on a CTI list | Known malicious server |
 | Long session | One two-way TCP session lasts at least 1 hour | Kept-open control channel, or a chat/notification app |
 | Regular repetition | 20+ connections over 30+ minutes at very regular intervals | Malware check-ins, or an updater |
 | Failed attempts | 20+ different ports/hosts, or 30+ repeated failures, within 5 minutes | Scanning, or a program retrying an unreachable server |
 
-DNS logs get a separate device → domain queue (CTI matches, regular queries,
-unusual volume). Normal software can match these rules too; the queue shows
-evidence so you can decide quickly. Details: [user guide](docs/USER_GUIDE.md#what-gets-flagged).
+DNS lookups get their own checks (CTI matches, regular queries, unusual volume).
+Popular sites and local names stay out of the list unless a CTI list matches.
+Normal software can still match these rules; every item shows its evidence so
+you can decide quickly. Details: [user guide](docs/USER_GUIDE.md#what-gets-flagged).
 
 ## Screenshots
 
-All screenshots use synthetic demo data with reserved test addresses and `.test` names.
+The screenshots come from an isolated copy of the app fed with **crafted Zeek
+logs**. The flagged names and IP are real, public indicators from the
+ThreatFox and SGB lists (an AsyncRAT command server, a RemusStealer
+command domain and a phishing domain); no traffic was sent to them, and the
+addresses the malicious names resolve to in the logs are reserved documentation
+addresses.
 
 <p align="center">
-  <img src="docs/screenshots/collected-connections.png" alt="Collected connections: device to destination groups with Review reasons" width="100%">
+  <img src="docs/screenshots/collected-connections.png" alt="What to check: three threat-list matches, a regular check-in and a failed-attempt pattern, with reasons and marks" width="100%">
 </p>
-<p align="center"><em>Collected connections: the review queue built from Zeek logs.</em></p>
+<p align="center"><em>Collected connections → What to check: threat-list matches first, then behavior. Each item says why it is listed and what to do.</em></p>
 
 <p align="center">
-  <img src="docs/screenshots/connection-investigation.png" alt="Investigation of one connection group with a timeline of connection starts" width="100%">
+  <img src="docs/screenshots/connection-investigation.png" alt="Investigation of the AsyncRAT connection group: guidance and connection starts over time" width="100%">
 </p>
-<p align="center"><em>Investigating a group: connection starts over time, states and bytes.</em></p>
+<p align="center"><em>Investigating a group: a device checking in with a listed command server every minute, over three hours.</em></p>
+
+<p align="center">
+  <img src="docs/screenshots/analyze-telemetry.png" alt="Analyze telemetry: an uploaded Zeek dns.log with two known threats and one review" width="100%">
+</p>
+<p align="center"><em>Analyze telemetry: upload one file (here a Zeek dns.log) for a one-time analysis.</em></p>
 
 <table>
 <tr>
-<td width="50%"><img src="docs/screenshots/quick-lookup.png" alt="Quick lookup of a synthetic indicator"><br><em>Quick lookup: check one URL, domain or IP without visiting it.</em></td>
-<td width="50%"><img src="docs/screenshots/setup.png" alt="Setup and CTI updates page"><br><em>Setup: your own API keys and CTI updates.</em></td>
+<td width="50%"><img src="docs/screenshots/quick-lookup.png" alt="Quick lookup of a ThreatFox command domain"><br><em>Quick lookup: check one URL, domain or IP without visiting it.</em></td>
+<td width="50%"><img src="docs/screenshots/setup.png" alt="Setup and CTI updates page"><br><em>Setup: your own API keys, CTI updates and automatic refresh.</em></td>
 </tr>
 </table>
 
@@ -88,6 +101,8 @@ bash -c 'set -e; f=$(mktemp /tmp/threatfusion-install.XXXXXXXX); trap "rm -f -- 
 ```
 
 The app opens at http://127.0.0.1:8501 on the **Setup & CTI updates** page.
+Running the same command again updates to the latest version and keeps your
+data and settings (stop the app first with `threatfusion-ai stop`).
 
 **2. Add CTI.** SGB works without a key. One free key from
 [auth.abuse.ch](https://auth.abuse.ch/) enables both ThreatFox and URLhaus.
@@ -108,24 +123,39 @@ More in [Linux installation](docs/INSTALL_LINUX.md).
 ## Also in the app
 
 - **Quick lookup:** check one URL, domain or IP against your CTI cache. No page
-  visit, no DNS lookup, no download.
+  visit, no DNS lookup, no download. Optional: a domain's registration age and
+  an IP's network owner.
 - **Analyze telemetry:** upload a single file (Zeek, DNS CSV/Excel, PCAP,
   Suricata EVE, Pi-hole, AdGuard Home, dnstop) for a one-time analysis.
+- **Desktop notification** when the collector sees traffic to a threat-list match.
 - **Demo mode** (`threatfusion-ai --mode demo`): synthetic data to try the
   interface. Its results are not measurements.
 
-An experimental machine-learning domain score exists but is **off**: the
-measured original model is unavailable and its successor produced too many
-false alarms ([evaluation history](docs/evidence/ML_DATASET.md)).
+### Experimental machine learning
+
+The **Experimental ML** tab of Collected connections shows **New for this
+computer**: destinations your devices never used before that they keep calling
+at a steady rhythm, the way a program that "calls home" does. ThreatFusion
+learns which destinations are normal for your machine (3 days, only while the
+app runs; the memory never leaves the computer). In development tests it listed
+about 0.5 entries per normal device per day. It is a reason to look, not a
+malware verdict; its binding test is the 7-day run.
+
+Models that try to recognize malware directly were trained on public research
+recordings and **failed** their declared tests (they caught 3–17 % of recent
+malware captures), so none is installed. The older lexical domain-name score is
+also off. Full history: [ML evaluation](docs/evidence/ML_DATASET.md).
 
 ## Privacy
 
 - Zeek is configured to log connection and DNS metadata only; no page addresses,
   passwords or contents. DNS names still reveal which sites you visit: keep logs
   private.
-- Logs, collector state, CTI cache and keys stay in private folders on your
-  machine. Nothing is uploaded. Downloads use aliases (`Host 1`) by default.
-- Suspicious destinations are never visited or resolved.
+- Logs, collector state, the CTI cache, the learned destination memory and keys
+  stay in private folders on your machine. Nothing is uploaded. Downloads use
+  aliases (`Host 1`) by default.
+- Suspicious destinations are never visited or resolved. Outside lookup buttons
+  (VirusTotal, AbuseIPDB, urlscan) send a name or IP only when you click.
 - You use your own API keys; none are bundled.
 
 ## Evidence so far
@@ -134,12 +164,13 @@ false alarms ([evaluation history](docs/evidence/ML_DATASET.md)).
 | --- | --- |
 | Synthetic normal and simulated traffic | Normal updaters and polling also enter Review: the rules are not yet selective enough ([review workload](docs/evidence/REVIEW_WORKLOAD.md)) |
 | Four independent IoT-23 captures (2018–2019) | 0 reviews in two benign captures; one of two malicious captures produced one review, the other none ([network evaluation](docs/evidence/NETWORK_EVALUATION.md)) |
-| Fault matrix, 6-hour soak, security reviews | 9/9 fault cases pass; after a memory fix the 6-hour soak passed 16/16 checks (collector peak 684 MiB); two security reviews ([operational confidence](docs/evidence/OPERATIONAL_CONFIDENCE.md)) |
-| One laptop, 24 h of normal real traffic | 59 groups for review, all benign; only 3 decidable from the screen alone; the collector dropped DNS hours until a fix ([real-traffic evaluation](docs/evidence/REAL_TRAFFIC_EVALUATION.md#arm-a-first-24-hours-results)) |
-| **Not yet measured** | False alarms over a full week, detection of labeled real malware, usefulness for other users |
+| Fault matrix, 6-hour soak, security reviews | 9/9 fault cases pass; the 6-hour soak passed 16/16 checks (collector peak 684 MiB); two security reviews ([operational confidence](docs/evidence/OPERATIONAL_CONFIDENCE.md)) |
+| One laptop, 24 h of normal real traffic | 59 groups for review, all benign; only 3 decidable from the screen alone. Fixed: names on connections, popular-site and local-name context, a plain review list ([results](docs/evidence/REAL_TRAFFIC_EVALUATION.md#arm-a-first-24-hours-results)) |
+| First 7-day run on campus Wi-Fi | Failed collector health: other devices' local discovery chatter filled the window. Fixed (collector filter + Zeek capture filter) and restarted ([status](docs/evidence/REAL_TRAFFIC_EVALUATION.md)) |
+| Machine learning on public malware recordings | Malware-recognition models failed; "New for this computer" passed its development burden check ([ML evaluation](docs/evidence/ML_DATASET.md)) |
+| **In progress / not yet measured** | 7-day false alarms on real traffic (ends 2026-10-21), detection of labeled real malware, usefulness for other users |
 
-Plan: [real-traffic evaluation](docs/evidence/REAL_TRAFFIC_EVALUATION.md). All
-records: [documentation](docs/README.md#evidence).
+All records: [documentation](docs/README.md#evidence).
 
 ## Related tools
 
@@ -160,9 +191,9 @@ is more useful than these tools has not been measured.
 
 ## Development
 
-Python 3.12, Streamlit, SQLite, pandas, Plotly. CI runs lint, tests, a privacy
-audit of the repository, Windows compatibility tests, a container check and
-first-run installs on Debian and Ubuntu.
+Python 3.12, Streamlit, SQLite, pandas, Altair, Plotly and scikit-learn.
+CI runs lint, tests, a privacy audit of the repository, Windows compatibility
+tests, a container check and first-run installs on Debian and Ubuntu.
 
 This project is developed with extensive AI assistance (design, code, tests and
 documentation); changes are reviewed and tested before they are merged.

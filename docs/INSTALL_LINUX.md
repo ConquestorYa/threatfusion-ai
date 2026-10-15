@@ -18,8 +18,9 @@ space for downloaded CTI. On a headless machine append `--no-browser`.
 
 ## First use: real intelligence, your own keys
 
-New installations open in **real CTI mode with ML disabled**. The cache is
-initially empty; an empty cache or a missing match does not establish safety.
+New installations open in **real CTI mode**; the lexical ML domain score is
+disabled. The cache is initially empty; an empty cache or a missing match does
+not establish safety.
 The **Setup & CTI updates** page (sidebar **Pages** list) opens first on a new install:
 
 1. Enter your own ThreatFox and URLhaus API keys if you have them; one free
@@ -47,13 +48,6 @@ as a fallback. Existing standalone developer CLI environment options remain
 separate from the managed installation.
 
 ## Automatic updates
-
-Real managed CTI mode enables private local endpoint controls while analyst
-history stays disabled. In the collector view, **Show observed endpoint IPs
-locally; downloads keep aliases** reads an owner-only local mapping; it does
-not include that mapping in downloaded reports. Restart an updated collector
-to create this mapping. See source review repairs
-for schema backups, legacy DNS-answer coverage and export opt-ins.
 
 Updates are manual until you enable **Automatic updates while the app is
 running** and save an interval: **6, 12 or 24 hours**. The launcher supervises
@@ -190,6 +184,13 @@ is installed. What is flagged, limits and investigation are explained in the
 Uploaded telemetry remains session-local. Opting into this collector persists
 typed connection/DNS evidence privately in the installation's `collector/` directory,
 with bounded retention. Nothing is uploaded or added to shared analyst history.
+
+Real IPs are shown on your own screen from an owner-only local mapping
+(**Show observed endpoint IPs locally; downloads keep aliases**); downloaded
+reports keep aliases. A collector started before an upgrade creates this mapping
+after a restart. Review marks (`review-labels.json`) and the Experimental ML
+tab's destination memory (`ml/baseline.json`) are owner-only files in the
+installation directory.
 
 ## Troubleshooting
 

@@ -17,7 +17,7 @@ Install first: [Linux installation](INSTALL_LINUX.md). To produce logs:
 | **Analyze telemetry** | Upload one file (Zeek, DNS CSV, PCAP, Pi-hole, AdGuard, Suricata…) and analyze it once. |
 | **Quick lookup** | Check one URL, domain or IP against your local CTI lists, without visiting it. |
 | **Setup & CTI updates** | Choose the mode, enter your API keys, update CTI lists, schedule updates. |
-| **Analysis history** / **Model evaluation** | Only in modes that run the experimental ML model; hidden in the default CTI-only mode. |
+| **Analysis history** / **Model evaluation** | Only in modes that run a measured ML model; hidden in the default CTI-only mode (no such model is installed). |
 
 The sidebar shows the state of each CTI source. English and Turkish, light and
 dark themes are available at the top right.
@@ -58,7 +58,8 @@ ZeekControl's `current` are skipped. Use one state per sensor.
 - It uses the installation's CTI cache and picks up CTI updates on its next
   scan. If an update is writing the cache, the scan keeps the previous indicators
   and the page says so.
-- ML is not used here.
+- The collector itself uses no ML. The page's **Experimental ML** tab builds
+  its own view from the collected records (see below).
 
 The page refreshes every 10 seconds and warns about stale snapshots, rejected
 files and reduced coverage.
@@ -112,7 +113,7 @@ rules: updaters repeat on timers, chat and notification apps keep long sessions.
 That is why each row explains its reason, and why the result is a queue to check
 rather than an alarm.
 
-### The two tabs
+### The three tabs
 
 **What to check** is an alarm list, one row per item: name (for connections,
 the DNS names that pointed to the address), a short label such as *Long
@@ -131,7 +132,39 @@ version, sends a desktop notification when that name is seen again (once per
 day). Clicking a selected mark again removes it. Items on a threat list always
 stay visible. *Not marked* filters what is left to decide. A name looked up from several addresses of the
 same computer appears once. Real IPs are shown on your own screen; downloads
-keep aliases. **Details** keeps the full technical view.
+keep aliases. **Details** keeps the full technical view. **Experimental ML**
+is described below.
+
+### Experimental ML: New for this computer
+
+This list shows destinations that are **new** for your computer and that it
+**keeps calling at a steady rhythm** (at least 4 connections in a day, rhythm
+score 80/100 or more), the way a program that "calls home" does.
+
+- **Memory.** ThreatFusion remembers which sites (registrable domain, or the IP
+  when no DNS name is known) your devices used and on which days. The memory is
+  one private file, `<install>/ml/baseline.json` (owner-only), and it never
+  leaves the computer. It covers all devices of the sensor together, so a
+  laptop keeps its memory when its address changes between networks.
+- **Learning.** Nothing counts as new until 3 earlier days of traffic are in
+  the memory. The memory only grows while the app is open; days the app did
+  not run are not part of it.
+- **Rhythm** is a fixed score from the timing and size regularity of the
+  connections (robust to jitter and missed beats), not a trained model.
+- **One card per site.** Addresses of the same site share one card. Marking a
+  site *I know this* on any list hides its new entries; *Suspicious* pins them
+  on top.
+- **Measured so far:** about 0.5 entries per normal device per day on public
+  research recordings and this project's own traffic (development grade). It
+  is a reason to look, not a malware verdict: only 2 of 6 command-and-control
+  destinations in the research data were new when first seen. The binding
+  test is the 7-day real-traffic run.
+- A destination whose DNS lookup happened before the collector's window can be
+  treated as new; the rhythm requirement removes most of these.
+
+Models that try to recognize malware directly were trained on public research
+recordings and failed their declared tests, so none is installed; the tab says
+so. History: [ML evaluation](evidence/ML_DATASET.md).
 
 ### Investigating a group
 
@@ -244,15 +277,24 @@ names the platform, a common pattern for phishing pages.
 
 For an IP, Quick lookup shows the network owner from the local table. Both
 domains and IPs get the outside lookup buttons (VirusTotal, AbuseIPDB, urlscan).
+Nothing is sent to those sites unless you click.
 
 ## Modes
 
-- **Real CTI (default):** your own CTI cache; ML is off.
+- **Real CTI (default):** your own CTI cache; the lexical ML domain score is
+  off. The Experimental ML tab above works in this mode.
 - **Demo:** synthetic data and a synthetic model, for trying the interface. Its
   results are not measurements.
 
-The ML model (a lexical domain score) is experimental and currently off:
+The lexical domain model is experimental and off:
 [ML evaluation history](evidence/ML_DATASET.md).
+
+## Trying it with a sample file
+
+Any Zeek `dns.log` or `conn.log` can be uploaded on **Analyze telemetry**. To
+see detections without real malware, write a few log lines whose names or IPs
+are on your current CTI lists (Quick lookup shows what is listed); never
+connect to them. The README screenshots were made this way.
 
 ## What ThreatFusion does not do
 

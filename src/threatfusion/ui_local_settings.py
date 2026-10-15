@@ -327,13 +327,22 @@ def render_refresh_progress(root: Path) -> None:
             getattr(st, kind)(message)
 
 
+def _local_time(value) -> str:
+    """An ISO timestamp as the viewer's local 'dd.mm.yyyy HH:MM'; the raw value if it does not parse."""
+    from datetime import datetime
+    try:
+        return datetime.fromisoformat(str(value)).astimezone().strftime("%d.%m.%Y %H:%M")
+    except (TypeError, ValueError):
+        return str(value) if value else "—"
+
+
 @st.fragment(run_every="10s")
 def _render_refresh_status(root: Path) -> None:
     status = read_private_json(root / "refresh-status.json")
     if not status:
         st.info(tr("No refresh yet. Use Update CTI now to download source data."))
         return
-    st.caption(tr("Last attempt: {time}", time=status.get("attempted_at", "—")))
+    st.caption(tr("Last attempt: {time}", time=_local_time(status.get("attempted_at"))))
     if refresh_running(status):
         st.info(
             tr("A source update is running. Existing cached data remains available.")
@@ -355,19 +364,19 @@ def _render_refresh_status(root: Path) -> None:
             st.warning(
                 tr(
                     "{source}: update failed; previous cache preserved. Check your internet connection or source availability.",
-                    source=source,
+                    source=tr(source),
                 )
             )
         elif result == "failed":
             st.warning(
                 tr(
                     "{source}: update failed; previous cache preserved. Check source access and your key.",
-                    source=source,
+                    source=tr(source),
                 )
             )
         else:
             st.caption(
-                source
+                tr(source)
                 + " · "
                 + (
                     tr("Cache still fresh")

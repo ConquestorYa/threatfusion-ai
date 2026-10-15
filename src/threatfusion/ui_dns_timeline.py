@@ -74,15 +74,10 @@ def render_dns_timeline(rows, payload, *, key, revision):
     if not buckets:
         st.info(tr("No comparable query timestamps for this group."))
         return
-    chart = pd.DataFrame(
-        {
-            tr("UTC bucket start"): pd.to_datetime(
-                [b["start_utc"] for b in buckets], utc=True
-            ),
-            tr("DNS queries"): [b["queries"] for b in buckets],
-        }
-    )
-    st.bar_chart(chart, x=tr("UTC bucket start"), y=tr("DNS queries"))
+    from .ui_connection_timeline import utc_time_chart
+    st.altair_chart(utc_time_chart([b["start_utc"] for b in buckets], [b["queries"] for b in buckets],
+                                   x_title=tr("UTC bucket start"), y_title=tr("DNS queries"), bars=True),
+                    width="stretch")
     details = [
         {
             "UTC bucket start": b["start_utc"],

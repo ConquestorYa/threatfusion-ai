@@ -28,10 +28,11 @@ ThreatFusion, **Zeek** ağ kayıtlarını okur; her hedefi **tehdit istihbaratı
 vermesine" benzeyen** bağlantıları işaretler. Her işaretin nedenini de söyler.
 Kendi Linux bilgisayarında çalışır; trafiğin bilgisayarından dışarı çıkmaz.
 
-> **Durum: erken prototip.** İş akışının tamamı çalışıyor ve geliştiricinin
-> sentetik veriyle yaptığı manuel kabul testlerinden geçti. Gerçek trafikle yapılan ilk
-> 24 saatlik test çok fazla işaret üretti (59 grup, hepsi zararsız) ve sayfanın
-> anlaşılmasının zor olduğunu gösterdi; düzeltmeler sürüyor. Gerçek zararlı yazılımı ne kadar yakaladığı **henüz
+> **Durum: erken prototip.** İş akışının tamamı çalışıyor: kurulum, CTI
+> güncellemeleri, sürekli Zeek toplama, sade bir inceleme listesi ve inceleme
+> ekranları. Gerçek trafikle yapılan ilk 24 saatlik test çok fazla işaret
+> üretti; bu kusurlar düzeltildi ve **gerçek trafikle 7 günlük test 21 Ekim
+> 2026'ya kadar sürüyor**. Gerçek zararlı yazılımı ne kadar yakaladığı **henüz
 > ölçülmedi.** SIEM, EDR, IDS ya da virüs tarayıcı değildir.
 
 ## Ne yapar
@@ -43,40 +44,52 @@ hangilerine daha yakından bakmak gerekir?**
    ve `dns.log` dosyasını alır ve son 24 saati saklar.
 2. **Kontrol eder.** Her hedef SGB, ThreatFox ve URLhaus listeleriyle
    karşılaştırılır; her cihaz → hedef grubu şüpheli davranış açısından incelenir.
-3. **Açıklar.** Bakılması gereken gruplar nedeni, zaman çizelgesi ve bayt
-   sayılarıyla **İncele** olarak listelenir. Geri kalan her şey **Gözlem**
-   olarak görünür kalır.
+3. **Açıklar.** **Bakılacaklar** listesi yalnızca bakmaya değer olanları
+   gösterir; tehdit listesi eşleşmeleri en üsttedir. Her madde nedenini, cihazı,
+   hedefin ağ sahibini ve tek tıkla işaretleri içerir: *Tanıyorum*, *Emin
+   değilim*, *Şüpheli*.
 
 | Kontrol | Bir grubu şu durumda işaretler | Tipik neden |
 | --- | --- | --- |
-| CTI eşleşmesi | Hedef bir CTI listesinde | Bilinen zararlı sunucu |
+| CTI eşleşmesi | Hedef (alan adı ya da IP) bir CTI listesinde | Bilinen zararlı sunucu |
 | Uzun oturum | Tek bir iki yönlü TCP oturumu en az 1 saat sürüyor | Açık tutulan bir kontrol kanalı ya da sohbet/bildirim uygulaması |
 | Düzenli tekrar | 30+ dakikada, çok düzenli aralıklarla 20+ bağlantı | Zararlı yazılımın düzenli "haber vermesi" ya da bir güncelleyici |
 | Başarısız denemeler | 5 dakika içinde 20+ farklı port/sunucuya ya da 30+ kez tekrarlanan cevapsız/reddedilen deneme | Tarama ya da ulaşılamayan bir sunucuyu deneyip duran bir program |
 
-DNS kayıtları ayrı bir cihaz → alan adı listesinde değerlendirilir (CTI
-eşleşmesi, düzenli sorgular, olağandışı hacim). Normal yazılımlar da bu
-kurallara uyabilir; liste kanıtı göstererek hızlı karar vermeni sağlar.
+DNS sorguları için ayrı kontroller vardır (CTI eşleşmesi, düzenli sorgular,
+olağandışı hacim). Popüler siteler ve yerel adlar, bir CTI listesi eşleşmedikçe
+listeye girmez. Normal yazılımlar yine de bu kurallara uyabilir; her madde
+kanıtını gösterir, böylece hızlı karar verebilirsin.
 Ayrıntılar: [kullanım kılavuzu](docs/USER_GUIDE.md#what-gets-flagged) (İngilizce).
 
 ## Ekran görüntüleri
 
-Tüm görüntüler sentetik demo verisiyle, test için ayrılmış adresler ve `.test` alan adlarıyla alınmıştır.
+Görüntüler, uygulamanın **elle hazırlanmış Zeek kayıtlarıyla** beslenen
+yalıtılmış bir kopyasından alındı. İşaretlenen adlar ve IP gerçektir:
+ThreatFox ve SGB listelerindeki herkese açık göstergelerdir (bir AsyncRAT
+komuta sunucusu, bir RemusStealer komuta alan adı ve bir oltalama alan adı).
+Bunlara hiçbir trafik gönderilmedi; zararlı adların kayıtlarda çözüldüğü
+adresler, belgeler için ayrılmış adreslerdir.
 
 <p align="center">
-  <img src="docs/screenshots/tr/collected-connections.png" alt="Toplanan bağlantılar: inceleme nedenleriyle cihaz-hedef grupları" width="100%">
+  <img src="docs/screenshots/tr/collected-connections.png" alt="Bakılacaklar: üç tehdit listesi eşleşmesi, düzenli bir haber verme ve bir başarısız deneme deseni; nedenleri ve işaretleriyle" width="100%">
 </p>
-<p align="center"><em>Toplanan bağlantılar: Zeek kayıtlarından oluşan inceleme listesi.</em></p>
+<p align="center"><em>Toplanan bağlantılar → Bakılacaklar: önce tehdit listesi eşleşmeleri, sonra davranış. Her madde neden listede olduğunu ve ne yapılacağını söyler.</em></p>
 
 <p align="center">
-  <img src="docs/screenshots/tr/connection-investigation.png" alt="Bir bağlantı grubunun bağlantı başlangıçları zaman çizelgesi" width="100%">
+  <img src="docs/screenshots/tr/connection-investigation.png" alt="AsyncRAT bağlantı grubunun incelemesi: rehber ve zamana göre bağlantı başlangıçları" width="100%">
 </p>
-<p align="center"><em>Bir grubu incelemek: zamana göre bağlantılar, durumlar ve baytlar.</em></p>
+<p align="center"><em>Bir grubu incelemek: listedeki bir komuta sunucusuna üç saat boyunca dakikada bir bağlanan bir cihaz.</em></p>
+
+<p align="center">
+  <img src="docs/screenshots/tr/analyze-telemetry.png" alt="Telemetriyi analiz et: yüklenen bir Zeek dns.log dosyasında iki bilinen tehdit ve bir inceleme" width="100%">
+</p>
+<p align="center"><em>Telemetriyi analiz et: tek seferlik analiz için bir dosya yükle (burada bir Zeek dns.log).</em></p>
 
 <table>
 <tr>
-<td width="50%"><img src="docs/screenshots/tr/quick-lookup.png" alt="Sentetik bir göstergenin hızlı sorgusu"><br><em>Hızlı sorgu: tek bir URL, alan adı ya da IP'yi ziyaret etmeden kontrol et.</em></td>
-<td width="50%"><img src="docs/screenshots/tr/setup.png" alt="Kurulum ve CTI güncellemeleri sayfası"><br><em>Kurulum: kendi API anahtarların ve CTI güncellemeleri.</em></td>
+<td width="50%"><img src="docs/screenshots/tr/quick-lookup.png" alt="Bir ThreatFox komuta alan adının hızlı sorgusu"><br><em>Hızlı sorgu: tek bir URL, alan adı ya da IP'yi ziyaret etmeden kontrol et.</em></td>
+<td width="50%"><img src="docs/screenshots/tr/setup.png" alt="Kurulum ve CTI güncellemeleri sayfası"><br><em>Kurulum: kendi API anahtarların, CTI güncellemeleri ve otomatik yenileme.</em></td>
 </tr>
 </table>
 
@@ -90,11 +103,12 @@ bash -c 'set -e; f=$(mktemp /tmp/threatfusion-install.XXXXXXXX); trap "rm -f -- 
 ```
 
 Uygulama http://127.0.0.1:8501 adresinde **Kurulum ve CTI güncellemeleri**
-sayfasıyla açılır.
+sayfasıyla açılır. Aynı komutu yeniden çalıştırmak en son sürüme günceller;
+verilerin ve ayarların korunur (önce uygulamayı `threatfusion-ai stop` ile durdur).
 
 **2. CTI ekle.** SGB anahtar istemez. [auth.abuse.ch](https://auth.abuse.ch/)
 üzerinden alınan tek bir ücretsiz anahtar hem ThreatFox'u hem URLhaus'u açar.
-**CTI'yı şimdi güncelle**'ye bas.
+**CTI verilerini şimdi güncelle**'ye bas.
 
 **3. Zeek'i çalıştır;** saatlik bölünmüş `conn.log` ve `dns.log` dosyaları
 yazsın: [Zeek sensör kurulumu](docs/ZEEK_SETUP.md) (sürümü sabitlenmiş bir Docker tarifi, İngilizce).
@@ -112,25 +126,42 @@ durdurur. Ayrıntılar: [Linux kurulumu](docs/INSTALL_LINUX.md).
 ## Uygulamadaki diğer araçlar
 
 - **Hızlı sorgu:** Tek bir URL, alan adı ya da IP'yi CTI önbelleğinde ara.
-  Sayfa açılmaz, DNS sorgusu yapılmaz, hiçbir şey indirilmez.
+  Sayfa açılmaz, DNS sorgusu yapılmaz, hiçbir şey indirilmez. İsteğe bağlı:
+  alan adının kayıt yaşı ve IP'nin ağ sahibi.
 - **Telemetriyi analiz et:** Tek seferlik analiz için bir dosya yükle (Zeek,
   DNS CSV/Excel, PCAP, Suricata EVE, Pi-hole, AdGuard Home, dnstop).
+- **Masaüstü bildirimi:** Toplayıcı tehdit listesindeki bir hedefe giden trafik
+  görünce bildirir.
 - **Demo modu** (`threatfusion-ai --mode demo`): Arayüzü denemek için sentetik
   veri. Sonuçları ölçüm değildir.
 
-Deneysel bir makine öğrenmesi (alan adı puanı) modeli var ama **kapalı**:
-ölçülmüş orijinal model elde değil, yerine aday olan model de çok fazla yanlış
-alarm verdi ([değerlendirme geçmişi](docs/evidence/ML_DATASET.md)).
+### Deneysel makine öğrenmesi
+
+Toplanan bağlantılar sayfasındaki **Deneysel ML** sekmesi **Bu bilgisayar için
+yeni** listesini gösterir: cihazlarının daha önce hiç kullanmadığı ve düzenli bir
+ritimle aramaya devam ettiği hedefler; "eve telefon eden" bir program böyle
+davranır. ThreatFusion bilgisayarın için hangi hedeflerin normal olduğunu öğrenir
+(3 gün, yalnızca uygulama açıkken; bu hafıza bilgisayardan çıkmaz). Geliştirme
+testlerinde normal bir cihazda günde yaklaşık 0,5 kayıt listeledi. Bakmak için
+bir sebeptir, zararlı yazılım kararı değildir; asıl sınavı 7 günlük testtir.
+
+Zararlı yazılımı doğrudan tanımaya çalışan modeller herkese açık araştırma
+kayıtlarıyla eğitildi ve önceden ilan edilen testlerini **geçemedi** (güncel
+zararlı kayıtlarının %3–17'sini yakaladılar); bu yüzden hiçbiri kurulu değil.
+Eski alan adı puanı modeli de kapalı. Tüm geçmiş:
+[ML değerlendirmesi](docs/evidence/ML_DATASET.md) (İngilizce).
 
 ## Gizlilik
 
 - Zeek yalnızca bağlantı ve DNS üst bilgisini kaydedecek şekilde ayarlanır;
   sayfa adresleri, şifreler ya da içerik kaydedilmez. DNS adları yine de hangi
   sitelere girdiğini gösterir; kayıtları gizli tut.
-- Kayıtlar, toplayıcı verisi, CTI önbelleği ve anahtarlar bilgisayarındaki
-  özel klasörlerde kalır. Hiçbir şey yüklenmez. İndirilen raporlar varsayılan
-  olarak takma ad (`Host 1`) kullanır.
-- Şüpheli hedefler hiçbir zaman ziyaret edilmez ya da çözümlenmez.
+- Kayıtlar, toplayıcı verisi, CTI önbelleği, öğrenilen hedef hafızası ve
+  anahtarlar bilgisayarındaki özel klasörlerde kalır. Hiçbir şey yüklenmez.
+  İndirilen raporlar varsayılan olarak takma ad (`Host 1`) kullanır.
+- Şüpheli hedefler hiçbir zaman ziyaret edilmez ya da çözümlenmez. Dış sorgu
+  düğmeleri (VirusTotal, AbuseIPDB, urlscan) adı ya da IP'yi yalnızca sen
+  tıklayınca gönderir.
 - Kendi API anahtarlarını kullanırsın; projede hiçbir anahtar gelmez.
 
 ## Şimdiye kadarki kanıtlar
@@ -139,11 +170,12 @@ alarm verdi ([değerlendirme geçmişi](docs/evidence/ML_DATASET.md)).
 | --- | --- |
 | Sentetik normal ve simüle trafik | Normal güncelleyiciler ve yoklamalar da İncele'ye düşüyor: kurallar henüz yeterince seçici değil ([inceleme yükü](docs/evidence/REVIEW_WORKLOAD.md)) |
 | Dört bağımsız IoT-23 kaydı (2018–2019) | İki zararsız kayıtta 0 inceleme; iki zararlı kayıttan biri bir inceleme üretti, diğeri hiç üretmedi ([ağ değerlendirmesi](docs/evidence/NETWORK_EVALUATION.md)) |
-| Hata matrisi, 6 saatlik dayanıklılık testi, güvenlik incelemeleri | 9/9 hata senaryosu geçti; bellek düzeltmesinden sonra 6 saatlik dayanıklılık testi 16/16 kontrolü geçti (collector en fazla 684 MiB); iki güvenlik incelemesi ([operasyonel güven](docs/evidence/OPERATIONAL_CONFIDENCE.md)) |
-| Bir laptop, 24 saat normal gerçek trafik | 59 inceleme grubu, hepsi zararsız; yalnızca 3'ü ekrandaki bilgiyle karara bağlanabildi; toplayıcı bir düzeltmeye kadar DNS saatlerini kaçırdı ([gerçek trafik değerlendirmesi](docs/evidence/REAL_TRAFFIC_EVALUATION.md#arm-a-first-24-hours-results)) |
-| **Henüz ölçülmedi** | Bir haftalık gerçek trafikte yanlış alarm, etiketli gerçek zararlı yazılımı yakalama, başka kullanıcılar için faydası |
+| Hata matrisi, 6 saatlik dayanıklılık testi, güvenlik incelemeleri | 9/9 hata senaryosu geçti; 6 saatlik dayanıklılık testi 16/16 kontrolü geçti (toplayıcı en fazla 684 MiB); iki güvenlik incelemesi ([operasyonel güven](docs/evidence/OPERATIONAL_CONFIDENCE.md)) |
+| Bir laptop, 24 saat normal gerçek trafik | 59 inceleme grubu, hepsi zararsız; yalnızca 3'ü ekrandaki bilgiyle karara bağlanabildi. Düzeltildi: bağlantılarda adlar, popüler site ve yerel ad bağlamı, sade bir inceleme listesi ([sonuçlar](docs/evidence/REAL_TRAFFIC_EVALUATION.md#arm-a-first-24-hours-results)) |
+| Kampüs Wi-Fi'ında ilk 7 günlük deneme | Toplayıcı sağlık kontrolü başarısız: diğer cihazların yerel ağ duyuruları pencereyi doldurdu. Düzeltildi (toplayıcı filtresi + Zeek yakalama filtresi) ve yeniden başlatıldı ([durum](docs/evidence/REAL_TRAFFIC_EVALUATION.md)) |
+| Herkese açık zararlı kayıtlarıyla makine öğrenmesi | Zararlıyı tanıyan modeller başarısız; "Bu bilgisayar için yeni" geliştirme yük kontrolünü geçti ([ML değerlendirmesi](docs/evidence/ML_DATASET.md)) |
+| **Sürüyor / henüz ölçülmedi** | Gerçek trafikte 7 günlük yanlış alarm (21 Ekim 2026'da bitiyor), etiketli gerçek zararlıyı yakalama, başka kullanıcılar için faydası |
 
-Plan: [gerçek trafik değerlendirmesi](docs/evidence/REAL_TRAFFIC_EVALUATION.md).
 Tüm kayıtlar: [dokümantasyon](docs/README.md#evidence).
 
 ## Benzer araçlar
@@ -165,9 +197,9 @@ yerel uygulama. Bu araçlardan daha faydalı olup olmadığı ölçülmedi.
 
 ## Geliştirme
 
-Python 3.12, Streamlit, SQLite, pandas, Plotly. CI; kod denetimi, testler,
-deponun gizlilik denetimi, Windows uyumluluk testleri, konteyner kontrolü ve
-Debian ile Ubuntu'da sıfırdan kurulum testlerini çalıştırır.
+Python 3.12, Streamlit, SQLite, pandas, Altair, Plotly ve scikit-learn. CI; kod
+denetimi, testler, deponun gizlilik denetimi, Windows uyumluluk testleri,
+konteyner kontrolü ve Debian ile Ubuntu'da sıfırdan kurulum testlerini çalıştırır.
 
 Bu proje yoğun yapay zekâ desteğiyle geliştiriliyor (tasarım, kod, test ve
 dokümantasyon); değişiklikler birleştirilmeden önce gözden geçirilir ve test edilir.

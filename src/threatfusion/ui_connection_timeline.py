@@ -43,9 +43,8 @@ def render_timeline(rows: list[dict[str, object]], timelines: dict, *, key: str,
     if not buckets:
         st.info(tr("No comparable timestamps for this connection group."))
         return
-    chart = pd.DataFrame({tr("UTC bucket start"): pd.to_datetime([b["start_utc"] for b in buckets], utc=True),
-                          tr("Connection starts"): [b["connections"] for b in buckets]})
-    st.line_chart(chart, x=tr("UTC bucket start"), y=tr("Connection starts"))
+    st.altair_chart(utc_time_chart([b["start_utc"] for b in buckets], [b["connections"] for b in buckets],
+                                   x_title=tr("UTC bucket start"), y_title=tr("Connection starts")), width="stretch")
     details = [{"UTC bucket start": b["start_utc"], "Connection starts": b["connections"],
                 "Known originator bytes": b["originator_bytes"],
                 "Unknown originator byte counts": b["originator_bytes_unknown"],
@@ -55,3 +54,17 @@ def render_timeline(rows: list[dict[str, object]], timelines: dict, *, key: str,
                for b in buckets]
     st.dataframe(translate_dataframe(pd.DataFrame(details)), hide_index=True, width="stretch")
     st.caption(tr("Known bytes are partial sums when byte counts are missing. Duplicate and conflicting UIDs are excluded as in the connection findings."))
+
+
+def utc_time_chart(times, values, *, x_title: str, y_title: str, bars: bool = False):
+    """A UTC time chart whose axis reads the same in every language ('15.10 20:30')."""
+    import altair as alt
+    frame = pd.DataFrame({"t": pd.to_datetime(times, utc=True), "v": values})
+    mark = alt.Chart(frame).mark_bar() if bars else alt.Chart(frame).mark_line(point=True)
+    return mark.encode(
+        x=alt.X("t:T", title=x_title, scale=alt.Scale(type="utc"),
+                axis=alt.Axis(format="%d.%m %H:%M", labelAngle=0, labelOverlap=True)),
+        y=alt.Y("v:Q", title=y_title),
+        tooltip=[alt.Tooltip("t:T", title=x_title, format="%d.%m.%Y %H:%M", timeUnit="utcyearmonthdatehoursminutes"),
+                 alt.Tooltip("v:Q", title=y_title)],
+    ).properties(height=260)

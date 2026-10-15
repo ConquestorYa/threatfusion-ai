@@ -1137,3 +1137,24 @@ pickle) at `<install>/ml/behavior-model.json`; it is trained in the private lab
 partly from the user's own traffic and is never committed or downloaded. It never
 changes the review list. Levels: High at or above the model's declared line,
 Medium from 50, Low below.
+
+## DEC-100: README screenshots show real public indicators in crafted logs
+
+**Decision (2026-10-16):** At the user's request the README screenshots show
+actual detections instead of `.test` demo data. They are captured from an
+isolated copy of the app (separate install root, port and collector state; the
+user's installation, Zeek logs and running 7-day test are untouched) whose CTI
+cache is a read-only copy of the developer's cache. The collector reads
+**crafted** Zeek logs in which three public indicators appear: a ThreatFox
+AsyncRAT command IP, a ThreatFox RemusStealer command domain and an SGB
+phishing domain. No traffic is sent to them; the addresses the malicious names
+resolve to in the logs are documentation ranges (198.51.100.0/24,
+203.0.113.0/24). English UI for README.md, Turkish UI for README.tr.md, dark
+theme; PNGs carry no metadata chunks.
+
+**Consequences:** Capturing the Turkish set exposed untranslated chart axes
+("08 PM", "Fri 16") and the "IP owners" source name, and the setup page showed
+a raw ISO timestamp. Timeline charts now use a language-neutral UTC axis
+(`15.10 20:30`), source names are translated, and the last attempt is shown in
+local time. The indicators may later leave their lists; the screenshots record
+a moment, not a permanent claim.

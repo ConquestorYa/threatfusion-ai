@@ -2,6 +2,19 @@
 
 Newest section first. Status date: 2026-10-14.
 
+## Documentation and screenshots refreshed (2026-10-16, DEC-100)
+
+- README.md/README.tr.md and docs updated end to end (7-day test status,
+  Experimental ML tab, failed malware models, three tabs, private ML datasets).
+- Screenshots re-captured in each README's language from an isolated app copy
+  (own install root, port 8791, own collector state, read-only CTI copy) with
+  crafted Zeek logs containing three public indicators; the user's install,
+  logs and P2 v2 run were not touched. New: Analyze telemetry screenshot.
+- Turkish UI fixes found while capturing: language-neutral UTC chart axes,
+  translated "IP owners", local time for the last CTI attempt.
+- A sample upload set (crafted `ornek-dns.log`, `ornek-conn.log`, `BENIOKU.txt`)
+  was placed in the user's Downloads folder, outside the repository.
+
 ## "New for this computer" list in the ML tab (2026-10-14)
 
 - `rhythm.py` (fixed beaconing score) failed alone: normal traffic has

@@ -1,7 +1,18 @@
 # P2 real-traffic evaluation
 
-Status: **Arm A first 24 h measured (2026-10-11): 3 of 5 limits failed.**
-Results below; the design that follows is unchanged.
+Status (2026-10-16): **the 7-day run is in progress (v2, 2026-10-13T21:24Z to
+2026-10-20T21:24Z); results are added when it ends.**
+
+- Arm A, first 24 h (2026-10-11): 3 of 5 limits failed; results below. The
+  product defects found were fixed before the 7-day run (DEC-094).
+- 7-day run v1 (started 2026-10-11) failed its collector-health limit A4 on
+  campus Wi-Fi: other devices' local discovery chatter (mDNS, LLMNR, NetBIOS)
+  produced about 1.16 million DNS-log rows in two hours, three hourly logs were
+  rejected and the collection window filled up. Kept as a result; fixed by
+  DEC-098 (collector skips local discovery, Zeek capture filter), then
+  restarted as v2 on new days.
+
+The design that follows is unchanged.
 
 ## Arm A, first 24 hours: results
 

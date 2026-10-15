@@ -14,6 +14,9 @@ Treat all threat indicators as inert data only.
 | IANA RDAP bootstrap + registry RDAP servers | Optional site age in Quick lookup; runs only on the analyst's button press and sends only the registrable domain | `src/threatfusion/domain_age.py` |
 | iptoasn.com IP-to-ASN table (PDDL) | Network owner and registry country for addresses; weekly, no key, looked up locally | `src/threatfusion/ip_owners.py` |
 | CESNET / DomainRadar 2024 | Real-traffic benign-domain evaluation corpus | DOI `10.5281/zenodo.14332167`; `scripts/sample_cesnet_benign_domains.py` |
+| CTU-SME-11 (Stratosphere Lab, Zenodo 7958259, CC BY 4.0) | Private ML development: labeled Zeek flows of 11 devices over 7 days (2023) | Downloaded into the private lab only; not redistributed |
+| Stratosphere MCFP captures (CTU-Malware-Capture-Botnet, CTU-Normal) | Private ML development: Zeek logs of lab infections and normal hosts (2011–2021) | Downloaded into the private lab only; not redistributed |
+| Malware-Traffic-Analysis.net | Private ML testing: Zeek logs of recent (2023–2026) infection captures | Downloaded into the private lab only; not redistributed |
 | Local network/DNS telemetry (user-provided) | Runtime analysis input | CSV/TSV/TXT, Excel, Zeek, PCAP/PCAPNG, Suricata EVE, Pi-hole, AdGuard and dnstop ingestion modules |
 
 ## Attribution requirements
@@ -92,7 +95,13 @@ Quick lookup does not load the complete active CTI dataset into Python. The
 SQLite cache stores normalized lookup keys and indexed URL hostnames so a
 single URL/domain query retrieves only relevant candidate indicators.
 
+## Indicators shown in the README screenshots
 
+The README screenshots show three public indicators from the developer's own
+cache (a ThreatFox AsyncRAT command IP, a ThreatFox RemusStealer command domain
+and an SGB phishing domain) in crafted Zeek logs. They are shown for
+illustration with their source named; no list content is redistributed, and no
+traffic was sent to them.
 
 ## CESNET benign-corpus attribution
 

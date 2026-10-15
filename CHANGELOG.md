@@ -21,6 +21,13 @@ framing is retired. No release date or tag is set.
 
 ### Documentation
 
+- READMEs and docs updated end to end: the 7-day real-traffic test in progress,
+  the Experimental ML tab (*New for this computer*) and the failed malware
+  models, the three tabs of Collected connections, and private ML datasets.
+  New screenshots in each README's language show real public indicators
+  (ThreatFox, SGB) detected in crafted Zeek logs, plus Analyze telemetry
+  (DEC-100).
+
 - READMEs rewritten around Zeek network investigation; new Zeek sensor setup
   guide and user guide; evidence records in `docs/evidence/`, development notes
   in `docs/dev/` (DEC-092).
@@ -32,6 +39,10 @@ framing is retired. No release date or tag is set.
   removed from current descriptions and kept only in dated history.
 
 ### Fixed
+
+- Turkish interface: timeline charts showed English times ("08 PM", "Fri 16");
+  they now use a language-neutral UTC axis. "IP owners" is translated and the
+  last CTI update attempt is shown in local time.
 
 - The collector no longer keeps other devices' local discovery chatter (mDNS,
   LLMNR, NetBIOS, SSDP, broadcast/multicast). On campus Wi-Fi it had filled the

@@ -23,6 +23,9 @@ flowchart LR
     COLLECTOR --> STATE[(Private state<br/>24 h evidence)]
     STATE --> SNAPSHOT[Aliased snapshot<br/>JSON]
     SNAPSHOT --> UI[Web app<br/>Collected connections]
+    STATE -->|read-only| ML[Experimental ML tab<br/>New for this computer]
+    ML <--> MEMORY[(Private destination<br/>memory)]
+    ML --> UI
     UPLOAD[Uploaded file] --> ANALYSIS[One-time analysis] --> UI
     CACHE --> ANALYSIS
     CACHE --> LOOKUP[Quick lookup] --> UI
@@ -35,6 +38,9 @@ flowchart LR
   endpoint IPs are shown only on explicit request, from a separate private file.
 - **CTI updates** run from the setup page (manually or every 6/12/24 h while the
   app runs). Each source updates independently; a failure keeps the old data.
+- The **Experimental ML tab** reads the collector database read-only, keeps a
+  private memory of which destinations the devices used, and lists new
+  destinations with a steady rhythm. It never changes the review list.
 
 ## Evidence model
 
@@ -47,8 +53,10 @@ Evidence is kept separate by strength and is never merged into one score.
 3. **Behavior**: long sessions, regular repetition, failed-attempt patterns and
    DNS volume/timing signals. These raise *Review*; they are never presented as
    proof of malware. Rules: [user guide](USER_GUIDE.md#what-gets-flagged).
-4. **ML score** (experimental, off by default): a lexical domain-name score,
-   subordinate to CTI and behavior.
+4. **Experimental ML**, shown apart from the review list: *New for this
+   computer* (destination memory + a fixed rhythm score, development-measured)
+   and, only if a locally trained model ever passes its tests, a behavior-model
+   score. The older lexical domain score is off. ML never overrides CTI.
 
 Every flagged group lists its reasons and its coverage limits (missing fields,
 incomplete sessions, too few observations).
@@ -61,6 +69,7 @@ incomplete sessions, too few observations).
 | Collector state: typed connection/DNS records for the evidence window, checkpoints | Uploaded files and their raw rows |
 | Snapshots with report-local aliases (`Host 1`, `Device 1`) | API keys, unless you choose to save them (owner-only file) |
 | A private alias → IP mapping for local display | Anything outside your machine: there is no telemetry upload |
+| The destination memory of the Experimental ML tab (`ml/baseline.json`) and your review marks | |
 
 State directories are owner-only (0700, files 0600). The app binds to
 127.0.0.1 and rejects requests whose Host is not local (DNS-rebinding guard).
@@ -76,6 +85,6 @@ State directories are owner-only (0700, files 0600). The app binds to
 | Upload analysis | `dns_ingest.py`, `network_telemetry.py`, `runtime_analysis.py` and format adapters |
 | Web app | `streamlit_app.py`, `ui_*.py`, `local_workspace.py`, `request_guard.py` |
 | Installer | `scripts/install_linux.sh`, `scripts/bootstrap_linux.py`, `local_setup.py` |
-| Experimental ML | `ml_*.py` ([evaluation history](evidence/ML_DATASET.md)) |
+| Experimental ML | `baseline.py`, `rhythm.py`, `ml_behavior.py`, `ui_new_destinations.py`, `ui_behavior.py`; lexical model `ml_*.py` ([evaluation history](evidence/ML_DATASET.md)) |
 
 Design decisions and their reasons: [DECISIONS.md](dev/DECISIONS.md).

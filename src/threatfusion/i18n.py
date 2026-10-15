@@ -403,6 +403,7 @@ _TR: dict[str, str] = {
     "The local application is stopping. You can close this tab.": "Yerel uygulama kapanıyor. Bu sekmeyi kapatabilirsin.",
     "No refresh yet. Use Update CTI now to download source data.": "Henüz güncelleme yok. Kaynak verilerini indirmek için CTI verilerini şimdi güncelle düğmesini kullan.",
     "Last attempt: {time}": "Son deneme: {time}",
+    "IP owners": "IP sahipleri",
     "A source update is running. Existing cached data remains available.": "Kaynak güncellemesi sürüyor. Mevcut önbellek kullanılabilir.",
     "Update failed. Check network access and retry; existing data is preserved.": "Güncelleme başarısız. Ağ erişimini kontrol edip tekrar dene; mevcut veriler korunur.",
     "{source}: update failed; previous cache preserved. Check your internet connection or source availability.": "{source}: güncelleme başarısız; eski önbellek korundu. İnternet bağlantını veya kaynağın erişilebilirliğini kontrol et.",
