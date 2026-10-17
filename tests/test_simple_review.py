@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from datetime import datetime, timezone
 
 from streamlit.testing.v1 import AppTest
@@ -102,8 +101,7 @@ def test_labels_persist_privately_and_older_hidden_items_count_as_known(tmp_path
     save_label(path, item_key(items[2]), "suspicious")
     save_label(path, item_key(items[3]), "unsure")
     save_label(path, item_key(items[3]), "bogus")  # unknown labels are ignored
-    if os.name == "posix":
-        assert oct(path.stat().st_mode & 0o777) == "0o600"
+    assert oct(path.stat().st_mode & 0o777) == "0o600"
     save_hidden(legacy, {item_key(items[4])})
     labels = load_labels(path, legacy)
     assert {k: v["label"] for k, v in labels.items()} == {

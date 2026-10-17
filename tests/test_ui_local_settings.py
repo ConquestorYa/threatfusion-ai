@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import sys
 
 import pytest
 from streamlit.testing.v1 import AppTest
@@ -11,7 +10,6 @@ from threatfusion.app_config import load_app_config
 from threatfusion.cti_cache import initialize_cti_cache
 from threatfusion.cti_refresh import CTIRefreshOutcome
 
-pytestmark = pytest.mark.skipif(sys.platform != "linux", reason="Linux installation UI")
 
 
 @pytest.fixture

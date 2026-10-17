@@ -15,7 +15,6 @@ from threatfusion.cti_cache import replace_source_records
 from threatfusion.models import IOCRecord, IOCType
 from threatfusion.network_telemetry import parse_zeek_conn_log_with_diagnostics
 
-pytestmark = pytest.mark.skipif(os.name != "posix", reason="Linux collector file/lock contract")
 
 
 def busy():

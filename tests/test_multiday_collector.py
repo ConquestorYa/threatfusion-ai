@@ -37,7 +37,6 @@ def test_oracle_mixed_early_duplicate_does_not_refresh_ingestion_lifetime():
     assert oracle.expected() == [('b', 'conn', 'new')]
 
 
-@pytest.mark.skipif(os.name != 'posix', reason='Private Linux multi-day collector')
 def test_independent_oracle_reconciles_rotation_capacity_expiry_and_idle_restart(tmp_path):
     source, state = tmp_path / 'input', tmp_path / 'state'
     source.mkdir(mode=0o700)
@@ -59,7 +58,6 @@ def test_independent_oracle_reconciles_rotation_capacity_expiry_and_idle_restart
     assert expired['counts']['retained_total_records'] == 0
 
 
-@pytest.mark.skipif(os.name != 'posix', reason='Own Linux worker process contract')
 def test_worker_reports_own_process_memory_and_recovers_after_own_sigkill(tmp_path):
     (tmp_path / 'input').mkdir(mode=0o700)
     child = Worker(tmp_path, 0)
@@ -81,7 +79,6 @@ def test_worker_reports_own_process_memory_and_recovers_after_own_sigkill(tmp_pa
         assert db.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
 
 
-@pytest.mark.skipif(os.name != 'posix', reason='Protected Linux source contract')
 @pytest.mark.parametrize('special', ['link', 'fifo'])
 def test_private_special_source_never_reads_or_exports_unrelated_data(tmp_path, special):
     source = tmp_path / 'input'
@@ -101,7 +98,6 @@ def test_private_special_source_never_reads_or_exports_unrelated_data(tmp_path, 
     assert 'PRIVATE' not in (tmp_path / 'state/connections.json').read_text()
 
 
-@pytest.mark.skipif(os.name != 'posix', reason='Linux worker process sampling')
 def test_sampler_handles_atomic_disappearance_and_does_not_follow_links(tmp_path, monkeypatch):
     state = tmp_path / 'state'
     state.mkdir()

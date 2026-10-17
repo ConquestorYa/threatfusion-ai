@@ -23,7 +23,6 @@ from threatfusion.network_telemetry import parse_zeek_conn_log_with_diagnostics
 from threatfusion.reporting import build_connection_report
 from threatfusion.ui_collector import read_snapshot
 
-unix = pytest.mark.skipif(os.name != "posix", reason="Private Linux collector/archive contract")
 
 
 def connections(count=5, *, long=False):
@@ -92,7 +91,6 @@ def test_connection_event_and_metadata_budgets_still_apply(monkeypatch):
         runtime.analyze_connection_records([replace(connections(1)[0], responder_ip="x"*1025)])
 
 
-@unix
 def test_full_retention_cti_priority_mapping_and_complete_archive(tmp_path, small_snapshot):
     source, state = make_input(tmp_path, long=True)
     indicator = IOCRecord("198.51.100.5", IOCType.IPV4, "Fixture")
@@ -114,7 +112,6 @@ def test_full_retention_cti_priority_mapping_and_complete_archive(tmp_path, smal
     assert "198.51.100.5" not in json.dumps(full) and "C4" not in json.dumps(full)
 
 
-@unix
 def test_archive_cache_cti_change_and_restart_preserve_groups(tmp_path, small_snapshot):
     source, state = make_input(tmp_path)
     with collector_module.ZeekCollector(source, state) as collector:
@@ -138,7 +135,6 @@ def test_archive_cache_cti_change_and_restart_preserve_groups(tmp_path, small_sn
     assert len(list(state.glob("connections.full-*.json.gz"))) == 2
 
 
-@unix
 def test_incomplete_coverage_disables_context_even_in_full_archive(tmp_path, small_snapshot):
     source, state = make_input(tmp_path, long=True)
     with collector_module.ZeekCollector(source, state, max_records=3) as collector:
@@ -148,7 +144,6 @@ def test_incomplete_coverage_disables_context_even_in_full_archive(tmp_path, sma
     assert all(not r["Declared expected"] for r in full_payload(state)["findings"])
 
 
-@unix
 def test_archive_cache_rechecks_completion_and_expiry_without_new_records(tmp_path, small_snapshot):
     source, state = make_input(tmp_path, count=3, long=True)
     path = source / "conn.log"
@@ -167,7 +162,6 @@ def test_archive_cache_rechecks_completion_and_expiry_without_new_records(tmp_pa
         assert not full_payload(state)["findings"][0]["Declared expected"]
 
 
-@unix
 def test_archive_cache_rechecks_rule_activation(tmp_path, small_snapshot):
     source, state = make_input(tmp_path, count=3)
     path = source / "conn.log"
@@ -181,7 +175,6 @@ def test_archive_cache_rechecks_rule_activation(tmp_path, small_snapshot):
         assert full_payload(state)["findings"][0]["Declared expected"]
 
 
-@unix
 def test_publication_failure_keeps_previous_snapshot_and_archive(tmp_path, small_snapshot, monkeypatch):
     source, state = make_input(tmp_path)
     with collector_module.ZeekCollector(source, state) as collector:
@@ -205,7 +198,6 @@ def test_publication_failure_keeps_previous_snapshot_and_archive(tmp_path, small
     assert len(full_payload(state)["findings"]) == 5
 
 
-@unix
 @pytest.mark.parametrize("tamper", ["hash", "link", "permissions", "size", "path", "missing", "fifo"])
 def test_changed_or_unsafe_archive_cannot_be_downloaded(tmp_path, small_snapshot, tamper):
     source, state = make_input(tmp_path)
@@ -236,7 +228,6 @@ def test_changed_or_unsafe_archive_cannot_be_downloaded(tmp_path, small_snapshot
         reports.read_archive(state, reference)
 
 
-@unix
 @pytest.mark.parametrize("budget", ["MAX_EXPANDED_BYTES", "MAX_ARCHIVE_BYTES"])
 def test_archive_budget_failure_preserves_old_generation(tmp_path, small_snapshot, monkeypatch, budget):
     source, state = make_input(tmp_path)
@@ -251,7 +242,6 @@ def test_archive_budget_failure_preserves_old_generation(tmp_path, small_snapsho
         assert not list(state.glob(".collector-archive-*"))
 
 
-@unix
 def test_unrelated_archive_slot_file_survives(tmp_path, small_snapshot):
     source, state = make_input(tmp_path)
     state.mkdir(mode=0o700)
@@ -263,7 +253,6 @@ def test_unrelated_archive_slot_file_survives(tmp_path, small_snapshot):
     assert user_file.read_text() == "preserve user contents"
 
 
-@unix
 @pytest.mark.parametrize("language", ["en", "tr"])
 def test_bilingual_partial_ui_defers_download_and_public_view_has_no_io(tmp_path, small_snapshot, monkeypatch, language):
     source, state = make_input(tmp_path, long=True)
@@ -292,7 +281,6 @@ def test_bilingual_partial_ui_defers_download_and_public_view_has_no_io(tmp_path
     assert not app.exception and not callbacks and not app.metric and not app.warning
 
 
-@unix
 def test_malformed_projection_counts_and_mapping_fail_closed(tmp_path, small_snapshot):
     source, state = make_input(tmp_path)
     with collector_module.ZeekCollector(source, state) as collector:
@@ -310,7 +298,6 @@ def test_malformed_projection_counts_and_mapping_fail_closed(tmp_path, small_sna
             read_snapshot(state)
 
 
-@unix
 def test_first_archive_publication_race_preserves_user_file(tmp_path, small_snapshot, monkeypatch):
     source, state = make_input(tmp_path)
     original = reports.publish
@@ -329,7 +316,6 @@ def test_first_archive_publication_race_preserves_user_file(tmp_path, small_snap
             collector.tick(now=NOW)
 
 
-@unix
 def test_cached_archive_tampering_is_repaired_without_reimport(tmp_path, small_snapshot):
     source, state = make_input(tmp_path)
     with collector_module.ZeekCollector(source, state) as collector:
@@ -342,7 +328,6 @@ def test_cached_archive_tampering_is_repaired_without_reimport(tmp_path, small_s
         assert len(full_payload(state)["findings"]) == 5
 
 
-@unix
 def test_omitted_cti_and_review_counts_remain_visible(tmp_path, small_snapshot):
     source, state = make_input(tmp_path, long=True)
     indicators = [IOCRecord(f"198.51.100.{i+1}", IOCType.IPV4, "Fixture") for i in range(5)]
@@ -355,7 +340,6 @@ def test_omitted_cti_and_review_counts_remain_visible(tmp_path, small_snapshot):
     assert all(r["CTI match"] and not r["Declared expected"] for r in full_payload(state)["findings"])
 
 
-@unix
 @pytest.mark.parametrize("changed_user_file", [False, True])
 def test_expiry_releases_cache_and_only_intact_owned_archives(tmp_path, small_snapshot, changed_user_file):
     source, state = make_input(tmp_path)
@@ -374,7 +358,6 @@ def test_expiry_releases_cache_and_only_intact_owned_archives(tmp_path, small_sn
             assert not path.exists()
 
 
-@unix
 def test_interrupted_archive_finalization_recovers_pending_ownership(tmp_path, small_snapshot, monkeypatch):
     source, state = make_input(tmp_path)
     indicator = IOCRecord("198.51.100.5", IOCType.IPV4, "Fixture")

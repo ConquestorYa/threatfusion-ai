@@ -29,6 +29,13 @@ framing is retired. No release date or tag is set.
 
 ### Changed
 
+- Linux only: the Windows CI job and the tests' Windows skips are removed. The
+  installer never supported Windows or macOS.
+- READMEs: a short one-line install that works with curl or wget (Ubuntu
+  desktops ship without curl), a table for open/stop/update/demo/uninstall and
+  first steps without Zeek. Verified from GitHub on fresh Debian 12 and Ubuntu
+  24.04 containers without Python or Git.
+
 - The default lexical model directory is `data/models/lexical`, and the
   synthetic demo model is stored as `demo-synthetic`; an existing installation's
   demo model is moved to the new name on the next start.

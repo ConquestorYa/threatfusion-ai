@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 
 import numpy as np
 import pytest
@@ -53,8 +52,7 @@ def test_local_days_file_is_private_and_bad_files_start_over(tmp_path):
     path = tmp_path / "ml" / "local-days.json"
     days = ml_local.LocalDays({"5": [[0.0] * len(mb.FEATURES)]})
     days.save(path)
-    if os.name == "posix":
-        assert oct(path.stat().st_mode & 0o777) == "0o600"
+    assert oct(path.stat().st_mode & 0o777) == "0o600"
     assert ml_local.LocalDays.load(path).days == days.days
     path.write_text(json.dumps({"schema": 1, "features": ["other"], "days": {"5": []}}))
     assert ml_local.LocalDays.load(path).days == {}

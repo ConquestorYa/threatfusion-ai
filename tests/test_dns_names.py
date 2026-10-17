@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from datetime import timedelta
 
 import pytest
@@ -58,7 +57,6 @@ def test_local_name_volume_does_not_reach_review():
     assert verdicts["updates.example.test"].verdict is HybridVerdict.REVIEW
 
 
-@pytest.mark.skipif(os.name != "posix", reason="Linux collector contract")
 def test_collected_rows_show_dns_names_for_connections_and_shared_addresses(tmp_path):
     source, state = tmp_path / "input", tmp_path / "private"
     source.mkdir()

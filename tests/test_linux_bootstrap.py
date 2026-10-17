@@ -122,7 +122,6 @@ def test_environment_install_enforces_hashes_and_preserves_unknown_env(
         bootstrap.prepare_environment(tmp_path, source, Path("uv"))
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Linux shell installer")
 @pytest.mark.parametrize(
     "flags",
     [
@@ -150,7 +149,6 @@ def test_shell_invalid_options_fail_before_installing(tmp_path, flags):
     assert not (tmp_path / "install").exists()
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Linux shell installer")
 def test_shell_help_requires_no_python_or_network():
     result = subprocess.run(
         ["bash", str(SOURCE / "scripts/install_linux.sh"), "--help"],
@@ -161,7 +159,6 @@ def test_shell_help_requires_no_python_or_network():
     assert "no sudo" in result.stdout
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Linux shell installer")
 @pytest.mark.parametrize("download", ["exit 22", 'printf "wrong archive" > "${@: -1}"'])
 def test_failed_download_or_checksum_preserves_existing_files(tmp_path, download):
     if os.geteuid() == 0:

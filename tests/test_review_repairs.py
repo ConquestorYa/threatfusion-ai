@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import io
 import json
-import os
 import socket
 import sqlite3
 from dataclasses import replace
@@ -305,7 +304,6 @@ def test_old_dns_representation_is_disclosed_and_same_source_reimport_is_reconci
         assert snapshot["report"]["findings"][0]["Known CTI sources"] == "Synthetic"
 
 
-@pytest.mark.skipif(os.name != "posix", reason="Private Linux collector")
 def test_collector_private_identity_is_generation_bound_and_exports_stay_aliased(
     tmp_path,
 ):
@@ -331,7 +329,6 @@ def test_collector_private_identity_is_generation_bound_and_exports_stay_aliased
         local_identity_view(state, snapshot)
 
 
-@pytest.mark.skipif(os.name != "posix", reason="Private Linux collector")
 def test_schema2_migration_keeps_private_backup_and_legacy_dns(tmp_path):
     source = tmp_path / "input"
     source.mkdir()
@@ -479,7 +476,6 @@ def test_dns_answer_budget_is_enforced_before_analysis():
         analyze_dns_events([event], [IOC], None)
 
 
-@pytest.mark.skipif(os.name != "posix", reason="Private Linux collector")
 def test_failed_analysis_preserves_snapshot_and_retries_committed_records(
     tmp_path, monkeypatch
 ):
@@ -509,7 +505,6 @@ def test_failed_analysis_preserves_snapshot_and_retries_committed_records(
         assert status["scan"]["analysis_recomputed"]
 
 
-@pytest.mark.skipif(os.name != "posix", reason="Private Linux collector")
 def test_collector_ui_local_identity_toggle_and_stale_mapping_are_safe(tmp_path):
     from streamlit.testing.v1 import AppTest
 
@@ -597,5 +592,4 @@ def test_cli_target_ip_opt_in_requires_explicit_export_and_private_permissions(
         ]
     )
     assert json.loads(path.read_text())["findings"][0]["domain"] == BAD_IP
-    if os.name == "posix":
-        assert path.stat().st_mode & 0o777 == 0o600
+    assert path.stat().st_mode & 0o777 == 0o600

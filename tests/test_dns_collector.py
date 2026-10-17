@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import gzip
 import json
-import os
 import sqlite3
 from datetime import datetime, timedelta, timezone
 
@@ -35,8 +34,6 @@ def test_experiment_path_guard_resolves_parent_traversal_and_links(tmp_path):
 
 @pytest.fixture
 def paths(tmp_path):
-    if os.name != "posix":
-        pytest.skip("Linux collector contract")
     source = tmp_path / "input"
     source.mkdir()
     return source, tmp_path / "private"

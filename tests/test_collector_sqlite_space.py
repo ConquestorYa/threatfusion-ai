@@ -4,7 +4,6 @@ from __future__ import annotations
 import gzip
 import ipaddress
 import json
-import os
 import sqlite3
 
 import pytest
@@ -15,7 +14,6 @@ from threatfusion.collector_reports import read_archive
 from threatfusion.telemetry_collector import ZeekCollector
 from threatfusion.ui_collector import read_snapshot
 
-pytestmark = pytest.mark.skipif(os.name != 'posix', reason='Private Linux SQLite budget contract')
 
 
 @pytest.mark.parametrize('initial', [3, 1001])

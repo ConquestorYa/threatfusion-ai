@@ -18,7 +18,6 @@ from threatfusion.expected_connections import parse_expected_connections
 from threatfusion.models import IOCRecord, IOCType
 from threatfusion.ui_collector import read_snapshot
 
-pytestmark = pytest.mark.skipif(os.name != "posix", reason="Linux collector file/lock contract")
 NOW = datetime(2026, 10, 4, 18, tzinfo=timezone.utc)
 FIELDS = ("ts", "uid", "id.orig_h", "id.orig_p", "id.resp_h", "id.resp_p", "proto",
           "duration", "orig_bytes", "resp_bytes", "conn_state", "missed_bytes")

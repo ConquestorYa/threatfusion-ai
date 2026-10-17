@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import os
-import sys
 import threading
 from datetime import datetime, timedelta, timezone
 
@@ -17,9 +16,6 @@ from threatfusion.cti_cache import (
 from threatfusion.cti_refresh import CTIRefreshOutcome
 from threatfusion.models import IOCRecord, IOCType
 
-pytestmark = pytest.mark.skipif(
-    sys.platform != "linux", reason="Linux managed installation"
-)
 
 
 @pytest.fixture

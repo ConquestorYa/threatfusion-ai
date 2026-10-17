@@ -93,35 +93,55 @@ adresler, belgeler için ayrılmış adreslerdir.
 </tr>
 </table>
 
-## Hızlı başlangıç
+## Kurulum (Linux, tek komut)
 
-**1. Kur** (Linux x86_64; Debian 12 ve Ubuntu 24.04'te test edildi; sudo,
-Python ya da Git gerekmez). Normal kullanıcınla çalıştır:
+**Gerekenler:** x86_64 Linux (Python ya da Git olmayan sıfır Debian 12 ve
+Ubuntu 24.04'te test edildi), internet bağlantısı ve yaklaşık 2 GB boş alan.
+Sudo gerekmez. Windows ve macOS desteklenmez.
+
+Bir terminal aç ve bu tek satırı normal kullanıcınla yapıştır:
 
 ```bash
-bash -c 'set -e; f=$(mktemp /tmp/threatfusion-install.XXXXXXXX); trap "rm -f -- \"$f\"" EXIT; u=https://raw.githubusercontent.com/ConquestorYa/threatfusion-ai/main/scripts/install_linux.sh; if command -v curl >/dev/null; then curl --proto "=https" --proto-redir "=https" -fsSL --retry 3 --connect-timeout 20 --max-time 300 "$u" -o "$f"; elif command -v wget >/dev/null; then wget --https-only --timeout=30 --tries=3 -qO "$f" "$u"; else echo "curl veya wget gerekli" >&2; exit 1; fi; bash "$f" "$@"' --
+u=https://raw.githubusercontent.com/ConquestorYa/threatfusion-ai/main/scripts/install_linux.sh; f=/tmp/threatfusion-install.sh; { command -v curl >/dev/null && curl -fsSLo "$f" "$u" || wget -qO "$f" "$u"; } && bash "$f"
 ```
 
-Uygulama http://127.0.0.1:8501 adresinde **Kurulum ve CTI güncellemeleri**
-sayfasıyla açılır. Aynı komutu yeniden çalıştırmak en son sürüme günceller;
-verilerin ve ayarların korunur (önce uygulamayı `threatfusion-ai stop` ile durdur).
+Komut, `~/.local/share/threatfusion-ai` içine özel bir Python 3.12 ve
+sağlama toplamı doğrulanmış kütüphaneler indirir, `threatfusion-ai` komutunu ve
+uygulamalar menüsü kısayolunu ekler ve uygulamayı http://127.0.0.1:8501
+adresinde açar (yalnızca bu bilgisayardan erişilebilir). İlk kurulum birkaç
+dakika sürer.
 
-**2. CTI ekle.** SGB anahtar istemez. [auth.abuse.ch](https://auth.abuse.ch/)
-üzerinden alınan tek bir ücretsiz anahtar hem ThreatFox'u hem URLhaus'u açar.
-**CTI verilerini şimdi güncelle**'ye bas.
+| Ne için | Komut |
+| --- | --- |
+| Uygulamayı yeniden aç | `threatfusion-ai` (ya da uygulamalar menüsünde **ThreatFusion AI**) |
+| Durdur | `threatfusion-ai stop` |
+| En son sürüme güncelle | durdur, sonra kurulum satırını yeniden çalıştır (veriler ve ayarlar korunur) |
+| Sentetik veriyle dene | `threatfusion-ai --mode demo` |
+| Kaldır | `threatfusion-ai stop; rm -rf ~/.local/share/threatfusion-ai ~/.local/bin/threatfusion-ai ~/.local/share/applications/io.github.ConquestorYa.ThreatFusionAI.desktop` |
 
-**3. Zeek'i çalıştır;** saatlik bölünmüş `conn.log` ve `dns.log` dosyaları
-yazsın: [Zeek sensör kurulumu](docs/ZEEK_SETUP.md) (sürümü sabitlenmiş bir Docker tarifi, İngilizce).
+Terminal `threatfusion-ai: command not found` derse yeni bir terminal aç.
 
-**4. Toplayıcıyı başlat;** ikinci bir terminalde çalıştır ve **Toplanan
+## İlk adımlar
+
+**1. CTI ekle.** Uygulama **Kurulum ve CTI güncellemeleri** sayfasıyla açılır.
+SGB anahtar istemez. [auth.abuse.ch](https://auth.abuse.ch/) üzerinden alınan
+tek bir ücretsiz anahtar hem ThreatFox'u hem URLhaus'u açar. **CTI verilerini
+şimdi güncelle**'ye bas. **Hızlı sorgu** ve **Telemetri analizi** (tek bir Zeek,
+DNS, PCAP ya da benzeri dosya yükle) bundan sonra Zeek olmadan da çalışır.
+
+**2. Zeek'i çalıştır;** saatlik bölünmüş `conn.log` ve `dns.log` dosyaları
+yazsın: [Zeek sensör kurulumu](docs/ZEEK_SETUP.md) (sürümü sabitlenmiş bir
+Docker tarifi, İngilizce; Docker bir kez yönetici yetkisi ister).
+
+**3. Toplayıcıyı başlat;** ikinci bir terminalde çalıştır ve **Toplanan
 bağlantılar** sayfasını aç:
 
 ```bash
 threatfusion-ai collect --input-dir ~/zeek-sensor/logs
 ```
 
-Sonra: `threatfusion-ai` uygulamayı yeniden açar, `threatfusion-ai stop`
-durdurur. Ayrıntılar: [Linux kurulumu](docs/INSTALL_LINUX.md).
+Toplanan trafiğin 3 günü dolunca **Deneysel ML** sekmesi davranış modelini bu
+bilgisayarda eğitir. Ayrıntılar: [Linux kurulumu](docs/INSTALL_LINUX.md).
 
 ## Uygulamadaki diğer araçlar
 
@@ -208,8 +228,8 @@ yerel uygulama. Bu araçlardan daha faydalı olup olmadığı ölçülmedi.
 ## Geliştirme
 
 Python 3.12, Streamlit, SQLite, pandas, Altair, Plotly ve scikit-learn. CI; kod
-denetimi, testler, deponun gizlilik denetimi, Windows uyumluluk testleri,
-konteyner kontrolü ve Debian ile Ubuntu'da sıfırdan kurulum testlerini çalıştırır.
+denetimi, testler, deponun gizlilik denetimi, konteyner kontrolü ve sıfır Debian
+ile Ubuntu'da kurulum testlerini çalıştırır. Yalnızca Linux.
 
 Bu proje yoğun yapay zekâ desteğiyle geliştiriliyor (tasarım, kod, test ve
 dokümantasyon); değişiklikler birleştirilmeden önce gözden geçirilir ve test edilir.

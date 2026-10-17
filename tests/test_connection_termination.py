@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
@@ -85,7 +84,6 @@ def test_reset_session_ui_explains_coverage_and_translates_counts():
     assert "reset" in row["Kanıt"]
 
 
-@pytest.mark.skipif(os.name != "posix", reason="Linux collector contract")
 def test_completed_reset_log_reaches_private_collector_snapshot(tmp_path):
     from threatfusion.telemetry_collector import ZeekCollector
     from threatfusion.ui_collector import read_snapshot

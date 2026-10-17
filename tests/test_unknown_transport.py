@@ -1,7 +1,6 @@
 """Legitimate Zeek enum import without expanding TCP detection eligibility."""
 import gzip
 import json
-import os
 from datetime import datetime, timezone
 
 import pytest
@@ -58,7 +57,6 @@ def test_conflicting_uid_across_known_and_unknown_transport_is_not_double_eviden
     assert all(f.conflicting_uids == 1 for f in result.connection_findings)
 
 
-@pytest.mark.skipif(os.name != "posix", reason="Linux completed-file collector contract")
 def test_collector_retains_unknown_rows_after_restart_and_gzip_copy(tmp_path):
     source, state = tmp_path / "source", tmp_path / "state"
     source.mkdir()
@@ -77,7 +75,6 @@ def test_collector_retains_unknown_rows_after_restart_and_gzip_copy(tmp_path):
     assert read_snapshot(state)["findings"] == before["findings"]
 
 
-@pytest.mark.skipif(os.name != "posix", reason="Linux completed-file collector contract")
 def test_collector_still_rejects_arbitrary_oversized_protocol_fields(tmp_path):
     source, state = tmp_path / "source", tmp_path / "state"
     source.mkdir()
@@ -87,7 +84,6 @@ def test_collector_still_rejects_arbitrary_oversized_protocol_fields(tmp_path):
     assert result["counts"]["rejected_files"] == 1 and result["counts"]["retained_records"] == 0
 
 
-@pytest.mark.skipif(os.name != "posix", reason="Private Linux replay directory")
 @pytest.mark.parametrize("tamper", ["plan", "runtime"])
 def test_compatibility_replay_aborts_before_analysis_when_scope_changes(tmp_path, monkeypatch, tamper):
     from scripts.lab.evaluate_dns_collector import private_root, write_new

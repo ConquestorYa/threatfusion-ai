@@ -1,6 +1,4 @@
-import sys
 
-import pytest
 
 
 from threatfusion.local_integration import (
@@ -10,9 +8,6 @@ from threatfusion.local_integration import (
 )
 
 
-pytestmark = pytest.mark.skipif(
-    sys.platform != "linux", reason="Linux desktop/shell integration"
-)
 
 
 def test_integration_registers_command_and_desktop_and_preserves_shell_config(tmp_path):

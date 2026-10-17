@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -136,8 +135,7 @@ def test_each_match_notifies_once_and_state_is_private(tmp_path):
     assert notifications.notify_new_threats(VIEW, path, send=send) == 3
     assert notifications.notify_new_threats(VIEW, path, send=send) == 0
     assert len(sent) == 1
-    if os.name == "posix":
-        assert oct(path.stat().st_mode & 0o777) == "0o600"
+    assert oct(path.stat().st_mode & 0o777) == "0o600"
     more = {"findings": [], "dns": {"report": {"findings": [
         {"Target": "new.example.test", "Queue priority": "Investigate", "Evidence": "Exact known-domain IOC match"}]}}}
     assert notifications.notify_new_threats(more, path, send=send) == 1 and "new.example.test" in sent[-1]

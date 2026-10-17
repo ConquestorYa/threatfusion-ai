@@ -425,7 +425,7 @@ Implemented safeguards include:
 - sanitized public-demo/runtime generation;
 - non-root Docker packaging;
 - secret/local-path release auditing;
-- Linux + Windows CI;
+- Linux CI (Windows support dropped 2026-10-17);
 - Docker build/health validation;
 - dependency auditing.
 

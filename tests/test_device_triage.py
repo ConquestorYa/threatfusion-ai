@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import socket
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
@@ -164,8 +163,7 @@ def test_device_cli_requires_explicit_raw_export_and_refuses_overwrite(tmp_path,
     args = [str(input_path), "--cti-only", "--device-json-output", str(output)]
     assert cli.main(args) == 0
     assert "192.0.2.1" not in output.read_text()
-    if os.name == "posix":
-        assert output.stat().st_mode & 0o777 == 0o600
+    assert output.stat().st_mode & 0o777 == 0o600
     with pytest.raises(FileExistsError):
         cli.main(args)
     with pytest.raises(SystemExit):

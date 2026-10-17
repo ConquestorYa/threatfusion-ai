@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 from datetime import datetime, timezone
 
 import numpy as np
@@ -97,7 +96,6 @@ def test_foreign_or_malformed_models_are_rejected(tmp_path):
         mb.BehaviorModel.load(big)
 
 
-@pytest.mark.skipif(os.name != "posix", reason="Linux collector contract")
 def test_experimental_tab_shows_flagged_groups_and_saves_marks(tmp_path):
     source, state = tmp_path / "source", tmp_path / "collector"
     source.mkdir()
@@ -183,7 +181,6 @@ def test_levels_follow_the_model_line():
     assert level(0.95, 0.9) == "High" and level(0.7, 0.9) == "Medium" and level(0.2, 0.9) == "Low"
 
 
-@pytest.mark.skipif(os.name != "posix", reason="Linux collector contract")
 def test_quick_lookup_shows_behavior_for_a_destination_this_computer_talked_to(tmp_path):
     state = _collector_with_beacon(tmp_path)
     script = ("from pathlib import Path\nfrom threatfusion.ui_behavior import render_lookup_behavior\n"
@@ -208,7 +205,6 @@ def test_name_scores_take_the_strongest_group_per_name():
     assert name_scores(None) == {}
 
 
-@pytest.mark.skipif(os.name != "posix", reason="Linux collector contract")
 def test_new_destination_with_a_steady_rhythm_is_listed_after_learning(tmp_path):
     from threatfusion.baseline import Baseline
     state = _collector_with_beacon(tmp_path)
@@ -230,7 +226,6 @@ def test_new_destination_with_a_steady_rhythm_is_listed_after_learning(tmp_path)
     assert "ip:1.1.1.1" in Baseline.load(tmp_path / "ml" / "baseline.json").devices["192.0.2.1"]["seen"]
 
 
-@pytest.mark.skipif(os.name != "posix", reason="Linux collector contract")
 def test_new_destinations_wait_for_three_days_of_history(tmp_path):
     state = _collector_with_beacon(tmp_path)
     app = AppTest.from_string(
@@ -239,7 +234,6 @@ def test_new_destinations_wait_for_three_days_of_history(tmp_path):
     assert not app.exception and "Learning what is normal" in app.info[0].value
 
 
-@pytest.mark.skipif(os.name != "posix", reason="Linux collector contract")
 def test_learning_is_shown_even_when_a_device_has_no_rhythm_groups(tmp_path):
     from threatfusion.baseline import Baseline
     state = _collector_with_beacon(tmp_path)
@@ -267,7 +261,6 @@ def test_marks_apply_to_the_whole_site_and_addresses_of_one_site_share_a_card(tm
     assert marked_sites(labels, simple_registrable) == ({"cdn.test"}, {"evil.example"})
 
 
-@pytest.mark.skipif(os.name != "posix", reason="Linux collector contract")
 def test_a_site_marked_known_on_another_list_hides_its_new_entry(tmp_path):
     from threatfusion.baseline import Baseline
     from threatfusion.ui_simple_review import save_label

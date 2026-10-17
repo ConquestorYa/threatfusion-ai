@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import copy
 import json
-import os
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
@@ -194,7 +193,6 @@ def test_upload_ui_shows_scans_even_when_original_review_filter_has_no_rows(
     )
 
 
-@pytest.mark.skipif(os.name != "posix", reason="Linux collector contract")
 def test_collector_restart_snapshot_and_bilingual_ui_match_offline_attempts(tmp_path):
     from threatfusion.telemetry_collector import ZeekCollector
     from threatfusion.ui_collector import read_snapshot

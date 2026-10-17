@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -103,7 +102,6 @@ def test_long_session_to_a_popular_destination_is_an_observation():
     assert findings["198.51.100.2"].priority == "review"
 
 
-@pytest.mark.skipif(os.name != "posix", reason="Linux collector contract")
 def test_collector_uses_dns_names_to_mark_popular_destinations(tmp_path):
     source, state = tmp_path / "input", tmp_path / "private"
     source.mkdir()

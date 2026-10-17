@@ -53,8 +53,7 @@ def test_baseline_file_is_private_and_survives_bad_input(tmp_path):
     b = Baseline()
     b.update([_c(1, "1.1.1.1")], {})
     b.save(path)
-    if os.name == "posix":
-        assert stat.S_IMODE(os.stat(path).st_mode) == 0o600
+    assert stat.S_IMODE(os.stat(path).st_mode) == 0o600
     assert Baseline.load(path).devices == b.devices
     path.write_text("not json")
     assert Baseline.load(path).devices == {}

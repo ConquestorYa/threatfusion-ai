@@ -18,7 +18,6 @@ from threatfusion import telemetry_collector as collector_module
 from threatfusion.expected_connections import parse_expected_connections
 from threatfusion.ui_collector import read_snapshot
 
-pytestmark = pytest.mark.skipif(os.name != "posix", reason="Private atomic Linux preparation/collector contract")
 
 
 def connection_text(count=6):

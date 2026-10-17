@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import socket
 
 import pytest
@@ -131,8 +130,7 @@ def test_cli_has_explicit_private_connection_export(tmp_path, monkeypatch):
     args = [str(path), "--format", "zeek-conn", "--cti-only", "--connection-json-output", str(output)]
     assert cli.main(args) == 0
     assert "192.0.2.1" not in output.read_text()
-    if os.name == "posix":
-        assert output.stat().st_mode & 0o777 == 0o600
+    assert output.stat().st_mode & 0o777 == 0o600
     with pytest.raises(FileExistsError):
         cli.main(args)
     with pytest.raises(SystemExit):

@@ -13,7 +13,6 @@ from threatfusion import telemetry_collector as module
 from threatfusion.models import IOCRecord, IOCType
 from threatfusion.ui_collector import read_snapshot
 
-pytestmark = pytest.mark.skipif(os.name != "posix", reason="Linux collector contract")
 
 
 @pytest.fixture

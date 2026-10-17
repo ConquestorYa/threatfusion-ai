@@ -92,34 +92,53 @@ addresses.
 </tr>
 </table>
 
-## Quick start
+## Install (Linux, one command)
 
-**1. Install** (Linux x86_64; Debian 12 and Ubuntu 24.04 are tested; no sudo,
-Python or Git needed). Run as your normal user:
+**Needs:** Linux on x86_64 (tested on fresh Debian 12 and Ubuntu 24.04 that have
+no Python or Git), an internet connection and about 2 GB of free space. No
+sudo. Windows and macOS are not supported.
+
+Open a terminal and paste this one line as your normal user:
 
 ```bash
-bash -c 'set -e; f=$(mktemp /tmp/threatfusion-install.XXXXXXXX); trap "rm -f -- \"$f\"" EXIT; u=https://raw.githubusercontent.com/ConquestorYa/threatfusion-ai/main/scripts/install_linux.sh; if command -v curl >/dev/null; then curl --proto "=https" --proto-redir "=https" -fsSL --retry 3 --connect-timeout 20 --max-time 300 "$u" -o "$f"; elif command -v wget >/dev/null; then wget --https-only --timeout=30 --tries=3 -qO "$f" "$u"; else echo "curl veya wget gerekli" >&2; exit 1; fi; bash "$f" "$@"' --
+u=https://raw.githubusercontent.com/ConquestorYa/threatfusion-ai/main/scripts/install_linux.sh; f=/tmp/threatfusion-install.sh; { command -v curl >/dev/null && curl -fsSLo "$f" "$u" || wget -qO "$f" "$u"; } && bash "$f"
 ```
 
-The app opens at http://127.0.0.1:8501 on the **Setup & CTI updates** page.
-Running the same command again updates to the latest version and keeps your
-data and settings (stop the app first with `threatfusion-ai stop`).
+It downloads a private Python 3.12 and checksum-verified libraries into
+`~/.local/share/threatfusion-ai`, adds the `threatfusion-ai` command and an
+applications-menu entry, and opens the app at http://127.0.0.1:8501 (only this
+computer can reach it). The first install takes a few minutes.
 
-**2. Add CTI.** SGB works without a key. One free key from
-[auth.abuse.ch](https://auth.abuse.ch/) enables both ThreatFox and URLhaus.
-Click **Update CTI now**.
+| To… | Run |
+| --- | --- |
+| Open the app again | `threatfusion-ai` (or **ThreatFusion AI** in the applications menu) |
+| Stop it | `threatfusion-ai stop` |
+| Update to the latest version | stop it, then run the install line again (data and settings are kept) |
+| Try it with synthetic data | `threatfusion-ai --mode demo` |
+| Uninstall | `threatfusion-ai stop; rm -rf ~/.local/share/threatfusion-ai ~/.local/bin/threatfusion-ai ~/.local/share/applications/io.github.ConquestorYa.ThreatFusionAI.desktop` |
 
-**3. Run Zeek** so that it writes rotated `conn.log` and `dns.log` files:
-[Zeek sensor setup](docs/ZEEK_SETUP.md) (a pinned Docker recipe).
+If a terminal says `threatfusion-ai: command not found`, open a new terminal.
 
-**4. Start the collector** in a second terminal and open **Collected connections**:
+## First steps
+
+**1. Add CTI.** The app opens on **Setup & CTI updates**. SGB works without a
+key. One free key from [auth.abuse.ch](https://auth.abuse.ch/) enables both
+ThreatFox and URLhaus. Click **Update CTI now**. **Quick lookup** and
+**Analyze telemetry** (upload one Zeek, DNS, PCAP or similar file) work from
+here on, without Zeek.
+
+**2. Run Zeek** so that it writes rotated `conn.log` and `dns.log` files:
+[Zeek sensor setup](docs/ZEEK_SETUP.md) (a pinned Docker recipe; Docker needs
+administrator rights once).
+
+**3. Start the collector** in a second terminal and open **Collected connections**:
 
 ```bash
 threatfusion-ai collect --input-dir ~/zeek-sensor/logs
 ```
 
-Later: `threatfusion-ai` reopens the app, `threatfusion-ai stop` stops it.
-More in [Linux installation](docs/INSTALL_LINUX.md).
+After 3 days of collected traffic the **Experimental ML** tab trains its
+behavior model on this computer. More in [Linux installation](docs/INSTALL_LINUX.md).
 
 ## Also in the app
 
@@ -202,8 +221,8 @@ is more useful than these tools has not been measured.
 ## Development
 
 Python 3.12, Streamlit, SQLite, pandas, Altair, Plotly and scikit-learn.
-CI runs lint, tests, a privacy audit of the repository, Windows compatibility
-tests, a container check and first-run installs on Debian and Ubuntu.
+CI runs lint, tests, a privacy audit of the repository, a container check and
+first-run installs on fresh Debian and Ubuntu. Linux only.
 
 This project is developed with extensive AI assistance (design, code, tests and
 documentation); changes are reviewed and tested before they are merged.

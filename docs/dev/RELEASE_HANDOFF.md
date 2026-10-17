@@ -2,6 +2,21 @@
 
 Newest section first. Status date: 2026-10-17.
 
+## Linux only; one-line install verified from scratch (2026-10-17)
+
+- User request: drop Windows. Removed the Windows CI job and the tests'
+  `os.name`/`sys.platform` skips (no Windows code path existed; runtime POSIX
+  guards in the collector stay). Evidence documents that mention Windows hosts
+  are about recorded traffic, not support.
+- README/README.tr install sections rewritten in both languages with the same
+  one-line command (curl, else wget). Checked from GitHub main on fresh
+  containers as a normal user: Debian 12 (curl+wget) and Ubuntu 24.04 (wget
+  only, no Python/Git): install and first start ~25 s, health ok, command and
+  menu entry present, shipped ML pack trains, stop, update. The exact README
+  line on wget-only Ubuntu: no error output, keyless CTI refresh stored 490,886
+  SGB indicators, demo mode healthy, the README uninstall line removes the
+  installation.
+
 ## Behavior model trained on each computer (2026-10-17)
 
 - Public-data-only models failed: `ml-behavior-public-v1` (line on lab normal
