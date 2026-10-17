@@ -597,9 +597,10 @@ def main() -> None:
         # A persistent mode note, not an alarm: same caveat, less visual weight.
         st.markdown(
             '<div class="tf-mode-note">' + safe_text(tr(
-                "CTI-only mode: ML is disabled. Results use the local CTI cache and "
-                "available DNS behavior only. A missing match does not establish "
-                "that a target is benign. Shared history is disabled in this mode."
+                "CTI-only mode: the domain-name ML score is off. Results use the local "
+                "CTI cache and available DNS behavior only. A missing match does not "
+                "establish that a target is benign. Shared history is disabled in this "
+                "mode. The behavior model of Collected connections trains on this computer."
             )) + "</div>",
             unsafe_allow_html=True,
         )

@@ -66,7 +66,7 @@ def render_local_settings(root: Path) -> None:
             tr("Operating mode"),
             options,
             format_func=lambda x: (
-                tr("Real CTI · ML disabled")
+                tr("Real CTI · ML trained on this computer")
                 if x == "cti-only"
                 else tr("Synthetic demo")
             ),

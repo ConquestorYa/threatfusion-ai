@@ -39,7 +39,7 @@ def main() -> int:
             )
         else:
             print(
-                "Gerçek CTI-only: ML kapalı. Veri yoksa --refresh-cti ile kaynakları yenileyin; eşleşme olmaması zararsızlık kanıtı değildir.",
+                "Gerçek CTI: alan adı ML puanı kapalı; davranış modeli 3 günlük trafikten sonra bu bilgisayarda eğitilir. Veri yoksa --refresh-cti ile kaynakları yenileyin; eşleşme olmaması zararsızlık kanıtı değildir.",
                 flush=True,
             )
         if args.refresh_cti:
