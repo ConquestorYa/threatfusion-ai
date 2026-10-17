@@ -1,6 +1,17 @@
 # Release handoff
 
-Newest section first. Status date: 2026-10-14.
+Newest section first. Status date: 2026-10-17.
+
+## Earlier lexical artifacts removed from the project (2026-10-17)
+
+- User decision: the lexical artifacts trained before this workspace existed
+  (never in Git, not recoverable) are dropped from the project. Their sections
+  and "missing original artifact" notes are removed from ML_DATASET,
+  PROJECT_CONTEXT, DECISIONS, PRODUCT_PLAN, AGENTS and older handoff entries.
+- Default lexical model directory `data/models/lexical`; demo model directory
+  `demo-synthetic` (an older install's `development-001` demo directory is
+  renamed on start; regression test). No measured model ships; CTI-only stays
+  the default.
 
 ## Collector stopped by the IOC match limit; P2 v2 interrupted (2026-10-16)
 
@@ -825,8 +836,7 @@ lookup with no web or terminal error; the update took about 2 minutes.
   UI/task contracts still run on Windows. No product test is bypassed.
 - Human decisions/time and new independent normal/malicious windows remain open;
   no accuracy/RITA parity/production claim. Previous truncated source exclusions
-  remain. Fresh-disjoint is not strict temporal; original model artifact remains
-  missing and augmented runtime promotion deferred. Owned offline lab work ends
+  remain. Fresh-disjoint is not strict temporal; augmented runtime promotion deferred. Owned offline lab work ends
   with VM restored off; no public hosting action is authorized.
 - Source-only `[skip render]` main integration requires exact tested-tree/all-six
   CI verification and unchanged user-suspended service, previews off and deploy
@@ -899,8 +909,8 @@ lookup with no web or terminal error; the update took about 2 minutes.
   reachable-history privacy auditing passed with zero findings.
 - All 34 original local data files and frozen runtime modules keep checksums.
   Owned comparison backend stopped, no interactive guest users/remaining running
-  containers; VM restored shut off. Original ML artifact is still missing,
-  fresh-disjoint is not strict temporal, augmented promotion remains deferred.
+  containers; VM restored shut off. Fresh-disjoint is not strict temporal,
+  augmented promotion remains deferred.
 - Next: predeclare analyst tasks and scoped normal-activity context, preserve
   original/CTI-conflicting evidence and measure workload. Actual analyst efficacy
   requires participants. Select several new intact permitted normal/malicious
@@ -964,8 +974,7 @@ lookup with no web or terminal error; the update took about 2 minutes.
   live-snapshot EN/TR selection and **1,119 tests / 91% coverage** pass; Ruff/
   Bash/diff/source audit pass. All 34 original data files unchanged. Own test
   containers/network cleaned, no interactive guest sessions, VM restored stopped.
-  Original ML artifact still missing, strict temporal insufficient, augmented
-  promotion deferred. Source-only main uses `[skip render]`; verify all CI and
+  Strict temporal insufficient, augmented promotion deferred. Source-only main uses `[skip render]`; verify all CI and
   unchanged user-suspended Render/previews/deploy history after publication.
 - Next: independent permitted benign updater/cache/resolver controls and an
   actual analyst task study; representative multi-day recovery/load/security
@@ -1020,7 +1029,7 @@ lookup with no web or terminal error; the update took about 2 minutes.
 - Full method, aggregate fingerprints, reproduction and limitations:
   `DNS_COLLECTION.md`. Raw logs/PCAP/cache/SQLite/evaluation receipts remain
   private external files. All 34 original local data files retain checksums.
-  Model identities/thresholds unchanged; original artifact missing, strict
+  Model identities/thresholds unchanged; strict
   temporal insufficient, augmented runtime promotion remains deferred.
 - Source-only main publication uses `[skip render]`; verify all CI and unchanged
   suspended-service/previews/deployment history after publication. Next:
@@ -1076,7 +1085,7 @@ lookup with no web or terminal error; the update took about 2 minutes.
   patterns and disclosed 500 omitted, taking 2.27 seconds and 5.77 MB traced Python
   allocation peak for that phase only. Input/pipeline allocation and total RSS
   excluded; not production throughput. All 34 original local data files keep their
-  checksums. Original ML artifact remains absent; fresh-disjoint is not strict
+  checksums. Fresh-disjoint is not strict
   temporal and augmented runtime promotion remains deferred.
 - Source-only main integration uses `[skip render]` and suspended hosting/previews
   guard. Verify all CI and unchanged deployment history after publication. Next:
@@ -1120,7 +1129,7 @@ lookup with no web or terminal error; the update took about 2 minutes.
   memory and is not production throughput or total RSS evidence.
 - All 34 pre-existing local data files retain their checksums. No API keys,
   caches, traffic logs, PCAPs, datasets or models are included in source release.
-  Original ML artifact remains absent, strict-temporal evidence insufficient,
+  Strict-temporal evidence insufficient,
   augmented runtime promotion deferred. Source-only main integration uses
   `[skip render]`; verify all CI and suspended-service/history guard afterwards.
 - Next: predeclare failure/scan and UDP/DNS controls with new reserved inputs;
@@ -1473,7 +1482,7 @@ close an existing public service or turn off dashboard Auto Sync.
   published on `local-development/linux-first-run`; the user now requested its
   guarded integration into `main`.
 - This flow does not change the fresh-disjoint metrics, five unscored eligible
-  temporal samples, missing original runtime artifact or deferred promotion.
+  temporal samples or deferred promotion.
 
 ## Credential privacy follow-up (2026-10-04)
 
@@ -1497,9 +1506,6 @@ close an existing public service or turn off dashboard Auto Sync.
 
 ## Current position
 
-- The earlier character-only C=4 model has a completed historical post-freeze
-  holdout. Its metrics are documented in `ML_DATASET.md` and
-  `RELEASE_NOTES_v0.1.0.md`.
 - The improved candidate is an augmented
   `lr_char_2_6_plus_lexical_c4` artifact trained with a separate CESNET
   hard-negative development window.
@@ -1509,12 +1515,8 @@ close an existing public service or turn off dashboard Auto Sync.
   first-seen temporal evidence.
 - Runtime promotion is deferred until stronger untouched post-freeze temporal
   evidence is available. The augmented artifact stays an experimental candidate.
-- The default configuration still points to `data/models/development-001`, but
-  that original artifact is **absent in this checkout**. The available synthetic
-  demo runtime has a separate `development-001` directory and
-  `demo_only_synthetic` status; it is not the original measured artifact.
-- Explicit CTI-only operation is now available when the original artifact is
-  unavailable. It does not change the default or promote either candidate.
+- Explicit CTI-only operation runs without any model. It does not promote
+  either candidate; the synthetic demo model has `demo_only_synthetic` status.
 
 ## Completed in this checkout
 
@@ -1536,22 +1538,20 @@ close an existing public service or turn off dashboard Auto Sync.
 - The indexed URLhaus lookup audit covered 1,000 active URL records with 100%
   exact and hostname-index coverage. No IOC destination was opened or
   resolved.
-- A reconstructed development-only snapshot was generated at
+- A development-only snapshot was generated at
   `data/snapshots/reconstructed-development/` from the refreshed local CTI
   cache and Tranco `L5PV4` (50,000 rows). It contains 523,114 final samples.
 - A corresponding development-only lexical C=4 artifact was generated at
   `data/models/reconstructed-development-lexical-c4/`. Its thresholds are
-  validation-selected at FPR budgets of 0.1%, 0.5% and 1.0%. This artifact is
-  not the previously documented frozen candidate and has no final holdout
-  claim.
+  validation-selected at FPR budgets of 0.1%, 0.5% and 1.0%.
 - A new CESNET benign window was streamed into
   `data/evaluation/cesnet-benign-lexical-final-20k.csv`: 20,000 unique domains
   after an 80,000-domain offset, with SHA-256
   `6ffc45cca5e089ad648f54e2d05f5d42bf4fc2bd6514ff2aa8e484af497da287`.
-- The reconstructed artifact identity is
+- The lexical C=4 artifact identity is
   `8b207dc363edde3544a8dcd447b80968c433b1d2b929616d492d40d5204ef356`,
   frozen at approximately `2026-10-02T21:55:51Z`.
-- The reconstructed artifact was evaluated once on the post-freeze holdout.
+- The lexical C=4 artifact was evaluated once on the post-freeze holdout.
   High/medium/low operating points measured 69.68%/82.58%/86.45% recall with
   14.09%/25.60%/33.99% FPR. It was not promoted because the false-positive
   rates are operationally unusable.
@@ -1570,7 +1570,7 @@ close an existing public service or turn off dashboard Auto Sync.
   augmented artifact after removing all development-domain overlap. It measured
   High/medium/low recall of 60.62%/78.75%/81.87% at FPRs of
   0.85%/1.95%/2.62%. This is a meaningful improvement over the earlier
-  reconstructed temporal result, but it is not strict temporal evidence and
+  lexical C=4 temporal result, but it is not strict temporal evidence and
   the artifact remains unpromoted.
 - The fresh-disjoint builder is implemented at
   `scripts/build_ml_fresh_disjoint_holdout.py`; it preserves the temporal
@@ -1632,8 +1632,7 @@ to defer promotion; they are not new tuning data. See DEC-082.
 
 ## Authorized release implementation — 2026-10-04
 
-- A local backup search did not find the trusted original runtime artifact.
-  The CTI-only dashboard and CLI paths skip model loading/scoring, preserve
+- The CTI-only dashboard and CLI paths skip model loading/scoring, preserve
   exact CTI and behavior evidence, and label exports without fabricated ML
   values. Model-dependent history is disabled in this mode (DEC-083).
 - `Dockerfile.public-demo` generates only synthetic assets, keeps code/model
@@ -1691,12 +1690,9 @@ to defer promotion; they are not new tuning data. See DEC-082.
   all SGB, after the initial zero-eligible result. This is insufficient stronger
   temporal evidence. The available augmented performance report remains
   fresh-disjoint, not strict temporal; promotion stays deferred.
-- The original configured runtime artifact is absent locally. Use the synthetic
-  demo generator for presentation, or restore the trusted original artifact from
-  its private/local source. Retraining produces a new identity and requires new
-  evaluation; it cannot restore the historical model claim.
-- CTI-only operation is available now without that model. For full historical
-  ML operation, restore the trusted backup privately if one exists elsewhere.
+- No measured model ships. Use the synthetic demo generator for presentation;
+  a newly trained model needs its own evaluation.
+- CTI-only operation is available now without a model.
 - Keep the Render demo user-suspended. Auto-Deploy still reports enabled and
   Blueprint Auto Sync is not verified; disable them when dashboard access is
   available. The guarded, explicitly requested source integration above does

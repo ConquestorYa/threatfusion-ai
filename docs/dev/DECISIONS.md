@@ -819,8 +819,8 @@ Refreshing a cache does not make those indicators temporally new.
 **Consequences:** Existing holdout evidence remains inspected and cannot select
 or tune a successor. New fresh-disjoint snapshots remove development overlap
 before persistence. Aggregate reports identify exact artifact bytes and the UI
-shows their actual protocol. The original default artifact is absent from this
-checkout; the synthetic demo remains a separate presentation asset.
+shows their actual protocol. The synthetic demo remains a separate
+presentation asset.
 
 ## DEC-083: Make operation without ML an explicit mode
 
@@ -829,11 +829,10 @@ checkout; the synthetic demo remains a separate presentation asset.
 skipping artifact loading and scoring. Disable provenance-dependent history in
 this mode, label ML as disabled, and export absent ML values honestly.
 
-**Reason:** The original runtime artifact is missing from this checkout. A
-trusted-model backup can restore it privately; retraining or choosing an
-experimental/synthetic substitute cannot restore its historical identity.
-Explicit CTI-only operation keeps the core analyst workflow usable without
-changing the default model or promoting the augmented candidate.
+**Reason:** No measured lexical model is promoted to runtime, and an
+experimental or synthetic substitute must not stand in for one. Explicit
+CTI-only operation keeps the core analyst workflow usable without promoting
+the augmented candidate.
 
 ## DEC-084: Build the hosted demonstration entirely from synthetic inputs
 

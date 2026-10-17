@@ -9,6 +9,8 @@ from .demo_cti import write_public_demo_cti_cache
 from .ml_artifact import train_selected_model_artifact, write_ml_artifact
 from .ml_dataset import DomainSample
 
+DEMO_MODEL_NAME = "demo-synthetic"
+
 
 def build_public_demo_model_samples(
     count_per_label: int = 80,
@@ -53,7 +55,7 @@ def create_public_demo_runtime(
 
     output.mkdir(parents=True, exist_ok=True)
     db_path = output / "threatfusion.sqlite"
-    model_dir = output / "models" / "development-001"
+    model_dir = output / "models" / DEMO_MODEL_NAME
 
     write_public_demo_cti_cache(db_path)
     finalize_for_read_only(db_path)

@@ -32,7 +32,7 @@ def test_demo_first_run_is_offline_private_and_repeatable(tmp_path, monkeypatch)
         "PHISHTANK_APP_KEY": "private-key",
     }
     first = local_setup.prepare_local_environment(tmp_path, "demo", inherited)
-    model = tmp_path / "runtime/demo/bundle/models/development-001/model.joblib"
+    model = tmp_path / "runtime/demo/bundle/models/demo-synthetic/model.joblib"
     checksum = hashlib.sha256(model.read_bytes()).hexdigest()
     second = local_setup.prepare_local_environment(tmp_path, "demo", inherited)
     assert first == second
@@ -50,11 +50,21 @@ def test_demo_first_run_is_offline_private_and_repeatable(tmp_path, monkeypatch)
     assert len(load_ioc_records(first["THREATFUSION_DB_PATH"])) == 4
 
 
+def test_demo_model_from_an_older_installation_is_moved_to_its_new_name(tmp_path):
+    first = local_setup.prepare_local_environment(tmp_path, "demo", {})
+    models = tmp_path / "runtime/demo/bundle/models"
+    (models / "demo-synthetic").rename(models / "development-001")
+    checksum = hashlib.sha256((models / "development-001/model.joblib").read_bytes()).hexdigest()
+    assert local_setup.prepare_local_environment(tmp_path, "demo", {}) == first
+    assert not (models / "development-001").exists()
+    assert hashlib.sha256((models / "demo-synthetic/model.joblib").read_bytes()).hexdigest() == checksum
+
+
 @pytest.mark.parametrize("damaged", ["model", "pin", "database"])
 def test_corrupt_existing_demo_is_preserved_and_refused(tmp_path, damaged):
     values = local_setup.prepare_local_environment(tmp_path, "demo", {})
     paths = {
-        "model": tmp_path / "runtime/demo/bundle/models/development-001/model.joblib",
+        "model": tmp_path / "runtime/demo/bundle/models/demo-synthetic/model.joblib",
         "pin": tmp_path / "runtime/demo/trusted-model.sha256",
         "database": tmp_path / "runtime/demo/bundle/threatfusion.sqlite",
     }

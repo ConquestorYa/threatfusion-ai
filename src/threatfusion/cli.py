@@ -45,7 +45,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--model-dir",
         type=Path,
-        default=Path("data/models/development-001"),
+        default=Path("data/models/lexical"),
         help="Trusted local ML artifact directory",
     )
     parser.add_argument(

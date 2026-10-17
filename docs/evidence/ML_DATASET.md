@@ -304,13 +304,11 @@ python scripts/evaluate_ml_fpr_comparison.py --snapshot-dir data/snapshots/basel
 ```
 
 The CLI also accepts explicit FPR budgets without changing the persisted
-artifact policy. After the CESNET long-tail benign evaluation exposed a 3.60%
-high-threshold FPR, the next diagnostic step is to quantify recall at much
-lower operational budgets:
+artifact policy. To quantify recall at low operational budgets:
 
-```powershell
-python scripts\evaluate_ml_fpr_comparison.py `
-  --snapshot-dir data\snapshots\baseline-001 `
+```text
+python scripts/evaluate_ml_fpr_comparison.py \
+  --snapshot-dir data/snapshots/baseline-001 \
   --fpr-budgets 0.001 0.005 0.01
 ```
 
@@ -322,13 +320,13 @@ To measure the resulting score thresholds directly on the already-collected
 confirmed-benign CESNET corpus without changing the artifact, pass them as
 diagnostic thresholds:
 
-```powershell
-python scripts\evaluate_ml_benign_telemetry.py `
-  --artifact-dir data\models\development-001 `
-  --development-snapshot-dir data\snapshots\baseline-001 `
-  --dns-csv data\evaluation\cesnet-benign-20k.csv `
-  --confirm-benign-label `
-  --diagnostic-thresholds 0.875784 0.805109 0.757369
+```text
+python scripts/evaluate_ml_benign_telemetry.py \
+  --artifact-dir data/models/lexical-dev \
+  --development-snapshot-dir data/snapshots/baseline-001 \
+  --dns-csv data/evaluation/cesnet-benign-20k.csv \
+  --confirm-benign-label \
+  --diagnostic-thresholds <high> <medium> <low>
 ```
 
 Diagnostic thresholds are console-only measurements and do not replace the
@@ -442,7 +440,7 @@ refitted on development-test data.
 Train and persist locally with:
 
 ```text
-python scripts/train_ml_artifact.py --snapshot-dir data/snapshots/baseline-001 --output-dir data/models/development-001
+python scripts/train_ml_artifact.py --snapshot-dir data/snapshots/baseline-001 --output-dir data/models/lexical-dev
 ```
 
 `data/models/` is ignored by Git. The JSON metadata contains aggregate model
@@ -458,588 +456,11 @@ Final performance claims still require a fresh holdout and a new final model
 selection/evaluation cycle.
 
 
-## Frozen-model fresh holdout evaluation
-
-The repository now includes a final-evaluation workflow for the already-frozen
-development artifact. This workflow is intentionally separate from development
-model selection.
-
-The protocol is:
-
-1. keep the existing persisted model artifact unchanged
-2. collect a separate later dataset snapshot
-3. require the holdout benign snapshot date to be later than the development
-   snapshot date
-4. remove every normalized domain that appeared anywhere in the development
-   snapshot
-5. evaluate the frozen high / medium / low thresholds exactly as stored in the
-   artifact
-6. report aggregate precision, recall, F1, false-positive rate, confusion
-   counts, and malicious recall by retained source
-7. do not retrain the model or tune thresholds from holdout results
-
-Collect the real holdout snapshot first. Use a **new pinned Tranco list ID**
-and the actual date associated with that list; do not reuse `L5PV4` /
-`2026-09-23` from the development snapshot.
-
-```powershell
-$env:THREATFOX_AUTH_KEY="..."
-$env:URLHAUS_AUTH_KEY="..."
-
-python scripts\inspect_live_ml_snapshot.py `
-  --final-holdout-against data\snapshots\baseline-001 `
-  --artifact-dir data\models\development-001 `
-  --tranco-id <NEW_TRANCO_ID> `
-  --tranco-date <YYYY-MM-DD> `
-  --output-dir data\snapshots\holdout-001
-```
-
-Final-holdout mode performs its preflight **before network collection**. It
-refuses to proceed when the benign snapshot date is not later than development,
-when the Tranco list ID is reused, when the holdout output directory is the
-development directory, or when the holdout output directory is already
-non-empty. The persisted experiment metadata also records the
-`fresh_collection_disjoint` protocol, the development/holdout benign
-snapshot identities, frozen model name, and frozen artifact SHA-256 checksum.
-The checksum is an identity record; the model and thresholds are not changed.
-
-After collection, run the evaluator once against the saved holdout. The
-evaluator itself is local and network-free:
-
-```powershell
-python scripts\evaluate_ml_final_holdout.py `
-  --artifact-dir data\models\development-001 `
-  --development-snapshot-dir data\snapshots\baseline-001 `
-  --holdout-snapshot-dir data\snapshots\holdout-001 `
-  --json-output data\evaluation\final_holdout.json
-```
-
-The optional JSON output contains aggregate metrics/source diagnostics only and
-is what the Streamlit Model evaluation tab reads. It does not contain domain
-rows. Both `data/snapshots/` and `data/evaluation/` are ignored by Git by
-default, so the raw holdout remains local.
-
-This is a **fresh-collection disjoint holdout**, not a strict IOC first-seen
-time split. The current `DomainSample` schema does not retain IOC
-`first_seen` timestamps, so the project must not describe this protocol as a
-strict temporal event split.
-
-The final holdout should be inspected only after the model and thresholds are
-frozen. If its results later influence another model change, that holdout
-becomes development evidence and a new final holdout would be required.
-
-## Final-holdout uncertainty and operational base rates
-
-Final-holdout reports include 95% Wilson score confidence intervals for
-precision, recall, and false-positive rate at every frozen operating point.
-Source-aware diagnostics also report malicious recall and benign
-false-positive rate per retained dataset source when that class is present.
-
-These intervals describe sampling uncertainty for the evaluated holdout. They
-do not correct dataset bias, source leakage, missing long-tail benign traffic,
-or the absence of strict IOC first-seen timestamps.
-
-Dataset precision must not be presented as real-world positive predictive
-value (PPV). Operational PPV depends on the malicious base rate in the traffic
-being analyzed:
-
-`PPV = (TPR × prevalence) / ((TPR × prevalence) + (FPR × (1 - prevalence)))`
-
-In real DNS traffic the malicious prevalence may be far lower than in an
-evaluation dataset. As a result, even a seemingly small false-positive rate can
-produce more benign alerts than malicious detections at scale. Final reporting
-must therefore show the measured FPR, its uncertainty, dataset composition,
-and this base-rate limitation alongside precision.
-
-## Confirmed-benign long-tail DNS telemetry evaluation
-
-Tranco Top 50k is useful for a reproducible benign proxy, but it is not a
-representative sample of ordinary long-tail DNS activity. The repository now
-includes a second benign-only evaluation path for DNS telemetry that an
-operator has independently chosen to treat as benign-labeled data.
-
-This workflow reuses the existing DNS importers for:
-
-- Generic ThreatFusion DNS CSV
-- Zeek `dns.log`
-- Pi-hole FTL SQLite
-- AdGuard Home query-log JSON
-
-The evaluator:
-
-1. requires the explicit `--confirm-benign-label` acknowledgement
-2. keeps only valid public-domain ML scoring candidates
-3. normalizes and deduplicates domains so repeated queries do not inflate FPR
-4. removes every normalized domain that appeared in the development snapshot
-5. evaluates the frozen high / medium / low thresholds without retraining or
-   threshold tuning
-6. reports false-positive counts, empirical FPR, and 95% Wilson intervals
-7. can persist an aggregate-only JSON report that contains no domain names,
-   DNS rows, or client IP values
-
-Example with a Generic DNS CSV:
-
-```powershell
-python scripts\evaluate_ml_benign_telemetry.py `
-  --artifact-dir data\models\development-001 `
-  --development-snapshot-dir data\snapshots\baseline-001 `
-  --dns-csv data\evaluation-input\confirmed-benign.csv `
-  --confirm-benign-label `
-  --json-output data\evaluation\benign_dns.json
-```
-
-Equivalent input switches are `--zeek-dns-log`, `--pihole-db`, and
-`--adguard-query-log`. Exactly one telemetry input must be supplied.
-
-The acknowledgement is a scientific guardrail, not a security guarantee.
-**Absence from CTI is not proof that a domain is benign.** The measured FPR is
-valid only to the extent that the supplied corpus really is benign. A corpus
-built by taking arbitrary DNS traffic and merely removing known IOC matches
-must not be described as confirmed benign.
-
-The tool intentionally measures unique-domain false-positive behavior rather
-than per-query alert volume. Query-frequency-weighted operational alert burden
-can be studied separately when realistic production telemetry is available.
-
-Implementing this path does not by itself complete the long-tail benign
-evaluation backlog item. A real operator-confirmed benign corpus still needs to
-be evaluated and its aggregate result documented before that work is complete.
-
-
-## CESNET real-traffic benign corpus sampling
-
-For the first realistic long-tail benign-domain measurement, the project uses
-the public 2024 DomainRadar dataset's `benign_cesnet.json` subset
-(DOI `10.5281/zenodo.14332167`). The published subset contains 461,338
-benign domains originating from real CESNET academic-network traffic and was
-filtered by the dataset authors to reduce malicious/risky labels.
-
-The enriched source file is about 6.4 GB, so ThreatFusion does not require the
-entire file to be saved locally. `scripts/sample_cesnet_benign_domains.py`
-streams the JSON array, keeps only normalized unique `domain_name` values,
-stops once the requested sample size is reached, and closes the HTTP stream.
-The raw enriched source is never written to disk by this script.
-
-Default bounded collection:
-
-```powershell
-python scripts\sample_cesnet_benign_domains.py
-```
-
-The default target is 20,000 unique domains and writes:
-
-- `data/evaluation/cesnet-benign-20k.csv`
-- `data/evaluation/cesnet-benign-20k.metadata.json`
-
-`data/evaluation/` is ignored by Git. The metadata records source DOI,
-source file MD5 published by Zenodo, CC BY 4.0 attribution, requested/retained
-counts, skip counts, streamed byte count, and the local CSV SHA-256. It does
-not contain domain names.
-
-Evaluate the frozen artifact on that locally sampled corpus with:
-
-```powershell
-python scripts\evaluate_ml_benign_telemetry.py `
-  --artifact-dir data\models\development-001 `
-  --development-snapshot-dir data\snapshots\baseline-001 `
-  --dns-csv data\evaluation\cesnet-benign-20k.csv `
-  --confirm-benign-label `
-  --json-output data\evaluation\cesnet-benign-evaluation.json
-```
-
-Scientific limitation: the CESNET domain names were derived from real-network
-TLS SNI observations rather than a DNS query-frequency sample. This makes them
-valuable for evaluating lexical/domain diversity beyond Tranco Top 50k, but
-the result must not be presented as a measurement of production DNS query
-volume or alert frequency. Query-frequency-weighted behavior remains separate
-future work.
-
-## CESNET-augmented development comparison
-
-After the frozen artifact produced a 3.60% high-threshold false-positive rate on
-the retained CESNET benign corpus, threshold-only diagnostics showed that a
-score threshold near 0.875784 reduced CESNET FPR to about 0.46% but retained
-only about 15% malicious recall on the original development test.
-
-The next development-only experiment therefore adds the confirmed-benign
-CESNET domains that are not already present in the baseline snapshot to the
-development dataset and repeats the low-FPR model comparison.
-
-Run:
-
-```powershell
-python scripts\evaluate_ml_augmented_benign.py `
-  --snapshot-dir data\snapshots\baseline-001 `
-  --benign-dns-csv data\evaluation\cesnet-benign-20k.csv `
-  --confirm-benign-label `
-  --fpr-budgets 0.001 0.005 0.01
-```
-
-The tool:
-
-- normalizes and deduplicates the added benign domains
-- removes every domain already present in the baseline snapshot
-- labels the retained additions as `CESNET`
-- trains the same predefined candidate models in memory only
-- selects thresholds on the augmented validation split
-- reports overall development-test recall/FPR
-- reports benign test FPR separately for Tranco and CESNET sources
-- does not overwrite the existing frozen artifact
-
-This corpus has already been inspected, so it is development evidence rather
-than an untouched benchmark. Any model or threshold selected using this
-experiment requires a new untouched final holdout before new final-performance
-claims.
-
-## Freeze the v2 development snapshot and artifact
-
-Once the CESNET-augmented comparison has been reviewed, build a separate
-development-v2 snapshot instead of overwriting the original baseline:
-
-```powershell
-python scripts\build_ml_augmented_snapshot.py `
-  --base-snapshot-dir data\snapshots\baseline-001 `
-  --benign-dns-csv data\evaluation\cesnet-benign-20k.csv `
-  --output-dir data\snapshots\development-v2 `
-  --confirm-benign-label
-```
-
-The snapshot metadata records the base benign snapshot, the augmentation
-source identifier, the added-corpus SHA-256, overlap removal, and the explicit
-benign-label basis.
-
-Then train the selected development model with the lower operational budgets:
-
-```powershell
-python scripts\train_ml_artifact.py `
-  --snapshot-dir data\snapshots\development-v2 `
-  --output-dir data\models\development-v2 `
-  --high-fpr-budget 0.001 `
-  --medium-fpr-budget 0.005 `
-  --low-fpr-budget 0.01
-```
-
-These correspond to 0.1%, 0.5%, and 1% validation FPR budgets. The output is a
-new development-only artifact; it does not replace `development-001` unless
-the operator explicitly chooses the same output path with `--overwrite`.
-
-After the v2 artifact is frozen, collect a new untouched holdout. Do not reuse
-the inspected CESNET 20k sample or the earlier final holdout as final evidence
-for the v2 artifact.
-
-## One bounded recall iteration
-
-Before adding a more complex model family, ThreatFusion uses one intentionally
-small development experiment around the current selected representation:
-character 2-6 TF-IDF with sublinear term frequency and balanced Logistic
-Regression. Only the Logistic Regression regularization strength changes.
-
-Run it on the local v2 development snapshot:
-
-```powershell
-python scripts\evaluate_ml_recall_iteration.py `
-  --snapshot-dir data\snapshots\development-v2 `
-  --fpr-budgets 0.001 0.005 0.01
-```
-
-The comparison checks `C=0.5, 1, 2, 4` on one shared development split and
-prints overall recall/FPR plus benign-source FPR and malicious-source recall.
-This is development evidence only. If one candidate is selected from this
-output, it must be frozen before another untouched final holdout.
-
-## Freeze the bounded C=4 candidate
-
-The bounded recall iteration selected only one candidate for a final holdout
-check: the same 2-6 character TF-IDF + balanced Logistic Regression pipeline
-with `C=4`. This is not a new model family.
-
-Freeze it as a separate local artifact:
-
-```powershell
-python scripts\train_ml_artifact.py `
-  --snapshot-dir data\snapshots\development-v2 `
-  --output-dir data\models\development-v3-c4 `
-  --model-name lr_char_2_6_balanced_c4 `
-  --high-fpr-budget 0.001 `
-  --medium-fpr-budget 0.005 `
-  --low-fpr-budget 0.01
-```
-
-The runtime default remains unchanged until a new untouched holdout is
-evaluated. Existing C=1 artifacts remain supported by the trusted artifact
-loader.
-
-## Post-freeze final temporal protocol
-
-The frozen v1 C=4 artifact has a recorded SHA-256 identity:
-
-```text
-d2b6a34710312ecd80340d86b7118e3d2a94bfe258575ad7ccd34c87cf1639c3
-```
-
-For the final v1 evaluation, use the conservative protocol boundary
-`2026-09-26T12:45:00+03:00`. The artifact had already been frozen before this
-boundary; the timestamp is deliberately conservative and is not presented as
-the exact byte-creation time.
-
-The final protocol now separates the two evidence needs:
-
-- malicious candidates come from ThreatFox, URLhaus and SGB cache snapshots
-  refreshed after the post-freeze cutoff;
-- malicious observations are normalized to domains and grouped **before**
-  final dataset deduplication; the earliest usable `first_seen` across all
-  retained source observations determines temporal eligibility;
-- any domain whose earliest usable `first_seen` is on or before the cutoff is
-  excluded, so a later observation from another source cannot hide known
-  pre-freeze evidence;
-- legacy cache timestamps without an explicit offset are interpreted as UTC,
-  matching the collectors' UTC normalization for upstream timestamps;
-- benign false-positive measurement uses an untouched deterministic window
-  from the confirmed-benign CESNET real-traffic corpus;
-- every domain already present in `development-v2` is removed again before
-  scoring;
-- malicious domains must have a usable earliest `first_seen` strictly after
-  the cutoff;
-- the C=4 model bytes and thresholds remain frozen.
-
-Do not reuse `cesnet-benign-20k.csv`: it is development evidence. Create a
-different CESNET window. For example, leave a 20,000-domain gap after the
-development sample and retain the following 20,000 unique domains:
-
-```powershell
-python scripts\sample_cesnet_benign_domains.py `
-  --skip-unique 40000 `
-  --limit 20000 `
-  --output-csv data\evaluation\cesnet-benign-final-20k.csv `
-  --metadata-output data\evaluation\cesnet-benign-final-20k.metadata.json
-```
-
-The offset is deterministic. The final holdout builder also removes any
-remaining normalized overlap with the full development snapshot, so the
-evaluation does not rely on the offset alone.
-
-Refresh the local CTI cache after the cutoff, then build the final snapshot
-from that cache plus the untouched benign window:
-
-```powershell
-python scripts\build_ml_final_holdout.py `
-  --db-path data\threatfusion.sqlite `
-  --artifact-dir data\models\development-v3-c4 `
-  --expected-artifact-sha256 d2b6a34710312ecd80340d86b7118e3d2a94bfe258575ad7ccd34c87cf1639c3 `
-  --development-snapshot-dir data\snapshots\development-v2 `
-  --benign-dns-csv data\evaluation\cesnet-benign-final-20k.csv `
-  --confirm-benign-label `
-  --benign-source-id cesnet-final-window-40k-60k `
-  --holdout-snapshot-date YYYY-MM-DD `
-  --malicious-first-seen-after 2026-09-26T12:45:00+03:00 `
-  --output-dir data\snapshots\holdout-v3-c4-final
-```
-
-The builder refuses to proceed unless ThreatFox, URLhaus and SGB all have a
-non-empty local cache refresh later than the cutoff. This makes temporary
-upstream API failure a collection/refresh concern rather than a reason to
-change the frozen evaluation protocol.
-
-Evaluate the resulting snapshot with the exact same cutoff and trusted
-artifact identity:
-
-```powershell
-python scripts\evaluate_ml_final_holdout.py `
-  --artifact-dir data\models\development-v3-c4 `
-  --expected-artifact-sha256 d2b6a34710312ecd80340d86b7118e3d2a94bfe258575ad7ccd34c87cf1639c3 `
-  --development-snapshot-dir data\snapshots\development-v2 `
-  --holdout-snapshot-dir data\snapshots\holdout-v3-c4-final `
-  --malicious-first-seen-after 2026-09-26T12:45:00+03:00 `
-  --json-output data\evaluation\final_holdout_v3_c4.json
-```
-
-This produces frozen high / medium / low threshold metrics, confusion-matrix
-counts, 95% confidence intervals in the aggregate JSON report, and malicious
-recall by retained source. Because the benign half is now confirmed-benign
-CESNET rather than Tranco-only data, the reported FPR directly answers the
-long-tail benign lexical false-positive question for this untouched window.
-
-### Final C=4 temporal holdout result
-
-The final frozen C=4 evaluation was completed on 2026-09-28 without retraining
-or threshold tuning. After final development-overlap removal, the retained
-holdout contained 240 post-freeze malicious domains and 19,912 confirmed-benign
-CESNET domains.
-
-Frozen operating-point results:
-
-| Tier | Threshold | Recall | Recall 95% CI | FPR | FPR 95% CI | Precision | TP | FP | FN | TN |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| High | 0.938460 | 26.67% | 21.47–32.60% | 0.56% | 0.46–0.67% | 36.57% | 64 | 111 | 176 | 19,801 |
-| Medium | 0.823553 | 50.42% | 44.13–56.69% | 2.35% | 2.15–2.57% | 20.54% | 121 | 468 | 119 | 19,444 |
-| Low | 0.754178 | 55.42% | 49.09–61.57% | 4.08% | 3.81–4.36% | 14.07% | 133 | 812 | 107 | 19,100 |
-
-Retained-source malicious recall was:
-
-- SGB: 222 samples; High 27.93%, Medium 52.70%, Low 57.66%
-- URLhaus: 18 samples; High 11.11%, Medium 22.22%, Low 27.78%
-- ThreatFox: no eligible retained domain/URL samples in this temporal holdout,
-  so source recall is unavailable rather than zero
-
-The result demonstrates useful lexical signal on genuinely post-freeze
-malicious domains, but the untouched benign CESNET false-positive rate is
-materially above the development FPR budgets at the Medium and Low operating
-points. The High tier is substantially more conservative, but it still misses
-most malicious domains. For v0.1.0, the C=4 output therefore remains an
-auxiliary signal inside the hybrid assessment rather than a standalone malware
-verdict.
-
-No threshold was changed after seeing these final results. Any future model,
-feature, class-weight, sampling, or threshold change informed by this holdout
-would make it development evidence and require a new untouched final holdout.
-
-Precision in this report is still conditional on the retained holdout class
-mix. It must not be presented as deployed-world PPV without a representative
-malicious base rate.
-
-The CESNET final window is untouched relative to model selection but comes
-from the same published 2024 source corpus as the earlier development window.
-The explicit offset and overlap removal prevent exact-domain reuse; they do
-not prove independence of organization, domain family, or traffic-generating
-process. Likewise, post-freeze malicious `first_seen` filtering improves
-temporal separation but does not by itself eliminate campaign/source-family
-leakage. Source-specific recall is only defined for sources that contribute
-eligible domain/URL samples to the retained temporal holdout; a source with no
-eligible domain-level samples must be reported as unavailable rather than
-assigned a synthetic recall value. These limitations remain part of the final
-interpretation.
-
-## Post-final lexical feature development iteration
-
-The completed C=4 temporal holdout is now inspected evidence. It must not be
-used again to select or tune the next model. The next development iteration
-therefore returns to the existing `development-v2` snapshot and compares the
-current C=4 character model against a small domain-string-only extension.
-
-The enhanced representation keeps the same character 2-6 sublinear TF-IDF and
-adds 14 bounded lexical features:
-
-- normalized domain length
-- label count
-- maximum and mean label length
-- digit ratio
-- hyphen ratio
-- vowel ratio
-- unique-character ratio
-- normalized Shannon entropy
-- longest digit-run ratio
-- longest consonant-run ratio
-- longest repeated-character-run ratio
-- punycode-label ratio
-- numeric-label ratio
-
-These features use only the normalized domain string. They perform no DNS,
-WHOIS, network, CTI, reputation, or web lookup. The lexical block is scaled on
-the training split inside the scikit-learn pipeline so validation and
-development-test rows do not influence feature scaling.
-
-Run the bounded comparison locally:
-
-```powershell
-python scripts\evaluate_ml_feature_iteration.py `
-  --snapshot-dir data\snapshots\development-v2 `
-  --fpr-budgets 0.001 0.005 0.01
-```
-
-The shared development split compares:
-
-- the current char 2-6 TF-IDF + balanced Logistic Regression C=4 baseline
-- char 2-6 TF-IDF + lexical features with C=1
-- char 2-6 TF-IDF + lexical features with C=2
-- char 2-6 TF-IDF + lexical features with C=4
-
-Thresholds are selected on VALIDATION only for the requested FPR budgets. The
-script then prints development-test recall/FPR/precision, benign-source FPR,
-and malicious-source recall. It does not persist or promote a model.
-
-The development comparison selected
-`lr_char_2_6_plus_lexical_c4` as the next candidate. At the shared
-development-test operating points it improved the current C=4 baseline:
-
-| Validation FPR budget | Baseline recall | Lexical C=4 recall | Baseline test FPR | Lexical C=4 test FPR | Baseline precision | Lexical C=4 precision |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| 0.1% | 13.03% | 16.17% | 0.04% | 0.07% | 96.67% | 94.74% |
-| 0.5% | 25.52% | 27.31% | 0.60% | 0.47% | 77.38% | 82.16% |
-| 1.0% | 30.01% | 32.88% | 1.05% | 1.03% | 69.58% | 71.91% |
-
-The 0.5% operating point is the clearest improvement: recall increased while
-false-positive rate fell. The 0.1% point trades a small FPR increase for more
-recall, so this remains development evidence rather than proof of final
-generalization.
-
-Freeze the selected candidate locally without overwriting the prior C=4
-artifact:
-
-```powershell
-python scripts\train_ml_artifact.py `
-  --snapshot-dir data\snapshots\development-v2 `
-  --output-dir data\models\development-v4-lexical-c4 `
-  --model-name lr_char_2_6_plus_lexical_c4 `
-  --high-fpr-budget 0.001 `
-  --medium-fpr-budget 0.005 `
-  --low-fpr-budget 0.01
-```
-
-The resulting artifact remains development-only until a new untouched temporal
-holdout is collected after the artifact freeze. The 2026-09-28 C=4 final
-holdout cannot be reused as final evidence for this lexical candidate.
-
-### Frozen lexical C=4 identity and next untouched holdout
-
-The selected lexical C=4 artifact was frozen locally on 2026-09-28 with:
-
-```text
-model: lr_char_2_6_plus_lexical_c4
-artifact SHA-256: 82f07f99820cea4ec2b8c2c07ab3d6a9387c87b17fafe1994d7730cc39386d14
-freeze cutoff UTC: 2026-09-28T21:38:37.5577083Z
-high threshold: 0.933823
-medium threshold: 0.832484
-low threshold: 0.760446
-```
-
-These bytes and thresholds are now frozen. Any retraining, feature change, or
-threshold adjustment requires a different artifact identity and another fresh
-holdout.
-
-The previous benign evidence windows must not be reused:
-
-- development: first 20,000 CESNET unique domains
-- prior C=4 final holdout: CESNET unique-domain window 40,000–60,000
-
-For the lexical C=4 final evaluation, reserve a new untouched deterministic
-CESNET window 80,000–100,000, leaving an additional 20,000-domain gap after
-the prior final window:
-
-```powershell
-python scripts\sample_cesnet_benign_domains.py `
-  --skip-unique 80000 `
-  --limit 20000 `
-  --output-csv data\evaluation\cesnet-benign-lexical-final-20k.csv `
-  --metadata-output data\evaluation\cesnet-benign-lexical-final-20k.metadata.json
-```
-
-The malicious half must come only from CTI cache refreshes performed strictly
-after `2026-09-28T21:38:37.5577083Z`, and malicious domains must have an
-earliest usable `first_seen` strictly after that same cutoff. Refreshing the
-cache after the cutoff is necessary but does not by itself make older
-indicators eligible.
-
-Once all required CTI sources are refreshed after the cutoff, build the new
-holdout with the frozen lexical artifact and the new benign window. Do not use
-the prior `holdout-v3-c4-final` snapshot or its 2026-09-28 result to select,
-tune, or validate this artifact.
-
-## Reconstructed lexical C=4 holdout result
-
-The originally recorded lexical artifact from the prior development workflow
-was not present in this checkout. A separate development-only artifact was
-therefore reconstructed from the refreshed local CTI cache and the pinned
-Tranco `L5PV4` snapshot. Its identity was:
+## Lexical C=4 holdout result
+
+A development-only lexical artifact was built from the local CTI cache and the
+pinned Tranco `L5PV4` snapshot (stored under the directory name
+`reconstructed-development-lexical-c4`). Its identity was:
 
 - model: `lr_char_2_6_plus_lexical_c4`
 - artifact SHA-256: `8b207dc363edde3544a8dcd447b80968c433b1d2b929616d492d40d5204ef356`
@@ -1049,7 +470,7 @@ Tranco `L5PV4` snapshot. Its identity was:
 - retained malicious domains: 155
 - retained benign domains: 19,929
 
-The frozen reconstructed artifact was evaluated once on the post-freeze
+The frozen artifact was evaluated once on the post-freeze
 holdout without retraining or threshold tuning:
 
 | Tier | Threshold | Recall | FPR | Precision | TP | FP | FN | TN |
@@ -1059,16 +480,15 @@ holdout without retraining or threshold tuning:
 | Low | 0.923755 | 86.45% | 33.99% | 1.94% | 134 | 6,773 | 21 | 13,156 |
 
 The high recall is not operationally useful at these false-positive rates. The
-reconstructed lexical candidate is therefore **not promoted** to the runtime
-default. The runtime continues using the trusted existing development artifact
-and lexical ML remains auxiliary inside the hybrid assessment. Any new model,
+lexical candidate is therefore **not promoted**; the runtime stays CTI-only
+without a lexical score. Any new model,
 feature, sampling, or threshold change requires a new development iteration and
 another untouched holdout.
 
-## Reconstructed-snapshot feature iteration
+## Development-snapshot feature iteration
 
-After the reconstructed lexical C=4 holdout was rejected, a bounded feature
-comparison was run on the reconstructed development snapshot only. The
+After the lexical C=4 holdout was rejected, a bounded feature
+comparison was run on the development snapshot only. The
 completed post-freeze holdout was not reused for selection.
 
 At the validation FPR budgets, the lexical C=4 candidate measured:
@@ -1108,7 +528,7 @@ Frozen augmented artifact results:
 | Medium | 0.957530 | 78.75% | 1.95% | 24.51% | 126 | 388 | 34 | 19,548 |
 | Low | 0.913834 | 81.87% | 2.62% | 20.03% | 131 | 523 | 29 | 19,413 |
 
-These results are materially better than the earlier reconstructed temporal
+These results are materially better than the earlier lexical C=4 temporal
 experiment, especially at the High tier, and support keeping hard-negative
 augmentation in further development. They are not strict temporal evidence and
 do not by themselves justify runtime promotion. The artifact remains separate
@@ -1180,17 +600,14 @@ are local/ignored assets. GitHub contains code, synthetic tests, methodology and
 aggregate documentation. Git LFS does not resolve redistribution rights or
 telemetry privacy and is not used for these datasets.
 
-This checkout contains the reconstructed and augmented experimental artifacts,
-but not the original configured `data/models/development-001` artifact. The
-available demo runtime contains a separate synthetic `development-001` model
-with `evaluation_status=demo_only_synthetic`.
+The local lexical artifacts are experimental and not shipped. The demo
+runtime uses a separate synthetic model with
+`evaluation_status=demo_only_synthetic`.
 
 A fresh clone can run the synthetic demo generator without feeds or credentials.
 Real ML work requires locally acquiring permitted CTI and attributed benign
 data, persisting development snapshots, training a new artifact and recording
-its checksum/freeze time before collecting an untouched holdout. Live re-fetches
-cannot reconstruct historical artifact identities or reproduce old metrics by
-assumption. Keep development and inspected holdout windows separate, and do not
+its checksum/freeze time before collecting an untouched holdout. Keep development and inspected holdout windows separate, and do not
 reuse the 120,000–140,000 CESNET window to select a successor.
 
 ## ThreatFox absence and candidate 2 (2026-10-10)

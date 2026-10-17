@@ -110,8 +110,8 @@ launcher path. `--no-integrations` skips command/menu/shell registration.
 Real CTI operation does **not** substitute the synthetic demo model for a
 measured detector or promote the experimental augmented candidate. A trusted
 production ML artifact is not distributed in the installer. See
-[ML_DATASET.md](evidence/ML_DATASET.md) for the original missing artifact, fresh-disjoint
-results and strict-temporal limitation.
+[ML_DATASET.md](evidence/ML_DATASET.md) for the lexical and behavior model
+experiments and their results.
 
 Use the operating-mode selector to choose **Synthetic demo** for offline
 interface exploration, or:

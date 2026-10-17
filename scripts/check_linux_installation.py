@@ -111,7 +111,7 @@ def main() -> None:
     subprocess.run(
         [str(root / "start"), "--mode", "demo", "--prepare-only"], check=True
     )
-    model = root / "runtime/demo/bundle/models/development-001/model.joblib"
+    model = root / "runtime/demo/bundle/models/demo-synthetic/model.joblib"
     demo_db = root / "runtime/demo/bundle/threatfusion.sqlite"
     identity = (digest(model), digest(demo_db))
     for _ in range(2):

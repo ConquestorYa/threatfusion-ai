@@ -19,7 +19,17 @@ framing is retired. No release date or tag is set.
   A reason to look, not a malware verdict; measured at about 0.5 entries per
   normal device-day in development.
 
+### Changed
+
+- The default lexical model directory is `data/models/lexical`, and the
+  synthetic demo model is stored as `demo-synthetic`; an existing installation's
+  demo model is moved to the new name on the next start.
+
 ### Documentation
+
+- Earlier lexical artifacts that were never part of this repository's data are
+  no longer referenced; ML documents describe only the experiments whose
+  artifacts and receipts exist.
 
 - READMEs and docs updated end to end: the 7-day real-traffic test in progress,
   the Experimental ML tab (*New for this computer*) and the failed malware
@@ -514,8 +524,7 @@ framing is retired. No release date or tag is set.
 - Final evaluation rejects synthetic demo artifacts, mismatched recorded
   artifact/development provenance and missing/changed recorded temporal cutoffs.
 - Augmented runtime promotion is deferred pending stronger untouched temporal
-  evidence; the missing original default artifact is distinguished from the
-  separately generated synthetic demo runtime.
+  evidence; the synthetic demo runtime is kept separate from measured models.
 - Independent follow-up CTI collection found five unscored post-cutoff SGB
   domains. Original local data remains unchanged; this readiness count does not
   replace the fresh-disjoint result or justify promotion.
@@ -525,11 +534,9 @@ framing is retired. No release date or tag is set.
 - The v1 scope is frozen around final evaluation, portfolio presentation,
   hosted demo, and release instead of expanding into API/streaming/Suricata,
   SOC integrations, LLM features, or neural-network model families.
-- The runtime default remains the earlier trusted artifact while experimental
-  candidates are evaluated separately and never auto-promoted.
-- Documentation now distinguishes the completed historical character-only C=4
-  holdout, the rejected reconstructed lexical candidate, and the improved
-  augmented lexical candidate measured with a fresh-disjoint protocol.
+- Experimental candidates are evaluated separately and never auto-promoted.
+- Documentation now distinguishes the rejected lexical C=4 candidate and the
+  improved augmented lexical candidate measured with a fresh-disjoint protocol.
 
 ### Release gates still open
 

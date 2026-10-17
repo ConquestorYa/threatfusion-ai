@@ -138,8 +138,8 @@ Predeclare failed-attempt/scan and UDP/DNS development controls before changing
 detection. Reserve new independent inputs; the existing IoT-23 captures are
 already inspected. Test longer live rotation/resources and make an explicit
 active-file latency decision. Run an actual analyst task study before any
-usefulness/time-saved claim. Strict-temporal ML evidence remains insufficient,
-the trusted original runtime artifact is still absent and promotion is deferred.
+usefulness/time-saved claim. Strict-temporal ML evidence remains insufficient
+and promotion is deferred.
 
 The later [DNS investigation/reliability increment](DNS_INVESTIGATION.md) adds
 device/domain charts and declared mixed-log recovery/resource controls. Current

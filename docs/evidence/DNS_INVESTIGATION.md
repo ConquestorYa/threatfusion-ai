@@ -197,6 +197,6 @@ review, installation/recovery checks and human analyst tasks remain open. These
 synthetic controls do not establish enterprise FPR, recall, RITA parity, saved
 analyst time or production readiness. Predeclare DNS tunneling/general UDP and
 sparse-failure controls separately before tuning; obtain new reserved recordings.
-ML identities/thresholds, missing original artifact, insufficient strict-temporal
+ML identities/thresholds, insufficient strict-temporal
 evidence and deferred augmented runtime promotion are unchanged. Hosting remains
 suspended; no new public listener or site is part of this increment.

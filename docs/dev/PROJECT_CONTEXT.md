@@ -380,36 +380,21 @@ The development workflow includes:
 
 ML scores are uncalibrated and are not presented as malware probabilities.
 
-The earlier character-only C=4 candidate completed its post-freeze temporal
-holdout on 2026-09-28. That result remains historical development evidence and
-supports keeping lexical ML as an auxiliary signal rather than a standalone
-detector.
+The lexical experiment is `lr_char_2_6_plus_lexical_c4`, a frozen character
+2-6 TF-IDF plus bounded lexical-feature Logistic Regression artifact. Its first
+post-freeze holdout had operationally unusable false-positive rates. The
+hard-negative augmented artifact measured 60.62%/78.75%/81.87% recall and
+0.85%/1.95%/2.62% FPR on a fresh-collection disjoint holdout, then failed its
+strict temporal evaluation on 2026-10-11 (High FPR 1.14 %, recall 12.9 %); a
+backdated candidate-3 recipe also failed. No lexical model is promoted.
 
-The current experiment is `lr_char_2_6_plus_lexical_c4`, a frozen character
-2-6 TF-IDF plus bounded lexical-feature Logistic Regression artifact. The
-originally recorded artifact was not available in this checkout, so a separate
-reconstructed artifact was evaluated on a new untouched post-freeze holdout.
-Its false-positive rates were operationally unusable, so it was not promoted
-and no final standalone performance claim is made for it.
-
-The subsequent hard-negative augmented lexical C=4 artifact measured
-60.62%/78.75%/81.87% recall and 0.85%/1.95%/2.62% FPR at High/medium/low on a
-fresh-collection disjoint holdout. It remains experimental: initial strict
-post-freeze selection retained zero malicious domains; a later independent SGB
-refresh found only five eligible disjoint domains, without model scoring. Runtime promotion
-is deferred until stronger untouched temporal evidence exists (DEC-082).
-
-The configured original `data/models/development-001` artifact is absent in
-this checkout. The separately generated synthetic demo model shares the
-directory name but has `demo_only_synthetic` status and supplies no final ML
-performance evidence. Local caches, datasets, evaluations and artifacts are
-ignored data; a GitHub clone must regenerate its own assets and cannot reproduce
-historical frozen bytes simply by fetching current feeds.
-
-When that trusted original is unavailable, explicit CTI-only operation keeps
-CTI matching and DNS behavior available without loading any model. The UI/CLI
-label ML as disabled and model-dependent history is disabled (DEC-083). The
-synthetic public demo remains a separate presentation runtime (DEC-084).
+No measured model ships with the installer. The default installation runs
+CTI-only: CTI matching and DNS behavior work without loading any model, the
+UI/CLI label ML as disabled and model-dependent history is disabled (DEC-083).
+Local caches, datasets, evaluations and artifacts are ignored data; a GitHub
+clone regenerates its own assets. The synthetic demo model is a separate
+presentation asset (DEC-084). Behavior-model experiments are recorded in
+[ML_DATASET.md](../evidence/ML_DATASET.md).
 
 ### Analyst workflow
 

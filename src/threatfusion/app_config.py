@@ -117,7 +117,7 @@ def load_app_config(
         model_dir=_path_value(
             values,
             "THREATFUSION_MODEL_DIR",
-            "data/models/development-001",
+            "data/models/lexical",
         ),
         evaluation_report_path=_path_value(
             values,

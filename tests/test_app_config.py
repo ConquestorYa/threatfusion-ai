@@ -13,7 +13,7 @@ def test_default_config_is_local_mode() -> None:
     config = load_app_config({})
 
     assert config.db_path == Path("data/threatfusion.sqlite")
-    assert config.model_dir == Path("data/models/development-001")
+    assert config.model_dir == Path("data/models/lexical")
     assert config.evaluation_report_path == Path(
         "data/evaluation/final_holdout.json"
     )

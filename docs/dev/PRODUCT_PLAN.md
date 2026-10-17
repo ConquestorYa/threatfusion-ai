@@ -68,7 +68,7 @@ linked documents rather than being copied into this plan.
 | History and reports | Aggregate history/feedback/suppression in eligible trusted-model local mode, explicit IP opt-ins, report aliases and spreadsheet-safe CSV | Managed CTI/demo history stays disabled. Aliases are not anonymization or stable assets. Repairs |
 | Operational safeguards | Private state/schema-3 backups, local generation-bound identity display, all IP answers, explicit work/match budgets, failed-analysis retry, release privacy audit | 1,328 local tests for `d006771` (CI per newest handoff); CTI busy reads keep the last complete indicators with disclosure; complete security and enterprise qualification remain open. Repairs |
 | Lab and comparison | Isolated local Zeek/RITA experiments, declared independent source/retention/recovery/resource methods and aggregate results | Some inspected sources are incomplete/missed; accelerated event days are not a wall-clock soak. [Lab](../evidence/LOCAL_LAB.md), [replay](../evidence/INDEPENDENT_REPLAY.md), [multi-day](../evidence/MULTIDAY_COLLECTION.md) |
-| ML | Local lexical domain-model development/evaluation, provenance, trusted artifacts and explicit CTI-only operation | Original runtime artifact absent; augmented candidate experimental; collector ML disabled. [ML](../evidence/ML_DATASET.md), [handoff](RELEASE_HANDOFF.md) |
+| ML | Local lexical domain-model development/evaluation, provenance, trusted artifacts and explicit CTI-only operation | No measured model ships; lexical candidates failed strict temporal evaluation; collector ML disabled. [ML](../evidence/ML_DATASET.md), [handoff](RELEASE_HANDOFF.md) |
 | Packaging/CI | Docker health, isolated synthetic public-mode/proxy tests, Linux/Windows quality/dependency checks | Packaging exists; no public site or hosted preview is authorized. Deployment reference |
 
 ## Current checkpoint
@@ -89,8 +89,8 @@ linked documents rather than being copied into this plan.
   1,321 local tests and approximately 91% coverage. Six CI jobs passed at
   [run 37455481084](https://github.com/ConquestorYa/threatfusion-ai/actions/runs/37455481084).
   Counts are evidence for that commit, not a permanent assertion about HEAD.
-- Original 34 local artifact/cache/data files were preserved. Real data and
-  evaluation receipts remain ignored/private. A GitHub-only clone does not
+- Local artifact/cache/data files stay ignored/private, as do real data and
+  evaluation receipts. A GitHub-only clone does not
   contain them; inventory before using a recipe, regenerate only permitted
   inputs, and do not substitute a synthetic/experimental model as a trusted one.
 - Collector state is schema 3; schema-1/2 backups and legacy first-answer

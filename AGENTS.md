@@ -42,5 +42,4 @@
   promote the augmented candidate without the required new untouched evidence.
 - Synthetic demo models are presentation assets, not measured runtime models.
   See `docs/evidence/ML_DATASET.md`, `docs/dev/PROJECT_CONTEXT.md` and
-  `docs/dev/RELEASE_HANDOFF.md` for the current experiment and missing original
-  runtime artifact.
+  `docs/dev/RELEASE_HANDOFF.md` for the current experiments.

@@ -19,8 +19,12 @@ from pathlib import Path
 
 from .cti_cache import initialize_cti_cache
 from .cti_refresh import refresh_configured_sources
-from .demo_runtime import create_public_demo_runtime
+from .demo_runtime import DEMO_MODEL_NAME, create_public_demo_runtime
 from .ml_artifact import load_trusted_ml_artifact
+
+
+# Installations before 2026-10-17 stored the synthetic demo model under this name.
+_LEGACY_DEMO_MODEL_NAME = "development-001"
 
 
 def prepare_local_environment(
@@ -42,7 +46,10 @@ def prepare_local_environment(
                     (model_dir / "artifact.sha256").read_text()
                 )
                 stage.rename(demo)
-        model = demo / "bundle/models/development-001"
+        model = demo / "bundle/models" / DEMO_MODEL_NAME
+        legacy = demo / "bundle/models" / _LEGACY_DEMO_MODEL_NAME
+        if not model.exists() and legacy.is_dir():
+            legacy.rename(model)
         pin = (demo / "trusted-model.sha256").read_text().strip()
         artifact = load_trusted_ml_artifact(model, expected_checksum=pin)
         if artifact.metadata.evaluation_status != "demo_only_synthetic":

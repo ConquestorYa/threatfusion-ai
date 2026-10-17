@@ -42,12 +42,12 @@ def _show_model_evaluation(report_path: Path) -> None:
             )
             with st.expander(tr("Show final-evaluation command"), expanded=False):
                 st.code(
-                    "python scripts\\evaluate_ml_final_holdout.py "
-                    "--artifact-dir data\\models\\development-001 "
-                    "--development-snapshot-dir data\\snapshots\\baseline-001 "
-                    "--holdout-snapshot-dir data\\snapshots\\holdout-001 "
-                    "--json-output data\\evaluation\\final_holdout.json",
-                    language="powershell",
+                    "python scripts/evaluate_ml_final_holdout.py "
+                    "--artifact-dir data/models/lexical "
+                    "--development-snapshot-dir data/snapshots/development "
+                    "--holdout-snapshot-dir data/snapshots/holdout "
+                    "--json-output data/evaluation/final_holdout.json",
+                    language="bash",
                 )
         return
 
