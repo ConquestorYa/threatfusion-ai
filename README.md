@@ -142,10 +142,19 @@ app runs; the memory never leaves the computer). In development tests it listed
 about 0.5 entries per normal device per day. It is a reason to look, not a
 malware verdict; its binding test is the 7-day run.
 
-Models that try to recognize malware directly were trained on public research
-recordings and **failed** their declared tests (they caught 3–17 % of recent
-malware captures), so none is installed. The older lexical domain-name score is
-also off. Full history: [ML evaluation](docs/evidence/ML_DATASET.md).
+The same tab runs a **behavior model trained on your computer**: a random forest
+that looks at *how* each device talks to each destination (rhythm, sizes,
+durations, failures, port, how random the name looks). The installer ships
+numeric features of public malware and normal recordings (Stratosphere Lab,
+Malware-Traffic-Analysis.net); after 3 days of your own traffic the app trains
+the forest locally in a few seconds and retrains daily. Nothing leaves the
+computer. Tested once on recordings it never saw, the recipe caught 5 of 7
+malware families on an unseen device and 56 % of unseen malware recordings, with
+at most one false flag per day on a real laptop; it caught only 27 % of
+2025–2026 malware and 20 % of simulated beacons. The **Model evaluation** page
+shows every test. A flag is a reason to look, not a verdict. Models trained on
+public recordings alone and the older lexical domain-name score failed and are
+off. Full history: [ML evaluation](docs/evidence/ML_DATASET.md).
 
 ## Privacy
 
@@ -168,7 +177,7 @@ also off. Full history: [ML evaluation](docs/evidence/ML_DATASET.md).
 | Fault matrix, 6-hour soak, security reviews | 9/9 fault cases pass; the 6-hour soak passed 16/16 checks (collector peak 684 MiB); two security reviews ([operational confidence](docs/evidence/OPERATIONAL_CONFIDENCE.md)) |
 | One laptop, 24 h of normal real traffic | 59 groups for review, all benign; only 3 decidable from the screen alone. Fixed: names on connections, popular-site and local-name context, a plain review list ([results](docs/evidence/REAL_TRAFFIC_EVALUATION.md#arm-a-first-24-hours-results)) |
 | First 7-day run on campus Wi-Fi | Failed collector health: other devices' local discovery chatter filled the window. Fixed (collector filter + Zeek capture filter) and restarted ([status](docs/evidence/REAL_TRAFFIC_EVALUATION.md)) |
-| Machine learning on public malware recordings | Malware-recognition models failed; "New for this computer" passed its development burden check ([ML evaluation](docs/evidence/ML_DATASET.md)) |
+| Machine learning | Behavior model trained on each computer: 71 % of malware families on an unseen device, 56 % of unseen malware recordings, ≤ 1 false flag per day; weak on 2025–2026 malware (27 %). Public-only and lexical models failed. "New for this computer" passed its development burden check ([ML evaluation](docs/evidence/ML_DATASET.md)) |
 | **In progress / not yet measured** | 7-day false alarms on real traffic (in progress), detection of labeled real malware, usefulness for other users |
 
 All records: [documentation](docs/README.md#evidence).

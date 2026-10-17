@@ -183,6 +183,7 @@ def test_levels_follow_the_model_line():
     assert level(0.95, 0.9) == "High" and level(0.7, 0.9) == "Medium" and level(0.2, 0.9) == "Low"
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux collector contract")
 def test_quick_lookup_shows_behavior_for_a_destination_this_computer_talked_to(tmp_path):
     state = _collector_with_beacon(tmp_path)
     script = ("from pathlib import Path\nfrom threatfusion.ui_behavior import render_lookup_behavior\n"
@@ -207,6 +208,7 @@ def test_name_scores_take_the_strongest_group_per_name():
     assert name_scores(None) == {}
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux collector contract")
 def test_new_destination_with_a_steady_rhythm_is_listed_after_learning(tmp_path):
     from threatfusion.baseline import Baseline
     state = _collector_with_beacon(tmp_path)
@@ -228,6 +230,7 @@ def test_new_destination_with_a_steady_rhythm_is_listed_after_learning(tmp_path)
     assert "ip:1.1.1.1" in Baseline.load(tmp_path / "ml" / "baseline.json").devices["192.0.2.1"]["seen"]
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux collector contract")
 def test_new_destinations_wait_for_three_days_of_history(tmp_path):
     state = _collector_with_beacon(tmp_path)
     app = AppTest.from_string(
@@ -236,6 +239,7 @@ def test_new_destinations_wait_for_three_days_of_history(tmp_path):
     assert not app.exception and "Learning what is normal" in app.info[0].value
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux collector contract")
 def test_learning_is_shown_even_when_a_device_has_no_rhythm_groups(tmp_path):
     from threatfusion.baseline import Baseline
     state = _collector_with_beacon(tmp_path)
@@ -263,6 +267,7 @@ def test_marks_apply_to_the_whole_site_and_addresses_of_one_site_share_a_card(tm
     assert marked_sites(labels, simple_registrable) == ({"cdn.test"}, {"evil.example"})
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux collector contract")
 def test_a_site_marked_known_on_another_list_hides_its_new_entry(tmp_path):
     from threatfusion.baseline import Baseline
     from threatfusion.ui_simple_review import save_label
@@ -277,3 +282,15 @@ def test_a_site_marked_known_on_another_list_hides_its_new_entry(tmp_path):
               f"render_new_destinations(Path({str(state)!r}))\n")
     app = AppTest.from_string(script).run(timeout=20)
     assert not app.exception and any(m.value.startswith("#### 1.1.1.1") for m in app.markdown)
+
+
+def test_declared_tests_table_shows_each_result_limit_and_outcome():
+    from threatfusion.ui_behavior import declared_test_rows
+    tests = {"sme_family_recall": 0.5714, "mcfp_capture_recall": 0.55, "mta_recent_capture_recall": 0.17,
+             "benign": {"mcfp_normal_eval": 0.33, "user_eval": 0.0},
+             "synthetic": {"0.0": {"recall": 0.08}, "0.1": {"recall": 0.27}, "0.5": {"recall": 0.9}}}
+    checks = {"T1_sme_family_recall": True, "T2_mcfp_capture_recall": True, "T3_mta_recent_capture_recall": False,
+              "T4_benign_flags": True, "T5_synthetic_low_jitter": False}
+    rows = declared_test_rows(tests, checks)
+    assert [r["Result"] for r in rows] == ["%57", "%55", "%17", "0.33 / 0.0", "%8"]
+    assert [r["Passed"] for r in rows] == ["✅", "✅", "❌", "✅", "❌"]

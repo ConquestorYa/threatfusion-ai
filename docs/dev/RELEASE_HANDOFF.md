@@ -2,6 +2,27 @@
 
 Newest section first. Status date: 2026-10-17.
 
+## Behavior model trained on each computer (2026-10-17)
+
+- Public-data-only models failed: `ml-behavior-public-v1` (line on lab normal
+  data: 2.25 false flags per real day) and its amendment (line bounded by one
+  real day: T1 14 %, T2 37.5 %, T3/T5 0 %; passed its ship rule, not shipped).
+- `ml_local.py` + `models/behavior-public-features.npz` (1.8 MB) +
+  `models/behavior-local-evaluation.json`: after 3 daily samples of the
+  computer's own groups (`<install>/ml/local-days.json`, 0600) the app trains
+  the forest locally and retrains daily. `ml-behavior-local-v1`: T1 71 %, T2
+  56 %, T3 27 %, T4 0.17/1.0, T5 20–31 %; ship rule (T2, T4) passed. See
+  ML_DATASET.
+- Model evaluation page shows a declared-tests table; it appears in CTI-only
+  mode once the local model exists (DEC-091 reminder fulfilled).
+- Isolated app run (port 8791, copy of the P2 v1 collector state and CTI cache)
+  found the record-cap window problem; daily samples replace calendar days.
+- Windows CI: POSIX permission checks skipped on Windows in five tests.
+- P2 v3: its snapshot timer had failed since the start (`run/snapshots` missing);
+  created 2026-10-17 within the collector's 48 h window, no item lost
+  (`run/operator-notes.txt`). The app may be updated during P2 v3 (its plan).
+- Next: binding check of the recipe on P2 v3's seven days after 2026-10-23.
+
 ## Earlier lexical artifacts removed from the project (2026-10-17)
 
 - User decision: the lexical artifacts trained before this workspace existed

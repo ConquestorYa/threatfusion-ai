@@ -17,6 +17,7 @@ from pathlib import Path
 import streamlit as st
 
 from .i18n import tr
+from . import ml_local
 from .ml_behavior import WINDOW_SECONDS, BehaviorModel, Connection, build_groups, reasons
 from .ui_simple_review import _rerun, item_key, load_labels, lookup_links, save_label
 
@@ -42,13 +43,13 @@ ADVICE = """1. **Do you recognize it?** Updaters, chat, music, cloud sync and ga
 
 GUIDE = """**What is this?** An experimental machine-learning model looks at *how* your devices talk to each destination, not at names or threat lists: how regularly connections repeat, how much is sent each time, how long they last, whether they fail, the port, and whether the destination had a website name and how random it looks. Malware that "calls home" often has a recognizable rhythm.
 
-**How was it tested?** It learned from public research recordings of real malware and normal computers (Stratosphere Lab, Czech Technical University; Malware-Traffic-Analysis.net), plus a few days of this computer's own traffic. It was then tested once on recordings it had never seen.
+**How does it learn?** It is trained on this computer: examples of real malware and normal computers from public research recordings (Stratosphere Lab, Czech Technical University; Malware-Traffic-Analysis.net) plus this computer's own first days, taken as normal. It retrains once a day as new days arrive. Nothing about your traffic leaves this computer. The same recipe was tested once on recordings it had never seen; the Model evaluation page shows the results.
 
 **How to use it:** A high score is a reason to look, not proof. Updaters, chat apps and sync tools can look similar. Mark what you recognize; your marks help the next version. This tab does not change What to check."""
 
 GUIDE_TR = """**Bu nedir?** Deneysel bir makine öğrenmesi modeli, cihazlarının her hedefle *nasıl* konuştuğuna bakar; adlara ya da tehdit listelerine değil: bağlantılar ne kadar düzenli tekrarlıyor, her seferinde ne kadar veri gidiyor, ne kadar sürüyor, başarısız oluyor mu, hangi port kullanılıyor, hedefin bir site adı var mı ve bu ad ne kadar rastgele görünüyor. "Eve telefon eden" zararlı yazılımların çoğunun tanınabilir bir ritmi vardır.
 
-**Nasıl test edildi?** Gerçek zararlı yazılımların ve normal bilgisayarların herkese açık araştırma kayıtlarından (Stratosphere Lab, Çek Teknik Üniversitesi; Malware-Traffic-Analysis.net) ve bu bilgisayarın birkaç günlük kendi trafiğinden öğrendi. Sonra hiç görmediği kayıtlarda bir kez test edildi.
+**Nasıl öğrenir?** Bu bilgisayarda eğitilir: herkese açık araştırma kayıtlarından (Stratosphere Lab, Çek Teknik Üniversitesi; Malware-Traffic-Analysis.net) gerçek zararlı yazılım ve normal bilgisayar örnekleri ile bu bilgisayarın normal kabul edilen ilk günleri. Yeni günler geldikçe günde bir kez yeniden eğitilir. Trafiğinle ilgili hiçbir şey bu bilgisayardan çıkmaz. Aynı tarif hiç görmediği kayıtlarda bir kez test edildi; sonuçlar Model değerlendirme sayfasında.
 
 **Nasıl kullanılır?** Yüksek puan bakmak için bir sebeptir, kanıt değildir. Güncelleyiciler, sohbet ve eşitleme programları benzer görünebilir. Tanıdıklarını işaretle; işaretlerin bir sonraki sürümün daha iyi öğrenmesine yardım eder. Bu sekme Bakılacaklar listesini değiştirmez."""
 
@@ -132,6 +133,35 @@ def score_groups(db_path: str, model_file: str, model_modified: float, cti_db: s
     return list(best.values())
 
 
+@st.cache_data(show_spinner=False, max_entries=2, ttl=REFRESH_SECONDS * 2)
+def learn(db_path: str, install_dir: str, cti_db: str | None, bucket: int) -> dict:
+    """Store complete days of this computer's groups; train the model when it is due."""
+    if not ml_local.PUBLIC_FEATURES.exists():
+        return {"available": False, "days": 0}
+    install = Path(install_dir)
+    days_path = install / ml_local.DAYS_FILE
+    local = ml_local.LocalDays.load(days_path)
+    try:
+        popular = _popular(cti_db) if cti_db else None
+        if popular:
+            from .popular_domains import is_popular
+
+            def popular_name(name):
+                return is_popular(name, popular)
+        else:
+            def popular_name(name):
+                return False
+        connections, names = read_collector_records(Path(db_path))
+        now = time.time()
+        if local.update(connections, names, popular_name):
+            local.save(days_path)
+        if ml_local.due(install, local, now):
+            ml_local.save_model(ml_local.train(ml_local.load_public_features(), local), install / MODEL_FILE)
+    except (OSError, ValueError, KeyError, TypeError, sqlite3.Error) as error:
+        return {"available": True, "days": len(local.days), "error": type(error).__name__}
+    return {"available": True, "days": len(local.days)}
+
+
 def level(score: float, threshold: float) -> str:
     """High: above the model's alarm line; Medium: most trees vote malicious; Low otherwise."""
     return "High" if score >= threshold else "Medium" if score >= 0.5 else "Low"
@@ -143,6 +173,9 @@ def scored(state_dir: Path | None, cti_db_path: Path | None = None) -> tuple[Beh
         return None
     path = model_path(Path(state_dir).parent)
     database = Path(state_dir) / "collector.sqlite"
+    if database.exists():  # keep learning this computer's days on every collector view
+        learn(str(database), str(Path(state_dir).parent), str(cti_db_path) if cti_db_path else None,
+              int(time.time() // REFRESH_SECONDS))
     if not path.exists() or not database.exists():
         return None
     try:
@@ -238,10 +271,21 @@ def render_behavior_tab(state_dir: Path, *, cti_db_path: Path | None = None, ip_
     st.caption(tr("Experimental · a machine-learning hint beside What to check, never a verdict"))
     from .ui_new_destinations import render_new_destinations
     render_new_destinations(state_dir, cti_db_path=cti_db_path, ip_owner=ip_owner)
+    learning = None
+    if (state_dir / "collector.sqlite").exists():
+        with st.spinner(tr("Training the behavior model on this computer…")):
+            learning = learn(str(state_dir / "collector.sqlite"), str(install_dir),
+                             str(cti_db_path) if cti_db_path else None, int(time.time() // REFRESH_SECONDS))
     if not path.exists():
         st.markdown("### " + tr("Behavior model"))
-        st.caption(tr("No behavior model on this computer yet. It is trained locally from public malware "
-                      "recordings and this computer's own traffic, and is never downloaded from the internet."))
+        if learning and learning.get("available"):
+            st.caption(tr("The model is learning what is normal for this computer: {days} of {needed} days collected. "
+                          "It then trains here, on public malware examples plus these days, and never sends anything out.",
+                          days=learning["days"], needed=ml_local.LEARNING_DAYS))
+        else:
+            st.caption(tr("No behavior model is available in this installation."))
+        if learning and learning.get("error"):
+            st.caption(tr("Training failed: {error}", error=learning["error"]))
         return
     try:
         modified = path.stat().st_mtime
@@ -316,8 +360,14 @@ def render_behavior_evaluation(install_dir: Path) -> None:
                           "at most one false flag per computer per day."))
         else:
             st.warning(tr("Did not pass every declared test; treat its hints with extra care."))
+    tests = report.get("tests", {})
+    if tests and checks:
+        st.markdown("**" + tr("Declared tests (fixed before the results were seen)") + "**")
+        st.dataframe(declared_test_rows(tests, checks), hide_index=True, width="stretch")
     rows = []
     for title, values in ((tr("Never-seen test recordings"), test), (tr("Development recordings"), dev)):
+        if not values:
+            continue
         rows.append({tr("Data"): title,
                      tr("Malware recordings"): values.get("malware_captures"),
                      tr("Caught"): _percent(values.get("malware_capture_recall")),
@@ -334,6 +384,29 @@ def render_behavior_evaluation(install_dir: Path) -> None:
     st.markdown(tr(LIMITS))
     with st.expander(tr("What is this?")):
         st.markdown(_guide())
+
+
+TESTS = (
+    ("T1_sme_family_recall", "Malware families caught on a device the model never saw (CTU-SME-11)",
+     lambda t: _percent(t.get("sme_family_recall")), "≥ %50"),
+    ("T2_mcfp_capture_recall", "Never-seen malware recordings caught (Stratosphere MCFP)",
+     lambda t: _percent(t.get("mcfp_capture_recall")), "≥ %50"),
+    ("T3_mta_recent_capture_recall", "Recent malware recordings caught, 2025–2026 (Malware-Traffic-Analysis.net)",
+     lambda t: _percent(t.get("mta_recent_capture_recall")), "≥ %50"),
+    ("T4_benign_flags", "False flags per day on normal computers (MCFP normal / a real laptop)",
+     lambda t: f"{t.get('benign', {}).get('mcfp_normal_eval', '–')} / {t.get('benign', {}).get('user_eval', '–')}",
+     "≤ 1"),
+    ("T5_synthetic_low_jitter", "Simulated call-home beacons caught (up to 20 % timing noise)",
+     lambda t: _percent(min((v["recall"] for j, v in t.get("synthetic", {}).items() if float(j) <= 0.2),
+                            default=None)), "≥ %70"),
+)
+
+
+def declared_test_rows(tests: dict, checks: dict) -> list[dict]:
+    """One row per declared test: what was measured, the result, the limit and whether it passed."""
+    return [{tr("Test"): tr(title), tr("Result"): result(tests), tr("Limit"): limit,
+             tr("Passed"): "✅" if checks.get(key) else "❌"}
+            for key, title, result, limit in TESTS if key in checks]
 
 
 FEATURE_NAMES = {
@@ -362,7 +435,8 @@ FEATURE_NAMES_TR = {
 }
 LIMITS = """- The malware recordings are lab infections from 2011–2024; new malware can behave differently.
 - Some connections in those recordings are ordinary background traffic, so the labels are approximate.
-- This computer's own traffic was assumed to be normal and covers only a few days. A stricter check on new days of this computer's traffic is running.
+- This computer's first days are taken as normal: if it was already infected then, the model learns that as normal. Threat-list checks are not affected.
+- The recipe's normal-traffic test covers a few days of one laptop; your network may differ.
 - A group needs at least 4 connections to the same destination within a day; single or rare connections are not scored."""
 
 

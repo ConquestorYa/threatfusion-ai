@@ -388,8 +388,10 @@ hard-negative augmented artifact measured 60.62%/78.75%/81.87% recall and
 strict temporal evaluation on 2026-10-11 (High FPR 1.14 %, recall 12.9 %); a
 backdated candidate-3 recipe also failed. No lexical model is promoted.
 
-No measured model ships with the installer. The default installation runs
-CTI-only: CTI matching and DNS behavior work without loading any model, the
+The installer ships no trained model. The Experimental ML tab trains a
+behavior random forest on each computer (public features + the computer's own
+days; `ml_local.py`, development-grade T1 71 %, T2 56 %, ≤ 1 false flag per day).
+The lexical domain score stays off. The default installation runs CTI-only: CTI matching and DNS behavior work without loading any model, the
 UI/CLI label ML as disabled and model-dependent history is disabled (DEC-083).
 Local caches, datasets, evaluations and artifacts are ignored data; a GitHub
 clone regenerates its own assets. The synthetic demo model is a separate

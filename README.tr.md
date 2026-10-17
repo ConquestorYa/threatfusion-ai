@@ -145,11 +145,21 @@ davranır. ThreatFusion bilgisayarın için hangi hedeflerin normal olduğunu ö
 testlerinde normal bir cihazda günde yaklaşık 0,5 kayıt listeledi. Bakmak için
 bir sebeptir, zararlı yazılım kararı değildir; asıl sınavı 7 günlük testtir.
 
-Zararlı yazılımı doğrudan tanımaya çalışan modeller herkese açık araştırma
-kayıtlarıyla eğitildi ve önceden ilan edilen testlerini **geçemedi** (güncel
-zararlı kayıtlarının %3–17'sini yakaladılar); bu yüzden hiçbiri kurulu değil.
-Eski alan adı puanı modeli de kapalı. Tüm geçmiş:
-[ML değerlendirmesi](docs/evidence/ML_DATASET.md) (İngilizce).
+Aynı sekmede **bilgisayarında eğitilen bir davranış modeli** çalışır: her
+cihazın her hedefle *nasıl* konuştuğuna bakan bir rastgele orman (ritim, boyut,
+süre, başarısız denemeler, port, adın ne kadar rastgele göründüğü). Kurulum,
+herkese açık zararlı ve normal kayıtlarının (Stratosphere Lab,
+Malware-Traffic-Analysis.net) sayısal özelliklerini getirir; kendi trafiğinin 3
+günü toplanınca uygulama ormanı birkaç saniyede bu bilgisayarda eğitir ve her
+gün yeniden eğitir. Hiçbir şey bilgisayardan çıkmaz. Tarif, hiç görmediği
+kayıtlarda bir kez test edildi: görmediği bir cihazda 7 zararlı ailesinin 5'ini
+ve görülmemiş zararlı kayıtlarının %56'sını yakaladı, gerçek bir laptopta günde
+en fazla bir yanlış alarm verdi; 2025–2026 zararlılarının yalnızca %27'sini ve
+sanal sinyallerin %20'sini yakaladı. **Model değerlendirme** sayfası bütün
+testleri gösterir. İşaret bakmak için bir sebeptir, karar değildir. Yalnızca
+herkese açık kayıtlarla eğitilen modeller ve eski alan adı puanı başarısız oldu
+ve kapalı. Tüm geçmiş: [ML değerlendirmesi](docs/evidence/ML_DATASET.md)
+(İngilizce).
 
 ## Gizlilik
 
@@ -173,7 +183,7 @@ Eski alan adı puanı modeli de kapalı. Tüm geçmiş:
 | Hata matrisi, 6 saatlik dayanıklılık testi, güvenlik incelemeleri | 9/9 hata senaryosu geçti; 6 saatlik dayanıklılık testi 16/16 kontrolü geçti (toplayıcı en fazla 684 MiB); iki güvenlik incelemesi ([operasyonel güven](docs/evidence/OPERATIONAL_CONFIDENCE.md)) |
 | Bir laptop, 24 saat normal gerçek trafik | 59 inceleme grubu, hepsi zararsız; yalnızca 3'ü ekrandaki bilgiyle karara bağlanabildi. Düzeltildi: bağlantılarda adlar, popüler site ve yerel ad bağlamı, sade bir inceleme listesi ([sonuçlar](docs/evidence/REAL_TRAFFIC_EVALUATION.md#arm-a-first-24-hours-results)) |
 | Kampüs Wi-Fi'ında ilk 7 günlük deneme | Toplayıcı sağlık kontrolü başarısız: diğer cihazların yerel ağ duyuruları pencereyi doldurdu. Düzeltildi (toplayıcı filtresi + Zeek yakalama filtresi) ve yeniden başlatıldı ([durum](docs/evidence/REAL_TRAFFIC_EVALUATION.md)) |
-| Herkese açık zararlı kayıtlarıyla makine öğrenmesi | Zararlıyı tanıyan modeller başarısız; "Bu bilgisayar için yeni" geliştirme yük kontrolünü geçti ([ML değerlendirmesi](docs/evidence/ML_DATASET.md)) |
+| Makine öğrenmesi | Her bilgisayarda eğitilen davranış modeli: görmediği cihazda zararlı ailelerinin %71'i, görülmemiş zararlı kayıtlarının %56'sı, günde ≤ 1 yanlış alarm; 2025–2026 zararlılarında zayıf (%27). Yalnızca herkese açık veriyle ve alan adıyla eğitilen modeller başarısız. "Bu bilgisayar için yeni" geliştirme yük kontrolünü geçti ([ML değerlendirmesi](docs/evidence/ML_DATASET.md)) |
 | **Sürüyor / henüz ölçülmedi** | Gerçek trafikte 7 günlük yanlış alarm (sürüyor), etiketli gerçek zararlıyı yakalama, başka kullanıcılar için faydası |
 
 Tüm kayıtlar: [dokümantasyon](docs/README.md#evidence).

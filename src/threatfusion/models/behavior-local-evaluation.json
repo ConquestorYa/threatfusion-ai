@@ -1,0 +1,56 @@
+{
+ "grade": "development: MCFP eval captures and SME-11 device folds are untouched by this recipe; MTA 2025-2026 and the user's days were inspected by earlier roots; only one user evaluation day exists",
+ "protocol": "ml-behavior-local-v1",
+ "pass": false,
+ "ship": true,
+ "checks": {
+  "T1_sme_family_recall": true,
+  "T2_mcfp_capture_recall": true,
+  "T3_mta_recent_capture_recall": false,
+  "T4_benign_flags": true,
+  "T5_synthetic_low_jitter": false
+ },
+ "eval": {
+  "malware_capture_recall": 0.5625,
+  "malware_captures": 64,
+  "malware_group_recall": 0.5061,
+  "normal_unit_days": 7,
+  "normal_flagged_per_unit_day": 1.0
+ },
+ "tests": {
+  "sme_family_recall": 0.7143,
+  "sme_family_units": 7,
+  "mcfp_capture_recall": 0.5625,
+  "mcfp_captures": 64,
+  "mta_recent_capture_recall": 0.2692,
+  "mta_recent_captures": 52,
+  "benign": {
+   "mcfp_normal_eval": 0.167,
+   "mcfp_normal_eval_host_days": 6,
+   "user_eval": 1.0,
+   "user_eval_unit_days": 1
+  },
+  "synthetic": {
+   "0.0": {
+    "recall": 0.2,
+    "beacons": 60
+   },
+   "0.1": {
+    "recall": 0.3051,
+    "beacons": 59
+   },
+   "0.2": {
+    "recall": 0.2623,
+    "beacons": 61
+   },
+   "0.3": {
+    "recall": 0.2258,
+    "beacons": 62
+   },
+   "0.5": {
+    "recall": 0.2581,
+    "beacons": 62
+   }
+  }
+ }
+}

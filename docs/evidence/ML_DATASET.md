@@ -822,3 +822,83 @@ or the IP without a name; 3 learning days).
 reason to look, not a malware verdict", with no catch claim. Its burden is
 development grade (the narrowing was chosen after seeing v1); the binding check
 replays the untouched P2 v2 days (≤ 1 entry per active day) after the run ends.
+
+## Public-data behavior model: failed on a real laptop (2026-10-17)
+
+Private root `ml-behavior-public-v1` (plan `fe566c8a…`, summary `3984d192…`).
+The v2 recipe (random forest, leaf 5, depth 24, schema 2) trained on public
+research data only — CTU-SME-11, Stratosphere MCFP and Malware-Traffic-Analysis.net
+2023–2024 — so that the model can ship in the installer. The threshold was set
+on public normal data only (SME-11 out-of-fold benign groups, MCFP normal dev);
+the user's four laptop days were evaluation only. Ship rule declared before the
+run: T4 must pass and the JSON export must match scikit-learn.
+
+| Test | Result | Limit | Pass |
+| --- | --- | --- | --- |
+| T1 CTU-SME-11 leave-one-device-out, malware units caught | 43 % (3 / 7) | ≥ 50 % | ✗ |
+| T2 MCFP held-out malware captures caught | 51.6 % (33 / 64) | ≥ 50 % | ✓ |
+| T3 Recent malware 2025–2026 captures caught | 13.5 % (7 / 52) | ≥ 50 % | ✗ |
+| T4 False flags per day: MCFP normal held-out / the user's 4 days | 0.17 / **2.25** | ≤ 1 | ✗ |
+| T5 Synthetic beacons caught, jitter 0 / 10 / 20 % | 18 / 24 / 16 % | ≥ 70 % | ✗ |
+
+**Decision:** not shipped. **Reading:** a line set on lab normal recordings is
+too low for a real laptop's updaters and sync traffic. The amendment below
+bounds the line with one real day, as v2 did, without training on it.
+
+### Amendment: line bounded by one real day — passes its ship rule, too weak to ship
+
+Private root `ml-behavior-public-v1-amend-1` (plan `1f09f8d6…`; a first start
+was refused by the method's fingerprint check before any output and is kept).
+Same public-data training; the line is also bounded by the user's 2026-10-12
+day (never trained on); the other three days are evaluation.
+
+| Test | Result | Limit | Pass |
+| --- | --- | --- | --- |
+| T1 CTU-SME-11 leave-one-device-out | 14 % (1 / 7) | ≥ 50 % | ✗ |
+| T2 MCFP held-out malware captures | 37.5 % (24 / 64) | ≥ 50 % | ✗ |
+| T3 Recent malware 2025–2026 | 0 % (0 / 52) | ≥ 50 % | ✗ |
+| T4 False flags per day: MCFP normal / the user's 3 days | 0.0 / 0.33 | ≤ 1 | ✓ |
+| T5 Synthetic beacons, jitter 0 / 10 / 20 % | 0 / 0 / 0 % | ≥ 70 % | ✗ |
+
+The declared ship rule (T4 and export fidelity) passes, but the line rose to
+0.986 and the model flags almost nothing. **Decision:** not shipped; declining
+to ship is the conservative choice. **Reading:** public recordings cannot teach
+what a real computer's normal traffic looks like. v2, which learned from the
+laptop's own days, measured T1 57 %, T2 55 % and 0 flags per real day. The next
+step trains the forest on each computer from shipped public features plus that
+computer's own collected days.
+
+## Behavior model trained on each computer: shipped (2026-10-17)
+
+Private root `ml-behavior-local-v1` (plan `48ccd1c0…`). The product recipe
+(`ml_local.py`) is evaluated exactly as it runs: the shipped pack holds numeric
+features of the public training pool (at most 400 rows per recording and class:
+44,584 malicious and 6,865 normal rows, plus MCFP normal dev rows for the line;
+1.8 MB, no addresses, names or times). A simulated computer has the user's first
+three laptop days as its history: two are trained on as normal (weight 3), the
+newest bounds the line together with MCFP normal dev host-days (≤ 1 flag per
+day). The fourth day is evaluation. T1 retrains with each SME-11 device removed
+from the pack. Ship rule declared before the run: T4 and T2 must pass.
+
+| Test | Result | Limit | Pass |
+| --- | --- | --- | --- |
+| T1 CTU-SME-11 leave-one-device-out, malware families caught | 71 % (5 / 7; missed AgentTesla TLS, Remcos tool access) | ≥ 50 % | ✓ |
+| T2 MCFP held-out malware captures caught | 56.3 % (36 / 64) | ≥ 50 % | ✓ |
+| T3 Recent malware 2025–2026 captures caught | 26.9 % (14 / 52) | ≥ 50 % | ✗ |
+| T4 False flags per day: MCFP normal held-out / the user's evaluation day | 0.17 / 1.0 | ≤ 1 | ✓ |
+| T5 Synthetic beacons caught, jitter 0 / 10 / 20 % | 20 / 31 / 26 % | ≥ 70 % | ✗ |
+
+Line 0.829. Training takes about 2 s on 16 cores (3 s on 2), about 380 MiB peak.
+**Decision:** shipped as the Experimental ML tab's behavior model, with this
+evaluation on the Model evaluation page (restored once a model exists).
+**Reading:** learning the computer's own normal is what made the difference
+(public-only: T1 14–43 %, T4 up to 2.25). Recent malware and pure beacons
+remain weak; only one real evaluation day exists and it sits at the limit.
+
+**After the evaluation:** an isolated run of the app on a copy of the earlier
+P2 v1 collector state showed that the collector's 100,000-record cap can shorten
+its window to about 10 hours on a busy day, so a "complete calendar day" never
+appears. `LocalDays.update` now keeps one sample of the newest window (≥ 6 h of
+records, ≥ 20 h after the previous sample) per day; `train` is unchanged. The
+binding check — the recipe on P2 v3's seven untouched days, declared before it
+is read — runs after 2026-10-23.

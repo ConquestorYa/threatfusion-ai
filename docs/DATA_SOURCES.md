@@ -14,9 +14,9 @@ Treat all threat indicators as inert data only.
 | IANA RDAP bootstrap + registry RDAP servers | Optional site age in Quick lookup; runs only on the analyst's button press and sends only the registrable domain | `src/threatfusion/domain_age.py` |
 | iptoasn.com IP-to-ASN table (PDDL) | Network owner and registry country for addresses; weekly, no key, looked up locally | `src/threatfusion/ip_owners.py` |
 | CESNET / DomainRadar 2024 | Real-traffic benign-domain evaluation corpus | DOI `10.5281/zenodo.14332167`; `scripts/sample_cesnet_benign_domains.py` |
-| CTU-SME-11 (Stratosphere Lab, Zenodo 7958259, CC BY 4.0) | Private ML development: labeled Zeek flows of 11 devices over 7 days (2023) | Downloaded into the private lab only; not redistributed |
-| Stratosphere MCFP captures (CTU-Malware-Capture-Botnet, CTU-Normal) | Private ML development: Zeek logs of lab infections and normal hosts (2011–2021) | Downloaded into the private lab only; not redistributed |
-| Malware-Traffic-Analysis.net | Private ML testing: Zeek logs of recent (2023–2026) infection captures | Downloaded into the private lab only; not redistributed |
+| CTU-SME-11 (Stratosphere Lab, Zenodo 7958259, CC BY 4.0) | Behavior-model training and testing: labeled Zeek flows of 11 devices over 7 days (2023) | Logs stay in the private lab; derived numeric connection-group features (no addresses, names or times) ship in `src/threatfusion/models/behavior-public-features.npz` |
+| Stratosphere MCFP captures (CTU-Malware-Capture-Botnet, CTU-Normal) | Behavior-model training and testing: Zeek logs of lab infections and normal hosts (2011–2021) | As above: logs private; derived features in the shipped pack |
+| Malware-Traffic-Analysis.net | Behavior-model training (2023–2024) and testing (2025–2026): Zeek logs of infection captures | As above: logs private; 2023–2024 derived features in the shipped pack |
 | Local network/DNS telemetry (user-provided) | Runtime analysis input | CSV/TSV/TXT, Excel, Zeek, PCAP/PCAPNG, Suricata EVE, Pi-hole, AdGuard and dnstop ingestion modules |
 
 ## Attribution requirements

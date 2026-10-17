@@ -23,8 +23,9 @@ flowchart LR
     COLLECTOR --> STATE[(Private state<br/>24 h evidence)]
     STATE --> SNAPSHOT[Aliased snapshot<br/>JSON]
     SNAPSHOT --> UI[Web app<br/>Collected connections]
-    STATE -->|read-only| ML[Experimental ML tab<br/>New for this computer]
-    ML <--> MEMORY[(Private destination<br/>memory)]
+    STATE -->|read-only| ML[Experimental ML tab<br/>New for this computer<br/>behavior model]
+    ML <--> MEMORY[(Private destination memory,<br/>daily samples, local model)]
+    PACK[Shipped public<br/>features] --> ML
     ML --> UI
     UPLOAD[Uploaded file] --> ANALYSIS[One-time analysis] --> UI
     CACHE --> ANALYSIS
@@ -40,7 +41,9 @@ flowchart LR
   app runs). Each source updates independently; a failure keeps the old data.
 - The **Experimental ML tab** reads the collector database read-only, keeps a
   private memory of which destinations the devices used, and lists new
-  destinations with a steady rhythm. It never changes the review list.
+  destinations with a steady rhythm. It also keeps daily samples of the
+  computer's connection groups and trains a behavior random forest locally from
+  them plus shipped public features. It never changes the review list.
 
 ## Evidence model
 
@@ -55,8 +58,8 @@ Evidence is kept separate by strength and is never merged into one score.
    proof of malware. Rules: [user guide](USER_GUIDE.md#what-gets-flagged).
 4. **Experimental ML**, shown apart from the review list: *New for this
    computer* (destination memory + a fixed rhythm score, development-measured)
-   and, only if a locally trained model ever passes its tests, a behavior-model
-   score. The older lexical domain score is off. ML never overrides CTI.
+   and a behavior-model score from a forest trained on this computer
+   (`ml_local.py`, measured in `ml-behavior-local-v1`). The older lexical domain score is off. ML never overrides CTI.
 
 Every flagged group lists its reasons and its coverage limits (missing fields,
 incomplete sessions, too few observations).
@@ -69,7 +72,7 @@ incomplete sessions, too few observations).
 | Collector state: typed connection/DNS records for the evidence window, checkpoints | Uploaded files and their raw rows |
 | Snapshots with report-local aliases (`Host 1`, `Device 1`) | API keys, unless you choose to save them (owner-only file) |
 | A private alias → IP mapping for local display | Anything outside your machine: there is no telemetry upload |
-| The destination memory of the Experimental ML tab (`ml/baseline.json`) and your review marks | |
+| The destination memory, daily samples and local model of the Experimental ML tab (`ml/baseline.json`, `ml/local-days.json`, `ml/behavior-model.json`) and your review marks | |
 
 State directories are owner-only (0700, files 0600). The app binds to
 127.0.0.1 and rejects requests whose Host is not local (DNS-rebinding guard).
@@ -85,6 +88,6 @@ State directories are owner-only (0700, files 0600). The app binds to
 | Upload analysis | `dns_ingest.py`, `network_telemetry.py`, `runtime_analysis.py` and format adapters |
 | Web app | `streamlit_app.py`, `ui_*.py`, `local_workspace.py`, `request_guard.py` |
 | Installer | `scripts/install_linux.sh`, `scripts/bootstrap_linux.py`, `local_setup.py` |
-| Experimental ML | `baseline.py`, `rhythm.py`, `ml_behavior.py`, `ui_new_destinations.py`, `ui_behavior.py`; lexical model `ml_*.py` ([evaluation history](evidence/ML_DATASET.md)) |
+| Experimental ML | `baseline.py`, `rhythm.py`, `ml_behavior.py`, `ml_local.py` (+ `models/`), `ui_new_destinations.py`, `ui_behavior.py`; lexical model `ml_*.py` ([evaluation history](evidence/ML_DATASET.md)) |
 
 Design decisions and their reasons: [DECISIONS.md](dev/DECISIONS.md).

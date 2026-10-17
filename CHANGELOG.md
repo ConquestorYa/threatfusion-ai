@@ -13,6 +13,14 @@ framing is retired. No release date or tag is set.
 
 ### Added
 
+- Behavior model trained on each computer (Experimental ML tab). The app ships
+  numeric features of public malware and normal recordings; after 3 days of the
+  computer's own traffic it trains a random forest locally (a few seconds) and
+  retrains daily. Measured once on unseen recordings: 71 % of malware families
+  on an unseen device, 56 % of unseen malware recordings, at most one false flag
+  per day; 27 % of 2025–2026 malware. The Model evaluation page returns with
+  every declared test once a model exists.
+
 - Experimental ML tab: "New for this computer" lists destinations a device
   never used before that it keeps calling at a steady rhythm. It learns each
   device's normal destinations locally (3 days, private file, never uploaded).

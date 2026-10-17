@@ -59,7 +59,8 @@ ZeekControl's `current` are skipped. Use one state per sensor.
   scan. If an update is writing the cache, the scan keeps the previous indicators
   and the page says so.
 - The collector itself uses no ML. The page's **Experimental ML** tab builds
-  its own view from the collected records (see below).
+  its own view from the collected records and trains its behavior model on
+  this computer (see below).
 
 The page refreshes every 10 seconds and warns about stale snapshots, rejected
 files and reduced coverage.
@@ -162,9 +163,32 @@ score 80/100 or more), the way a program that "calls home" does.
 - A destination whose DNS lookup happened before the collector's window can be
   treated as new; the rhythm requirement removes most of these.
 
-Models that try to recognize malware directly were trained on public research
-recordings and failed their declared tests, so none is installed; the tab says
-so. History: [ML evaluation](evidence/ML_DATASET.md).
+### Experimental ML: behavior model trained on this computer
+
+Below *New for this computer*, a random forest scores each device–destination
+pair of the last day by *how* they talk: rhythm, sizes, durations, failures,
+port, and how random the name looks. Pairs above the model's line appear as
+cards with plain reasons and a rhythm chart.
+
+- **Learning.** About once a day the app keeps the connection groups of the
+  collector's newest 24 h window (features only) in `<install>/ml/local-days.json`
+  (owner-only). After 3 such days it trains the forest here, in a few seconds,
+  on numeric features of public malware and normal recordings shipped with the
+  app plus your days, taken as normal; it retrains daily. Until then the tab
+  shows how many days it has. It learns only while the app reads the collector.
+- **Its line** is the lowest score that flags at most one group per day on your
+  newest day and on public normal recordings.
+- **Measured** (the same recipe, once, on recordings it never saw): 5 of 7
+  malware families on an unseen device, 56 % of unseen malware recordings, at
+  most one false flag per day; only 27 % of 2025–2026 malware and 20 % of
+  simulated beacons. The **Model evaluation** page lists every test.
+- **Limits.** If the computer was already infected during its first days, the
+  model learns that as normal. Updaters and sync tools can look similar to
+  malware; mark them *I know this*. Threat-list checks and What to check do not
+  use this model.
+
+Models trained on public recordings alone failed their declared tests and are
+not used. History: [ML evaluation](evidence/ML_DATASET.md).
 
 ### Investigating a group
 
