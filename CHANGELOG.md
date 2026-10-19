@@ -42,6 +42,14 @@ framing is retired. No release date or tag is set.
 
 ### Documentation
 
+- Repository and package descriptions now match the product: a local Linux
+  tool that checks Zeek connection and DNS logs against threat intelligence
+  and lists suspicious connections with their reasons (early prototype). The
+  real-traffic evaluation and project context show the 7-day run v3 in
+  progress. The user guide and the site-age caption no longer say most
+  malicious sites are days old (measured: about 1 in 10 listed names was 7
+  days old or less).
+
 - Earlier lexical artifacts that were never part of this repository's data are
   no longer referenced; ML documents describe only the experiments whose
   artifacts and receipts exist.

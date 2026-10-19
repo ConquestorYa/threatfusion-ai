@@ -1,7 +1,8 @@
 # P2 real-traffic evaluation
 
-Status (2026-10-16): **7-day run v2 was interrupted by a collector defect; v3 is
-prepared on the fixed release and starts when the user runs it.**
+Status (2026-10-20): **7-day run v3 is in progress** (started
+2026-10-15T22:39:53Z, planned end 2026-10-22T22:39:53Z). Its result is not in
+this document yet; v1 and v2 were interrupted by collector defects.
 
 - Arm A, first 24 h (2026-10-11): 3 of 5 limits failed; results below. The
   product defects found were fixed before the 7-day run (DEC-094).
@@ -17,6 +18,11 @@ prepared on the fixed release and starts when the user runs it.**
   stopped updating (records were still imported; Zeek kept logging). Kept as a
   result; fixed in `cbe021a` (at most 20 indicators per matched name or
   address); v3 measures the fix on new days.
+- 7-day run v3 (started 2026-10-15T22:39:53Z on the fixed release): in
+  progress. Its 3-hourly snapshot timer failed from the start (`run/snapshots`
+  was missing) and was fixed on 2026-10-17; the collector keeps 48 h, so no
+  review item was lost. The binding check of the local behavior model on its
+  seven days follows after 2026-10-23.
 
 The design that follows is unchanged.
 

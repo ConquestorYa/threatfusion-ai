@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "threatfusion-ai"
 version = "0.1.0"
-description = "AI-assisted multi-source cyber threat intelligence and DNS threat-analysis platform."
+description = "Local Linux tool that checks Zeek connection and DNS logs against threat intelligence and lists suspicious connections with their reasons (early prototype)."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.12"

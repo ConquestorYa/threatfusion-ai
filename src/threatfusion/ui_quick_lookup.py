@@ -502,7 +502,7 @@ def _render_age_result(age: DomainAge) -> None:
         unsafe_allow_html=True,
     )
     if age.tier == "very_new":
-        st.caption(tr("Most malicious sites are only days old. New is not proof: check before trusting it."))
+        st.caption(tr("A very new site is a reason to look closer. New is not proof: check before trusting it."))
 
 
 def _render_domain_age(result: QuickLookupResult, db_path: Path) -> None:

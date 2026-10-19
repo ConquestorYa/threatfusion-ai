@@ -292,10 +292,12 @@ mean the target is safe.
 **Site age (optional):** for a domain, the "Check site age" button asks the
 domain's official registry (RDAP, found through IANA) when it was registered.
 Only the registrable domain is sent (`example.com`, never the full hostname or
-URL), and only when you press the button. Most malicious sites are days old, so
-"very new" (30 days or less) is a strong reason to look closer; it is context,
-not a verdict. Some country extensions have no public RDAP service. A name on a
-shared platform where anyone can open a free name (for example `name.web.app`)
+URL), and only when you press the button. "Very new" (30 days or less) is a
+strong reason to look closer, but most listed malicious names are not new: in
+the project's test only about 1 in 10 was 7 days old or less
+([evidence](evidence/ML_DATASET.md)). An older site is not proof of safety; age
+is context, not a verdict. Some country extensions have no public RDAP service.
+A name on a shared platform where anyone can open a free name (for example `name.web.app`)
 has no registry entry of its own; the result then says *Shared platform* and
 names the platform, a common pattern for phishing pages.
 

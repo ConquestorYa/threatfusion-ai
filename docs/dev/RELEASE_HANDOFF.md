@@ -1,6 +1,19 @@
 # Release handoff
 
-Newest section first. Status date: 2026-10-17.
+Newest section first. Status date: 2026-10-20.
+
+## Stale descriptions and statuses refreshed (2026-10-20)
+
+- GitHub repository description and `pyproject.toml` description replaced the
+  early "AI-assisted multi-source CTI and early warning platform" framing with
+  the current product (local Zeek/CTI tool, early prototype; DEC-090).
+- REAL_TRAFFIC_EVALUATION and PROJECT_CONTEXT: P2 v3 in progress since
+  2026-10-15T22:39:53Z (planned end 2026-10-22T22:39:53Z); they still said v3
+  would start when the user runs it / showed the 2026-10-10 checkpoint.
+- USER_GUIDE and the Quick lookup site-age caption: removed "most malicious
+  sites are days old"; `ml-age-dev-v2` found 10.7 % of indicators were ≤ 7 days.
+- Known remaining: README screenshots (2026-10-16) still show the old "CTI-only
+  mode: ML off" banner wording changed in `dc45a78`.
 
 ## Linux only; one-line install verified from scratch (2026-10-17)
 

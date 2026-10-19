@@ -4,7 +4,17 @@ For the current target product and active work order, start with
 [PRODUCT_PLAN.md](PRODUCT_PLAN.md). This file also preserves dated development
 history; earlier “Next” notes are superseded by that plan's current queue.
 
-## Current checkpoint (2026-10-10)
+## Current checkpoint (2026-10-20)
+
+Linux only (Windows CI and support dropped at the user's request). The
+Experimental ML tab ships "New for this computer" and a behavior model trained
+locally on each computer (`ml-behavior-local-v1`: ship rule passed; T3 and T5
+below their limits; one real day). P2 7-day run v3 is in progress (started
+2026-10-15T22:39:53Z, planned end 2026-10-22T22:39:53Z). Next: report P2 v3
+without dropping days, then the binding check of the local model on its seven
+days after 2026-10-23.
+
+### Previous checkpoint (2026-10-10)
 
 P0 and P1 are complete. The 6-hour wall-clock soak passed all 16 declared checks
 on the memory repair (collector peak 684 MiB, growth 1.11 ≤ 1.25). A ThreatFox

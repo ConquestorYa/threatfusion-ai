@@ -536,7 +536,7 @@ _TR: dict[str, str] = {
     "This extension has no public RDAP service.": "Bu uzantının açık RDAP hizmeti yok.",
     "Lookup failed": "Sorgu başarısız",
     "The registry did not answer. Try again later.": "Kayıt kuruluşu cevap vermedi. Sonra tekrar dene.",
-    "Most malicious sites are only days old. New is not proof: check before trusting it.": "Zararlı sitelerin çoğu birkaç günlüktür. Yeni olması kanıt değil, güvenmeden önce kontrol et.",
+    "A very new site is a reason to look closer. New is not proof: check before trusting it.": "Çok yeni bir site daha yakından bakmak için bir sebeptir. Yeni olması kanıt değil, güvenmeden önce kontrol et.",
     "Lookup input could not be analyzed: {error}": "Girdi analiz edilemedi: {error}",
     "URL or domain is required": "URL veya alan adı gerekli",
     "URL could not be parsed": "URL çözümlenemedi",
