@@ -2,9 +2,13 @@
 
 import io
 import sqlite3
+import sys
 import zipfile
+from types import SimpleNamespace
+from xml.etree import ElementTree
 
 import dpkt
+import openpyxl
 import pytest
 
 from threatfusion import (
@@ -59,6 +63,116 @@ def test_xlsx_accepts_sparse_rows_within_budget(monkeypatch) -> None:
             archive, "xl/worksheets/sheet1.xml", []
         )
     assert result == ",,,x\r\n"
+
+
+def _normal_xlsx(rows: int = 4, columns: int = 2) -> bytes:
+    book = openpyxl.Workbook()
+    sheet = book.active
+    for _ in range(rows):
+        sheet.append(["example.com"] * columns)
+    output = io.BytesIO()
+    book.save(output)
+    return output.getvalue()
+
+
+def test_pandas_xlsx_path_rejects_cell_budget_before_dataframe(monkeypatch) -> None:
+    monkeypatch.setattr(dns_ingest, "_MAX_XLSX_CELLS", 6)
+
+    with pytest.raises(ValueError, match="safe cell import limit"):
+        dns_ingest.parse_dns_upload_with_diagnostics(_normal_xlsx(), "dns.xlsx")
+
+
+def test_pandas_xlsx_path_rejects_row_budget_before_dataframe(monkeypatch) -> None:
+    monkeypatch.setattr(dns_ingest, "_MAX_XLSX_ROWS", 3)
+
+    with pytest.raises(ValueError, match="safe row import limit"):
+        dns_ingest.parse_dns_upload_with_diagnostics(_normal_xlsx(), "dns.xlsx")
+
+
+def test_pandas_xlsx_path_bounds_sparse_rectangle(monkeypatch) -> None:
+    book = openpyxl.Workbook()
+    sheet = book.active
+    sheet["A1"] = "query_name"
+    sheet["D4"] = "example.com"
+    output = io.BytesIO()
+    book.save(output)
+    monkeypatch.setattr(dns_ingest, "_MAX_XLSX_CELLS", 12)
+
+    with pytest.raises(ValueError, match="safe cell import limit"):
+        dns_ingest.parse_dns_upload_with_diagnostics(output.getvalue(), "dns.xlsx")
+
+
+def test_pandas_xlsx_path_bounds_declared_sheet_dimension(monkeypatch) -> None:
+    content = _normal_xlsx()
+    rewritten = io.BytesIO()
+    with zipfile.ZipFile(io.BytesIO(content)) as original:
+        with zipfile.ZipFile(rewritten, "w") as output:
+            for member in original.infolist():
+                data = original.read(member.filename)
+                if member.filename == "xl/worksheets/sheet1.xml":
+                    root = ElementTree.fromstring(data)
+                    dimension = root.find(
+                        "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}dimension"
+                    )
+                    assert dimension is not None
+                    dimension.set("ref", "A1:XFD1048576")
+                    data = ElementTree.tostring(root, encoding="utf-8")
+                output.writestr(member, data)
+
+    monkeypatch.setattr(
+        dns_ingest.pd,
+        "ExcelFile",
+        lambda *args, **kwargs: pytest.fail("oversized dimension reached pandas"),
+    )
+    with pytest.raises(ValueError, match="safe row import limit"):
+        dns_ingest.parse_dns_upload_with_diagnostics(
+            rewritten.getvalue(), "dns.xlsx"
+        )
+
+
+def test_pandas_xlsx_path_bounds_workbook_total(monkeypatch) -> None:
+    book = openpyxl.Workbook()
+    book.active.append(["query_name", "response_ip"])
+    book.active.append(["example.com", "203.0.113.1"])
+    second = book.create_sheet("More")
+    second.append(["query_name", "response_ip"])
+    second.append(["other.example", "203.0.113.2"])
+    output = io.BytesIO()
+    book.save(output)
+    monkeypatch.setattr(dns_ingest, "_MAX_XLSX_CELLS", 6)
+
+    with pytest.raises(ValueError, match="safe workbook cell import limit"):
+        dns_ingest.parse_dns_upload_with_diagnostics(output.getvalue(), "dns.xlsx")
+
+
+def test_legacy_xls_dimensions_reject_before_pandas(monkeypatch) -> None:
+    class Workbook:
+        nsheets = 2
+
+        def sheet_by_index(self, index):
+            return SimpleNamespace(nrows=2, ncols=2)
+
+        def unload_sheet(self, index):
+            pass
+
+        def release_resources(self):
+            pass
+
+    fake_xlrd = SimpleNamespace(
+        open_workbook=lambda **kwargs: Workbook(), XLRDError=ValueError
+    )
+    monkeypatch.setitem(sys.modules, "xlrd", fake_xlrd)
+    monkeypatch.setattr(dns_ingest, "_MAX_XLSX_CELLS", 6)
+    monkeypatch.setattr(
+        dns_ingest.pd,
+        "ExcelFile",
+        lambda *args, **kwargs: pytest.fail("unsafe XLS reached pandas"),
+    )
+
+    with pytest.raises(ValueError, match="safe workbook cell import limit"):
+        dns_ingest.parse_dns_upload_with_diagnostics(
+            b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1legacy", "dns.xls"
+        )
 
 
 def test_pihole_stops_expensive_uploaded_view(tmp_path, monkeypatch) -> None:

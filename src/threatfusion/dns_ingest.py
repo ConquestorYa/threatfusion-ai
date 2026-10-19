@@ -443,6 +443,142 @@ def _validate_xlsx_archive(content: bytes) -> None:
                 raise ValueError("XLSX archive compression ratio is unsafe")
 
 
+def _validate_excel_dimensions(
+    rows: int,
+    columns: int,
+    *,
+    workbook_cells: int,
+    format_name: str,
+) -> int:
+    if rows > _MAX_XLSX_ROWS:
+        raise ValueError(f"{format_name} input exceeds the safe row import limit")
+    if columns > _MAX_XLSX_COLUMNS:
+        raise ValueError(f"{format_name} input exceeds the safe column import limit")
+    cells = rows * columns
+    if cells > _MAX_XLSX_CELLS:
+        raise ValueError(f"{format_name} input exceeds the safe cell import limit")
+    workbook_cells += cells
+    if workbook_cells > _MAX_XLSX_CELLS:
+        raise ValueError(
+            f"{format_name} input exceeds the safe workbook cell import limit"
+        )
+    return workbook_cells
+
+
+def _preflight_xlsx_dimensions(content: bytes) -> None:
+    """Check each sheet's expanded rectangle before pandas allocates it."""
+    with zipfile.ZipFile(io.BytesIO(content)) as archive:
+        workbook_cells = 0
+        for _, sheet_path in _xlsx_sheet_paths(archive):
+            max_row = 0
+            max_column = 0
+            last_row = 0
+            with archive.open(sheet_path) as stream:
+                try:
+                    for event, element in ElementTree.iterparse(
+                        stream, events=("start", "end")
+                    ):
+                        if (
+                            event == "start"
+                            and element.tag == f"{{{_XLSX_MAIN_NS}}}dimension"
+                        ):
+                            reference = element.attrib.get("ref", "")
+                            match = re.fullmatch(
+                                r"(?:[A-Za-z]{1,3}[1-9][0-9]*:)?"
+                                r"([A-Za-z]{1,3})([1-9][0-9]*)",
+                                reference,
+                            )
+                            if match is None:
+                                raise ValueError("XLSX sheet dimension is invalid")
+                            declared_column = _xlsx_column_index(
+                                match.group(1) + match.group(2)
+                            ) + 1
+                            declared_row = int(match.group(2))
+                            _validate_excel_dimensions(
+                                declared_row,
+                                declared_column,
+                                workbook_cells=0,
+                                format_name="XLSX",
+                            )
+                            max_row = max(max_row, declared_row)
+                            max_column = max(max_column, declared_column)
+                            continue
+                        if event != "end":
+                            continue
+                        if element.tag != f"{{{_XLSX_MAIN_NS}}}row":
+                            continue
+                        raw_row = element.attrib.get("r", "")
+                        if raw_row:
+                            try:
+                                row_number = int(raw_row)
+                            except ValueError as error:
+                                raise ValueError(
+                                    "XLSX row reference is invalid"
+                                ) from error
+                        else:
+                            row_number = last_row + 1
+                        if row_number < 1:
+                            raise ValueError("XLSX row reference is invalid")
+                        last_row = row_number
+                        max_row = max(max_row, row_number)
+                        if max_row > _MAX_XLSX_ROWS:
+                            raise ValueError(
+                                "XLSX input exceeds the safe row import limit"
+                            )
+                        column_number = 0
+                        for cell in element.findall(f"{{{_XLSX_MAIN_NS}}}c"):
+                            reference = cell.attrib.get("r")
+                            column_number = (
+                                _xlsx_column_index(reference) + 1
+                                if reference
+                                else column_number + 1
+                            )
+                            max_column = max(max_column, column_number)
+                        if max_column > _MAX_XLSX_COLUMNS:
+                            raise ValueError(
+                                "XLSX input exceeds the safe column import limit"
+                            )
+                        if max_row * max_column > _MAX_XLSX_CELLS:
+                            raise ValueError(
+                                "XLSX input exceeds the safe cell import limit"
+                            )
+                        element.clear()
+                except ElementTree.ParseError as error:
+                    raise ValueError("XLSX worksheet XML is malformed") from error
+            workbook_cells = _validate_excel_dimensions(
+                max_row,
+                max_column,
+                workbook_cells=workbook_cells,
+                format_name="XLSX",
+            )
+
+
+def _preflight_xls_dimensions(content: bytes) -> None:
+    """Read legacy sheet dimensions without materializing pandas frames."""
+    try:
+        import xlrd
+    except ImportError:
+        return  # The existing pandas path reports the missing Excel engine.
+
+    try:
+        workbook = xlrd.open_workbook(file_contents=content, on_demand=True)
+    except xlrd.XLRDError as error:
+        raise ValueError("XLS workbook could not be opened") from error
+    try:
+        workbook_cells = 0
+        for index in range(workbook.nsheets):
+            sheet = workbook.sheet_by_index(index)
+            workbook_cells = _validate_excel_dimensions(
+                sheet.nrows,
+                sheet.ncols,
+                workbook_cells=workbook_cells,
+                format_name="XLS",
+            )
+            workbook.unload_sheet(index)
+    finally:
+        workbook.release_resources()
+
+
 def _parse_excel(
     content: bytes,
     filename: str | None = None,
@@ -451,6 +587,10 @@ def _parse_excel(
     # Keep this outside the fallback try: safety failures must be terminal.
     if zipfile.is_zipfile(io.BytesIO(content)):
         _validate_xlsx_archive(content)
+        if _is_xlsx_package(content):
+            _preflight_xlsx_dimensions(content)
+    elif content.startswith(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"):
+        _preflight_xls_dimensions(content)
 
     pandas_error: Exception | None = None
     try:
