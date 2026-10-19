@@ -76,6 +76,21 @@ def test_missing_optional_fields_are_safe() -> None:
     assert event.response_ip is None
 
 
+def test_explicit_response_ip_is_not_inferred_as_missing_client_ip() -> None:
+    event = parse_dns_csv("query_name,response_ip\nexample.com,203.0.113.9\n")[0]
+
+    assert event.query_name == "example.com"
+    assert event.client_ip is None
+    assert event.response_ip == "203.0.113.9"
+
+
+def test_response_ip_alias_is_reserved_before_optional_field_inference() -> None:
+    event = parse_dns_csv("query,Answer IP\nexample.com,203.0.113.9\n")[0]
+
+    assert event.client_ip is None
+    assert event.response_ip == "203.0.113.9"
+
+
 def test_query_type_is_uppercased() -> None:
     content = "timestamp,client_ip,query_name,query_type,response_ip\n2026-09-24T12:00:00Z,10.0.0.1,example.com,cname,\n"
 

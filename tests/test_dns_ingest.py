@@ -97,6 +97,18 @@ def test_auto_detects_xlsx_and_selects_dns_worksheet() -> None:
     assert [event.query_type for event in parsed.events] == ["A", "AAAA"]
 
 
+def test_xlsx_response_ip_header_is_not_consumed_by_missing_client_ip() -> None:
+    buffer = io.BytesIO()
+    pd.DataFrame(
+        {"Query Domain": ["example.com"], "Answer IP": ["203.0.113.9"]}
+    ).to_excel(buffer, index=False)
+
+    parsed, _ = parse_dns_upload_with_diagnostics(buffer.getvalue(), "dns.xlsx")
+
+    assert parsed.events[0].client_ip is None
+    assert parsed.events[0].response_ip == "203.0.113.9"
+
+
 def test_xlsx_uses_builtin_reader_when_excel_engine_is_unavailable(
     monkeypatch,
 ) -> None:
