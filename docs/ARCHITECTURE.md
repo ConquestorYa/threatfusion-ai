@@ -1,5 +1,7 @@
 # Architecture
 
+**English** • [Türkçe](ARCHITECTURE.tr.md)
+
 ThreatFusion is a local, passive network investigation tool. It reads Zeek logs
 and threat-intelligence (CTI) lists, and shows a queue of device → destination
 groups with the reason each one may deserve attention. Suspicious destinations

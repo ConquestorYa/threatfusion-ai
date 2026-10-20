@@ -42,6 +42,19 @@ framing is retired. No release date or tag is set.
 
 ### Documentation
 
+- Turkish versions of the user documentation: user guide, Linux installation,
+  Zeek sensor setup, data sources, architecture, security policy and the
+  documentation index (`*.tr.md`), each with an English/Türkçe switch. The
+  Turkish README links to them. Evidence and developer records stay English.
+- Linux installation (both languages): an Uninstall section that says what the
+  command deletes (saved keys, CTI cache, collected data, marks, learned ML
+  days) and how to remove the optional PATH line; Zeek setup: removing the
+  sensor. The README uninstall rows link there.
+- Corrected stale statements: the Model evaluation page appears once the
+  behavior model is trained on the computer (not hidden in the default mode);
+  the installer ships the behavior model's public feature pack (not "no ML
+  artifact").
+
 - Repository and package descriptions now match the product: a local Linux
   tool that checks Zeek connection and DNS logs against threat intelligence
   and lists suspicious connections with their reasons (early prototype). The

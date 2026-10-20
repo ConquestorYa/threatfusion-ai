@@ -1,5 +1,7 @@
 # Linux local installation
 
+**English** • [Türkçe](INSTALL_LINUX.tr.md)
+
 The one command in the [English README](../README.md) or
 [Turkish README](../README.tr.md) installs Python, dependencies, the application,
 an applications-menu shortcut and the `threatfusion-ai` terminal command.
@@ -108,8 +110,9 @@ launcher path. `--no-integrations` skips command/menu/shell registration.
 ## Runtime model and demo
 
 Real CTI operation does **not** substitute the synthetic demo model for a
-measured detector or promote the experimental augmented candidate. A trusted
-production ML artifact is not distributed in the installer. See
+measured detector. No pre-trained detector is distributed: the installer ships
+only the behavior model's public feature pack, and the model is trained on this
+computer in the **Experimental ML** tab. See
 [ML_DATASET.md](evidence/ML_DATASET.md) for the lexical and behavior model
 experiments and their results.
 
@@ -123,7 +126,7 @@ threatfusion-ai --mode demo
 The demo generates four reserved example indicators and a checksum-pinned,
 synthetic-only model. Try `known-threat.example`. Its score is not measured
 malware detection performance. Switching modes clears stale UI results and
-preserves both databases. Returning to real mode disables ML again.
+preserves both databases. Returning to real mode turns the demo model off again.
 
 ## Installation details and upgrades
 
@@ -161,6 +164,29 @@ The first run picks a free port from 8501–8600 and checks health before openin
 the browser. A failed source refresh never promotes an ML artifact or tunes a
 threshold. History/telemetry stay session-local in this managed profile; the
 `THREATFUSION_PUBLIC_MODE` privacy flag does not imply public network exposure.
+
+## Uninstall
+
+Stop the app and remove the installation completely:
+
+```bash
+threatfusion-ai stop; rm -rf ~/.local/share/threatfusion-ai ~/.local/bin/threatfusion-ai ~/.local/share/applications/io.github.ConquestorYa.ThreatFusionAI.desktop
+```
+
+If you installed with `--install-dir`, use that directory instead of the first
+path. This deletes **everything** in the installation directory: saved API
+keys, the CTI cache, collector data, **I know this / Suspicious** marks and the
+days the Experimental ML tab has learned. Back the directory up first if you
+want to keep them. If the collector runs in a separate terminal, stop it with
+Ctrl+C first.
+
+The PATH line the installer may have added to your profile files (marked
+`# Managed by ThreatFusion AI installer`; it adds `~/.local/bin` to PATH) is
+harmless and can stay; remove it by hand from `~/.profile` and `~/.bashrc` (or
+`~/.zshrc`) if you like. Fish users can also delete
+`~/.config/fish/conf.d/threatfusion.fish`. The Zeek sensor (Docker container
+and log folder) is set up separately; see [Zeek sensor setup](ZEEK_SETUP.md) to
+remove it.
 
 ## Automatic Zeek connections and DNS
 
@@ -204,3 +230,7 @@ installation directory.
   Do not loosen credentials to 0644 or run the installation as root.
 - Already running: use `threatfusion-ai status` for the URL or stop it first.
 - Busy fixed port: select another `--port`; the application never kills its owner.
+- Start fails with `AF_UNIX path too long`: the installation path is too long
+  for the private control socket (`<install>/control.sock`, Linux limit 108
+  bytes). Use a shorter `--install-dir` (about 90 characters or less); the
+  default `~/.local/share/threatfusion-ai` is fine for normal home folders.

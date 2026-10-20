@@ -1,5 +1,7 @@
 # Security Policy
 
+**English** • [Türkçe](SECURITY.tr.md)
+
 ## Reporting a Vulnerability
 
 If you discover a potential security issue in ThreatFusion AI, please report it privately by opening a GitHub Security Advisory draft in this repository:

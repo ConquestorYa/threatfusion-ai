@@ -115,7 +115,7 @@ computer can reach it). The first install takes a few minutes.
 | Stop it | `threatfusion-ai stop` |
 | Update to the latest version | stop it, then run the install line again (data and settings are kept) |
 | Try it with synthetic data | `threatfusion-ai --mode demo` |
-| Uninstall | `threatfusion-ai stop; rm -rf ~/.local/share/threatfusion-ai ~/.local/bin/threatfusion-ai ~/.local/share/applications/io.github.ConquestorYa.ThreatFusionAI.desktop` |
+| Uninstall (also deletes saved keys, the CTI cache, collected data and marks; [details](docs/INSTALL_LINUX.md#uninstall)) | `threatfusion-ai stop; rm -rf ~/.local/share/threatfusion-ai ~/.local/bin/threatfusion-ai ~/.local/share/applications/io.github.ConquestorYa.ThreatFusionAI.desktop` |
 
 If a terminal says `threatfusion-ai: command not found`, open a new terminal.
 
@@ -215,8 +215,8 @@ is more useful than these tools has not been measured.
 
 [User guide](docs/USER_GUIDE.md) · [Zeek setup](docs/ZEEK_SETUP.md) ·
 [Installation](docs/INSTALL_LINUX.md) · [Architecture](docs/ARCHITECTURE.md) ·
-[Data sources](docs/DATA_SOURCES.md) · [Evidence](docs/README.md#evidence) ·
-[Product plan](docs/dev/PRODUCT_PLAN.md)
+[Data sources](docs/DATA_SOURCES.md) · [Security](SECURITY.md) ·
+[Evidence](docs/README.md#evidence) · [Product plan](docs/dev/PRODUCT_PLAN.md)
 
 ## Development
 

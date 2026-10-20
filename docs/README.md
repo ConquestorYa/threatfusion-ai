@@ -1,14 +1,17 @@
 # Documentation
 
+**English** • [Türkçe](README.tr.md)
+
 ## Using ThreatFusion
 
 | Document | Contents |
 | --- | --- |
-| [Linux installation](INSTALL_LINUX.md) | One-command install, start/stop, upgrades, keys |
+| [Linux installation](INSTALL_LINUX.md) | One-command install, start/stop, upgrades, uninstall, keys |
 | [Zeek sensor setup](ZEEK_SETUP.md) | Producing logs: sensor placement, Docker recipe, privacy |
 | [User guide](USER_GUIDE.md) | Pages, collector, what gets flagged, investigation, limits |
 | [Architecture](ARCHITECTURE.md) | Data flow, evidence model, storage and privacy |
 | [Data sources](DATA_SOURCES.md) | CTI sources, licences and attribution |
+| [Security policy](../SECURITY.md) | Reporting a vulnerability, safe handling |
 
 ## Evidence
 
@@ -27,7 +30,7 @@ commit and protocol it belongs to; later code needs new measurements.
 | [Collector](evidence/TELEMETRY_COLLECTOR.md) / [capacity](evidence/CONNECTION_CAPACITY.md) / [log preparation](evidence/LOG_PREPARATION.md) | Collector contracts, capacity and large-file preparation |
 | [Multi-day collection](evidence/MULTIDAY_COLLECTION.md) / [operational confidence](evidence/OPERATIONAL_CONFIDENCE.md) | Rotation, retention, fault matrix, wall-clock soak, security reviews |
 | [Analyst review](evidence/ANALYST_REVIEW.md) | Review guidance and synthetic analyst tasks |
-| [ML dataset and evaluation](evidence/ML_DATASET.md) | Domain-name and connection-behavior models (failed, not installed), the rhythm score, and *New for this computer* |
+| [ML dataset and evaluation](evidence/ML_DATASET.md) | Domain-name and public-data behavior models (failed, not installed), the behavior model trained on each computer (experimental tab), the rhythm score, and *New for this computer* |
 | [Local lab](evidence/LOCAL_LAB.md) | Isolated lab used for controls and RITA comparison |
 | [Manual acceptance](evidence/MANUAL_ACCEPTANCE_TR.md) | The developer's manual acceptance checklist (Turkish) |
 

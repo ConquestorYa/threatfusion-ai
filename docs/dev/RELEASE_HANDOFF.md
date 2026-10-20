@@ -2,6 +2,29 @@
 
 Newest section first. Status date: 2026-10-20.
 
+## Turkish user documentation; uninstall documented (2026-10-20)
+
+- User request: Turkish versions of the documentation beyond the README. Scope
+  chosen by the user: user-facing documents (`docs/*.tr.md`, `SECURITY.tr.md`);
+  evidence and developer records stay English. UI terms follow `i18n.py`.
+- Uninstall section in INSTALL_LINUX (EN/TR) and sensor removal in ZEEK_SETUP.
+  The user wanted to uninstall and reinstall to test the installer; the real
+  installation was **not** removed because P2 v3's collector runs from it
+  (`tf-p2v3-collector` uses its environment, release and `collector/`) until
+  2026-10-22T22:39:53Z. A fresh-HOME install/uninstall of the exact README lines
+  was run instead (results below).
+- Stale statements fixed: Model evaluation page visibility; installer ships the
+  behavior feature pack.
+- Fresh-HOME check of the exact README lines against `main` `390f4c9`
+  (separate HOME, XDG variables unset): install exit 0 in 622 s (slow network),
+  release `390f4c9`, mode cti-only, health `ok`, page HTTP 200, `stop` ok; the
+  README uninstall line removed the installation, command and menu entry; only
+  the marked PATH lines in `.profile`/`.bashrc` remain (documented). A first
+  attempt failed on a transient DNS error (the installer reported it and kept
+  data); a second, in a ~100-character HOME, failed to start with
+  `AF_UNIX path too long` (control socket limit, now in Troubleshooting; the
+  failure message still says to check network/disk access).
+
 ## Stale descriptions and statuses refreshed (2026-10-20)
 
 - GitHub repository description and `pyproject.toml` description replaced the

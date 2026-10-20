@@ -60,7 +60,7 @@ DNS sorguları için ayrı kontroller vardır (CTI eşleşmesi, düzenli sorgula
 olağandışı hacim). Popüler siteler ve yerel adlar, bir CTI listesi eşleşmedikçe
 listeye girmez. Normal yazılımlar yine de bu kurallara uyabilir; her madde
 kanıtını gösterir, böylece hızlı karar verebilirsin.
-Ayrıntılar: [kullanım kılavuzu](docs/USER_GUIDE.md#what-gets-flagged) (İngilizce).
+Ayrıntılar: [kullanım kılavuzu](docs/USER_GUIDE.tr.md#neler-işaretlenir).
 
 ## Ekran görüntüleri
 
@@ -117,7 +117,7 @@ dakika sürer.
 | Durdur | `threatfusion-ai stop` |
 | En son sürüme güncelle | durdur, sonra kurulum satırını yeniden çalıştır (veriler ve ayarlar korunur) |
 | Sentetik veriyle dene | `threatfusion-ai --mode demo` |
-| Kaldır | `threatfusion-ai stop; rm -rf ~/.local/share/threatfusion-ai ~/.local/bin/threatfusion-ai ~/.local/share/applications/io.github.ConquestorYa.ThreatFusionAI.desktop` |
+| Kaldır (kayıtlı anahtarlar, CTI önbelleği, toplanan veri ve işaretler de silinir; [ayrıntılar](docs/INSTALL_LINUX.tr.md#kaldırma)) | `threatfusion-ai stop; rm -rf ~/.local/share/threatfusion-ai ~/.local/bin/threatfusion-ai ~/.local/share/applications/io.github.ConquestorYa.ThreatFusionAI.desktop` |
 
 Terminal `threatfusion-ai: command not found` derse yeni bir terminal aç.
 
@@ -130,8 +130,8 @@ tek bir ücretsiz anahtar hem ThreatFox'u hem URLhaus'u açar. **CTI verilerini
 DNS, PCAP ya da benzeri dosya yükle) bundan sonra Zeek olmadan da çalışır.
 
 **2. Zeek'i çalıştır;** saatlik bölünmüş `conn.log` ve `dns.log` dosyaları
-yazsın: [Zeek sensör kurulumu](docs/ZEEK_SETUP.md) (sürümü sabitlenmiş bir
-Docker tarifi, İngilizce; Docker bir kez yönetici yetkisi ister).
+yazsın: [Zeek sensör kurulumu](docs/ZEEK_SETUP.tr.md) (sürümü sabitlenmiş bir
+Docker tarifi; Docker bir kez yönetici yetkisi ister).
 
 **3. Toplayıcıyı başlat;** ikinci bir terminalde çalıştır ve **Toplanan
 bağlantılar** sayfasını aç:
@@ -141,7 +141,7 @@ threatfusion-ai collect --input-dir ~/zeek-sensor/logs
 ```
 
 Toplanan trafiğin 3 günü dolunca **Deneysel ML** sekmesi davranış modelini bu
-bilgisayarda eğitir. Ayrıntılar: [Linux kurulumu](docs/INSTALL_LINUX.md).
+bilgisayarda eğitir. Ayrıntılar: [Linux kurulumu](docs/INSTALL_LINUX.tr.md).
 
 ## Uygulamadaki diğer araçlar
 
@@ -220,10 +220,11 @@ yerel uygulama. Bu araçlardan daha faydalı olup olmadığı ölçülmedi.
 
 ## Dokümantasyon
 
-[Kullanım kılavuzu](docs/USER_GUIDE.md) · [Zeek kurulumu](docs/ZEEK_SETUP.md) ·
-[Kurulum](docs/INSTALL_LINUX.md) · [Mimari](docs/ARCHITECTURE.md) ·
-[Veri kaynakları](docs/DATA_SOURCES.md) · [Kanıtlar](docs/README.md#evidence) ·
-[Ürün planı](docs/dev/PRODUCT_PLAN.md) (dokümanlar İngilizce)
+[Kullanım kılavuzu](docs/USER_GUIDE.tr.md) · [Zeek kurulumu](docs/ZEEK_SETUP.tr.md) ·
+[Kurulum](docs/INSTALL_LINUX.tr.md) · [Mimari](docs/ARCHITECTURE.tr.md) ·
+[Veri kaynakları](docs/DATA_SOURCES.tr.md) · [Güvenlik](SECURITY.tr.md) ·
+[Kanıtlar](docs/README.tr.md#kanıtlar) · [Ürün planı](docs/dev/PRODUCT_PLAN.md)
+(kanıt ve geliştirici kayıtları İngilizce)
 
 ## Geliştirme
 
@@ -237,4 +238,4 @@ dokümantasyon); değişiklikler birleştirilmeden önce gözden geçirilir ve t
 ## Lisans
 
 MIT. CTI kaynakları ve veri setleri kendi koşullarına tabidir; bkz.
-[veri kaynakları](docs/DATA_SOURCES.md).
+[veri kaynakları](docs/DATA_SOURCES.tr.md).

@@ -1,5 +1,7 @@
 # User guide
 
+**English** • [Türkçe](USER_GUIDE.tr.md)
+
 ThreatFusion answers one question: **which device talked to which destination,
 and which of those conversations deserve a closer look?** It reads Zeek logs,
 compares destinations with threat-intelligence (CTI) lists and checks a few
@@ -17,7 +19,8 @@ Install first: [Linux installation](INSTALL_LINUX.md). To produce logs:
 | **Analyze telemetry** | Upload one file (Zeek, DNS CSV, PCAP, Pi-hole, AdGuard, Suricata…) and analyze it once. |
 | **Quick lookup** | Check one URL, domain or IP against your local CTI lists, without visiting it. |
 | **Setup & CTI updates** | Choose the mode, enter your API keys, update CTI lists, schedule updates. |
-| **Analysis history** / **Model evaluation** | Only in modes that run a measured ML model; hidden in the default CTI-only mode (no such model is installed). |
+| **Model evaluation** | Appears once the behavior model has been trained on this computer; lists its declared tests and limits. |
+| **Analysis history** | Demo mode only; off in the default real-CTI mode. |
 
 The sidebar shows the state of each CTI source. English and Turkish, light and
 dark themes are available at the top right.

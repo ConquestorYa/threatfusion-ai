@@ -1,5 +1,7 @@
 # Data Sources, Attribution, and Redistribution Notes
 
+**English** • [Türkçe](DATA_SOURCES.tr.md)
+
 This repository aggregates indicators and network/DNS telemetry for local investigation.
 Treat all threat indicators as inert data only.
 

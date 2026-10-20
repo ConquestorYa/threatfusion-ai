@@ -1,5 +1,7 @@
 # Zeek sensor setup
 
+**English** • [Türkçe](ZEEK_SETUP.tr.md)
+
 ThreatFusion analyzes **completed Zeek logs**. It does not capture packets
 itself. This guide sets up a small Zeek sensor whose logs the collector can read.
 The recipe below (Docker, pinned Zeek 8.0.6, one interface) is the one used for
@@ -127,3 +129,14 @@ systemd-inhibit --what=sleep:idle --why="Zeek capture" sleep infinity
 ```
 
 Closing the lid may still suspend the machine, depending on its settings.
+
+## Removing the sensor
+
+```bash
+docker rm -f tf-zeek          # stop and remove the container
+docker rmi zeek/zeek@sha256:f0582e7ba4a81fb55145fc03eddb6aefe70dbceee1d47df69f9bb781be952f6d
+rm -rf ~/zeek-sensor          # deletes the script and every recorded log
+```
+
+The logs are a record of your network activity; delete them when you no longer
+need them.
