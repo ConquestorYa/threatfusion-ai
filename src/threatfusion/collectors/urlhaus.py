@@ -1,4 +1,5 @@
 import csv
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlsplit
@@ -12,6 +13,12 @@ URLHAUS_EXPORT_URL = "https://urlhaus-api.abuse.ch/v2/files/exports/{}/recent.cs
 URLHAUS_FULL_EXPORT_URL = "https://urlhaus-api.abuse.ch/v2/files/exports/{}/full.csv"
 REQUEST_TIMEOUT_SECONDS = 30
 MAX_URLHAUS_FEED_BYTES = 256 * 1024 * 1024
+
+
+@dataclass(frozen=True)
+class URLhausFetchResult:
+    records: tuple[IOCRecord, ...]
+    coverage: str  # "full" or "recent_fallback"
 
 
 def _sanitized_http_error(status_code: object) -> requests.HTTPError:
@@ -158,8 +165,14 @@ class URLhausCollector:
         return self._fetch_export(URLHAUS_EXPORT_URL)
 
     def fetch_full_urls(self) -> list[IOCRecord]:
-        """Fetch the full dump, falling back to the documented recent export."""
+        """Keep the existing list-returning collector API for direct callers."""
+        return list(self.fetch_full_urls_with_coverage().records)
+
+    def fetch_full_urls_with_coverage(self) -> URLhausFetchResult:
+        """Return records with their actual export coverage for cache refresh."""
         try:
-            return self._fetch_export(URLHAUS_FULL_EXPORT_URL)
+            records = self._fetch_export(URLHAUS_FULL_EXPORT_URL)
+            return URLhausFetchResult(tuple(records), "full")
         except requests.HTTPError:
-            return self._fetch_export(URLHAUS_EXPORT_URL)
+            records = self._fetch_export(URLHAUS_EXPORT_URL)
+            return URLhausFetchResult(tuple(records), "recent_fallback")
