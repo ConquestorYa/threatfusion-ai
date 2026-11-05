@@ -6,6 +6,7 @@
 
 | Belge | İçerik |
 | --- | --- |
+| [Proje özeti](PROJECT_SUMMARY.tr.md) | Tek sayfa: problem, yaklaşım, şimdiye kadarki sonuçlar, sınırlamalar |
 | [Linux kurulumu](INSTALL_LINUX.tr.md) | Tek komutla kurulum, başlatma/durdurma, güncelleme, kaldırma, anahtarlar |
 | [Zeek sensör kurulumu](ZEEK_SETUP.tr.md) | Kayıt üretmek: sensörün yeri, Docker tarifi, gizlilik |
 | [Kullanım kılavuzu](USER_GUIDE.tr.md) | Sayfalar, toplayıcı, neler işaretlenir, inceleme, sınırlar |
