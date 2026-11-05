@@ -11,6 +11,12 @@ The current unreleased state is an early prototype of a local Zeek/CTI
 investigation tool (DEC-090); the earlier v0.1.0 portfolio-release-candidate
 framing is retired. No release date or tag is set.
 
+### Security
+
+- Dependencies: Pillow 12.3.0 → 13.0.0 and certifi 2026.7.22 → 2026.10.23 to
+  fix published advisories reported by `pip-audit`. Streamlit 1.64.0 → 1.66.1,
+  the first release that allows Pillow 13. No other package changes.
+
 ### Added
 
 - Documentation: a one-page project summary (`docs/PROJECT_SUMMARY.md`,
