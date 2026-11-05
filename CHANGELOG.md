@@ -13,6 +13,13 @@ framing is retired. No release date or tag is set.
 
 ### Added
 
+- Documentation: a one-page project summary (`docs/PROJECT_SUMMARY.md`,
+  Turkish `PROJECT_SUMMARY.tr.md`), a guide to the scripts (`scripts/README.md`)
+  that marks the retired lexical-model scripts as a kept research record, a
+  reading guide at the top of the ML evaluation record, and a short note near
+  the top of both READMEs that detection is driven by CTI and explainable
+  rules while ML stays experimental. No code or behavior change.
+
 - Behavior model trained on each computer (Experimental ML tab). The app ships
   numeric features of public malware and normal recordings; after 3 days of the
   computer's own traffic it trains a random forest locally (a few seconds) and

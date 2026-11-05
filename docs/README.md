@@ -6,6 +6,7 @@
 
 | Document | Contents |
 | --- | --- |
+| [Project summary](PROJECT_SUMMARY.md) | One page: problem, approach, results so far, limitations |
 | [Linux installation](INSTALL_LINUX.md) | One-command install, start/stop, upgrades, uninstall, keys |
 | [Zeek sensor setup](ZEEK_SETUP.md) | Producing logs: sensor placement, Docker recipe, privacy |
 | [User guide](USER_GUIDE.md) | Pages, collector, what gets flagged, investigation, limits |

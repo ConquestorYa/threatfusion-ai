@@ -36,6 +36,11 @@ your own Linux machine; your traffic never leaves it.
 > catches real malware has **not** been measured yet. It is not a SIEM, EDR,
 > IDS or malware scanner.
 
+**How detection works:** the review list is driven by CTI matches and simple,
+explainable behavior rules. Machine learning is experimental: it has its own
+tab, never changes the review list and never overrides CTI.
+One-page overview: [project summary](docs/PROJECT_SUMMARY.md).
+
 ## What it does
 
 It answers one question: **which device talked to which destination, and which
