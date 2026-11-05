@@ -1,5 +1,16 @@
 # ML Dataset Preparation
 
+> **Reading guide.** This record is chronological. The sections up to and
+> including *Domain age as a signal* concern the **lexical domain-name model**,
+> which failed its evaluations and is switched off in the app; they are kept as
+> the research record. The connection-behavior sections that follow record
+> further failures, then what the app uses today:
+> [New for this computer + rhythm](#new-for-this-computer--rhythm-2026-10-14)
+> and the
+> [behavior model trained on each computer](#behavior-model-trained-on-each-computer-shipped-2026-10-17).
+> The scripts that reproduce the lexical results are listed in
+> [scripts/README.md](../../scripts/README.md).
+
 This document describes the local, deterministic dataset construction layer used before any model training begins.
 
 ## Scope
@@ -61,8 +72,8 @@ Each dataset entry is represented as a `DomainSample` with:
    or from the hostname extracted from `URL` records.
 4. Benign inputs are accepted as strings already supplied by the caller.
 5. Duplicate domains are removed using the normalized canonical domain value.
-5. If the same domain appears in both malicious and benign inputs, the malicious label wins.
-6. The output ordering is deterministic and preserves first-seen order for each domain.
+6. If the same domain appears in both malicious and benign inputs, the malicious label wins.
+7. The output ordering is deterministic and preserves first-seen order for each domain.
 
 ## Dataset safeguards
 

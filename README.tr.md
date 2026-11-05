@@ -35,6 +35,11 @@ Kendi Linux bilgisayarında çalışır; trafiğin bilgisayarından dışarı ç
 > toplayıcı hatası düzeltildikten sonra yeniden başlatıldı). Gerçek zararlı yazılımı ne kadar yakaladığı **henüz
 > ölçülmedi.** SIEM, EDR, IDS ya da virüs tarayıcı değildir.
 
+**Tespit nasıl çalışır:** İnceleme listesini CTI eşleşmeleri ile basit ve
+açıklanabilir davranış kuralları belirler. Makine öğrenmesi deneyseldir: ayrı
+bir sekmesi vardır, inceleme listesini hiçbir zaman değiştirmez ve CTI'ın
+önüne geçmez. Tek sayfalık genel bakış: [proje özeti](docs/PROJECT_SUMMARY.tr.md).
+
 ## Ne yapar
 
 Tek bir soruyu cevaplar: **Hangi cihaz hangi hedefle konuştu ve bunlardan
