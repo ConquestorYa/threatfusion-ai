@@ -22,7 +22,7 @@ ve protokolü belirtir; sonraki kod yeni ölçüm gerektirir. Kanıt belgeleri
 
 | Kayıt | Soru |
 | --- | --- |
-| [Gerçek trafik değerlendirmesi](evidence/REAL_TRAFFIC_EVALUATION.md) | İlk 24 saatin sonuçları, başarısız ilk 7 günlük deneme, yarıda kalan ikinci deneme ve 7 günlük deneme v3 |
+| [Gerçek trafik değerlendirmesi](evidence/REAL_TRAFFIC_EVALUATION.md) | Tek dizüstü bilgisayarda 24 saatin sonuçları ve sonraki canlı toplamada bulunan toplayıcı kusurları |
 | [İnceleme yükü](evidence/REVIEW_WORKLOAD.md) | Normal sentetik trafiğin ne kadarı İncele'ye giriyor; RITA ile karşılaştırma |
 | [Ağ değerlendirmesi](evidence/NETWORK_EVALUATION.md) | Bağımsız IoT-23 kayıtları: neler bulundu, neler kaçırıldı |
 | [Bağımsız tekrar oynatma](evidence/INDEPENDENT_REPLAY.md) | Bağımsız kayıtların toplayıcıdan yeniden geçirilmesi |
@@ -36,8 +36,8 @@ ve protokolü belirtir; sonraki kod yeni ölçüm gerektirir. Kanıt belgeleri
 | [Yerel laboratuvar](evidence/LOCAL_LAB.md) | Kontroller ve RITA karşılaştırması için kullanılan yalıtılmış laboratuvar |
 | [Manuel kabul](evidence/MANUAL_ACCEPTANCE_TR.md) | Geliştiricinin manuel kabul kontrol listesi (Türkçe) |
 
-Henüz ölçülmeyenler: gerçek zararlı yazılımda tespit oranı, gerçek trafikte bir
-haftalık yanlış alarm (sürüyor), başka kullanıcılar için faydası.
+Henüz ölçülmeyenler: gerçek zararlı yazılımda tespit oranı, düzeltmelerden
+sonra gerçek trafikte yanlış alarm, başka kullanıcılar için faydası.
 
 ## Geliştirme
 

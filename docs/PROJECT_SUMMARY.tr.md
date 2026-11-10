@@ -73,7 +73,7 @@ Linux.
 ## Sınırlamalar
 
 - Gerçek ve etiketli zararlı yazılımı yakalama oranı **henüz ölçülmedi**.
-- Gerçek trafikte 7 günlük yanlış alarm testi sürüyor.
+- Düzeltmelerden sonra gerçek trafikte yanlış alarm yeniden ölçülmedi.
 - Davranış kuralları normal yazılımlarla da (güncelleyiciler, sohbet
   uygulamaları) eşleşebilir; her işaret bir hüküm değil, bakmak için bir
   nedendir.

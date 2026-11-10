@@ -11,6 +11,18 @@ The current unreleased state is an early prototype of a local Zeek/CTI
 investigation tool (DEC-090); the earlier v0.1.0 portfolio-release-candidate
 framing is retired. No release date or tag is set.
 
+### Changed
+
+- Documentation: the real-traffic evidence is the 24-hour measurement on one
+  laptop. Statements about a longer real-traffic run were removed; the review
+  list after its fixes and the local behavior model are described as not
+  measured on further real days. The two collector defects found in later live
+  collection (local discovery chatter, IOC match limit) stay recorded.
+- Dependencies: `altair` is declared as a direct dependency (it is imported by
+  the app and was only installed through Streamlit); `pytest-cov` and
+  `pip-audit` are pinned in `requirements-dev.in` like the other tools. No
+  installed version changes.
+
 ### Security
 
 - Dependencies: Pillow 12.3.0 → 13.0.0 and certifi 2026.7.22 → 2026.10.23 to
@@ -71,8 +83,7 @@ framing is retired. No release date or tag is set.
 - Repository and package descriptions now match the product: a local Linux
   tool that checks Zeek connection and DNS logs against threat intelligence
   and lists suspicious connections with their reasons (early prototype). The
-  real-traffic evaluation and project context show the 7-day run v3 in
-  progress. The user guide and the site-age caption no longer say most
+  user guide and the site-age caption no longer say most
   malicious sites are days old (measured: about 1 in 10 listed names was 7
   days old or less).
 
@@ -80,7 +91,7 @@ framing is retired. No release date or tag is set.
   no longer referenced; ML documents describe only the experiments whose
   artifacts and receipts exist.
 
-- READMEs and docs updated end to end: the 7-day real-traffic test in progress,
+- READMEs and docs updated end to end: the real-traffic status,
   the Experimental ML tab (*New for this computer*) and the failed malware
   models, the three tabs of Collected connections, and private ML datasets.
   New screenshots in each README's language show real public indicators
@@ -102,7 +113,7 @@ framing is retired. No release date or tag is set.
 - The collector stopped when a popular host appeared often in DNS: URLhaus
   lists thousands of file URLs on hosts such as github.com, and every lookup was
   expanded to every listed URL until the 250,000-match safety limit stopped
-  collection (P2 v2, 2026-10-14). At most 20 indicators per matched name or
+  collection (2026-10-14). At most 20 indicators per matched name or
   address are now kept as evidence, every source represented.
 
 - Turkish interface: timeline charts showed English times ("08 PM", "Fri 16");

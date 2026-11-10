@@ -99,7 +99,7 @@ Sık "böyle bir alan adı yok" yanıtları, değişen yanıtlar ve rastgele gö
 adlar bağlam olarak gösterilir; tek başlarına bir grubu yükseltmez.
 
 **Sıradan trafiği İncele listesinin dışında tutan bağlam** (ilk gerçek trafik
-testinden sonra eklendi, [sonuçlar](evidence/REAL_TRAFFIC_EVALUATION.md#arm-a-first-24-hours-results), İngilizce):
+testinden sonra eklendi, [sonuçlar](evidence/REAL_TRAFFIC_EVALUATION.md#24-hour-test-results), İngilizce):
 
 - **Yerel adlar** (`.local` mDNS/DNS-SD duyuruları, ters `*.arpa` sorguları,
   yerel bölgeler) bir CTI listesi eşleşmedikçe **Gözlem** düzeyinde kalır.
@@ -175,7 +175,7 @@ devam ettiği** hedefleri gösterir (bir günde en az 4 bağlantı, ritim skoru
   kendi trafiğinde normal bir cihaz için günde yaklaşık 0,5 kayıt (geliştirme
   düzeyi). Bakmak için bir sebeptir, zararlı yazılım hükmü değildir: araştırma
   verisindeki 6 komuta-kontrol hedefinden yalnızca 2'si ilk görüldüğünde
-  yeniydi. Bağlayıcı test 7 günlük gerçek trafik çalışmasıdır.
+  yeniydi. Birkaç gerçek günlük yükü henüz ölçülmedi.
 - DNS sorgusu toplayıcının penceresinden önce yapılmış bir hedef yeni
   sayılabilir; ritim şartı bunların çoğunu eler.
 

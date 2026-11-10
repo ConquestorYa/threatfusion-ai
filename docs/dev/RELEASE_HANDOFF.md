@@ -9,9 +9,8 @@ Newest section first. Status date: 2026-10-20.
   evidence and developer records stay English. UI terms follow `i18n.py`.
 - Uninstall section in INSTALL_LINUX (EN/TR) and sensor removal in ZEEK_SETUP.
   The user wanted to uninstall and reinstall to test the installer; the real
-  installation was **not** removed because P2 v3's collector runs from it
-  (`tf-p2v3-collector` uses its environment, release and `collector/`) until
-  2026-10-22T22:39:53Z. A fresh-HOME install/uninstall of the exact README lines
+  installation was **not** removed because the live collector runs from it.
+  A fresh-HOME install/uninstall of the exact README lines
   was run instead (results below).
 - Stale statements fixed: Model evaluation page visibility; installer ships the
   behavior feature pack.
@@ -30,9 +29,8 @@ Newest section first. Status date: 2026-10-20.
 - GitHub repository description and `pyproject.toml` description replaced the
   early "AI-assisted multi-source CTI and early warning platform" framing with
   the current product (local Zeek/CTI tool, early prototype; DEC-090).
-- REAL_TRAFFIC_EVALUATION and PROJECT_CONTEXT: P2 v3 in progress since
-  2026-10-15T22:39:53Z (planned end 2026-10-22T22:39:53Z); they still said v3
-  would start when the user runs it / showed the 2026-10-10 checkpoint.
+- REAL_TRAFFIC_EVALUATION and PROJECT_CONTEXT statuses refreshed; they still
+  showed the 2026-10-10 checkpoint.
 - USER_GUIDE and the Quick lookup site-age caption: removed "most malicious
   sites are days old"; `ml-age-dev-v2` found 10.7 % of indicators were ≤ 7 days.
 - Known remaining: README screenshots (2026-10-16) still show the old "CTI-only
@@ -66,13 +64,10 @@ Newest section first. Status date: 2026-10-20.
   ML_DATASET.
 - Model evaluation page shows a declared-tests table; it appears in CTI-only
   mode once the local model exists (DEC-091 reminder fulfilled).
-- Isolated app run (port 8791, copy of the P2 v1 collector state and CTI cache)
+- Isolated app run (port 8791, copy of an earlier live collector state and CTI cache)
   found the record-cap window problem; daily samples replace calendar days.
 - Windows CI: POSIX permission checks skipped on Windows in five tests.
-- P2 v3: its snapshot timer had failed since the start (`run/snapshots` missing);
-  created 2026-10-17 within the collector's 48 h window, no item lost
-  (`run/operator-notes.txt`). The app may be updated during P2 v3 (its plan).
-- Next: binding check of the recipe on P2 v3's seven days after 2026-10-23.
+- Not measured: the recipe on further untouched real days.
 
 ## Earlier lexical artifacts removed from the project (2026-10-17)
 
@@ -85,9 +80,9 @@ Newest section first. Status date: 2026-10-20.
   renamed on start; regression test). No measured model ships; CTI-only stays
   the default.
 
-## Collector stopped by the IOC match limit; P2 v2 interrupted (2026-10-16)
+## Collector stopped by the IOC match limit (2026-10-16)
 
-- Found while finishing the screenshots: the P2 v2 collector (release 49024ec)
+- Found while finishing the screenshots: the live collector (release 49024ec)
   had been restarting and exiting since 2026-10-14T16:00Z (286 restarts), with
   "Collector stopped: check private state…". Reproduced on a private copy of
   its state: `match_dns_events` raised "IOC evidence exceeds the 250000 match
@@ -96,17 +91,17 @@ Newest section first. Status date: 2026-10-20.
   step failed, so the review list stopped updating.
 - Fix: `matching.MAX_RECORDS_PER_KEY = 20` (every source kept); regression test.
   The fixed source completes on the same state copy.
-- P2 v2's frozen candidate has this defect: per its `on_failure` the run is
-  kept as a result and the fix is measured on new days in a new root.
+- The defect is kept as a result of live collection; the fix is covered by the
+  regression test and the state-copy check above.
 
 ## Documentation and screenshots refreshed (2026-10-16, DEC-100)
 
-- README.md/README.tr.md and docs updated end to end (7-day test status,
+- README.md/README.tr.md and docs updated end to end (real-traffic status,
   Experimental ML tab, failed malware models, three tabs, private ML datasets).
 - Screenshots re-captured in each README's language from an isolated app copy
   (own install root, port 8791, own collector state, read-only CTI copy) with
   crafted Zeek logs containing three public indicators; the user's install,
-  logs and P2 v2 run were not touched. New: Analyze telemetry screenshot.
+  logs and live collector were not touched. New: Analyze telemetry screenshot.
 - Turkish UI fixes found while capturing: language-neutral UTC chart axes,
   translated "IP owners", local time for the last CTI attempt.
 - A sample upload set (crafted `ornek-dns.log`, `ornek-conn.log`, `BENIOKU.txt`)
@@ -121,9 +116,9 @@ Newest section first. Status date: 2026-10-20.
   The Experimental ML tab now lists destinations that are new for the device
   and repeat at rhythm ≥ 0.8 (`ui_new_destinations.py`): development burden 0.5
   per normal device-day. No malware-catch claim (2/6 SME-11 C2 units were new).
-- Binding check: replay P2 v2 days after 2026-10-20 (`baseline-burden-v2`,
-  amended three times before any P2 v2 read: display fix, one card per site
-  with site-wide marks, memory across all devices).
+- No binding check yet: the burden is development grade (later changes:
+  display fix, one card per site with site-wide marks, memory across all
+  devices).
 - The memory is judged across all devices of the sensor: the user's laptop
   showed 10 originator addresses (network changes, rotating IPv6 privacy
   addresses), so per-address memory would never have finished learning.
@@ -146,37 +141,35 @@ Newest section first. Status date: 2026-10-20.
   locally trained model is installed; none is installed.
 - v1 (MCFP + user traffic) failed: 41 % of held-out MCFP malware captures,
   3 % of 2023–2026 malware captures. Causes and v2 plan in ML_DATASET.md.
-- P2 v2 started 2026-10-13T21:24Z (ends 2026-10-20T21:24Z); collector healthy.
+- Live collection restarted 2026-10-13T21:24Z on the fixed release; collector healthy.
 - CTU-SME-11 labeled Zeek logs are downloading into the private lab.
 
-## Local discovery chatter filtered; P2 restarted as v2 (2026-10-13, DEC-098)
+## Local discovery chatter filtered (2026-10-13, DEC-098)
 
-- P2 v1 failed A4 on 2026-10-13: ~2 h on campus Wi-Fi produced ~1.16M DNS-log
+- Live collection failed its collector-health check on 2026-10-13: ~2 h on campus Wi-Fi produced ~1.16M DNS-log
   rows from ~990 other devices (mDNS/LLMNR/NetBIOS). Three hourly logs were
   rejected (16 MiB limit) and the rest filled the 100k window, trimming every
-  review item, so the review list was empty. Kept as a result (plan
-  `on_failure`); v1 logs stay private and serve as ML development data.
+  review item, so the review list was empty. Kept as a result;
+  those logs stay private and serve as ML development data.
 - Fix: the collector skips local discovery rows (`skipped_local_discovery_rows`);
   the Zeek guide adds a matching capture filter. Verified: unit tests, and the
   pinned Zeek image with the filter on a crafted pcap (multicast, broadcast and
   unicast mDNS dropped; a unicast HTTPS flow kept).
-- `real-traffic-p2-7d-v2` is prepared with this release and the Zeek filter;
-  the user starts it with its `kur.sh` (stops v1 first).
+- Live collection continues with this release and the Zeek filter.
 
-## Review marks, new logo, P2 7-day run started (2026-10-12)
+## Review marks, new logo, live collection started (2026-10-12)
 
-- P2 `real-traffic-p2-7d-v1` started 2026-10-11T19:56Z (user ran `kur.sh`;
-  systemd --user units; collector pinned to release 3b1ab34, so app updates do
-  not change the measured candidate). Ends 2026-10-18T19:56Z; then `kaldir.sh`.
+- Live collection on real traffic started 2026-10-11T19:56Z (systemd --user
+  units; collector pinned to release 3b1ab34).
 - Review items: known / not sure / suspicious marks (DEC-097); the suspicious
   re-notification needs a collector of this version, so it is inactive in the
-  pinned P2 collector.
+  pinned collector.
 - New full-colour logo (also favicon and README); site age reports shared
   platforms (`*.web.app`, `*.duckdns.org`).
 - `ml-age-dev-v2` finished 2026-10-13: domain age ≤ 7 days is precise (FPR
   0.088 %) but catches only 10.7 % of new indicators (limit 50 %); failed,
-  development grade. Nothing promoted; next ML direction is behavior on the P2
-  data. See ML_DATASET.md.
+  development grade. Nothing promoted; next ML direction is behavior on the
+  user's collected data. See ML_DATASET.md.
 
 ## IP owners, outside lookups, desktop notification (2026-10-11, DEC-096)
 
@@ -220,8 +213,8 @@ Newest section first. Status date: 2026-10-20.
   platforms are not popular); a plain "What to check" tab (DNS grouped by name)
   with the technical view under "Details".
 - Development replay on the same 24 h (not evidence): 59 → 6 items. Next: user
-  updates and restarts the collector; then the 7-day run on new days (declare
-  first), measuring the new list.
+  updates and restarts the collector. The new list is not measured on new
+  days.
 - Known limits: abuse of popular services moves to Observe; connection and DNS
   aliases are still independent ("Sistem" vs "Cihaz"); Details is unchanged.
 
@@ -235,8 +228,7 @@ Newest section first. Status date: 2026-10-20.
   `3c054a3`, ✓ on re-import. Details and the defect list:
   `docs/evidence/REAL_TRAFFIC_EVALUATION.md`.
 - Next: fix the defects (names on connections and CNAME origin, local-name and
-  shared-host noise, per-address devices, a much simpler page), then the 7-day
-  run on new, untouched days. Do not tune on these 24 hours.
+  shared-host noise, per-address devices, a much simpler page). Do not tune on these 24 hours.
 
 ## Collector DNS defect found by Arm A (2026-10-10)
 

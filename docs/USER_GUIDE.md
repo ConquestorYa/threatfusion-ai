@@ -91,7 +91,7 @@ Frequent "no such domain" answers, changing answers and random-looking names are
 shown as context; on their own they do not raise a group.
 
 **Context that keeps ordinary traffic out of Review** (added after the first
-real-traffic test, [results](evidence/REAL_TRAFFIC_EVALUATION.md#arm-a-first-24-hours-results)):
+real-traffic test, [results](evidence/REAL_TRAFFIC_EVALUATION.md#24-hour-test-results)):
 
 - **Local names** (`.local` mDNS/DNS-SD announcements, reverse `*.arpa`
   lookups, local zones) stay Observe unless a CTI list matches.
@@ -161,8 +161,8 @@ score 80/100 or more), the way a program that "calls home" does.
 - **Measured so far:** about 0.5 entries per normal device per day on public
   research recordings and this project's own traffic (development grade). It
   is a reason to look, not a malware verdict: only 2 of 6 command-and-control
-  destinations in the research data were new when first seen. The binding
-  test is the 7-day real-traffic run.
+  destinations in the research data were new when first seen. Its burden
+  over several real days has not been measured.
 - A destination whose DNS lookup happened before the collector's window can be
   treated as new; the rhythm requirement removes most of these.
 

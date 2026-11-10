@@ -1059,8 +1059,8 @@ risk: abuse of popular services moves to Observe; documented in the guide.
 
 Evidence status: a development replay on the same Arm A 24 h (counts only,
 `real-traffic-arm-a-dev-check-1`) went from 59 to 6 items; it is not evidence
-because the fixes were designed against those days. The 7-day run on new days
-is the measurement.
+because the fixes were designed against those days. The fixed list has not
+been measured on new days.
 
 ## DEC-095: Optional site age (RDAP) in Quick lookup
 
@@ -1101,8 +1101,7 @@ sees one computer) and blocking (needs a DNS filter the user does not run).
 when a marked name appears again after the mark, once per name per day). Marks
 are stored in a private `review-labels.json` beside the collector state; items
 hidden with the older button count as known. Threat-list items stay visible
-whatever the mark. The marks are also the labels of the P2 7-day run, so they
-must exist before it ends. Unnamed connections are keyed by the address shown on
+whatever the mark. Unnamed connections are keyed by the address shown on
 screen; the collector's notification only matches names.
 
 ## DEC-098: Local discovery chatter is not collected
@@ -1114,7 +1113,7 @@ LLMNR (5355). They are counted in `counts.skipped_local_discovery_rows`. The
 Zeek setup guide adds a matching capture filter (`-f`) so the files stay small.
 Uploads and prepared shards keep every row.
 
-**Why:** in the P2 run, about two hours on campus Wi-Fi produced ~1.16M DNS-log
+**Why:** in live collection, about two hours on campus Wi-Fi produced ~1.16M DNS-log
 rows from ~990 other devices (mDNS 77 %, LLMNR 13 %, NetBIOS 10 %). Three hourly
 logs exceeded the 16 MiB import limit and the rest filled the 100,000-record
 window, so the user's own review items were trimmed out. This traffic never
@@ -1142,7 +1141,7 @@ Medium from 50, Low below.
 **Decision (2026-10-16):** At the user's request the README screenshots show
 actual detections instead of `.test` demo data. They are captured from an
 isolated copy of the app (separate install root, port and collector state; the
-user's installation, Zeek logs and running 7-day test are untouched) whose CTI
+user's installation, Zeek logs and running collector are untouched) whose CTI
 cache is a read-only copy of the developer's cache. The collector reads
 **crafted** Zeek logs in which three public indicators appear: a ThreatFox
 AsyncRAT command IP, a ThreatFox RemusStealer command domain and an SGB

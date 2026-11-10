@@ -30,9 +30,8 @@ Kendi Linux bilgisayarında çalışır; trafiğin bilgisayarından dışarı ç
 
 > **Durum: erken prototip.** İş akışının tamamı çalışıyor: kurulum, CTI
 > güncellemeleri, sürekli Zeek toplama, sade bir inceleme listesi ve inceleme
-> ekranları. Gerçek trafikle yapılan ilk 24 saatlik test çok fazla işaret
-> üretti; bu kusurlar düzeltildi ve **gerçek trafikle 7 günlük test** sürüyor (bulduğu bir
-> toplayıcı hatası düzeltildikten sonra yeniden başlatıldı). Gerçek zararlı yazılımı ne kadar yakaladığı **henüz
+> ekranları. Gerçek trafikle yapılan 24 saatlik test çok fazla işaret
+> üretti; bu kusurlar düzeltildi. Gerçek zararlı yazılımı ne kadar yakaladığı **henüz
 > ölçülmedi.** SIEM, EDR, IDS ya da virüs tarayıcı değildir.
 
 **Tespit nasıl çalışır:** İnceleme listesini CTI eşleşmeleri ile basit ve
@@ -168,7 +167,7 @@ ritimle aramaya devam ettiği hedefler; "eve telefon eden" bir program böyle
 davranır. ThreatFusion bilgisayarın için hangi hedeflerin normal olduğunu öğrenir
 (3 gün, yalnızca uygulama açıkken; bu hafıza bilgisayardan çıkmaz). Geliştirme
 testlerinde normal bir cihazda günde yaklaşık 0,5 kayıt listeledi. Bakmak için
-bir sebeptir, zararlı yazılım kararı değildir; asıl sınavı 7 günlük testtir.
+bir sebeptir, zararlı yazılım kararı değildir; birkaç gerçek günlük yükü henüz ölçülmedi.
 
 Aynı sekmede **bilgisayarında eğitilen bir davranış modeli** çalışır: her
 cihazın her hedefle *nasıl* konuştuğuna bakan bir rastgele orman (ritim, boyut,
@@ -206,10 +205,10 @@ ve kapalı. Tüm geçmiş: [ML değerlendirmesi](docs/evidence/ML_DATASET.md)
 | Sentetik normal ve simüle trafik | Normal güncelleyiciler ve yoklamalar da İncele'ye düşüyor: kurallar henüz yeterince seçici değil ([inceleme yükü](docs/evidence/REVIEW_WORKLOAD.md)) |
 | Dört bağımsız IoT-23 kaydı (2018–2019) | İki zararsız kayıtta 0 inceleme; iki zararlı kayıttan biri bir inceleme üretti, diğeri hiç üretmedi ([ağ değerlendirmesi](docs/evidence/NETWORK_EVALUATION.md)) |
 | Hata matrisi, 6 saatlik dayanıklılık testi, güvenlik incelemeleri | 9/9 hata senaryosu geçti; 6 saatlik dayanıklılık testi 16/16 kontrolü geçti (toplayıcı en fazla 684 MiB); iki güvenlik incelemesi ([operasyonel güven](docs/evidence/OPERATIONAL_CONFIDENCE.md)) |
-| Bir laptop, 24 saat normal gerçek trafik | 59 inceleme grubu, hepsi zararsız; yalnızca 3'ü ekrandaki bilgiyle karara bağlanabildi. Düzeltildi: bağlantılarda adlar, popüler site ve yerel ad bağlamı, sade bir inceleme listesi ([sonuçlar](docs/evidence/REAL_TRAFFIC_EVALUATION.md#arm-a-first-24-hours-results)) |
-| Kampüs Wi-Fi'ında ilk 7 günlük deneme | Toplayıcı sağlık kontrolü başarısız: diğer cihazların yerel ağ duyuruları pencereyi doldurdu. Düzeltildi (toplayıcı filtresi + Zeek yakalama filtresi) ve yeniden başlatıldı ([durum](docs/evidence/REAL_TRAFFIC_EVALUATION.md)) |
+| Bir laptop, 24 saat normal gerçek trafik | 59 inceleme grubu, hepsi zararsız; yalnızca 3'ü ekrandaki bilgiyle karara bağlanabildi. Düzeltildi: bağlantılarda adlar, popüler site ve yerel ad bağlamı, sade bir inceleme listesi ([sonuçlar](docs/evidence/REAL_TRAFFIC_EVALUATION.md#24-hour-test-results)) |
+| Kampüs Wi-Fi'ında sonraki canlı toplama | Toplayıcı sağlık kontrolü başarısız: diğer cihazların yerel ağ duyuruları pencereyi doldurdu. Düzeltildi (toplayıcı filtresi + Zeek yakalama filtresi) ([kayıt](docs/evidence/REAL_TRAFFIC_EVALUATION.md)) |
 | Makine öğrenmesi | Her bilgisayarda eğitilen davranış modeli: görmediği cihazda zararlı ailelerinin %71'i, görülmemiş zararlı kayıtlarının %56'sı, günde ≤ 1 yanlış alarm; 2025–2026 zararlılarında zayıf (%27). Yalnızca herkese açık veriyle ve alan adıyla eğitilen modeller başarısız. "Bu bilgisayar için yeni" geliştirme yük kontrolünü geçti ([ML değerlendirmesi](docs/evidence/ML_DATASET.md)) |
-| **Sürüyor / henüz ölçülmedi** | Gerçek trafikte 7 günlük yanlış alarm (sürüyor), etiketli gerçek zararlıyı yakalama, başka kullanıcılar için faydası |
+| **Henüz ölçülmedi** | Düzeltmelerden sonra gerçek trafikte yanlış alarm, etiketli gerçek zararlıyı yakalama, başka kullanıcılar için faydası |
 
 Tüm kayıtlar: [dokümantasyon](docs/README.md#evidence).
 

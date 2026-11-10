@@ -705,8 +705,8 @@ indicators. The random development split (60.7 %) overstates real performance
 because campaigns share names; new ThreatFox domains are lexically unlike older
 ones (4.7 %). The score stays off; candidate 3 (`9c4aeae1…`, trained on all data
 to 2026-10-11) is not promoted. Further lexical iteration is not planned. Next
-directions: connection-behavior features from Zeek (needs the labeled 7-day
-run) and, as a separate non-ML question for the user, domain-age context.
+directions: connection-behavior features from Zeek (needs labeled real
+traffic) and, as a separate non-ML question for the user, domain-age context.
 
 ## Domain age as a signal: failed, development grade (2026-10-13)
 
@@ -736,8 +736,8 @@ indicators) but most indicators are not new: phishing kits (SGB) often are,
 malware infrastructure (ThreatFox) mostly is not (older or compromised domains,
 shared platforms). Age stays what DEC-095 made it: context on a button, never a
 verdict. Nothing is promoted; no model ships. Name and age signals together are
-below the bar, so the next ML direction is connection behavior from the labeled
-P2 7-day run (ends 2026-10-18).
+below the bar, so the next ML direction is connection behavior from labeled
+real traffic.
 
 ## Connection-behavior model v1: failed (2026-10-14)
 
@@ -772,7 +772,7 @@ grade unless new posts after 2026-10-14 are used. Next (v2): per-flow expert
 labels from CTU-SME-11 (2023, CC BY 4.0) instead of capture heuristics, no
 dropped classes, training windows of random length (minutes to a day),
 synthetic jittered beacons injected into real benign traffic, first-seen and
-DNS features, and P2 v2 days for the user's false flags.
+DNS features, and the user's own collected days for false flags.
 
 ## Connection-behavior model v2: failed (2026-10-14)
 
@@ -831,8 +831,8 @@ or the IP without a name; 3 learning days).
 **Decision.** The full list is too long. The app shows only the narrow list
 (new for the device **and** steady rhythm) in the Experimental ML tab, as "a
 reason to look, not a malware verdict", with no catch claim. Its burden is
-development grade (the narrowing was chosen after seeing v1); the binding check
-replays the untouched P2 v2 days (≤ 1 entry per active day) after the run ends.
+development grade (the narrowing was chosen after seeing v1); no binding check
+on untouched real days has been run.
 
 ## Public-data behavior model: failed on a real laptop (2026-10-17)
 
@@ -906,10 +906,9 @@ evaluation on the Model evaluation page (restored once a model exists).
 (public-only: T1 14–43 %, T4 up to 2.25). Recent malware and pure beacons
 remain weak; only one real evaluation day exists and it sits at the limit.
 
-**After the evaluation:** an isolated run of the app on a copy of the earlier
-P2 v1 collector state showed that the collector's 100,000-record cap can shorten
+**After the evaluation:** an isolated run of the app on a copy of an earlier
+live collector state showed that the collector's 100,000-record cap can shorten
 its window to about 10 hours on a busy day, so a "complete calendar day" never
 appears. `LocalDays.update` now keeps one sample of the newest window (≥ 6 h of
-records, ≥ 20 h after the previous sample) per day; `train` is unchanged. The
-binding check — the recipe on P2 v3's seven untouched days, declared before it
-is read — runs after 2026-10-23.
+records, ≥ 20 h after the previous sample) per day; `train` is unchanged. No
+binding check of the recipe on further untouched real days has been run.

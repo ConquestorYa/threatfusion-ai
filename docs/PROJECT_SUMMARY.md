@@ -67,7 +67,7 @@ Stack: Python 3.12, Streamlit, SQLite, pandas, scikit-learn. Linux only.
 ## Limitations
 
 - Detection of real, labeled malware has **not** been measured yet.
-- A 7-day false-alarm test on real traffic is in progress.
+- False alarms on real traffic have not been measured again after the fixes.
 - Behavior rules also match normal software (updaters, chat apps); every flag
   is a reason to look, not a verdict.
 - Whether it is more useful than RITA, Security Onion or Malcolm has not been

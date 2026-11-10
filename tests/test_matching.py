@@ -250,7 +250,7 @@ def test_no_networking_is_performed(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_popular_host_with_thousands_of_url_iocs_stays_within_the_match_limit() -> None:
-    # Regression (P2 v2, 2026-10-14): URLhaus lists thousands of file URLs on
+    # Regression (live collection, 2026-10-14): URLhaus lists thousands of file URLs on
     # popular hosts; 300 lookups x 3,000 records exceeded 250,000 matches and
     # stopped the collector.
     from threatfusion.matching import MAX_RECORDS_PER_KEY

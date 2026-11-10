@@ -9,10 +9,9 @@ history; earlier “Next” notes are superseded by that plan's current queue.
 Linux only (Windows CI and support dropped at the user's request). The
 Experimental ML tab ships "New for this computer" and a behavior model trained
 locally on each computer (`ml-behavior-local-v1`: ship rule passed; T3 and T5
-below their limits; one real day). P2 7-day run v3 is in progress (started
-2026-10-15T22:39:53Z, planned end 2026-10-22T22:39:53Z). Next: report P2 v3
-without dropping days, then the binding check of the local model on its seven
-days after 2026-10-23.
+below their limits; one real day). Real-traffic evidence is the 24-hour Arm A
+measurement; the review list after its fixes and the local model have not been
+measured on further real days.
 
 ### Previous checkpoint (2026-10-10)
 

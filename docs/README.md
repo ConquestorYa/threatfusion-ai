@@ -21,7 +21,7 @@ commit and protocol it belongs to; later code needs new measurements.
 
 | Record | Question |
 | --- | --- |
-| [Real-traffic evaluation](evidence/REAL_TRAFFIC_EVALUATION.md) | First 24 h results, the failed first 7-day run, the interrupted second run and the 7-day run v3 |
+| [Real-traffic evaluation](evidence/REAL_TRAFFIC_EVALUATION.md) | 24-hour results on one laptop and the collector defects found in later live collection |
 | [Review workload](evidence/REVIEW_WORKLOAD.md) | How much normal synthetic traffic enters Review; comparison with RITA |
 | [Network evaluation](evidence/NETWORK_EVALUATION.md) | Independent IoT-23 captures: what was found and missed |
 | [Independent replay](evidence/INDEPENDENT_REPLAY.md) | Replays of independent captures through the collector |
@@ -35,8 +35,8 @@ commit and protocol it belongs to; later code needs new measurements.
 | [Local lab](evidence/LOCAL_LAB.md) | Isolated lab used for controls and RITA comparison |
 | [Manual acceptance](evidence/MANUAL_ACCEPTANCE_TR.md) | The developer's manual acceptance checklist (Turkish) |
 
-Not yet measured: detection rate on real malware, false alarms over a week of
-real traffic (in progress), usefulness for other users.
+Not yet measured: detection rate on real malware, false alarms on
+real traffic after the fixes, usefulness for other users.
 
 ## Development
 

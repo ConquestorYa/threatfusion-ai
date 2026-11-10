@@ -1,32 +1,27 @@
 # P2 real-traffic evaluation
 
-Status (2026-10-20): **7-day run v3 is in progress** (started
-2026-10-15T22:39:53Z, planned end 2026-10-22T22:39:53Z). Its result is not in
-this document yet; v1 and v2 were interrupted by collector defects.
+Status: the real-traffic evidence is **one 24-hour measurement** on the user's
+own laptop (Arm A, 2026-10-10 to 2026-10-11). 3 of 5 limits failed; results
+below. The product defects found were fixed afterwards (DEC-094). The fixed
+review list has **not** been measured again on new days.
 
-- Arm A, first 24 h (2026-10-11): 3 of 5 limits failed; results below. The
-  product defects found were fixed before the 7-day run (DEC-094).
-- 7-day run v1 (started 2026-10-11) failed its collector-health limit A4 on
-  campus Wi-Fi: other devices' local discovery chatter (mDNS, LLMNR, NetBIOS)
-  produced about 1.16 million DNS-log rows in two hours, three hourly logs were
-  rejected and the collection window filled up. Kept as a result; fixed by
-  DEC-098 (collector skips local discovery, Zeek capture filter), then
-  restarted as v2 on new days.
-- 7-day run v2 (started 2026-10-13T21:24Z): from 2026-10-14T16:00Z the
-  collector exited on every start. A popular host's many URLhaus URLs pushed
-  the DNS IOC evidence over its 250,000-match safety limit, so the review list
-  stopped updating (records were still imported; Zeek kept logging). Kept as a
-  result; fixed in `cbe021a` (at most 20 indicators per matched name or
-  address); v3 measures the fix on new days.
-- 7-day run v3 (started 2026-10-15T22:39:53Z on the fixed release): in
-  progress. Its 3-hourly snapshot timer failed from the start (`run/snapshots`
-  was missing) and was fixed on 2026-10-17; the collector keeps 48 h, so no
-  review item was lost. The binding check of the local behavior model on its
-  seven days follows after 2026-10-23.
+Two collector defects appeared later, while the collector kept running on real
+traffic. Both are kept as results and fixed:
 
-The design that follows is unchanged.
+- 2026-10-13, campus Wi-Fi: other devices' local discovery chatter (mDNS,
+  LLMNR, NetBIOS) produced about 1.16 million DNS-log rows in two hours, three
+  hourly logs were rejected and the collection window filled up. Fixed by
+  DEC-098 (collector skips local discovery, Zeek capture filter).
+- 2026-10-14: the collector exited on every start. A popular host's many
+  URLhaus URLs pushed the DNS IOC evidence over its 250,000-match safety limit,
+  so the review list stopped updating (records were still imported; Zeek kept
+  logging). Fixed in `cbe021a` (at most 20 indicators per matched name or
+  address).
 
-## Arm A, first 24 hours: results
+Of the design further below, only Arm A (24 hours) was carried out. Arm B
+(labeled malware) and Arm C (blind overlay) were not.
+
+## 24-hour test: results
 
 Private roots `real-traffic-arm-a-24h-v3` (capture, release `3c054a3`) and its
 declared amendment `real-traffic-arm-a-24h-v4-dns-reimport` (labels, release
@@ -75,7 +70,7 @@ reflects that. One DNS name was a third-party download CDN reached via a CNAME
 from the game platform; other subdomains of that CDN appear in ThreatFox/SGB,
 the queried one does not.
 
-**Product defects found** (to fix before the 7-day run; measured on new days):
+**Product defects found** (fixed afterwards, DEC-094; not re-measured on new days):
 
 1. Connection groups do not show the DNS names that resolved to the
    destination, nor the CNAME origin of a DNS name.
@@ -108,7 +103,7 @@ next?* That needs two separate measurements that earlier work could not supply:
 
 | Arm | Measures | Input |
 | --- | --- | --- |
-| A — own normal traffic | Review burden and false alarms on current, real, permitted traffic | Zeek logs from the user's own devices, several days |
+| A — own normal traffic | Review burden and false alarms on current, real, permitted traffic | Zeek logs from the user's own laptop, 24 hours |
 | B — labeled malware | Whether real C2/malware activity reaches the queue, how high, and with correct evidence | Untouched Stratosphere MCFP Windows malware captures |
 | C — blind overlay (after A and B) | The same as B, but hidden inside A's normal background | Time-shifted, address-remapped B windows merged into A |
 
@@ -125,7 +120,7 @@ never committed, uploaded or printed. Reports contain aggregates only; no domain
 lists, IPs or timelines are published.
 
 **Capture.** Zeek (pinned container image, same version as the lab) on the
-chosen interface, hourly rotation, conn + dns logs, for **7 consecutive days**
+chosen interface, hourly rotation, conn + dns logs, for **24 hours**
 of normal use. The collector runs live on the closed logs with the user's own
 CTI keys. Packet capture needs a one-time privileged step by the user
 (`sudo` or Docker group); Claude does not run it unattended.
@@ -133,21 +128,21 @@ CTI keys. Packet capture needs a one-time privileged step by the user
 **Measured (declared before outcomes):**
 
 - Review+ (Review / High Risk / Known Threat) client–destination groups per
-  client-day; the first 7 days are reported in full, no day dropped.
+  client-day; the 24 hours are reported in full.
 - For every Review+ group the user records one label: *explained benign*,
   *unexplained*, *suspicious*, plus minutes spent. The user is the only, non-
   independent analyst; this is a usability signal, not a participant study.
 - Share of Review+ groups the shown evidence lets the user explain without
   outside tools (evidence sufficiency).
 - CTI matches and whether each is a true indicator match or shared hosting/CDN.
-- Collector and web resource use, coverage warnings and gaps over 7 days.
+- Collector and web resource use, coverage warnings and gaps over the capture.
 
 **Proposed acceptance limits:** median ≤ 5 Review+ groups per client-day;
 ≥ 80% of Review+ groups explainable from the shown evidence; no collector
 crash or silent coverage loss. Failing a limit is reported as a product defect
 to fix before P3, not tuned away on these same days.
 
-## Arm B — labeled malware captures
+## Arm B — labeled malware captures (not carried out)
 
 **Source.** [Stratosphere Malware Capture Facility Project](https://mcfp.felk.cvut.cz/publicDatasets/)
 Windows `CTU-Malware-Capture-Botnet-*` captures. Terms: free use with reference
@@ -182,7 +177,7 @@ results are reported in their own units beside ours, not merged into a score.
 in ≥ 6 of 8 captures; in those, a malicious destination is in the host's top
 10 groups; no Known Threat verdict without an exact CTI indicator match.
 
-## Arm C — blind overlay (later)
+## Arm C — blind overlay (not carried out)
 
 After A and B are reported, reserved-but-unused malware windows are shifted in
 time and remapped to an unused address inside A's address plan, then merged
@@ -194,7 +189,7 @@ synthetic merge and is reported as such.
 ## Order of work
 
 1. Push the P1 security repairs; finish the P1 soak report.
-2. Arm A setup (user grants the capture permission step), then 7 days of
+2. Arm A setup (user grants the capture permission step), then the 24-hour
    capture. Development on Arm B's development captures runs in parallel.
 3. Freeze a candidate; run Arm B reserved captures once; write results.
 4. Arm C; then P2 summary with every failure kept.

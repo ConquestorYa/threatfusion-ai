@@ -29,10 +29,9 @@ malware checking in**, and it tells you the reason for every flag. It runs on
 your own Linux machine; your traffic never leaves it.
 
 > **Status: early prototype.** The full workflow works: install, CTI updates,
-> continuous Zeek collection, a plain review list and investigation. The first
-> 24-hour test on real traffic flagged far too much; those defects were fixed
-> and a **7-day test on real traffic** is under way (restarted after a
-> collector defect it found was fixed). How well it
+> continuous Zeek collection, a plain review list and investigation. A
+> 24-hour test on real traffic flagged far too much; those defects were fixed.
+> How well it
 > catches real malware has **not** been measured yet. It is not a SIEM, EDR,
 > IDS or malware scanner.
 
@@ -164,7 +163,7 @@ at a steady rhythm, the way a program that "calls home" does. ThreatFusion
 learns which destinations are normal for your machine (3 days, only while the
 app runs; the memory never leaves the computer). In development tests it listed
 about 0.5 entries per normal device per day. It is a reason to look, not a
-malware verdict; its binding test is the 7-day run.
+malware verdict; its burden over several real days has not been measured.
 
 The same tab runs a **behavior model trained on your computer**: a random forest
 that looks at *how* each device talks to each destination (rhythm, sizes,
@@ -199,10 +198,10 @@ off. Full history: [ML evaluation](docs/evidence/ML_DATASET.md).
 | Synthetic normal and simulated traffic | Normal updaters and polling also enter Review: the rules are not yet selective enough ([review workload](docs/evidence/REVIEW_WORKLOAD.md)) |
 | Four independent IoT-23 captures (2018–2019) | 0 reviews in two benign captures; one of two malicious captures produced one review, the other none ([network evaluation](docs/evidence/NETWORK_EVALUATION.md)) |
 | Fault matrix, 6-hour soak, security reviews | 9/9 fault cases pass; the 6-hour soak passed 16/16 checks (collector peak 684 MiB); two security reviews ([operational confidence](docs/evidence/OPERATIONAL_CONFIDENCE.md)) |
-| One laptop, 24 h of normal real traffic | 59 groups for review, all benign; only 3 decidable from the screen alone. Fixed: names on connections, popular-site and local-name context, a plain review list ([results](docs/evidence/REAL_TRAFFIC_EVALUATION.md#arm-a-first-24-hours-results)) |
-| First 7-day run on campus Wi-Fi | Failed collector health: other devices' local discovery chatter filled the window. Fixed (collector filter + Zeek capture filter) and restarted ([status](docs/evidence/REAL_TRAFFIC_EVALUATION.md)) |
+| One laptop, 24 h of normal real traffic | 59 groups for review, all benign; only 3 decidable from the screen alone. Fixed: names on connections, popular-site and local-name context, a plain review list ([results](docs/evidence/REAL_TRAFFIC_EVALUATION.md#24-hour-test-results)) |
+| Later live collection on campus Wi-Fi | Collector health failed: other devices' local discovery chatter filled the window. Fixed (collector filter + Zeek capture filter) ([record](docs/evidence/REAL_TRAFFIC_EVALUATION.md)) |
 | Machine learning | Behavior model trained on each computer: 71 % of malware families on an unseen device, 56 % of unseen malware recordings, ≤ 1 false flag per day; weak on 2025–2026 malware (27 %). Public-only and lexical models failed. "New for this computer" passed its development burden check ([ML evaluation](docs/evidence/ML_DATASET.md)) |
-| **In progress / not yet measured** | 7-day false alarms on real traffic (in progress), detection of labeled real malware, usefulness for other users |
+| **Not yet measured** | False alarms on real traffic after the fixes, detection of labeled real malware, usefulness for other users |
 
 All records: [documentation](docs/README.md#evidence).
 
