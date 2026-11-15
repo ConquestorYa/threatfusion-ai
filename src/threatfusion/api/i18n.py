@@ -21,6 +21,7 @@ UI_STRINGS = (
     "On a threat list",
     "Known",
     "Known ({count})",
+    "Show",
     "All",
     "Not marked",
     "Threat lists",

@@ -77,10 +77,13 @@ linked documents rather than being copied into this plan.
   branch `feat/react-workspace` a FastAPI backend and a React page
   (`web/`) show **What to check** from the same code paths as the Streamlit
   tab, on `127.0.0.1` only. Streamlit is unchanged and remains the supported
-  UI. Next: the remaining screens in the order Details → timelines →
-  Quick lookup → Setup & CTI → history → Model evaluation, then the
-  launcher switch and the Node/packaging decision. This interface work runs
-  beside the queue below; it does not re-measure P2 or count as acceptance.
+  UI. Design direction A "Konsol", dark by default (DEC-102). Scope set by
+  the user for Monday 2026-11-16: What to check (done), Details + timelines,
+  Quick lookup, Setup & CTI; telemetry analysis, Experimental ML, Model
+  evaluation and history stay in Streamlit behind an "Open in Streamlit"
+  link. Launcher switch and Node/packaging decision come later. This
+  interface work runs beside the queue below; it does not re-measure P2 or
+  count as acceptance.
 - **P1 first increment (2026-10-07):** predeclared nine-case fault matrix on the
   real collector CLI found and fixed two defects — a CTI lock above the 5 s busy
   timeout stopped collection, and a deep copy of every indicator cost ~430 MiB /

@@ -17,6 +17,11 @@ framing is retired. No release date or tag is set.
   and a React + TypeScript + Tailwind + shadcn/ui page in `web/` for
   **What to check** (DEC-101). It shows the same items, wording and marks as
   the Streamlit tab, which is unchanged. CI builds, lints and tests the page.
+- React workspace design direction A (DEC-102): dark by default without a
+  light flash, IBM Plex type, dense aligned table, text mark buttons on
+  desktop and icon buttons with tooltips on narrow screens, an "Open in
+  Streamlit" link for screens that stay there, Playwright browser tests in CI
+  and `scripts/demo_review_snapshot.py` for a synthetic collector state.
 
 ### Changed
 

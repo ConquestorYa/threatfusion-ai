@@ -78,3 +78,5 @@ export const saveMark = (key: string, mark: Mark | null) =>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ key, mark }),
   })
+
+export const fetchAppInfo = () => request<{ streamlit_url: string }>('/api/app')

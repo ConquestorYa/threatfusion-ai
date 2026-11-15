@@ -3,6 +3,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import App from './App.tsx'
+import { TooltipProvider } from './components/ui/tooltip.tsx'
 import { PreferencesProvider } from './lib/preferences.tsx'
 import './index.css'
 
@@ -12,7 +13,9 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <PreferencesProvider>
-        <App />
+        <TooltipProvider delayDuration={300}>
+          <App />
+        </TooltipProvider>
       </PreferencesProvider>
     </QueryClientProvider>
   </StrictMode>,

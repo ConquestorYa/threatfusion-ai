@@ -2,6 +2,26 @@
 
 Newest section first. Status date: 2026-11-15.
 
+## What to check in design direction A, dark by default (2026-11-15)
+
+- User chose direction A ("Konsol") from three mockups (DEC-102) with: dark
+  default even on a light system, light only via the button and remembered,
+  theme applied before first paint, text mark buttons on desktop / icon +
+  tooltip on narrow screens. Scope reduced to four screens for Monday.
+- Tokens in `web/src/index.css`; IBM Plex Sans/Mono self-hosted; theme set by
+  `public/theme-init.js` (CSP-compatible). Fixed-width column template keeps
+  header and rows aligned; rows stack below 1024 px; 44 px touch targets.
+  Header link to Streamlit (`/api/app`, loopback-only URL). Design rules in
+  CLAUDE.md; running both apps in `web/README.md`.
+- New `scripts/demo_review_snapshot.py` (synthetic collector state, one
+  synthetic indicator) feeds Playwright e2e (`web/e2e/`, real API on
+  127.0.0.1:8611). CI web job now runs the browser tests.
+- Verification: see the commit; screenshots (desktop + 375 px, dark then
+  light) were reviewed and a design critique fixed header alignment, time
+  wrapping, count layout and touch targets. All text tokens ≥ 4.99:1.
+- Limitation: control borders are low-contrast (≈1.3:1); controls are
+  identified by their text/icons. User manual check pending.
+
 ## React + FastAPI "What to check" page on a branch (2026-11-15)
 
 - User request (DEC-101): move the UI from Streamlit to FastAPI + React,

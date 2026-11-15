@@ -177,3 +177,38 @@ def test_real_collector_snapshot_produces_the_same_items(tmp_path):
     assert expected
     body = review_module.review_response(ApiSettings(True, state_dir, None), "en", now=NOW)
     assert body["state"] == "ok" and [item["key"] for item in body["items"]] == expected
+
+
+@pytest.mark.parametrize(("value", "expected"), [
+    (None, "http://127.0.0.1:8501"),
+    ("http://127.0.0.1:8502/", "http://127.0.0.1:8502"),
+    ("http://localhost:8510", "http://localhost:8510"),
+    ("https://evil.example", "http://127.0.0.1:8501"),
+    ("http://192.168.1.5:8501", "http://127.0.0.1:8501"),
+    ("http://127.0.0.1:8501/path", "http://127.0.0.1:8501"),
+    ("javascript:alert(1)", "http://127.0.0.1:8501"),
+])
+def test_streamlit_link_is_loopback_only(value, expected):
+    environment = {} if value is None else {"THREATFUSION_STREAMLIT_URL": value}
+    client = TestClient(create_app(lambda: ApiSettings(False, None, None), environment=environment), base_url=ORIGIN)
+    assert client.get("/api/app").json() == {"streamlit_url": expected}
+
+
+def test_demo_snapshot_is_valid_and_uses_documentation_ranges_only(tmp_path):
+    import ipaddress
+    import re
+
+    from scripts.demo_review_snapshot import main
+    from threatfusion.ui_collector import read_snapshot
+
+    assert main([str(tmp_path / "demo")]) == 0
+    state = tmp_path / "demo" / "collector"
+    read_snapshot(state)  # passes the same validation as live data
+    body = review_module.review_response(ApiSettings(True, state, None), "en")
+    assert body["counts"]["threat"] == 1 and len(body["items"]) == 5
+    documentation = [ipaddress.ip_network(n) for n in ("192.0.2.0/24", "198.51.100.0/24", "203.0.113.0/24")]
+    text = json.dumps(body)
+    for address in set(re.findall(r"\b\d{1,3}(?:\.\d{1,3}){3}\b", text)):
+        assert any(ipaddress.ip_address(address) in network for network in documentation), address
+    names = [item["title"] for item in body["items"] if not re.fullmatch(r"[\d.]+", item["title"])]
+    assert names and all(name.endswith(".test") for name in names)

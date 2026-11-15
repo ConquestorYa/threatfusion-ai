@@ -1183,3 +1183,25 @@ is needed to build the page; whether installations will ship a pre-built page
 or need Node is decided before `threatfusion-ai start` switches over. The
 product queue (P2 re-measurement onward) is unchanged: a new interface is not
 evidence of usefulness and does not count as the user's acceptance.
+
+## DEC-102: Design direction A "Konsol", dark by default; migration scope
+
+**Decision (2026-11-15):** The user chose direction A ("Konsol": dense SOC
+table, graphite palette, IBM Plex Sans/Mono) out of three presented options,
+with changes: dark is the default theme even when the system is light; light
+only after the theme button, remembered in the browser; the theme is applied
+in `index.html` before the first paint (no light flash); mark buttons show
+text on desktop and become icon buttons with tooltip on narrow screens. The
+rules are in CLAUDE.md ("Design rules") and the tokens in `web/src/index.css`.
+
+**Scope (user, same day; delivery Monday 2026-11-16 evening):** migrate only
+What to check, Details + timelines, Quick lookup and Setup & CTI, in that
+order. Analyze telemetry, Experimental ML, Model evaluation and Analysis
+history stay in Streamlit; the React header links to Streamlit
+(`THREATFUSION_STREAMLIT_URL`, loopback `http://` only) and `web/README.md`
+explains running both. No new screen starts after Monday 12:00.
+
+**Consequences:** the theme script is a same-origin file
+(`public/theme-init.js`) because the CSP forbids inline scripts. Each screen
+ships with Vitest and Playwright e2e tests (desktop and 375 px, clean open is
+dark) and its own commit on PR #185; nothing is merged to `main`.

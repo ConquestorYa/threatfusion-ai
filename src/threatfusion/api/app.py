@@ -17,7 +17,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
-from ..request_guard import host_header_name, is_allowed_host
+from ..request_guard import LOOPBACK_HOSTNAMES, host_header_name, is_allowed_host
 from .i18n import Language, ui_strings
 from .review import Mark, UnknownItem, review_response, set_mark
 from .settings import ApiSettings, resolve_settings
@@ -35,6 +35,18 @@ class MarkRequest(BaseModel):
 
     key: str = Field(min_length=1, max_length=1024)
     mark: Mark | None
+
+
+DEFAULT_STREAMLIT_URL = "http://127.0.0.1:8501"
+
+
+def streamlit_url(environment: Mapping[str, str]) -> str:
+    """Where the Streamlit workspace runs; only a loopback http address is linked."""
+    value = environment.get("THREATFUSION_STREAMLIT_URL", "").strip().rstrip("/")
+    scheme, separator, rest = value.partition("://")
+    if scheme == "http" and separator and "/" not in rest and host_header_name(rest) in LOOPBACK_HOSTNAMES:
+        return value
+    return DEFAULT_STREAMLIT_URL
 
 
 def _origin_allowed(origin: str | None, environment: Mapping[str, str]) -> bool:
@@ -86,6 +98,10 @@ def create_app(
     @app.get("/api/health")
     def health() -> dict:
         return {"status": "ok"}
+
+    @app.get("/api/app")
+    def app_info() -> dict:
+        return {"streamlit_url": streamlit_url(environment)}
 
     @app.get("/api/i18n")
     def strings(lang: Literal["en", "tr"] = "en") -> dict:

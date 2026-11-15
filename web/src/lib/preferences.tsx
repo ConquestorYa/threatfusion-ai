@@ -21,24 +21,56 @@ function store(key: string, value: string) {
 }
 
 // Page chrome that the shared Python dictionary does not cover.
-const CHROME: Record<Language, Record<string, string>> = {
+const CHROME = {
   en: {
     language: 'Language',
-    theme: 'Switch between light and dark',
+    themeToLight: 'Switch to light theme',
+    themeToDark: 'Switch to dark theme',
     loading: 'Loading the list…',
     offline: 'The local API is not answering. Start it with: python -m threatfusion.api',
     retry: 'Try again',
-    updated: 'Updated',
+    updated: 'updated {time}',
+    target: 'Target',
+    reason: 'Reason',
+    deviceTarget: 'Device → target',
+    owner: 'Network owner',
+    time: 'Time',
+    mark: 'Mark',
+    marksLegendKnown: 'I know this: hidden next time',
+    marksLegendUnsure: 'Not sure',
+    marksLegendSuspicious: 'Suspicious: kept on top',
+    details: 'Show why and what to do',
+    hideDetails: 'Hide explanation',
+    openInStreamlit: 'Open in Streamlit',
+    streamlitScreens: 'Analyze telemetry, Experimental ML, Model evaluation and Analysis history are in the Streamlit workspace.',
+    nav: 'Screens',
   },
   tr: {
     language: 'Dil',
-    theme: 'Açık ve koyu tema arasında geç',
+    themeToLight: 'Açık temaya geç',
+    themeToDark: 'Koyu temaya geç',
     loading: 'Liste yükleniyor…',
     offline: 'Yerel API yanıt vermiyor. Şununla başlat: python -m threatfusion.api',
     retry: 'Tekrar dene',
-    updated: 'Güncellendi',
+    updated: '{time} güncellendi',
+    target: 'Hedef',
+    reason: 'Neden',
+    deviceTarget: 'Cihaz → hedef',
+    owner: 'Ağ sahibi',
+    time: 'Zaman',
+    mark: 'İşaret',
+    marksLegendKnown: 'Tanıyorum: bir dahakine gizler',
+    marksLegendUnsure: 'Emin değilim',
+    marksLegendSuspicious: 'Şüpheli: en üstte tutar',
+    details: 'Nedenini ve ne yapılacağını göster',
+    hideDetails: 'Açıklamayı gizle',
+    openInStreamlit: "Streamlit'te aç",
+    streamlitScreens: "Telemetri analizi, Deneysel ML, Model değerlendirme ve Analiz geçmişi Streamlit çalışma alanında.",
+    nav: 'Ekranlar',
   },
-}
+} satisfies Record<Language, Record<string, string>>
+
+export type ChromeKey = keyof (typeof CHROME)['en']
 
 interface Preferences {
   lang: Language
@@ -47,18 +79,16 @@ interface Preferences {
   toggleDark: () => void
   /** Translate an English UI string via the server dictionary, then fill {placeholders}. */
   t: (text: string, values?: Record<string, string | number>) => string
-  chrome: (key: keyof (typeof CHROME)['en']) => string
+  chrome: (key: ChromeKey) => string
 }
 
 const PreferencesContext = createContext<Preferences | null>(null)
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Language>(() => (readStored('tf-lang') === 'tr' ? 'tr' : 'en'))
-  const [dark, setDark] = useState<boolean>(() => {
-    const stored = readStored('tf-theme')
-    if (stored) return stored === 'dark'
-    return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches
-  })
+  // public/theme-init.js already applied the theme before the first paint:
+  // dark unless the analyst chose light. Read it back instead of deciding again.
+  const [dark, setDark] = useState<boolean>(() => document.documentElement.classList.contains('dark'))
   const strings = useQuery({ queryKey: ['strings', lang], queryFn: () => fetchStrings(lang), staleTime: Infinity })
 
   useEffect(() => {

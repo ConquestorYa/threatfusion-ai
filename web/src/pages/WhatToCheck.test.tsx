@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ReviewItem, ReviewResponse } from '@/lib/api'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { PreferencesProvider } from '@/lib/preferences'
 import { WhatToCheck } from './WhatToCheck'
 
@@ -61,7 +62,9 @@ beforeEach(() => {
       calls.push({ url, init })
       if (url.startsWith('/api/i18n')) {
         const tr = url.endsWith('lang=tr')
-        return Response.json(tr ? { 'To check': 'Bakılacak', 'Why? What to do?': 'Neden? Ne yapmalı?' } : {})
+        return Response.json(
+          tr ? { 'To check': 'Bakılacak', 'Why? What to do?': 'Neden? Ne yapmalı?', '⚠ Suspicious': '⚠ Şüpheli' } : {},
+        )
       }
       if (url.startsWith('/api/review/marks')) return new Response(null, { status: 204 })
       return Response.json(review)
@@ -79,7 +82,9 @@ function renderPage() {
   return render(
     <QueryClientProvider client={client}>
       <PreferencesProvider>
-        <WhatToCheck />
+        <TooltipProvider>
+          <WhatToCheck />
+        </TooltipProvider>
       </PreferencesProvider>
     </QueryClientProvider>,
   )
@@ -99,7 +104,7 @@ describe('What to check', () => {
     review = { ...OK, items: [item({ mark: 'suspicious' })] }
     renderPage()
     const user = userEvent.setup()
-    const pressed = await screen.findByRole('button', { name: '⚠ Suspicious', pressed: true })
+    const pressed = await screen.findByRole('button', { name: 'Suspicious', pressed: true })
     await user.click(pressed)
     await waitFor(() => expect(calls.some((call) => call.url === '/api/review/marks')).toBe(true))
     const put = calls.find((call) => call.url === '/api/review/marks')!
@@ -115,7 +120,7 @@ describe('What to check', () => {
     await user.click(screen.getByRole('radio', { name: 'Threat lists' }))
     expect(screen.queryByText('cdn.example.test')).not.toBeInTheDocument()
     await user.click(screen.getByRole('radio', { name: 'Name lookups' }))
-    await user.click(screen.getByRole('button', { name: /Why\? What to do\?/ }))
+    await user.click(screen.getByRole('button', { name: 'Show why and what to do' }))
     const link = screen.getByRole('link', { name: 'VirusTotal' })
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
@@ -125,6 +130,8 @@ describe('What to check', () => {
     window.localStorage.setItem('tf-lang', 'tr')
     renderPage()
     expect(await screen.findByText('Bakılacak')).toBeInTheDocument()
+    // Only the symbol is dropped from "⚠ Şüpheli"; the Turkish letter stays.
+    expect(screen.getAllByRole('button', { name: 'Şüpheli' })).toHaveLength(2)
     expect(calls.some((call) => call.url === '/api/review?lang=tr')).toBe(true)
   })
 

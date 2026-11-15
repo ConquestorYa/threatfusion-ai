@@ -10,3 +10,28 @@
 - `.claude/hooks/publish_guard.sh` blocks commits/pushes carrying private data
   and pushes that fail lint, tests or the release privacy audit. No hosting is
   connected; never add one without an explicit user request (AGENTS.md).
+
+## Design rules (React workspace, `web/`; DEC-102)
+
+- Direction A "Konsol": dense, serious SOC table. Tokens live only in
+  `web/src/index.css` (`:root` light, `.dark` dark); components use token
+  classes (`bg-card`, `text-threat`, …), never raw hex.
+- **Dark is the default theme**, even when the system is light. Light applies
+  only after the analyst presses the theme button; the choice is stored in
+  `localStorage` (`tf-theme`). `public/theme-init.js` sets the class in
+  `<head>` before the first paint (CSP allows only same-origin scripts, so no
+  inline script). Never derive the theme from `prefers-color-scheme`.
+- One meaning per colour: threat list = red (`threat`), needs a look = amber
+  (`review`), marked suspicious = blue (`suspect`), live = green. No
+  gradients, glass, glow, decorative shadows or emoji icons; 4 px corners.
+- Type: IBM Plex Sans (UI, tabular numbers) and IBM Plex Mono only for data
+  (addresses, ports, times). Self-hosted via `@fontsource`; no font CDNs.
+- Density: single-line table rows on ≥1024 px with a fixed column template
+  shared by the header and rows; rows stack below that. Mark buttons show text
+  on ≥1024 px and become icon buttons with tooltip and `aria-label` below it,
+  with ≥44 px touch targets.
+- Wording comes from the shared Python i18n dictionary (`/api/i18n`); only page
+  chrome lives in `web/src/lib/preferences.tsx`.
+- Every screen: Vitest + Playwright e2e (desktop and 375 px, clean open is
+  dark, no console errors, no horizontal scroll) and review screenshots with
+  `SCREENSHOTS=1 npm run test:e2e` (written to ignored `.playwright-mcp/`).
