@@ -58,6 +58,17 @@ class ScheduleRequest(BaseModel):
     interval_hours: Literal[6, 12, 24]
 
 
+class KeysRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    threatfox: str = Field(default="", max_length=512)
+    urlhaus: str = Field(default="", max_length=512)
+
+
+class EmptyRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
 class RefreshRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -263,6 +274,23 @@ def create_app(
     @app.put("/api/setup/schedule", status_code=204)
     def setup_schedule(body: ScheduleRequest, resolved: ApiSettings = Depends(settings)) -> Response:
         return _setup_write(lambda: setup_module.save_schedule(resolved, body.automatic, body.interval_hours))
+
+    @app.put("/api/setup/keys", status_code=204)
+    def setup_keys(body: KeysRequest, resolved: ApiSettings = Depends(settings)) -> Response:
+        # Keys are never logged or returned; a bad format saves nothing.
+        try:
+            setup_module.save_keys(resolved, body.threatfox, body.urlhaus)
+        except setup_module.NotManaged:
+            raise HTTPException(404, "Setup is available in a managed installation in real CTI mode.") from None
+        except ValueError:
+            raise HTTPException(422, "Invalid API key format. No credentials were saved.") from None
+        except (OSError, TypeError):
+            raise HTTPException(409, "Local settings could not be read. Check private file permissions.") from None
+        return Response(status_code=204)
+
+    @app.post("/api/setup/keys/forget", status_code=204)
+    def setup_forget_keys(_body: EmptyRequest, resolved: ApiSettings = Depends(settings)) -> Response:
+        return _setup_write(lambda: setup_module.forget_keys(resolved))
 
     @app.post("/api/setup/refresh")
     def setup_refresh(body: RefreshRequest, resolved: ApiSettings = Depends(settings)) -> dict:

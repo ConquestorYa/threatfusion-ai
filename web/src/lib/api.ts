@@ -251,7 +251,17 @@ export interface SetupOk {
   mode: { title: string; value: 'cti-only' | 'demo'; options: { value: 'cti-only' | 'demo'; label: string }[] }
   application: { title: string; caption: string }
   demo_note?: string
-  keys?: { title: string; caption: string; saved: string; missing: string | null }
+  keys?: {
+    title: string
+    caption: string
+    saved: string
+    missing: string | null
+    fields: { name: 'threatfox' | 'urlhaus'; label: string }[]
+    apply: string
+    applied: string
+    invalid: string
+    forget: string
+  }
   cti?: {
     title: string
     running: boolean
@@ -286,3 +296,5 @@ export const saveMode = (mode: 'cti-only' | 'demo') => request<void>('/api/setup
 export const saveSchedule = (automatic: boolean, interval_hours: number) =>
   request<void>('/api/setup/schedule', put({ automatic, interval_hours }))
 export const startRefresh = (force: boolean) => request<{ started: boolean }>('/api/setup/refresh', json({ force }))
+export const saveKeys = (keys: { threatfox: string; urlhaus: string }) => request<void>('/api/setup/keys', put(keys))
+export const forgetKeys = () => request<void>('/api/setup/keys/forget', json({}))

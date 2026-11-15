@@ -28,9 +28,10 @@ framing is retired. No release date or tag is set.
 - React workspace: Quick lookup with the same verdict, signals, reasons,
   network owner, on-request site age, outside links and evidence table as
   Streamlit (the experimental behavior card stays in Streamlit).
-- React workspace: Setup & CTI updates (mode, saved-key status, manual and
-  automatic CTI updates with progress, source table). Entering API keys and
-  stopping the application remain in Streamlit pending a security decision.
+- React workspace: Setup & CTI updates (mode, API keys saved to the
+  owner-only credentials file or forgotten, manual and automatic CTI updates
+  with progress, source table; DEC-103). Stopping the application stays in
+  Streamlit.
 
 ### Changed
 

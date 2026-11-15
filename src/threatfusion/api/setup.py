@@ -6,10 +6,11 @@ and the CTI source table of ``streamlit_app``, reusing their helpers
 in the requested language. Writes go through the same functions
 (``save_settings``, ``start_background_refresh``).
 
-Deliberately left in Streamlit until the user decides (security/behavior):
-entering API keys (Streamlit keeps unsaved keys per browser session; a
-process-wide API has no such session) and "Stop local application" (it stops
-the Streamlit launcher, not this API). The page links to Streamlit for both.
+API keys (user decision, DEC-103): this API has no browser session, so keys
+entered here are always saved to the owner-only credentials file (Streamlit's
+"Save keys on this computer"), and "Forget" deletes that file. No key is kept
+in process memory or ever returned. "Stop local application" stays in
+Streamlit (it stops the Streamlit launcher, not this API).
 A manual update from here uses the saved keys only.
 """
 from __future__ import annotations
@@ -144,6 +145,12 @@ def setup_state(settings: ApiSettings, language: str) -> dict:
         missing = [source for source, key in sources if not saved.get(key)]
         result["keys"] = {
             "title": tr("API keys"),
+            "fields": [{"name": "threatfox", "label": tr("{source} API key", source="ThreatFox")},
+                       {"name": "urlhaus", "label": tr("{source} API key", source="URLhaus")}],
+            "apply": tr("Apply keys"),
+            "applied": tr("Keys applied. Empty fields remove keys from this selection."),
+            "invalid": tr("Invalid API key format. No credentials were saved."),
+            "forget": tr("Forget saved and session keys"),
             "caption": tr("SGB works without a key. ThreatFox and URLhaus require your own keys. Source access may fail; previous data is preserved."),
             "saved": tr("Saved keys: {sources}", sources=", ".join(s for s, key in sources if key in saved) or tr("None")),
             "missing": tr(
@@ -190,6 +197,21 @@ def setup_state(settings: ApiSettings, language: str) -> dict:
         }
         result["sources"] = _sources(settings, mode, language)
         return result
+
+
+def save_keys(settings: ApiSettings, threatfox: str, urlhaus: str) -> None:
+    """``_apply_keys`` with storage always on; empty fields remove keys."""
+    from ..local_workspace import KEY_NAMES, clean_credentials, save_credentials
+
+    root = _root(settings)
+    keys = clean_credentials({KEY_NAMES[0]: threatfox, KEY_NAMES[1]: urlhaus})  # ValueError on bad format
+    save_credentials(root, keys)
+
+
+def forget_keys(settings: ApiSettings) -> None:
+    from ..local_workspace import forget_credentials
+
+    forget_credentials(_root(settings))
 
 
 def change_mode(settings: ApiSettings, mode: str) -> None:

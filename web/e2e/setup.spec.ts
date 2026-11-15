@@ -34,9 +34,20 @@ test.describe('in English', () => {
     await expect(cti).toContainText('ThreatFox: skipped (no API key).')
     await expect(cti.getByRole('button', { name: 'Update CTI now' })).toBeEnabled() // not clicked: it downloads
     await expect(page.getByRole('region', { name: 'CTI sources · table' })).toContainText('Synthetic demo')
-    await expect(page.getByText('Entering, saving or forgetting API keys stays in Streamlit for now.')).toBeVisible()
     await expectNoHorizontalScroll(page)
     console.expectClean()
+  })
+
+  test('keys are saved without being shown again, then forgotten', async ({ page }) => {
+    const keys = page.getByRole('region', { name: 'API keys' })
+    await keys.getByLabel('ThreatFox API key').fill('synthetic-e2e-key')
+    await keys.getByLabel('URLhaus API key').fill('synthetic-e2e-key')
+    await keys.getByRole('button', { name: 'Apply keys' }).click()
+    await expect(keys).toContainText('Saved keys: ThreatFox, URLhaus')
+    await expect(keys.getByLabel('ThreatFox API key')).toHaveValue('')
+    await expect(page.locator('body')).not.toContainText('synthetic-e2e-key')
+    await keys.getByRole('button', { name: 'Forget saved and session keys' }).click()
+    await expect(keys).toContainText('Saved keys: None')
   })
 
   test('automatic update settings are saved and survive a reload', async ({ page }) => {

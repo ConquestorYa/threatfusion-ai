@@ -11,12 +11,12 @@ Newest section first. Status date: 2026-11-15.
   `save_settings` and `start_background_refresh`. `/api/app` now reports
   `setup_available` (managed installation only) and `first_setup` (Setup
   opens first until real CTI was downloaded once), as in Streamlit.
-- **Pending user decision (security/behavior), left in Streamlit:** entering,
-  saving or forgetting API keys (Streamlit keeps unsaved keys per browser
-  session; a process-wide API would share them with every local tab) and
-  "Stop local application" (stops the Streamlit launcher, not this API). The
-  page explains this and links to Streamlit. A manual update from React uses
-  the saved keys only.
+- API keys (user decision DEC-103): `PUT /api/setup/keys` always saves to
+  the owner-only credentials file (empty field removes a key, bad format saves
+  nothing, keys never returned); `POST /api/setup/keys/forget` deletes it.
+  "Stop local application" stays in Streamlit (it stops the Streamlit
+  launcher, not this API); the page links there. Manual updates use the
+  saved keys.
 - `scripts/demo_review_snapshot.py --managed` builds a synthetic managed
   installation; the e2e server now uses it (exercises the managed settings
   path). e2e never presses "Update CTI now" (it downloads); the API test

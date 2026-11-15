@@ -6,7 +6,7 @@ import { Blocks, Notice } from '@/components/data/Blocks'
 import { DataTable } from '@/components/data/DataTable'
 import { Markdown } from '@/components/data/Markdown'
 import { Button } from '@/components/ui/button'
-import { fetchAppInfo, fetchSetup, saveMode, saveSchedule, startRefresh, type SetupOk } from '@/lib/api'
+import { fetchAppInfo, fetchSetup, forgetKeys, saveKeys, saveMode, saveSchedule, startRefresh, type SetupOk } from '@/lib/api'
 import { usePreferences } from '@/lib/preferences'
 import { cn } from 'cn'
 
@@ -146,6 +146,30 @@ function Mode({ data }: { data: SetupOk }) {
 
 function Keys({ keys }: { keys: NonNullable<SetupOk['keys']> }) {
   const { chrome } = usePreferences()
+  const queryClient = useQueryClient()
+  const formId = useId()
+  const [values, setValues] = useState({ threatfox: '', urlhaus: '' })
+  const [result, setResult] = useState<'applied' | 'invalid' | null>(null)
+  const apply = useMutation({
+    mutationFn: saveKeys,
+    onSuccess: () => setResult('applied'),
+    onError: () => setResult('invalid'),
+    onSettled: () => {
+      setValues({ threatfox: '', urlhaus: '' }) // never keep keys in the page (clear_on_submit)
+      queryClient.invalidateQueries({ queryKey: ['setup'] })
+    },
+  })
+  const forget = useMutation({
+    mutationFn: forgetKeys,
+    onSettled: () => {
+      setResult(null)
+      queryClient.invalidateQueries({ queryKey: ['setup'] })
+    },
+  })
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    apply.mutate(values)
+  }
   return (
     <Panel title={keys.title}>
       <p className="text-xs text-muted-foreground">{keys.caption}</p>
@@ -155,7 +179,36 @@ function Keys({ keys }: { keys: NonNullable<SetupOk['keys']> }) {
           <Markdown text={keys.missing} />
         </Notice>
       )}
-      <StreamlitNote text={chrome('keysInStreamlit')} />
+      <form onSubmit={submit} className="space-y-2.5" autoComplete="off">
+        {keys.fields.map((field) => (
+          <div key={field.name} className="flex flex-col gap-1">
+            <label htmlFor={`${formId}-${field.name}`} className="text-xs text-muted-foreground">
+              {field.label}
+            </label>
+            <input
+              id={`${formId}-${field.name}`}
+              type="password"
+              autoComplete="new-password"
+              spellCheck={false}
+              maxLength={512}
+              value={values[field.name]}
+              onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))}
+              className="h-9 rounded-sm border bg-background px-2 font-mono text-[13px] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            />
+          </div>
+        ))}
+        <p className="text-xs text-muted-foreground">{chrome('keysStorage')}</p>
+        <div className="flex flex-wrap gap-2">
+          <Button type="submit" variant="outline" disabled={apply.isPending}>
+            {keys.apply}
+          </Button>
+          <Button type="button" variant="ghost" disabled={forget.isPending} onClick={() => forget.mutate()}>
+            {keys.forget}
+          </Button>
+        </div>
+      </form>
+      {result === 'applied' && <Notice tone="info">{keys.applied}</Notice>}
+      {result === 'invalid' && <Notice tone="warn">{keys.invalid}</Notice>}
     </Panel>
   )
 }

@@ -1207,3 +1207,15 @@ explains running both. No new screen starts after Monday 12:00.
 (`public/theme-init.js`) because the CSP forbids inline scripts. Each screen
 ships with Vitest and Playwright e2e tests (desktop and 375 px, clean open is
 dark) and its own commit on PR #185; nothing is merged to `main`.
+
+## DEC-103: React Setup saves API keys; stopping the app stays in Streamlit
+
+**Decision (2026-11-15, user):** Streamlit keeps unsaved API keys only in the
+browser session; the loopback FastAPI has no sessions, so it cannot behave the
+same. The user chose: keys entered in the React Setup screen are always saved
+to the existing owner-only (0600) credentials file inside the private
+installation directory (Streamlit's "Save keys on this computer"), and
+"Forget" deletes that file. No key is held in API process memory, logged or
+returned in any response; empty fields remove a key; a malformed key saves
+nothing. "Stop local application" stays in Streamlit until the launcher starts
+the React workspace, because today it stops the Streamlit launcher, not this API.

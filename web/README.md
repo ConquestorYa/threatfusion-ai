@@ -4,7 +4,7 @@ React + TypeScript + Tailwind + shadcn/ui front end for the local FastAPI
 backend in `src/threatfusion/api/`. It replaces the Streamlit workspace screen
 by screen ([DEC-101](../docs/dev/DECISIONS.md)). Moved so far: **What to
 check**, **Details** (with connection and DNS timelines), **Quick lookup** and **Setup & CTI
-updates** (API-key entry and stopping the app stay in Streamlit for now). Telemetry analysis, Experimental ML, Model evaluation and Analysis
+updates** (keys entered here are always saved; stopping the app stays in Streamlit). Telemetry analysis, Experimental ML, Model evaluation and Analysis
 history stay in Streamlit; the header link **Open in Streamlit** goes there.
 Design rules (dark by default, tokens, density) are in
 [CLAUDE.md](../CLAUDE.md#design-rules-react-workspace-web-dec-102).

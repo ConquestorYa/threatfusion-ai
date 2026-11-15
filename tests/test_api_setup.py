@@ -101,3 +101,35 @@ def test_running_refresh_shows_progress(client, install):
     assert cti["running"] is True and cti["progress"]["percent"] == 40
     assert cti["progress"]["label"].startswith("Updating CTI sources: 2/5 finished · 40%")
     assert cti["due"] is None
+
+
+def test_keys_are_saved_privately_never_returned_and_forgotten(client, install):
+    from threatfusion.local_workspace import load_credentials
+
+    secret = "synthetic-test-key-0123456789"
+    response = client.put("/api/setup/keys", json={"threatfox": secret, "urlhaus": secret}, headers=HEADERS)
+    assert response.status_code == 204 and not response.content
+    assert load_credentials(install) == {"THREATFOX_AUTH_KEY": secret, "URLHAUS_AUTH_KEY": secret}
+    assert oct((install / "credentials.json").stat().st_mode & 0o777) == "0o600"
+    body = client.get("/api/setup").text
+    assert secret not in body and "Saved keys: ThreatFox, URLhaus" in body
+    # An empty field removes that key, as in Streamlit.
+    assert client.put("/api/setup/keys", json={"threatfox": secret, "urlhaus": ""}, headers=HEADERS).status_code == 204
+    assert load_credentials(install) == {"THREATFOX_AUTH_KEY": secret}
+    # A bad format saves nothing.
+    bad = client.put("/api/setup/keys", json={"threatfox": "bad\nkey", "urlhaus": ""}, headers=HEADERS)
+    assert bad.status_code == 422 and secret not in bad.text
+    assert load_credentials(install) == {"THREATFOX_AUTH_KEY": secret}
+    assert client.put("/api/setup/keys", json={"threatfox": "x" * 513}, headers=HEADERS).status_code == 422
+    assert client.put("/api/setup/keys", json={"threatfox": secret}, headers={"Origin": "https://evil.example"}).status_code == 403
+    assert client.post("/api/setup/keys/forget", json={}, headers=HEADERS).status_code == 204
+    assert not (install / "credentials.json").exists()
+
+
+def test_refresh_uses_the_keys_saved_from_react(client, install, monkeypatch):
+    calls = []
+    monkeypatch.setattr("threatfusion.local_workspace.start_background_refresh",
+                        lambda root, credentials=None, *, force=False: calls.append(credentials) or True)
+    client.put("/api/setup/keys", json={"threatfox": "synthetic-key-a", "urlhaus": "synthetic-key-b"}, headers=HEADERS)
+    client.post("/api/setup/refresh", json={}, headers=HEADERS)
+    assert calls == [{"THREATFOX_AUTH_KEY": "synthetic-key-a", "URLHAUS_AUTH_KEY": "synthetic-key-b"}]
