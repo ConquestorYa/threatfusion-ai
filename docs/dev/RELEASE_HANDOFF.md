@@ -19,6 +19,11 @@ Newest section first. Status date: 2026-11-15.
 - Verification: see the commit; screenshots (desktop + 375 px, dark then
   light) were reviewed and a design critique fixed header alignment, time
   wrapping, count layout and touch targets. All text tokens ≥ 4.99:1.
+- User follow-up: Turkish is the default language (EN by button, remembered;
+  e2e checks a clean visit is Turkish); the "Network owner" column from the
+  A mockup is back ("—" when unknown, owner under the address on narrow
+  screens). CI's first red run (jsdom lacked `ResizeObserver` for the Radix
+  tooltip) was fixed in a separate commit.
 - Limitation: control borders are low-contrast (≈1.3:1); controls are
   identified by their text/icons. User manual check pending.
 

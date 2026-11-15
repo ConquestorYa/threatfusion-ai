@@ -27,11 +27,15 @@
 - Type: IBM Plex Sans (UI, tabular numbers) and IBM Plex Mono only for data
   (addresses, ports, times). Self-hosted via `@fontsource`; no font CDNs.
 - Density: single-line table rows on ≥1024 px with a fixed column template
-  shared by the header and rows; rows stack below that. Mark buttons show text
+  shared by the header and rows (What to check: target, reason, device →
+  target, network owner or "—", time, mark); rows stack below that and show
+  the owner under the address only when known. Addresses never break inside. Mark buttons show text
   on ≥1024 px and become icon buttons with tooltip and `aria-label` below it,
   with ≥44 px touch targets.
-- Wording comes from the shared Python i18n dictionary (`/api/i18n`); only page
-  chrome lives in `web/src/lib/preferences.tsx`.
+- **Turkish is the default language**; English applies only after the analyst
+  presses EN and is remembered (`tf-lang`). Wording comes from the shared
+  Python i18n dictionary (`/api/i18n`); only page chrome lives in
+  `web/src/lib/preferences.tsx`.
 - Every screen: Vitest + Playwright e2e (desktop and 375 px, clean open is
   dark, no console errors, no horizontal scroll) and review screenshots with
   `SCREENSHOTS=1 npm run test:e2e` (written to ignored `.playwright-mcp/`).

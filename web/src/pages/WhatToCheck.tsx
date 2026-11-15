@@ -38,7 +38,7 @@ const MARKS: { mark: Mark; text: string; plain: string; Icon: typeof Check }[] =
 
 // Desktop table columns (≥1024 px); narrower screens stack each row.
 const COLUMNS =
-  'lg:grid lg:grid-cols-[4px_minmax(150px,1.1fr)_minmax(150px,1fr)_minmax(200px,1.3fr)_7rem_19rem] lg:items-center'
+  'lg:grid lg:grid-cols-[4px_minmax(130px,1fr)_minmax(130px,1fr)_minmax(220px,1.4fr)_minmax(90px,0.7fr)_6.5rem_17.75rem] lg:items-center'
 
 export function WhatToCheck() {
   const { lang, t, chrome } = usePreferences()
@@ -188,6 +188,7 @@ export function WhatToCheck() {
               <span>{chrome('target')}</span>
               <span>{chrome('reason')}</span>
               <span>{chrome('deviceTarget')}</span>
+              <span>{chrome('owner')}</span>
               <span>{chrome('time')}</span>
               <span>{chrome('mark')}</span>
             </div>
@@ -269,17 +270,20 @@ function ReviewRow({
             <span className="text-muted-foreground"> · {item.metric}</span>
           </p>
           <div className="min-w-0 text-[13px]">
-            <p className="font-mono text-[12.5px] break-all">
-              {item.devices.join(', ')}
+            <p className="font-mono text-[12.5px] [overflow-wrap:anywhere]">
+              <span className="whitespace-nowrap">{item.devices.join(', ')}</span>
               {item.destination && (
                 <>
                   <span className="text-muted-foreground"> → </span>
-                  {item.destination.host}:{item.destination.port}
+                  <span className="whitespace-nowrap">
+                    {item.destination.host}:{item.destination.port}
+                  </span>
                 </>
               )}
             </p>
-            {item.owner && <p className="text-xs text-muted-foreground">{item.owner}</p>}
+            {item.owner && <p className="text-xs text-muted-foreground lg:hidden">{item.owner}</p>}
           </div>
+          <p className="hidden min-w-0 text-xs text-muted-foreground lg:block">{item.owner ?? '—'}</p>
           <p className="font-mono text-xs leading-4 text-muted-foreground">
             <span className="lg:block">{start}</span>
             {end && <span className="lg:block"> – {end}</span>}
@@ -299,7 +303,7 @@ function ReviewRow({
                         disabled={busy}
                         onClick={() => onMark(item.key, selected ? null : mark)}
                         className={cn(
-                          'inline-flex h-11 min-w-11 items-center justify-center gap-1.5 px-2 text-xs text-muted-foreground not-first:border-l hover:bg-accent hover:text-foreground focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50 lg:h-7',
+                          'inline-flex h-11 min-w-11 items-center justify-center gap-1.5 px-2 text-xs lg:px-1.5 text-muted-foreground not-first:border-l hover:bg-accent hover:text-foreground focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50 lg:h-7',
                           selected && 'bg-selected text-selected-foreground hover:bg-selected hover:text-selected-foreground',
                         )}
                       >

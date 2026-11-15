@@ -85,7 +85,8 @@ interface Preferences {
 const PreferencesContext = createContext<Preferences | null>(null)
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Language>(() => (readStored('tf-lang') === 'tr' ? 'tr' : 'en'))
+  const [lang, setLangState] = useState<Language>(() => (readStored('tf-lang') === 'en' ? 'en' : 'tr'))
+  // Turkish is the default; English only after the analyst picks EN (remembered).
   // public/theme-init.js already applied the theme before the first paint:
   // dark unless the analyst chose light. Read it back instead of deciding again.
   const [dark, setDark] = useState<boolean>(() => document.documentElement.classList.contains('dark'))

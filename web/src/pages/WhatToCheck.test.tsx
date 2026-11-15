@@ -54,6 +54,7 @@ let review: ReviewResponse
 let calls: { url: string; init?: RequestInit }[]
 
 beforeEach(() => {
+  window.localStorage.setItem('tf-lang', 'en') // most cases read English; Turkish is the default
   review = OK
   calls = []
   vi.stubGlobal(
@@ -96,7 +97,7 @@ describe('What to check', () => {
     const rows = await screen.findAllByRole('listitem')
     expect(within(rows[0]).getByText('listed.example.test')).toBeInTheDocument()
     expect(within(rows[0]).getByText(/203\.0\.113\.7:443/)).toBeInTheDocument()
-    expect(within(rows[0]).getByText('Example Net · NL')).toBeInTheDocument()
+    expect(within(rows[0]).getAllByText('Example Net · NL').length).toBeGreaterThan(0)
     expect(screen.getByText('To check').nextElementSibling).toHaveTextContent('2')
   })
 
@@ -126,13 +127,20 @@ describe('What to check', () => {
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
   })
 
-  it('uses Turkish wording from the server dictionary', async () => {
-    window.localStorage.setItem('tf-lang', 'tr')
+  it('opens in Turkish by default with wording from the server dictionary', async () => {
+    window.localStorage.removeItem('tf-lang')
     renderPage()
     expect(await screen.findByText('Bakılacak')).toBeInTheDocument()
+    expect(calls.some((call) => call.url === '/api/review?lang=tr')).toBe(true)
     // Only the symbol is dropped from "⚠ Şüpheli"; the Turkish letter stays.
     expect(screen.getAllByRole('button', { name: 'Şüpheli' })).toHaveLength(2)
-    expect(calls.some((call) => call.url === '/api/review?lang=tr')).toBe(true)
+  })
+
+  it('shows the network owner, or a dash when unknown', async () => {
+    renderPage()
+    const rows = await screen.findAllByRole('listitem')
+    expect(within(rows[0]).getAllByText('Example Net · NL').length).toBeGreaterThan(0)
+    expect(within(rows[1]).getByText('—')).toBeInTheDocument()
   })
 
   it('explains an empty, missing or unreachable collector', async () => {

@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { AppShell, type Screen } from '@/components/AppShell'
+import { usePreferences } from '@/lib/preferences'
 import { WhatToCheck } from '@/pages/WhatToCheck'
 
 // Screens in migration order (PRODUCT_PLAN, DEC-101). Screens that stay in
@@ -9,6 +10,11 @@ const SCREENS: Screen[] = [{ id: 'review', title: 'What to check' }]
 
 export default function App() {
   const [current, setCurrent] = useState(SCREENS[0].id)
+  const { t } = usePreferences()
+  const title = t(SCREENS.find((screen) => screen.id === current)?.title ?? 'What to check')
+  useEffect(() => {
+    document.title = `ThreatFusion · ${title}`
+  }, [title])
   return (
     <AppShell screens={SCREENS} current={current} onSelect={setCurrent}>
       {current === 'review' && <WhatToCheck />}

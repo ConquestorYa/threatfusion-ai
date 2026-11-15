@@ -1191,7 +1191,9 @@ table, graphite palette, IBM Plex Sans/Mono) out of three presented options,
 with changes: dark is the default theme even when the system is light; light
 only after the theme button, remembered in the browser; the theme is applied
 in `index.html` before the first paint (no light flash); mark buttons show
-text on desktop and become icon buttons with tooltip on narrow screens. The
+text on desktop and become icon buttons with tooltip on narrow screens.
+Follow-up the same day: Turkish is the default language (English by button,
+remembered) and the network owner column stays in the table. The
 rules are in CLAUDE.md ("Design rules") and the tokens in `web/src/index.css`.
 
 **Scope (user, same day; delivery Monday 2026-11-16 evening):** migrate only

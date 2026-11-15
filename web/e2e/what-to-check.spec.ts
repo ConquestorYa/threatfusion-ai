@@ -9,19 +9,28 @@ const rows = (page: import('@playwright/test').Page, region = 'What to check') =
   page.getByRole('region', { name: region }).getByRole('listitem')
 
 test.beforeEach(async ({ page }) => {
+  // These cases read English; Turkish is the default (theme.spec.ts covers it).
+  await page.addInitScript(() => {
+    if (!window.localStorage.getItem('tf-lang')) window.localStorage.setItem('tf-lang', 'en')
+  })
   await page.goto('/')
   await clearMarks(page)
   await page.reload()
   await expect(rows(page)).toHaveCount(5)
 })
 
-test('shows the collector list with the threat first and real local addresses', async ({ page }) => {
+test('shows the collector list with the threat first and real local addresses', async ({ page }, testInfo) => {
   const console = watchConsole(page)
   await page.reload()
   const first = rows(page).first()
   await expect(first).toContainText('203.0.113.7')
   await expect(first).toContainText('On a threat list')
   await expect(first).toContainText('192.0.2.10 → 203.0.113.7:443')
+  if (testInfo.project.name === 'desktop') {
+    // Network owner column: no owner table in the test state, so a dash.
+    await expect(page.getByText('Network owner')).toBeVisible()
+    await expect(first.getByText('—')).toBeVisible()
+  }
   await expect(count(page, 'To check')).toHaveText('5')
   await expect(count(page, 'On a threat list')).toHaveText('1')
   await expectNoHorizontalScroll(page)
