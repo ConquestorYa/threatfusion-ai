@@ -2,6 +2,18 @@
 
 Newest section first. Status date: 2026-11-15.
 
+## Monday demo checklist and launcher (2026-11-15)
+
+- `docs/dev/DEMO_CHECKLIST_TR.md`: preparation, start, a 12-minute flow over
+  the four React screens, limits to state and troubleshooting. Synthetic data
+  only; the checklist says not to press "Site yaşını kontrol et" or "CTI
+  verilerini şimdi güncelle" (both reach the network) and to enter only fake
+  keys.
+- `scripts/demo_web.sh`: synthetic managed install + live collector (keeps
+  the snapshot fresh, no stale warning) + API + Streamlit on 127.0.0.1;
+  Ctrl+C stops all and deletes the temporary directory. Checked: both
+  listeners loopback-only, `stale: False`, no leftover process or directory.
+
 ## Details polish: short local times, no mixed language (2026-11-15)
 
 - Look only, no new features (user request). Times: captions use local

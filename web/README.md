@@ -13,6 +13,9 @@ Every server here listens on `127.0.0.1` only. None has a host option.
 
 ## Run both applications together
 
+Quickest, with synthetic data: `scripts/demo_web.sh` (see the
+[demo checklist](../docs/dev/DEMO_CHECKLIST_TR.md)).
+
 Two terminals, from the repository root. Node 22 (`nvm install 22`) and the
 project's `.venv` (with `requirements.txt`) are needed.
 
