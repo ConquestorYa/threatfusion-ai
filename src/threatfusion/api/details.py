@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 
 from ..i18n import _COLUMN_TR, _VALUE_TR
-from .i18n import Language, translate
+from .i18n import Language, evidence, short_time, translate
 from .settings import ApiSettings
 
 MAX_ROWS = 500
@@ -115,7 +115,7 @@ def details_response(settings: ApiSettings, language: Language, *, local_ips: bo
     if "scan" in status:
         scan = status["scan"]
         notices.append(_block("caption", t("Last scan: {seconds} s; changed files checked: {checked}; candidates: {candidates}.",
-                                           seconds=scan["analysis_elapsed_seconds"], checked=scan["attempted_files"],
+                                           seconds=f"{scan['analysis_elapsed_seconds']:.2f}", checked=scan["attempted_files"],
                                            candidates=scan["candidate_files"])))
         if scan["remaining_candidates"]:
             notices.append(_block("warning", t("{count} candidate files await checking because the scan budget was reached. They may be open or unchanged; this is not a count of ready logs.",
@@ -158,7 +158,8 @@ def details_response(settings: ApiSettings, language: Language, *, local_ips: bo
     for row in display:
         for key in ("Originator", "Responder"):
             row[key] = _host(row[key], language)
-        for key in ("Evidence", "Coverage limits", "Analyst context", "Context reason"):
+        row["Evidence"] = evidence(row["Evidence"], language)
+        for key in ("Coverage limits", "Analyst context", "Context reason"):
             row[key] = _joined(row[key], language)
     if len(rows) > MAX_ROWS:
         more = (t("Showing the first 500 filtered snapshot groups. Use the full gzip report for all retained groups.") if coverage
@@ -175,7 +176,7 @@ def details_response(settings: ApiSettings, language: Language, *, local_ips: bo
         reference = payload["full_report"]
         full = {"generated_at": reference["generated_at"],
                 "caption": t("Full retained report generated at: {time}. Unchanged evidence reuses its verified archive.",
-                             time=reference["generated_at"]),
+                             time=short_time(reference["generated_at"])),
                 "label": t("Download full retained connection JSON.gz")}
 
     return {
@@ -184,7 +185,7 @@ def details_response(settings: ApiSettings, language: Language, *, local_ips: bo
         "guide": t(COLLECTOR_GUIDE),
         "captions": [
             t("Completed Zeek logs are collected automatically. This view refreshes every 10 seconds; active files wait for rotation."),
-            t("Collector snapshot: {time}", time=status["updated_at"]),
+            t("Collector snapshot: {time}", time=short_time(status["updated_at"])),
         ],
         "metrics": [
             {"label": t("Retained connections"), "value": counts["retained_records"]},
@@ -267,6 +268,7 @@ def _dns(block, language: Language, observations: bool):
     display = [dict(row) for row in rows[:MAX_ROWS]]
     for row in display:
         row["Device"] = _device(row["Device"], language)
+        row["Evidence"] = evidence(row["Evidence"], language)
         row["Coverage limits"] = _joined(row["Coverage limits"], language)
     shown = rows[:MAX_ROWS]
     timelines = block["report"].get("timelines")
@@ -308,9 +310,9 @@ def _guidance_connection(row, language: Language) -> list[dict]:
     t = lambda text, **values: translate(text, language, **values)  # noqa: E731
     blocks = [_block("heading", t("Review guidance")),
               _block("caption", t("Original queue priority: {priority}", priority=t(str(row["Queue priority"]))))]
-    evidence = str(row.get("Evidence", ""))
-    if evidence:
-        blocks.append(_block("text", t("Observed evidence: {evidence}", evidence=_joined(evidence, language))))
+    evidence_text = evidence(row.get("Evidence", ""), language) if row.get("Evidence") else ""
+    if evidence_text:
+        blocks.append(_block("text", t("Observed evidence: {evidence}", evidence=evidence_text)))
     else:
         blocks.append(_block("caption", t("No TCP behavior review gate crossed. Check CTI and coverage separately.")))
     if row.get("CTI match") is True:
@@ -369,7 +371,7 @@ def dns_timeline(settings: ApiSettings, language: Language, group: int, *, local
     if row is None:
         raise NotAvailable(group)
     t = lambda text, **values: translate(text, language, **values)  # noqa: E731
-    guidance = [_block("caption", t("Selected query evidence: {evidence}", evidence=row["Evidence"])),
+    guidance = [_block("caption", t("Selected query evidence: {evidence}", evidence=evidence(row["Evidence"], language))),
                 _block("heading", t("Review guidance")),
                 _block("caption", t("Original queue priority: {priority}", priority=t(str(row["Queue priority"])))),
                 _block("text", t("Confirm whether the observed address is an endpoint, shared resolver or NAT using network inventory and resolver logs. Do not attribute a shared resolver's queries to individual machines."))]

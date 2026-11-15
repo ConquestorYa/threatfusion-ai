@@ -76,3 +76,32 @@ def translate(text: str, language: Language, **values: object) -> str:
 
 def ui_strings(language: Language) -> dict[str, str]:
     return {text: translate(text, language) for text in UI_STRINGS}
+
+
+def short_time(value) -> str:
+    """A timestamp as local 'dd.mm HH:MM' (year added when it is not this year).
+
+    Same reading as the review list (``ui_simple_review._clock``); raw ISO
+    strings with seconds or microseconds never reach the page.
+    """
+    from datetime import datetime
+
+    try:
+        moment = datetime.fromisoformat(str(value).replace("Z", "+00:00")).astimezone()
+    except (TypeError, ValueError):
+        return str(value) if value else "—"
+    pattern = "%d.%m %H:%M" if moment.year == datetime.now().astimezone().year else "%d.%m.%Y %H:%M"
+    return moment.strftime(pattern)
+
+
+def evidence(text, language: Language) -> str:
+    """Evidence labels translated one by one, keeping the full English text.
+
+    One label contains the "; " separator itself; it is kept whole and
+    translated as one unit (``ui_simple_review._SEMICOLON_LABEL``).
+    """
+    from ..ui_simple_review import _SEMICOLON_LABEL
+
+    special = _SEMICOLON_LABEL[0]
+    parts = str(text or "").replace(special, "\0").split("; ")
+    return "; ".join(translate(special if part == "\0" else part, language) for part in parts if part)

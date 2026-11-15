@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { PreferencesProvider } from '@/lib/preferences'
-import { DataTable } from './DataTable'
+import { DataTable, shortTime } from './DataTable'
 import { Markdown } from './Markdown'
 import { TimeChart, utcLabel } from './TimeChart'
 
@@ -49,6 +49,29 @@ describe('DataTable', () => {
     expect(within(table).getAllByText('—')).toHaveLength(2)
     expect(within(table).getByText('3').className).toContain('text-right')
     expect(within(table).getByText('192.0.2.1').className).toContain('font-mono')
+  })
+})
+
+describe('table times', () => {
+  it('formats ISO and UTC text times short; UTC columns stay UTC', () => {
+    const year = new Date().getFullYear()
+    expect(shortTime(`${year}-11-15T16:38:20.452105+00:00`, true)).toBe('15.11 16:38')
+    expect(shortTime(`${year}-11-15 16:38 UTC`, true)).toBe('15.11 16:38')
+    expect(shortTime('2024-01-02T03:04:00Z', true)).toBe('02.01.2024 03:04')
+    expect(shortTime('not a time')).toBe('not a time')
+  })
+
+  it('shows times short in cells and pins the first column', () => {
+    wrap(
+      <DataTable
+        label="Times"
+        table={{ columns: ['Group', 'First observed', 'UTC bucket start'], rows: [[1, '2026-11-15T16:38:20.45+00:00', '2026-11-15T16:30:00+00:00']] }}
+      />,
+    )
+    const table = screen.getByRole('region', { name: 'Times' })
+    expect(within(table).queryByText(/2026-11-15T/)).toBeNull()
+    expect(within(table).getByText(/^15\.11(\.2026)? 16:30$/)).toBeInTheDocument() // UTC column stays UTC
+    expect(within(table).getByRole('columnheader', { name: 'Group' }).className).toContain('sticky')
   })
 })
 

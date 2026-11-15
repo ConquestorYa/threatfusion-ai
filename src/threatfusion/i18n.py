@@ -971,6 +971,11 @@ _TR: dict[str, str] = {
     "Hostname contains many numeric characters": "Hostname çok sayıda sayısal karakter içeriyor",
     "Hostname appears algorithmically random": "Hostname algoritmik olarak rastgele görünüyor",
     "Periodic repeated query timing pattern": "Periyodik tekrarlanan sorgu zamanlama deseni",
+    "Sustained periodic DNS": "Uzun süreli düzenli DNS",
+    "Sustained periodic DNS; inspect expected software activity": "Uzun süreli düzenli DNS; beklenen yazılım etkinliğini incele",
+    "inspect expected software activity": "beklenen yazılım etkinliğini incele",
+    "Observe": "Gözlem",
+    "Investigate": "Öncelikle araştır",
     "Strength": "Güç",
     "Shared clients": "Ortak istemciler",
     "Shared response IPs": "Ortak yanıt IP'leri",
@@ -987,6 +992,10 @@ _TR: dict[str, str] = {
 }
 
 _COLUMN_TR = {
+    "NXDOMAIN ratio": "NXDOMAIN oranı",
+    "Periodic interval (s)": "Periyodik aralık (sn)",
+    "Periodicity score": "Periyodiklik skoru",
+    "Stale after": "Eskime eşiği",
     "DNS queries": "DNS sorguları",
     "DNS response categories": "DNS yanıt kategorileri",
     "Pattern": "Örüntü",

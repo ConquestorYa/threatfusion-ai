@@ -32,6 +32,10 @@ framing is retired. No release date or tag is set.
   owner-only credentials file or forgotten, manual and automatic CTI updates
   with progress, source table; DEC-103). Stopping the application stays in
   Streamlit.
+- React workspace polish: short local times everywhere, Turkish for the
+  remaining column names, priorities and DNS evidence (also in Streamlit's
+  dictionary), pinned first table column and collapsed bucket tables; tests
+  that fail on mixed Turkish/English or raw ISO times.
 
 ### Changed
 

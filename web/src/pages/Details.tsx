@@ -231,7 +231,18 @@ function TimelineView({ kind, group, revision, localIps }: { kind: 'connection' 
           <TimeChart points={data.chart.points} kind={data.chart.kind} xTitle={data.chart.x_title} yTitle={data.chart.y_title} />
         </div>
       )}
-      {data.table && <DataTable table={data.table} label={`${data.chart?.y_title ?? ''} · ${chrome('table')}`} maxHeight="max-h-72" />}
+      {data.table && (
+        // The chart is the default view; the bucket table is one click away.
+        <Collapsible className="rounded-sm border bg-card">
+          <CollapsibleTrigger className="group flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] font-medium focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+            <ChevronDown aria-hidden className="size-4 transition-transform group-data-[state=open]:rotate-180" />
+            {chrome('showTable')}
+          </CollapsibleTrigger>
+          <CollapsibleContent className="border-t p-2">
+            <DataTable table={data.table} label={`${data.chart?.y_title ?? ''} · ${chrome('table')}`} maxHeight="max-h-72" />
+          </CollapsibleContent>
+        </Collapsible>
+      )}
       {data.footer && <p className="text-xs text-muted-foreground">{data.footer}</p>}
     </div>
   )

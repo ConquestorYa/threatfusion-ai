@@ -40,5 +40,11 @@
   dark and Turkish, no console errors, no horizontal scroll) and review
   screenshots **in Turkish** (dark, then light) with
   `SCREENSHOTS=1 npm run test:e2e` (written to ignored `.playwright-mcp/`).
+- Times are shown short and local (`dd.mm HH:MM`, year only when it differs);
+  UTC only where the label says UTC. No raw ISO strings in the UI. Turkish
+  pages must contain no English UI words (`tests/test_api_language.py`,
+  `web/e2e/language.spec.ts`); missing wording goes into `i18n.py`.
+- Wide tables scroll inside themselves with the first column pinned; charts
+  are the default view and their bucket tables start collapsed.
 - Switching language keeps the page's data on screen until the new wording
   arrives (`keepPreviousData`), so open rows and selections survive.

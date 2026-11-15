@@ -63,7 +63,7 @@ export function TimeChart({
   const y = (v: number) => MARGIN.top + innerH - (v / top) * innerH
   const cx = (i: number) => MARGIN.left + band * i + band / 2
   const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round(top * f))
-  const every = Math.max(1, Math.ceil(96 / band))
+  const every = Math.max(1, Math.ceil(116 / band)) // label width ~70px plus a gap
   const showMarkers = band >= 12
 
   const linePath = points.map((p, i) => `${i ? 'L' : 'M'}${cx(i).toFixed(1)},${y(p.v).toFixed(1)}`).join('')

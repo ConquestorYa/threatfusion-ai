@@ -124,7 +124,7 @@ export function WhatToCheck() {
         </span>
         <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground" title={data.updated_at}>
           <span aria-hidden className={cn('size-1.5 rounded-full', data.stale ? 'bg-review' : 'bg-live')} />
-          {chrome('updated').replace('{time}', new Date(data.updated_at).toLocaleTimeString(lang))}
+          {chrome('updated').replace('{time}', new Date(data.updated_at).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' }))}
         </span>
       </div>
 

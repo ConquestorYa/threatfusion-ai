@@ -2,6 +2,25 @@
 
 Newest section first. Status date: 2026-11-15.
 
+## Details polish: short local times, no mixed language (2026-11-15)
+
+- Look only, no new features (user request). Times: captions use local
+  `dd.mm HH:MM` (`api.i18n.short_time`); table cells with ISO or
+  "… UTC" times are shown short in the browser (local; UTC-labelled bucket
+  columns stay UTC to match the chart). No raw ISO or microseconds remain.
+- Turkish: added to the shared dictionary (Streamlit benefits too):
+  "NXDOMAIN ratio", "Periodic interval (s)", "Periodicity score",
+  "Stale after" (columns), "Observe", "Investigate", "Sustained periodic
+  DNS" and the semicolon label. Evidence text is translated label by label
+  (DNS table and guidance included; English output unchanged).
+- Tables keep scrolling inside themselves with the first column pinned;
+  bucket tables sit in a closed "Tabloyu göster" section under each chart.
+  Scan time rounded to two decimals; chart axis labels spaced wider.
+- New tests: `tests/test_api_language.py` (all endpoints in Turkish: no
+  English UI words, no raw ISO times in text; verified to fail when a
+  translation is removed) and `web/e2e/language.spec.ts` (visible text of
+  all four screens in Turkish), plus Vitest for time formatting.
+
 ## Setup & CTI updates in the React workspace (2026-11-15)
 
 - `GET /api/setup`, `PUT /api/setup/mode`, `PUT /api/setup/schedule`,

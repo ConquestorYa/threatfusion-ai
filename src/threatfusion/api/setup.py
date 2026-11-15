@@ -38,12 +38,12 @@ def _refresh_blocks(status: dict) -> list[dict]:
     """``_render_refresh_status`` as blocks."""
     from ..cti_cache import RETIRED_SOURCES
     from ..local_workspace import refresh_running
-    from ..ui_local_settings import _local_time
+    from .i18n import short_time
 
     tr = i18n.tr
     if not status:
         return [{"kind": "info", "text": tr("No refresh yet. Use Update CTI now to download source data.")}]
-    blocks = [{"kind": "caption", "text": tr("Last attempt: {time}", time=_local_time(status.get("attempted_at")))}]
+    blocks = [{"kind": "caption", "text": tr("Last attempt: {time}", time=short_time(status.get("attempted_at")))}]
     if refresh_running(status):
         blocks.append({"kind": "info", "text": tr("A source update is running. Existing cached data remains available.")})
     if status.get("failed"):
