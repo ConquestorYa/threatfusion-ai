@@ -13,6 +13,8 @@ Newest section first. Status date: 2026-11-15.
   in `dns.log` and `dns_queries.csv` (7 each; analysis code unchanged); both
   give one Known Threat. e2e checks the red Known Threat bar (count ≥ 1) in
   Verdict distribution; the scenario shows it.
+- `demo-stable` moved (user request) to the final commit of this work after
+  green CI; the return command was re-checked in a separate worktree.
 - Analyze telemetry (DEC-104): format choice, upload, input quality,
   priority findings, verdict bars, overview, and the tabs Domain findings
   (search/verdict/source filters as `filter_findings`), Device triage (+ DNS

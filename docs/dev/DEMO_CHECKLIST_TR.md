@@ -4,7 +4,7 @@ Branch: `feat/react-workspace` (PR #185, taslak; `main`'e birleştirilmedi).
 Demonun tamamı yeni arayüzde yapılır; Streamlit yalnızca yedek.
 
 **Güvenli hale dönüş (tek komut):** son denenmiş sağlam sürüm `demo-stable`
-etiketidir (dört ekran, CI yeşil; Telemetri analizi o sürümde Streamlit'te):
+etiketidir (beş ekran, Telemetri analizi ve örnek dosyalar dahil; CI yeşil):
 
 ```bash
 git switch --detach demo-stable && (cd web && npm ci && npm run build)
