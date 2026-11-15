@@ -2,6 +2,32 @@
 
 Newest section first. Status date: 2026-11-15.
 
+## Setup & CTI updates in the React workspace (2026-11-15)
+
+- `GET /api/setup`, `PUT /api/setup/mode`, `PUT /api/setup/schedule`,
+  `POST /api/setup/refresh` mirror `render_local_settings`,
+  `render_refresh_progress` and the CTI source table, reusing
+  `_refresh_summary`, `_next_download`, `_local_time`, `cti_status_rows`,
+  `save_settings` and `start_background_refresh`. `/api/app` now reports
+  `setup_available` (managed installation only) and `first_setup` (Setup
+  opens first until real CTI was downloaded once), as in Streamlit.
+- **Pending user decision (security/behavior), left in Streamlit:** entering,
+  saving or forgetting API keys (Streamlit keeps unsaved keys per browser
+  session; a process-wide API would share them with every local tab) and
+  "Stop local application" (stops the Streamlit launcher, not this API). The
+  page explains this and links to Streamlit. A manual update from React uses
+  the saved keys only.
+- `scripts/demo_review_snapshot.py --managed` builds a synthetic managed
+  installation; the e2e server now uses it (exercises the managed settings
+  path). e2e never presses "Update CTI now" (it downloads); the API test
+  replaces `start_background_refresh`. Tests: 6 API, 3 Vitest, 4 Playwright
+  cases × 2 viewports; screenshots in Turkish.
+- Test fix (not a runtime change): `test_real_process_sigterm_releases_lock_and_restart_is_idempotent`
+  sent SIGTERM once `connections.json` appeared, but the collector prints its
+  status after writing that file, so a signal in between left stdout empty.
+  It failed 2/3 runs on this machine (passed 4/4 on `main` by timing). The
+  test now waits for the first status line; same assertions, 5/5 passes.
+
 ## Quick lookup in the React workspace (2026-11-15)
 
 - `GET /api/lookup/status`, `POST /api/lookup` (JSON body, ≤ 4,096 chars,

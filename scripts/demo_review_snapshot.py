@@ -7,12 +7,20 @@ same validation as live data. A synthetic CTI cache (`cti.sqlite`, source
 to check" and a known-threat Quick lookup appear.
 
     .venv/bin/python scripts/demo_review_snapshot.py /tmp/tf-demo
+    .venv/bin/python scripts/demo_review_snapshot.py --managed /tmp/tf-install
+
+``--managed`` lays the same data out as a managed installation (ownership
+marker, ``workspace.json`` in CTI-only mode, ``runtime/cti/threatfusion.sqlite``,
+``collector/`` and one finished synthetic refresh record), so Setup & CTI can
+be exercised with ``THREATFUSION_LOCAL_INSTALL_DIR`` and no network access.
     THREATFUSION_COLLECTOR_STATE_DIR=/tmp/tf-demo/collector THREATFUSION_DB_PATH=/tmp/tf-demo/cti.sqlite \
       .venv/bin/python -m threatfusion.api
 """
 from __future__ import annotations
 
 import argparse
+import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -49,11 +57,21 @@ def write_logs(source: Path, now: datetime) -> None:
         (source / f"dns.{number}.log").write_text(log(moved, closed=True))
 
 
+def _private(path: Path, text: str) -> None:
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(descriptor, "w") as handle:
+        handle.write(text)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("root", type=Path, help="new private directory (created)")
-    root = parser.parse_args(argv).root
+    parser.add_argument("--managed", action="store_true", help="managed-installation layout")
+    args = parser.parse_args(argv)
+    root = args.root.resolve()
     root.mkdir(mode=0o700, parents=True, exist_ok=False)
+    cti = root / ("runtime/cti/threatfusion.sqlite" if args.managed else "cti.sqlite")
+    cti.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     source = root / "input"
     source.mkdir()
     now = datetime.now(timezone.utc)
@@ -64,9 +82,16 @@ def main(argv: list[str] | None = None) -> int:
         IOCRecord(LISTED_NAME, IOCType.DOMAIN, SOURCE, first_seen=now, last_seen=now, threat_type="phishing",
                   confidence=0.8, tags=["synthetic"]),
     ]
-    replace_source_records(root / "cti.sqlite", SOURCE, indicators, refreshed_at=now)
+    replace_source_records(cti, SOURCE, indicators, refreshed_at=now)
     with ZeekCollector(source, root / "collector") as collector:
         counts = collector.tick(now=now, indicators=indicators)["counts"]
+    if args.managed:
+        _private(root / ".threatfusion-install", "1\n")
+        _private(root / "workspace.json", json.dumps({"mode": "cti-only", "interval_hours": 6, "automatic": False}))
+        _private(root / "refresh-status.json", json.dumps({
+            "attempted_at": now.isoformat(), "running": False, "finished_at": now.isoformat(),
+            "outcomes": [{"source": "SGB", "status": "fresh", "record_count": 0}],
+            "skipped": ["ThreatFox", "URLhaus"]}))
     print(f"state: {root / 'collector'}  review groups: {counts['review_groups']}  dns: {counts['dns_review_groups']}")
     return 0
 

@@ -79,7 +79,8 @@ linked documents rather than being copied into this plan.
   tab, on `127.0.0.1` only. Streamlit is unchanged and remains the supported
   UI. Design direction A "Konsol", dark by default (DEC-102). Scope set by
   the user for Monday 2026-11-16: What to check (done), Details + timelines (done),
-  Quick lookup (done), Setup & CTI; telemetry analysis, Experimental ML, Model
+  Quick lookup (done), Setup & CTI (done except API-key entry and stop, pending
+  a user security decision); telemetry analysis, Experimental ML, Model
   evaluation and history stay in Streamlit behind an "Open in Streamlit"
   link. Launcher switch and Node/packaging decision come later. This
   interface work runs beside the queue below; it does not re-measure P2 or

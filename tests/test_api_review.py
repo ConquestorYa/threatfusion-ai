@@ -194,7 +194,7 @@ def test_real_collector_snapshot_produces_the_same_items(tmp_path):
 def test_streamlit_link_is_loopback_only(value, expected):
     environment = {} if value is None else {"THREATFUSION_STREAMLIT_URL": value}
     client = TestClient(create_app(lambda: ApiSettings(False, None, None), environment=environment), base_url=ORIGIN)
-    assert client.get("/api/app").json() == {"streamlit_url": expected}
+    assert client.get("/api/app").json()["streamlit_url"] == expected
 
 
 def test_demo_snapshot_is_valid_and_uses_documentation_ranges_only(tmp_path):

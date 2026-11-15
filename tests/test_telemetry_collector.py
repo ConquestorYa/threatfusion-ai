@@ -3,10 +3,10 @@ from __future__ import annotations
 import gzip
 import json
 import os
+import select
 import signal
 import subprocess
 import sys
-import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -246,15 +246,17 @@ def test_real_process_sigterm_releases_lock_and_restart_is_idempotent(paths):
                "--state-dir", str(state), "--poll-seconds", "1"]
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     try:
-        for _ in range(100):
-            if (state / "connections.json").exists() or process.poll() is not None:
-                break
-            time.sleep(0.05)
+        # Wait for the first status line, not just the snapshot file: the
+        # collector writes connections.json before it prints, so a SIGTERM in
+        # between used to leave stdout empty (timing-dependent failure).
+        ready, _, _ = select.select([process.stdout], [], [], 10)
+        assert ready, "collector printed no status within 10 s"
+        first = process.stdout.readline()
         assert (state / "connections.json").exists()
         process.send_signal(signal.SIGTERM)
-        stdout, stderr = process.communicate(timeout=5)
+        _, stderr = process.communicate(timeout=5)
         assert process.returncode == 0, stderr
-        assert json.loads(stdout.splitlines()[0])["retained_records"] == 1
+        assert json.loads(first)["retained_records"] == 1
         restarted = subprocess.run(command+["--once"], capture_output=True, text=True, timeout=10)
         assert restarted.returncode == 0
         assert json.loads(restarted.stdout)["new_records"] == 0

@@ -1,9 +1,12 @@
+import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 
 import { AppShell, type Screen } from '@/components/AppShell'
+import { fetchAppInfo } from '@/lib/api'
 import { usePreferences } from '@/lib/preferences'
 import { Details } from '@/pages/Details'
 import { QuickLookup } from '@/pages/QuickLookup'
+import { Setup } from '@/pages/Setup'
 import { WhatToCheck } from '@/pages/WhatToCheck'
 
 // Screens in migration order (PRODUCT_PLAN, DEC-101). Screens that stay in
@@ -13,19 +16,25 @@ const SCREENS: Screen[] = [
   { id: 'details', title: 'Details' },
   { id: 'lookup', title: 'Quick lookup' },
 ]
+const SETUP: Screen = { id: 'setup', title: 'Setup & CTI updates' }
 
 export default function App() {
-  const [current, setCurrent] = useState(SCREENS[0].id)
   const { t } = usePreferences()
-  const title = t(SCREENS.find((screen) => screen.id === current)?.title ?? 'What to check')
+  const app = useQuery({ queryKey: ['app'], queryFn: fetchAppInfo, staleTime: Infinity })
+  const screens = app.data?.setup_available ? [...SCREENS, SETUP] : SCREENS
+  const [chosen, setChosen] = useState<string | null>(null)
+  // As in Streamlit: Setup opens first until real CTI has been downloaded once.
+  const current = chosen ?? (app.data?.first_setup ? SETUP.id : SCREENS[0].id)
+  const title = t(screens.find((screen) => screen.id === current)?.title ?? 'What to check')
   useEffect(() => {
     document.title = `ThreatFusion · ${title}`
   }, [title])
   return (
-    <AppShell screens={SCREENS} current={current} onSelect={setCurrent}>
+    <AppShell screens={screens} current={current} onSelect={setChosen}>
       {current === 'review' && <WhatToCheck />}
       {current === 'details' && <Details />}
       {current === 'lookup' && <QuickLookup />}
+      {current === 'setup' && <Setup />}
     </AppShell>
   )
 }

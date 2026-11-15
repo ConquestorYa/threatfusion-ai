@@ -30,6 +30,14 @@ describe('Markdown', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(2)
     expect(screen.getByText('<b>raw</b>')).toBeInTheDocument() // shown as text
   })
+
+  it('links only https targets, in a new tab without referrer', () => {
+    render(<Markdown text={'Get a key at [auth.abuse.ch](https://auth.abuse.ch/). Not [this](javascript:alert(1)).'} />)
+    const link = screen.getByRole('link', { name: 'auth.abuse.ch' })
+    expect(link).toHaveAttribute('href', 'https://auth.abuse.ch/')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    expect(screen.queryByRole('link', { name: 'this' })).toBeNull()
+  })
 })
 
 describe('DataTable', () => {

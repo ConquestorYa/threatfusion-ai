@@ -79,7 +79,8 @@ export const saveMark = (key: string, mark: Mark | null) =>
     body: JSON.stringify({ key, mark }),
   })
 
-export const fetchAppInfo = () => request<{ streamlit_url: string }>('/api/app')
+export const fetchAppInfo = () =>
+  request<{ streamlit_url: string; setup_available: boolean; first_setup: boolean }>('/api/app')
 
 // ---- Details tab (mirrors ui_collector._render_details) ----
 
@@ -241,3 +242,47 @@ export const fetchLookupStatus = (lang: Language) => request<LookupStatus>(`/api
 export const runLookup = (lang: Language, value: string) => request<LookupResult>(`/api/lookup?lang=${lang}`, json({ value }))
 export const checkDomainAge = (lang: Language, domain: string) =>
   request<AgeBlock>(`/api/lookup/domain-age?lang=${lang}`, json({ domain }))
+
+// ---- Setup & CTI updates (mirrors ui_local_settings.render_local_settings) ----
+
+export interface SetupOk {
+  state: 'ok'
+  caption: string
+  mode: { title: string; value: 'cti-only' | 'demo'; options: { value: 'cti-only' | 'demo'; label: string }[] }
+  application: { title: string; caption: string }
+  demo_note?: string
+  keys?: { title: string; caption: string; saved: string; missing: string | null }
+  cti?: {
+    title: string
+    running: boolean
+    force_label: string
+    force_help: string
+    button: string
+    busy: string
+    started: string
+    due: string | null
+    progress: { percent: number; label: string; caption: string } | null
+    summary: { kind: 'success' | 'info' | 'warning'; text: string; finished_at: string } | null
+    status: Block[]
+  }
+  schedule?: {
+    title: string
+    automatic: boolean
+    automatic_label: string
+    interval_hours: number
+    interval_label: string
+    options: number[]
+    caption: string
+    button: string
+  }
+  sources?: (Table & { title: string; caption: string }) | null
+}
+export type SetupResponse = SetupOk | { state: 'not_managed' | 'unreadable' }
+
+const put = (body: unknown): RequestInit => ({ ...json(body), method: 'PUT' })
+
+export const fetchSetup = (lang: Language) => request<SetupResponse>(`/api/setup?lang=${lang}`)
+export const saveMode = (mode: 'cti-only' | 'demo') => request<void>('/api/setup/mode', put({ mode }))
+export const saveSchedule = (automatic: boolean, interval_hours: number) =>
+  request<void>('/api/setup/schedule', put({ automatic, interval_hours }))
+export const startRefresh = (force: boolean) => request<{ started: boolean }>('/api/setup/refresh', json({ force }))

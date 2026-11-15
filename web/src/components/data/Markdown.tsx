@@ -1,11 +1,19 @@
 import type { ReactNode } from 'react'
 
 // The collector guide is trusted, fixed text from the Python package with a
-// small Markdown subset: paragraphs, "1." lists, **bold** and `code`. Render
-// it as React elements (never as HTML).
+// small Markdown subset: paragraphs, "1." lists, **bold**, `code` and
+// [text](https://…) links. Render it as React elements (never as HTML); only
+// https links are made clickable and they open in a new tab without referrer.
 
 function inline(text: string): ReactNode[] {
-  return text.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g).map((part, index) => {
+  return text.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*|\[[^\]]+\]\(https:\/\/[^)\s]+\))/g).map((part, index) => {
+    const link = part.match(/^\[([^\]]+)\]\((https:\/\/[^)\s]+)\)$/)
+    if (link)
+      return (
+        <a key={index} href={link[2]} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+          {link[1]}
+        </a>
+      )
     if (part.startsWith('**') && part.endsWith('**')) return <strong key={index}>{part.slice(2, -2)}</strong>
     if (part.startsWith('`') && part.endsWith('`'))
       return (

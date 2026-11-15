@@ -20,6 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from ..request_guard import LOOPBACK_HOSTNAMES, host_header_name, is_allowed_host
 from . import details as details_module
 from . import lookup as lookup_module
+from . import setup as setup_module
 from .i18n import Language, ui_strings
 from .review import Mark, UnknownItem, review_response, set_mark
 from .settings import ApiSettings, resolve_settings
@@ -42,6 +43,25 @@ class DomainAgeRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     domain: str = Field(min_length=1, max_length=253)
+
+
+class ModeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    mode: Literal["cti-only", "demo"]
+
+
+class ScheduleRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    automatic: bool
+    interval_hours: Literal[6, 12, 24]
+
+
+class RefreshRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    force: bool = False
 
 
 class MarkRequest(BaseModel):
@@ -118,8 +138,18 @@ def create_app(
         return {"status": "ok"}
 
     @app.get("/api/app")
-    def app_info() -> dict:
-        return {"streamlit_url": streamlit_url(environment)}
+    def app_info(resolved: ApiSettings = Depends(settings)) -> dict:
+        from ..ui_local_settings import needs_first_setup
+
+        root = resolved.local_root
+        try:
+            first = root is not None and needs_first_setup(root)
+        except (OSError, ValueError, TypeError):
+            first = False
+        # Same screen rules as Streamlit: Setup only for a managed installation,
+        # and it opens first until real CTI has been downloaded once.
+        return {"streamlit_url": streamlit_url(environment), "setup_available": root is not None,
+                "first_setup": first}
 
     @app.get("/api/i18n")
     def strings(lang: Literal["en", "tr"] = "en") -> dict:
@@ -209,6 +239,39 @@ def create_app(
             raise HTTPException(409, "Registry lookups are not available in this mode.") from None
         except ValueError:
             raise HTTPException(422, "Site age is not available for this name.") from None
+
+    def _setup_write(action) -> Response:
+        try:
+            action()
+        except setup_module.NotManaged:
+            raise HTTPException(404, "Setup is available in a managed installation in real CTI mode.") from None
+        except (OSError, ValueError, TypeError):
+            raise HTTPException(409, "Local settings could not be read. Check private file permissions.") from None
+        return Response(status_code=204)
+
+    @app.get("/api/setup")
+    def setup(lang: Language = Query("en"), resolved: ApiSettings = Depends(settings)) -> dict:
+        try:
+            return setup_module.setup_state(resolved, lang)
+        except (OSError, ValueError, TypeError):
+            return {"state": "unreadable"}
+
+    @app.put("/api/setup/mode", status_code=204)
+    def setup_mode(body: ModeRequest, resolved: ApiSettings = Depends(settings)) -> Response:
+        return _setup_write(lambda: setup_module.change_mode(resolved, body.mode))
+
+    @app.put("/api/setup/schedule", status_code=204)
+    def setup_schedule(body: ScheduleRequest, resolved: ApiSettings = Depends(settings)) -> Response:
+        return _setup_write(lambda: setup_module.save_schedule(resolved, body.automatic, body.interval_hours))
+
+    @app.post("/api/setup/refresh")
+    def setup_refresh(body: RefreshRequest, resolved: ApiSettings = Depends(settings)) -> dict:
+        try:
+            return {"started": setup_module.start_refresh(resolved, body.force)}
+        except setup_module.NotManaged:
+            raise HTTPException(404, "Setup is available in a managed installation in real CTI mode.") from None
+        except (OSError, ValueError, TypeError):
+            raise HTTPException(409, "Local settings could not be read. Check private file permissions.") from None
 
     if static_dir is not None and (static_dir / "index.html").is_file():
         app.mount("/", StaticFiles(directory=static_dir, html=True), name="web")

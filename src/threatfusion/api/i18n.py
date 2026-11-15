@@ -62,6 +62,10 @@ UI_STRINGS = (
     # Quick lookup
     "Quick lookup",
     "Check one URL, domain or IP against your local threat intelligence without visiting it.",
+    # Setup & CTI updates
+    "Setup & CTI updates",
+    "Operating mode, your own API keys and threat-intelligence updates.",
+    "Local settings could not be read. Check private file permissions.",
 )
 
 
