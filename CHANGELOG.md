@@ -22,6 +22,9 @@ framing is retired. No release date or tag is set.
   desktop and icon buttons with tooltips on narrow screens, an "Open in
   Streamlit" link for screens that stay there, Playwright browser tests in CI
   and `scripts/demo_review_snapshot.py` for a synthetic collector state.
+- React workspace: the collector Details tab with connection and DNS
+  timelines, the same tables, guidance and downloads as Streamlit (except the
+  experimental ML score column, which stays in Streamlit).
 
 ### Changed
 

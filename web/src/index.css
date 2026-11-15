@@ -64,6 +64,7 @@
     --color-review: var(--review);
     --color-suspect: var(--suspect);
     --color-live: var(--live);
+    --color-chart-series: var(--chart-series);
     --color-selected: var(--selected);
     --color-selected-foreground: var(--selected-foreground);
 }
@@ -94,6 +95,7 @@
     --review: #9A6412;
     --suspect: #2F6FB3;
     --live: #2E8A57;
+    --chart-series: #008E99; /* validated: dataviz checks, light surface */
     --selected: #161B21;
     --selected-foreground: #FFFFFF;
     color-scheme: light;
@@ -124,6 +126,7 @@
     --review: #E0A944;
     --suspect: #6AA5E0;
     --live: #4CB782;
+    --chart-series: #00A9B1; /* validated: dataviz checks, dark surface */
     --selected: #D9DEE4;
     --selected-foreground: #121519;
     color-scheme: dark;

@@ -80,3 +80,95 @@ export const saveMark = (key: string, mark: Mark | null) =>
   })
 
 export const fetchAppInfo = () => request<{ streamlit_url: string }>('/api/app')
+
+// ---- Details tab (mirrors ui_collector._render_details) ----
+
+export type BlockKind = 'caption' | 'text' | 'warning' | 'info' | 'heading'
+export interface Block {
+  kind: BlockKind
+  text: string
+}
+export type Cell = string | number | boolean | null
+export interface Table {
+  columns: string[]
+  rows: Cell[][]
+}
+export interface Metric {
+  label: string
+  value: number | string
+}
+
+export interface DetailsOk {
+  state: 'ok'
+  revision: string
+  guide: string
+  captions: string[]
+  metrics: Metric[]
+  notices: Block[]
+  review_summary: { metrics: Metric[]; captions: string[] }
+  identity_warning: string | null
+  connections: Table & {
+    total: number
+    more: string | null
+    empty: string
+    groups: { group: number; label: string }[]
+    timeline_missing: string | null
+  }
+  attempts: (Table & { title: string; notices: Block[]; empty: string }) | null
+  dns: {
+    title: string
+    missing?: string
+    empty_window?: string
+    metrics?: Metric[]
+    captions?: string[]
+    notices_before?: Block[]
+    notices?: Block[]
+    observations_label?: string
+    columns?: string[]
+    rows?: Cell[][]
+    total?: number
+    empty?: string
+    more?: string | null
+    footer?: string
+    investigation?: {
+      title: string
+      missing: string | null
+      devices: { value: string; label: string }[]
+      domains: { group: number; device: string; target: string }[]
+    } | null
+  }
+  downloads: {
+    full: { generated_at: string; caption: string; label: string } | null
+    snapshot: { label: string; file: string }
+    caption: string
+  }
+}
+export type DetailsResponse = DetailsOk | { state: 'not_configured' | 'no_snapshot' | 'unreadable' }
+
+export interface DetailsOptions {
+  local_ips: boolean
+  reviews_only: boolean
+  include_expected: boolean
+  dns_observations: boolean
+}
+
+export interface Timeline {
+  revision: string
+  group: number
+  guidance: Block[]
+  notices: Block[]
+  chart?: { kind: 'line' | 'bar'; x_title: string; y_title: string; points: { t: string; v: number }[] }
+  table?: Table
+  footer?: string
+}
+
+const flags = (options: Record<string, boolean>) =>
+  Object.entries(options)
+    .map(([name, value]) => `${name}=${value}`)
+    .join('&')
+
+export const fetchDetails = (lang: Language, options: DetailsOptions) =>
+  request<DetailsResponse>(`/api/details?lang=${lang}&${flags({ ...options })}`)
+
+export const fetchTimeline = (kind: 'connection' | 'dns', lang: Language, group: number, localIps: boolean) =>
+  request<Timeline>(`/api/details/${kind}-timeline?lang=${lang}&group=${group}&local_ips=${localIps}`)

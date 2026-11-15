@@ -46,6 +46,19 @@ UI_STRINGS = (
     "Configure a local collector to show automatically collected connections.",
     "No collector snapshot yet. Start the local collector.",
     "Collector snapshot could not be read. Check private permissions and supported schema.",
+    # Details tab
+    "Details",
+    "What does this page do?",
+    "Show observed endpoint IPs locally; downloads keep aliases",
+    "Show only connection reviews",
+    "Include declared expected activity",
+    "Connection investigation",
+    "Select a connection group",
+    "Select an observed device",
+    "Select a queried domain",
+    "Yes",
+    "No",
+    "Behavior score (ML)",
 )
 
 

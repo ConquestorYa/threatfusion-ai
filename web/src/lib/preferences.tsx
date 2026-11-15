@@ -44,6 +44,8 @@ const CHROME = {
     openInStreamlit: 'Open in Streamlit',
     streamlitScreens: 'Analyze telemetry, Experimental ML, Model evaluation and Analysis history are in the Streamlit workspace.',
     nav: 'Screens',
+    table: 'table',
+    mlInStreamlit: 'The experimental ML score column for DNS names is shown in Streamlit (Open in Streamlit → Collected connections).',
   },
   tr: {
     language: 'Dil',
@@ -67,6 +69,8 @@ const CHROME = {
     openInStreamlit: "Streamlit'te aç",
     streamlitScreens: "Telemetri analizi, Deneysel ML, Model değerlendirme ve Analiz geçmişi Streamlit çalışma alanında.",
     nav: 'Ekranlar',
+    table: 'tablo',
+    mlInStreamlit: "DNS adları için deneysel ML puanı sütunu Streamlit'te gösterilir (Streamlit'te aç → Toplanan bağlantılar).",
   },
 } satisfies Record<Language, Record<string, string>>
 

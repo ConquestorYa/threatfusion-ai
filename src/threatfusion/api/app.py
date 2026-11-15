@@ -18,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..request_guard import LOOPBACK_HOSTNAMES, host_header_name, is_allowed_host
+from . import details as details_module
 from .i18n import Language, ui_strings
 from .review import Mark, UnknownItem, review_response, set_mark
 from .settings import ApiSettings, resolve_settings
@@ -72,6 +73,10 @@ def create_app(
         if not is_allowed_host(request.headers.get("host"), environment):
             return JSONResponse({"detail": "Only requests addressed to 127.0.0.1 or localhost are accepted."},
                                 status_code=403)
+        if (request.url.path.startswith("/api/details/download/")
+                and request.headers.get("sec-fetch-site", "same-origin") not in {"same-origin", "none"}):
+            # Downloads carry sensitive telemetry: same-origin navigation only.
+            return JSONResponse({"detail": "Cross-site request refused."}, status_code=403)
         if request.method not in SAFE_METHODS:
             content_type = request.headers.get("content-type", "").split(";")[0].strip().lower()
             if (not _origin_allowed(request.headers.get("origin"), environment)
@@ -122,6 +127,54 @@ def create_app(
         except (OSError, ValueError, TypeError, KeyError):
             raise HTTPException(409, "Could not save. Check the folder permissions.") from None
         return Response(status_code=204)
+
+    @app.get("/api/details")
+    def details(lang: Language = Query("en"), local_ips: bool = True, reviews_only: bool = True,
+                include_expected: bool = False, dns_observations: bool = False,
+                resolved: ApiSettings = Depends(settings)) -> dict:
+        return details_module.details_response(resolved, lang, local_ips=local_ips, reviews_only=reviews_only,
+                                               include_expected=include_expected, dns_observations=dns_observations)
+
+    def _timeline(builder, resolved: ApiSettings, lang: Language, group: int, local_ips: bool) -> dict:
+        try:
+            return builder(resolved, lang, group, local_ips=local_ips)
+        except (details_module.NotAvailable, FileNotFoundError):
+            raise HTTPException(404, "This group is not in the current snapshot. Refresh and retry.") from None
+        except (OSError, ValueError, TypeError, AttributeError, KeyError):
+            raise HTTPException(409, "Collector snapshot could not be read.") from None
+
+    @app.get("/api/details/connection-timeline")
+    def connection_timeline(group: int = Query(ge=0), lang: Language = Query("en"), local_ips: bool = True,
+                            resolved: ApiSettings = Depends(settings)) -> dict:
+        return _timeline(details_module.connection_timeline, resolved, lang, group, local_ips)
+
+    @app.get("/api/details/dns-timeline")
+    def dns_timeline(group: int = Query(ge=0), lang: Language = Query("en"), local_ips: bool = True,
+                     resolved: ApiSettings = Depends(settings)) -> dict:
+        return _timeline(details_module.dns_timeline, resolved, lang, group, local_ips)
+
+    @app.get("/api/details/download/snapshot")
+    def download_snapshot(resolved: ApiSettings = Depends(settings)) -> Response:
+        try:
+            body, name = details_module.snapshot_download(resolved)
+        except (details_module.NotAvailable, FileNotFoundError):
+            raise HTTPException(404, "No collector snapshot yet.") from None
+        except (OSError, ValueError, TypeError, KeyError):
+            raise HTTPException(409, "Collector snapshot could not be read.") from None
+        return Response(body, media_type="application/json",
+                        headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+    @app.get("/api/details/download/full")
+    def download_full(resolved: ApiSettings = Depends(settings)) -> Response:
+        try:
+            body = details_module.full_download(resolved)
+        except (details_module.NotAvailable, FileNotFoundError):
+            raise HTTPException(404, "No full report for this snapshot.") from None
+        except (OSError, ValueError, TypeError, KeyError):
+            raise HTTPException(409, "Full report changed or is unavailable. Refresh this page and retry; "
+                                     "no unverified archive is served.") from None
+        return Response(body, media_type="application/gzip", headers={
+            "Content-Disposition": 'attachment; filename="threatfusion_collected_connections.full.json.gz"'})
 
     if static_dir is not None and (static_dir / "index.html").is_file():
         app.mount("/", StaticFiles(directory=static_dir, html=True), name="web")

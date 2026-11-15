@@ -2,6 +2,27 @@
 
 Newest section first. Status date: 2026-11-15.
 
+## Details + timelines in the React workspace (2026-11-15)
+
+- `GET /api/details` mirrors `ui_collector._render_details` block by block
+  (guide, metrics, scan/coverage notices, review summary, the three
+  checkboxes with Streamlit defaults, connection table, connection
+  investigation, TCP attempts, collected DNS with device/domain
+  investigation, downloads). `/api/details/{connection,dns}-timeline` mirror
+  the timeline renderers and review guidance (`connection_steps`). Downloads
+  return the same bytes as Streamlit (snapshot = aliases; full gzip only for
+  bounded snapshots, verified by `read_archive`) and refuse cross-site fetches.
+- Not mirrored on purpose: the DNS table's "Behavior score (ML)" column; the
+  experimental model stays in Streamlit and its scoring also trains. The page
+  says where to find it.
+- Charts: one SVG component, single validated series colour (`--chart-series`,
+  dataviz checks pass on both surfaces), UTC axis `dd.mm HH:MM`, crosshair and
+  tooltip on hover and arrow keys; the bucket table is the table view.
+- Parity test renders the real Streamlit tab with AppTest and compares the
+  connection, timeline, attempt and DNS tables with the API. 7 API tests,
+  11 Vitest tests, 38 Playwright tests (desktop + 375 px). Self-review fixed
+  tall rows, clipped/colliding axis labels and duplicate accessible names.
+
 ## What to check in design direction A, dark by default (2026-11-15)
 
 - User chose direction A ("Konsol") from three mockups (DEC-102) with: dark
