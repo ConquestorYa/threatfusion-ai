@@ -26,6 +26,7 @@ timestamp,client_ip,query_name,query_type,response_ip
 2026-11-16T08:38:00Z,192.0.2.22,updates.example.test,A,198.51.100.30
 2026-11-16T08:38:10Z,192.0.2.21,malicious.example.test,A,203.0.113.7
 2026-11-16T08:40:00Z,192.0.2.22,updates.example.test,A,198.51.100.30
+2026-11-16T08:40:00Z,192.0.2.24,malicious.example.test,A,203.0.113.7
 2026-11-16T08:42:00Z,192.0.2.22,updates.example.test,A,198.51.100.30
 2026-11-16T08:44:00Z,192.0.2.22,updates.example.test,A,198.51.100.30
 2026-11-16T08:46:00Z,192.0.2.22,updates.example.test,A,198.51.100.30
@@ -64,6 +65,8 @@ timestamp,client_ip,query_name,query_type,response_ip
 2026-11-16T09:10:07Z,192.0.2.23,q63863521x.example.test,A,
 2026-11-16T09:10:16Z,192.0.2.23,q93536673x.example.test,A,
 2026-11-16T09:22:46Z,192.0.2.24,news.example.test,A,198.51.100.10
+2026-11-16T09:30:00Z,192.0.2.24,malicious.example.test,A,203.0.113.7
 2026-11-16T09:34:50Z,192.0.2.21,malicious.example.test,A,203.0.113.7
 2026-11-16T09:39:26Z,192.0.2.24,mail.example.test,A,198.51.100.10
+2026-11-16T10:20:00Z,192.0.2.24,malicious.example.test,A,203.0.113.7
 2026-11-16T10:23:00Z,192.0.2.24,docs.example.test,A,198.51.100.10

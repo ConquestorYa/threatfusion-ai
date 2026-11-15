@@ -9,6 +9,10 @@ Newest section first. Status date: 2026-11-15.
   build)`) was checked in a separate worktree. The checklist now has a
   5-minute scenario (4 steps with what to say), Analyze telemetry in the
   long flow with a Streamlit fallback, and an untested Kali source-run plan.
+- Samples: three more `malicious.example.test` queries from a second device
+  in `dns.log` and `dns_queries.csv` (7 each; analysis code unchanged); both
+  give one Known Threat. e2e checks the red Known Threat bar (count ≥ 1) in
+  Verdict distribution; the scenario shows it.
 - Analyze telemetry (DEC-104): format choice, upload, input quality,
   priority findings, verdict bars, overview, and the tabs Domain findings
   (search/verdict/source filters as `filter_findings`), Device triage (+ DNS

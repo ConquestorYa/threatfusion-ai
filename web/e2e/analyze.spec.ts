@@ -10,6 +10,17 @@ async function openAnalyze(page: Page) {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^(Analyze telemetry|Telemetriyi analiz et)$/)
 }
 
+/** The red Known Threat bar of the verdict distribution, with its count. */
+async function expectKnownThreat(page: Page, label = 'Known Threat') {
+  const row = page.getByRole('region', { name: /^(Verdict distribution|Sonuç dağılımı)$/ }).locator('li[data-verdict="threat"]')
+  await expect(row).toContainText(label)
+  const count = Number(await row.locator('span').last().textContent())
+  expect(count).toBeGreaterThanOrEqual(1)
+  const bar = row.locator('span span')
+  await expect(bar).toHaveClass(/bg-threat/)
+  expect(await bar.evaluate((el) => el.getBoundingClientRect().width)).toBeGreaterThan(0)
+}
+
 async function analyze(page: Page, file: string) {
   await page.locator('input[type=file]').setInputFiles(path.join(SAMPLES, file))
   await page.getByRole('button', { name: /^(Analyze|Analiz et)$/ }).click()
@@ -21,6 +32,8 @@ test('a clean visit to Analyze telemetry is dark and Turkish', async ({ page }) 
   await expect(page.locator('html')).toHaveClass(/dark/)
   await expect(page.getByRole('button', { name: 'Analiz et', exact: true })).toBeDisabled() // nothing chosen yet
   await expect(page.getByText('Dosya yalnızca bu bilgisayardaki yerel sunucuya gider')).toBeVisible()
+  await analyze(page, 'dns.log')
+  await expectKnownThreat(page, 'Bilinen Tehdit') // the red result the demo shows
 })
 
 test.describe('in English', () => {
@@ -40,6 +53,7 @@ test.describe('in English', () => {
     const priority = page.getByRole('region', { name: 'Priority findings' })
     await expect(priority).toContainText('malicious.example.test')
     await expect(priority).toContainText('Known Threat')
+    await expectKnownThreat(page)
     await page.getByRole('tab', { name: 'Device triage' }).click()
     const devices = page.getByRole('region', { name: 'Device triage · table' })
     await expect(devices).toContainText('updates.example.test')
@@ -71,6 +85,7 @@ test.describe('in English', () => {
     await page.getByLabel('Verdict', { exact: true }).selectOption('Known Threat')
     await expect(table.locator('tbody tr')).toHaveCount(1)
     await expect(table).toContainText('malicious.example.test')
+    await expectKnownThreat(page)
     await page.getByLabel('Verdict', { exact: true }).selectOption('All')
     await page.getByLabel('Search domains').fill('updates')
     await expect(table.locator('tbody tr')).toHaveCount(1)

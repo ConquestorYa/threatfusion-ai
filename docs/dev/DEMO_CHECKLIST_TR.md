@@ -57,6 +57,9 @@ Hepsi koyu tema ve Türkçe, yalnızca sentetik veriyle.
 
 **2) Telemetri analizi (~1,5 dk)**
 - [ ] "Dosya seç" → `data/samples/demo/dns.log` → **Analiz et**.
+- [ ] **Kırmızı Bilinen Tehdit sonucunu göster:** Sonuç dağılımında kırmızı
+      "Bilinen Tehdit" çubuğu (1) ve Öncelikli bulgularda kırmızı şeritli
+      `malicious.example.test`.
 - [ ] Söyle: *"Elinizde bir Zeek kaydı ya da DNS CSV'si varsa toplayıcı
       olmadan da yükleyebilirsiniz. `malicious.example.test` tehdit listesinde,
       bilinen tehdit olarak en üstte. Cihaz incelemesi sekmesinde

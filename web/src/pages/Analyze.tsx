@@ -228,7 +228,11 @@ function Result({ data }: { data: AnalysisOverview }) {
           <h2 className="text-base font-semibold tracking-tight">{data.distribution_title}</h2>
           <ul className="space-y-1.5 rounded-sm border bg-card p-3">
             {data.metrics.slice(2).map((metric) => (
-              <li key={metric.label} className="grid grid-cols-[7rem_minmax(0,1fr)_2.5rem] items-center gap-2 text-xs">
+              <li
+                key={metric.label}
+                data-verdict={metric.tone ?? 'low'}
+                className="grid grid-cols-[7rem_minmax(0,1fr)_2.5rem] items-center gap-2 text-xs"
+              >
                 <span className="text-muted-foreground">{metric.label}</span>
                 <span className="h-2 overflow-hidden rounded-sm bg-muted">
                   <span
