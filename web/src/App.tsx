@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { AppShell, type Screen } from '@/components/AppShell'
 import { usePreferences } from '@/lib/preferences'
 import { Details } from '@/pages/Details'
+import { QuickLookup } from '@/pages/QuickLookup'
 import { WhatToCheck } from '@/pages/WhatToCheck'
 
 // Screens in migration order (PRODUCT_PLAN, DEC-101). Screens that stay in
@@ -10,6 +11,7 @@ import { WhatToCheck } from '@/pages/WhatToCheck'
 const SCREENS: Screen[] = [
   { id: 'review', title: 'What to check' },
   { id: 'details', title: 'Details' },
+  { id: 'lookup', title: 'Quick lookup' },
 ]
 
 export default function App() {
@@ -23,6 +25,7 @@ export default function App() {
     <AppShell screens={SCREENS} current={current} onSelect={setCurrent}>
       {current === 'review' && <WhatToCheck />}
       {current === 'details' && <Details />}
+      {current === 'lookup' && <QuickLookup />}
     </AppShell>
   )
 }

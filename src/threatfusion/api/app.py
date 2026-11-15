@@ -19,6 +19,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from ..request_guard import LOOPBACK_HOSTNAMES, host_header_name, is_allowed_host
 from . import details as details_module
+from . import lookup as lookup_module
 from .i18n import Language, ui_strings
 from .review import Mark, UnknownItem, review_response, set_mark
 from .settings import ApiSettings, resolve_settings
@@ -29,6 +30,18 @@ CONTENT_SECURITY_POLICY = (
     "img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; "
     "form-action 'none'; frame-ancestors 'none'"
 )
+
+
+class LookupRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    value: str = Field(max_length=4096)  # quick_lookup.MAX_LOOKUP_INPUT_CHARS
+
+
+class DomainAgeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    domain: str = Field(min_length=1, max_length=253)
 
 
 class MarkRequest(BaseModel):
@@ -175,6 +188,27 @@ def create_app(
                                      "no unverified archive is served.") from None
         return Response(body, media_type="application/gzip", headers={
             "Content-Disposition": 'attachment; filename="threatfusion_collected_connections.full.json.gz"'})
+
+    @app.get("/api/lookup/status")
+    def lookup_status(lang: Language = Query("en"), resolved: ApiSettings = Depends(settings)) -> dict:
+        return lookup_module.status(resolved, lang)
+
+    @app.post("/api/lookup")
+    def lookup(body: LookupRequest, lang: Language = Query("en"), resolved: ApiSettings = Depends(settings)) -> dict:
+        try:
+            return lookup_module.lookup(resolved, lang, body.value)
+        except lookup_module.LookupUnavailable:
+            raise HTTPException(409, "The local ML artifact is not ready.") from None
+
+    @app.post("/api/lookup/domain-age")
+    def domain_age(body: DomainAgeRequest, lang: Language = Query("en"),
+                   resolved: ApiSettings = Depends(settings)) -> dict:
+        try:
+            return lookup_module.domain_age(resolved, lang, body.domain)
+        except lookup_module.LookupUnavailable:
+            raise HTTPException(409, "Registry lookups are not available in this mode.") from None
+        except ValueError:
+            raise HTTPException(422, "Site age is not available for this name.") from None
 
     if static_dir is not None and (static_dir / "index.html").is_file():
         app.mount("/", StaticFiles(directory=static_dir, html=True), name="web")

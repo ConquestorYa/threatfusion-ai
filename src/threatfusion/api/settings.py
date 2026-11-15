@@ -1,9 +1,10 @@
-"""Where the API finds the collector snapshot, mirroring the Streamlit workspace."""
+"""Where the API finds its data, mirroring the Streamlit workspace."""
 from __future__ import annotations
 
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 
 
@@ -14,6 +15,21 @@ class ApiSettings:
     collector_available: bool
     state_dir: Path | None
     cti_db_path: Path | None
+    # Quick lookup / Setup: the same runtime values Streamlit reads from AppConfig.
+    public_mode: bool = False
+    cti_only: bool = True
+    model_dir: Path | None = None
+    model_sha256: str | None = None
+    local_root: Path | None = None
+
+
+@lru_cache(maxsize=4)
+def _managed_config(root: Path, mode: str):
+    """``ui_local_settings._mode_config`` without Streamlit's cache."""
+    from ..app_config import load_app_config
+    from ..local_setup import prepare_local_environment
+
+    return load_app_config(prepare_local_environment(root, mode, {}))
 
 
 def resolve_settings(environment: Mapping[str, str] | None = None) -> ApiSettings:
@@ -26,10 +42,15 @@ def resolve_settings(environment: Mapping[str, str] | None = None) -> ApiSetting
     install = environment.get("THREATFUSION_LOCAL_INSTALL_DIR")
     if install is not None and environment.get("THREATFUSION_LOCAL_LOOPBACK") == "1":
         root = validate_root(Path(install))
-        if load_settings(root)["mode"] != "cti-only":
-            return ApiSettings(False, None, None)  # the synthetic demo has no collector
-        return ApiSettings(True, root / "collector", root / "runtime/cti/threatfusion.sqlite")
+        mode = load_settings(root)["mode"]
+        config = _managed_config(root, mode)
+        available = mode == "cti-only"  # the synthetic demo has no collector
+        return ApiSettings(available, root / "collector" if available else None, config.db_path,
+                           public_mode=config.public_mode, cti_only=config.cti_only, model_dir=config.model_dir,
+                           model_sha256=config.model_sha256, local_root=root)
     config = load_app_config(dict(environment))
     if config.public_mode:
-        return ApiSettings(False, None, None)
-    return ApiSettings(True, config.collector_state_dir, config.db_path)
+        return ApiSettings(False, None, config.db_path, public_mode=True, cti_only=config.cti_only,
+                           model_dir=config.model_dir, model_sha256=config.model_sha256)
+    return ApiSettings(True, config.collector_state_dir, config.db_path, public_mode=False,
+                       cti_only=config.cti_only, model_dir=config.model_dir, model_sha256=config.model_sha256)

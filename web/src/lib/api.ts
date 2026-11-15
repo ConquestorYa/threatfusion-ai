@@ -172,3 +172,72 @@ export const fetchDetails = (lang: Language, options: DetailsOptions) =>
 
 export const fetchTimeline = (kind: 'connection' | 'dns', lang: Language, group: number, localIps: boolean) =>
   request<Timeline>(`/api/details/${kind}-timeline?lang=${lang}&group=${group}&local_ips=${localIps}`)
+
+// ---- Quick lookup (mirrors ui_quick_lookup.render_quick_lookup_result) ----
+
+export type Tone = 'safe' | 'review' | 'danger' | 'critical' | 'info' | 'neutral' | 'low'
+export interface Notice {
+  kind: 'warning' | 'info' | 'error' | 'caption'
+  text: string
+}
+export interface LookupStatus {
+  ready: boolean
+  notices: Notice[]
+  label?: string
+  placeholder?: string
+  button?: string
+  caption?: string
+  empty_input?: string
+}
+export interface SignalNode {
+  tone: Tone
+  label: string
+  value: string
+  sub: string
+}
+export interface AgeBlock extends SignalNode {
+  caption: string | null
+}
+export interface LookupResult {
+  error?: string
+  notices: Notice[]
+  banner: { tone: Tone; icon: string; kicker: string; title: string; summary: string; target: string; meta: [string, string][] }
+  overview_title: string
+  ml_card: {
+    tone: Tone
+    level: string
+    subtitle: string
+    score: number
+    kicker: string
+    scale: string[] | null
+    explanation: string
+    note: string
+  } | null
+  console: SignalNode[]
+  console_caption: string
+  reasons_title: string
+  reasons: string[]
+  registry:
+    | { kind: 'owner'; title: string; owner: { label: string; value: string; sub: string } | null; unknown: string }
+    | { kind: 'age'; title: string; domain: string | null; unavailable: string | null; button: string; caption: string | null; result: AgeBlock | null }
+    | null
+  links_title: string
+  links_caption: string
+  links: { name: string; url: string }[]
+  evidence_title: string
+  evidence_state: { tone: Tone; heading: string; copy: string }
+  evidence: Table
+  technical: { title: string; caption: string; metrics: Metric[] }
+  footer: string
+}
+
+const json = (body: unknown): RequestInit => ({
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(body),
+})
+
+export const fetchLookupStatus = (lang: Language) => request<LookupStatus>(`/api/lookup/status?lang=${lang}`)
+export const runLookup = (lang: Language, value: string) => request<LookupResult>(`/api/lookup?lang=${lang}`, json({ value }))
+export const checkDomainAge = (lang: Language, domain: string) =>
+  request<AgeBlock>(`/api/lookup/domain-age?lang=${lang}`, json({ domain }))

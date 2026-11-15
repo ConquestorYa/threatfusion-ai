@@ -51,8 +51,7 @@ test.describe('in English', () => {
   test('connection and DNS timelines with chart tooltips', async ({ page }) => {
     const investigation = page.getByRole('region', { name: 'Connection investigation', exact: true })
     const select = investigation.getByLabel('Select a connection group')
-    const options = await select.locator('option').allTextContents()
-    expect(options.length).toBe(3)
+    await expect(select.locator('option')).toHaveCount(3)
     await select.selectOption({ index: 2 })
     await expect(investigation.getByText('Review guidance')).toBeVisible()
     const chart = investigation.getByRole('img', { name: /Connection starts/ })

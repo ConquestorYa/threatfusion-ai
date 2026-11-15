@@ -59,6 +59,9 @@ UI_STRINGS = (
     "Yes",
     "No",
     "Behavior score (ML)",
+    # Quick lookup
+    "Quick lookup",
+    "Check one URL, domain or IP against your local threat intelligence without visiting it.",
 )
 
 

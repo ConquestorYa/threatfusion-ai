@@ -2,6 +2,27 @@
 
 Newest section first. Status date: 2026-11-15.
 
+## Quick lookup in the React workspace (2026-11-15)
+
+- `GET /api/lookup/status`, `POST /api/lookup` (JSON body, ≤ 4,096 chars,
+  same-origin only) and `POST /api/lookup/domain-age` reuse
+  `analyze_quick_lookup_from_cache` and the `ui_quick_lookup` helpers
+  (`_presentation_for`, `_ml_signal_presentation`, `_reason_text`,
+  `_match_type_label`, `_age_text`). Those helpers translate with `tr`;
+  `api/lookup.in_language` swaps `i18n.current_language` under a lock for one
+  response (a test checks it is restored). Settings now mirror Streamlit's
+  `_mode_config` (CTI-only / public mode / trusted model).
+- Same states as Streamlit: model-not-ready error outside CTI-only, demo-model
+  and empty-cache warnings, HTTP and public-IP notices, owner block for IPs,
+  site age only after the button (one RDAP request for the registrable
+  domain, cached in-process), no registry block or links in public mode.
+- Not mirrored on purpose: "Behavior on this computer (experimental ML)"; the
+  page points to Streamlit.
+- `scripts/demo_review_snapshot.py` now also writes a synthetic CTI cache
+  (one documentation IP, one `.test` name); the e2e server runs CTI-only
+  like a default installation. Tests: 8 API (incl. AppTest parity of verdict,
+  reasons and signal values), 2 Vitest, 12 Playwright cases × 2 viewports.
+
 ## Details + timelines in the React workspace (2026-11-15)
 
 - `GET /api/details` mirrors `ui_collector._render_details` block by block

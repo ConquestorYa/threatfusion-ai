@@ -25,6 +25,9 @@ framing is retired. No release date or tag is set.
 - React workspace: the collector Details tab with connection and DNS
   timelines, the same tables, guidance and downloads as Streamlit (except the
   experimental ML score column, which stays in Streamlit).
+- React workspace: Quick lookup with the same verdict, signals, reasons,
+  network owner, on-request site age, outside links and evidence table as
+  Streamlit (the experimental behavior card stays in Streamlit).
 
 ### Changed
 

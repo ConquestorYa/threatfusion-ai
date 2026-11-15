@@ -154,10 +154,13 @@ def test_missing_unreadable_and_unconfigured_states(state, monkeypatch, tmp_path
 
 
 def test_settings_follow_the_streamlit_collector_rules(tmp_path):
-    assert resolve_settings({"THREATFUSION_PUBLIC_MODE": "1", "THREATFUSION_CTI_ONLY": "1"}) == ApiSettings(False, None, None)
+    public = resolve_settings({"THREATFUSION_PUBLIC_MODE": "1", "THREATFUSION_CTI_ONLY": "1"})
+    assert (public.collector_available, public.state_dir, public.public_mode) == (False, None, True)
     developer = resolve_settings({"THREATFUSION_COLLECTOR_STATE_DIR": str(tmp_path / "state"),
                                   "THREATFUSION_DB_PATH": str(tmp_path / "cti.sqlite")})
-    assert developer == ApiSettings(True, tmp_path / "state", tmp_path / "cti.sqlite")
+    assert (developer.collector_available, developer.state_dir, developer.cti_db_path) == (
+        True, tmp_path / "state", tmp_path / "cti.sqlite")
+    assert developer.public_mode is False and developer.cti_only is False  # ML lookup like Streamlit
     assert resolve_settings({}).state_dir is None
 
 
