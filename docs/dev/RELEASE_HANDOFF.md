@@ -1,6 +1,34 @@
 # Release handoff
 
-Newest section first. Status date: 2026-10-20.
+Newest section first. Status date: 2026-11-15.
+
+## React + FastAPI "What to check" page on a branch (2026-11-15)
+
+- User request (DEC-101): move the UI from Streamlit to FastAPI + React,
+  without touching Streamlit, on a separate branch, starting with
+  "What to check"; servers on 127.0.0.1 only. Plan approved by the user; IP
+  display kept identical to Streamlit (real local IPs on screen).
+- Backend `src/threatfusion/api/`: `GET /api/review?lang=`, `PUT
+  /api/review/marks`, `GET /api/i18n`, `GET /api/health`. Reuses
+  `read_snapshot`, `local_identity_view`, `build_review_items`,
+  `load_labels`/`save_label`, `lookup_links` and the i18n dictionary.
+  Host allowlist, loopback Origin + same-origin + JSON for writes, CSP,
+  no CORS, no docs pages; uvicorn host fixed to 127.0.0.1.
+- Frontend `web/`: counts, the six Streamlit filters, rows with severity
+  rail, three marks, "Why? What to do?" with outside links
+  (`noopener noreferrer`), Known list with "Show again", 10 s refresh,
+  TR/EN and light/dark. Vite dev/preview bind 127.0.0.1 with strict ports.
+- Verification on this branch: Ruff clean; 1,465 Python tests (21 new API
+  tests, one end to end through a real collector snapshot); web typecheck,
+  oxlint (fast-refresh hints only), 5 Vitest tests, build; `pip-audit` and
+  `npm audit` clean; release privacy audit passed. Live check on a synthetic
+  documentation-range snapshot: listener only on `127.0.0.1:8600`, foreign
+  Host → 403, cross-site PUT → 403, marks written to the shared file;
+  screenshots reviewed in light/dark at 1280 and 520 px (headless Edge has
+  a minimum window width, so a true phone width was not captured).
+- Limitations: only the first screen exists; no launcher integration; Node 22
+  required to build `web/dist`; the user's manual check is pending; npm
+  installs hit an npm resolver crash with vitest 5.0.5, so vitest is 5.1.0.
 
 ## Turkish user documentation; uninstall documented (2026-10-20)
 

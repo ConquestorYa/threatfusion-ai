@@ -4,7 +4,17 @@ For the current target product and active work order, start with
 [PRODUCT_PLAN.md](PRODUCT_PLAN.md). This file also preserves dated development
 history; earlier “Next” notes are superseded by that plan's current queue.
 
-## Current checkpoint (2026-10-20)
+## Current checkpoint (2026-11-15)
+
+User request: replace the Streamlit workspace with FastAPI + React (Vite,
+TypeScript, Tailwind, shadcn/ui), Streamlit untouched, on a separate branch,
+first screen "What to check", servers on 127.0.0.1 only (DEC-101). Branch
+`feat/react-workspace` has the loopback API (`python -m threatfusion.api`,
+port 8600) and the React page (`web/`, Vite dev server 127.0.0.1:5173). The
+list, wording and marks are shared with the Streamlit tab. Not merged; the
+user's manual check of the new page is pending.
+
+### Previous checkpoint (2026-10-20)
 
 Linux only (Windows CI and support dropped at the user's request). The
 Experimental ML tab ships "New for this computer" and a behavior model trained

@@ -1156,3 +1156,30 @@ a raw ISO timestamp. Timeline charts now use a language-neutral UTC axis
 (`15.10 20:30`), source names are translated, and the last attempt is shown in
 local time. The indicators may later leave their lists; the screenshots record
 a moment, not a permanent claim.
+
+## DEC-101: React + FastAPI workspace replaces Streamlit screen by screen
+
+**Decision (2026-11-15):** At the user's request the analyst workspace moves
+from Streamlit to a React front end (Vite, TypeScript, Tailwind, shadcn/ui in
+`web/`) served by a FastAPI backend (`src/threatfusion/api/`). The work happens
+on its own branch, one screen at a time, starting with **What to check**;
+Streamlit files are not changed and Streamlit stays the supported interface
+until every screen has moved and the user accepts the new one.
+
+**Rules:** both servers bind `127.0.0.1` only and expose no host option. The
+API reuses the Streamlit code paths (validated snapshot reader, local identity
+view, `build_review_items`, shared i18n dictionary, `review-labels.json`)
+instead of re-implementing evidence logic, so both interfaces show the same
+items and share marks. It rejects non-loopback `Host` headers, rejects writes
+without a loopback `Origin`, same-origin fetch metadata and a JSON body, sends
+no CORS headers and serves no OpenAPI pages. Only keys of the current list can
+be marked. Frontend and Python dependencies are pinned to exact versions
+released at least about two weeks earlier where possible.
+
+**Consequences:** FastAPI adds seven Python packages (`fastapi`, `pydantic`,
+`pydantic-core`, `annotated-types`, `annotated-doc`, `typing-inspection`,
+`opentelemetry-api`) to the runtime lock; `httpx2` is a test-only tool. Node 22
+is needed to build the page; whether installations will ship a pre-built page
+or need Node is decided before `threatfusion-ai start` switches over. The
+product queue (P2 re-measurement onward) is unchanged: a new interface is not
+evidence of usefulness and does not count as the user's acceptance.
