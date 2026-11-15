@@ -18,6 +18,10 @@ Newest section first. Status date: 2026-11-15.
   domain, cached in-process), no registry block or links in public mode.
 - Not mirrored on purpose: "Behavior on this computer (experimental ML)"; the
   page points to Streamlit.
+- User follow-up: review/demo screenshots are taken in Turkish (default
+  language). Doing so exposed a defect: switching language unmounted the
+  What to check rows and closed open explanations; fixed with
+  `keepPreviousData` and an e2e regression test.
 - `scripts/demo_review_snapshot.py` now also writes a synthetic CTI cache
   (one documentation IP, one `.test` name); the e2e server runs CTI-only
   like a default installation. Tests: 8 API (incl. AppTest parity of verdict,

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, Check, ChevronDown, ExternalLink, HelpCircle, Info, RefreshCw } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
@@ -51,6 +51,8 @@ export function WhatToCheck() {
     queryFn: () => fetchReview(lang),
     refetchInterval: REFRESH_MS,
     refetchIntervalInBackground: false,
+    // Keep rows (and their open explanations) on screen while another language loads.
+    placeholderData: keepPreviousData,
     retry: 1,
   })
   const mark = useMutation({

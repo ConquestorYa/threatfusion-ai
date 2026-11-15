@@ -37,5 +37,8 @@
   Python i18n dictionary (`/api/i18n`); only page chrome lives in
   `web/src/lib/preferences.tsx`.
 - Every screen: Vitest + Playwright e2e (desktop and 375 px, clean open is
-  dark, no console errors, no horizontal scroll) and review screenshots with
+  dark and Turkish, no console errors, no horizontal scroll) and review
+  screenshots **in Turkish** (dark, then light) with
   `SCREENSHOTS=1 npm run test:e2e` (written to ignored `.playwright-mcp/`).
+- Switching language keeps the page's data on screen until the new wording
+  arrives (`keepPreviousData`), so open rows and selections survive.

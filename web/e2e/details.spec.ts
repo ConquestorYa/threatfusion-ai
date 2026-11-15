@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 
-import { expectNoHorizontalScroll, reviewScreenshot, watchConsole } from './helpers.ts'
+import { expectNoHorizontalScroll, watchConsole, turkishScreenshots } from './helpers.ts'
 
 async function openDetails(page: Page) {
   await page.getByRole('navigation').getByRole('button', { name: /^(Details|Ayrıntılar)$/ }).click()
@@ -77,18 +77,14 @@ test.describe('in English', () => {
     expect(text).not.toContain('192.0.2.10')
   })
 
-  test('review screenshots: dark then light', async ({ page }, testInfo) => {
+  test('review screenshots in Turkish: dark then light', async ({ page }, testInfo) => {
     const console = watchConsole(page)
     const investigation = page.getByRole('region', { name: 'Connection investigation', exact: true })
     await investigation.getByLabel('Select a connection group').selectOption({ index: 2 })
     await expect(investigation.getByRole('img', { name: /Connection starts/ })).toBeVisible()
     await expect(page.locator('html')).toHaveClass(/dark/)
     await expectNoHorizontalScroll(page)
-    await reviewScreenshot(page, testInfo, 'details-dark')
-    await page.getByRole('button', { name: 'Switch to light theme' }).click()
-    await expectNoHorizontalScroll(page)
-    await reviewScreenshot(page, testInfo, 'details-light')
-    await page.getByRole('button', { name: 'Switch to dark theme' }).click()
+    await turkishScreenshots(page, testInfo, 'details')
     console.expectClean()
   })
 })

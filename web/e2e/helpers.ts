@@ -43,3 +43,19 @@ export async function clearMarks(page: Page) {
     expect(response.status()).toBe(204)
   }
 }
+
+/** Demo screenshots in Turkish (the default language): dark first, then light. */
+export async function turkishScreenshots(page: Page, testInfo: TestInfo, name: string) {
+  await page.getByRole('radio', { name: 'TR' }).click()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'tr')
+  await expect(page.getByRole('button', { name: 'Açık temaya geç' })).toBeVisible()
+  await page.waitForLoadState('networkidle')
+  await expect(page.locator('html')).toHaveClass(/dark/)
+  await expectNoHorizontalScroll(page)
+  await reviewScreenshot(page, testInfo, `${name}-dark`)
+  await page.getByRole('button', { name: 'Açık temaya geç' }).click()
+  await expect(page.locator('html')).not.toHaveClass(/dark/)
+  await expectNoHorizontalScroll(page)
+  await reviewScreenshot(page, testInfo, `${name}-light`)
+  await page.getByRole('button', { name: 'Koyu temaya geç' }).click()
+}

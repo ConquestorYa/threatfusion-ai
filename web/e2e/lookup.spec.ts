@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 
-import { expectNoHorizontalScroll, reviewScreenshot, watchConsole } from './helpers.ts'
+import { expectNoHorizontalScroll, watchConsole, turkishScreenshots } from './helpers.ts'
 
 async function openLookup(page: Page) {
   await page.getByRole('navigation').getByRole('button', { name: /^(Quick lookup|Hızlı sorgu)$/ }).click()
@@ -73,17 +73,14 @@ test.describe('in English', () => {
     await expect(page.getByRole('region', { name: 'Düşük risk' })).toBeVisible()
   })
 
-  test('review screenshots: dark then light', async ({ page }, testInfo) => {
+  test('review screenshots in Turkish: dark then light', async ({ page }, testInfo) => {
     const console = watchConsole(page)
     await check(page, 'https://malicious.example.test/login')
     await expect(page.getByText('Known threat intelligence matched')).toBeVisible()
     await page.getByRole('button', { name: 'Technical domain details' }).click()
     await expect(page.locator('html')).toHaveClass(/dark/)
     await expectNoHorizontalScroll(page)
-    await reviewScreenshot(page, testInfo, 'lookup-dark')
-    await page.getByRole('button', { name: 'Switch to light theme' }).click()
-    await reviewScreenshot(page, testInfo, 'lookup-light')
-    await page.getByRole('button', { name: 'Switch to dark theme' }).click()
+    await turkishScreenshots(page, testInfo, 'lookup')
     console.expectClean()
   })
 })

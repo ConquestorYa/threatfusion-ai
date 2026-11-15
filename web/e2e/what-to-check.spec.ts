@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-import { clearMarks, expectNoHorizontalScroll, reviewScreenshot, watchConsole } from './helpers.ts'
+import { clearMarks, expectNoHorizontalScroll, watchConsole, turkishScreenshots } from './helpers.ts'
 
 const count = (page: import('@playwright/test').Page, label: string) =>
   page.locator('dl dt', { hasText: new RegExp(`^${label}$`) }).locator('xpath=following-sibling::dd[1]')
@@ -85,6 +85,13 @@ test('the explanation opens with safe outside links', async ({ page }) => {
   await expect(link).toHaveAttribute('target', '_blank')
 })
 
+test('switching language keeps an open explanation open', async ({ page }) => {
+  const row = rows(page).filter({ hasText: '198.51.100.20' })
+  await row.getByRole('button', { name: 'Show why and what to do' }).click()
+  await page.getByRole('radio', { name: 'TR' }).click()
+  await expect(rows(page, 'Bakılacaklar').filter({ hasText: '198.51.100.20' })).toContainText('Cihaz bu adrese çok düzenli aralıklarla bağlandı.')
+})
+
 test('Turkish uses the shared dictionary', async ({ page }) => {
   await page.getByRole('radio', { name: 'TR' }).click()
   await expect(page.getByRole('heading', { name: 'Bakılacaklar' })).toBeVisible()
@@ -114,16 +121,12 @@ test('mark buttons show text on desktop and icon plus tooltip on narrow screens'
   }
 })
 
-test('review screenshots: dark then light', async ({ page }, testInfo) => {
+test('review screenshots in Turkish: dark then light', async ({ page }, testInfo) => {
   const console = watchConsole(page)
   await rows(page).filter({ hasText: '203.0.113.5' }).getByRole('button', { name: 'Suspicious' }).click()
   await rows(page).filter({ hasText: '198.51.100.20' }).getByRole('button', { name: 'Show why and what to do' }).click()
   await expect(page.locator('html')).toHaveClass(/dark/)
   await expectNoHorizontalScroll(page)
-  await reviewScreenshot(page, testInfo, 'what-to-check-dark')
-  await page.getByRole('button', { name: 'Switch to light theme' }).click()
-  await expectNoHorizontalScroll(page)
-  await reviewScreenshot(page, testInfo, 'what-to-check-light')
-  await page.getByRole('button', { name: 'Switch to dark theme' }).click()
+  await turkishScreenshots(page, testInfo, 'what-to-check')
   console.expectClean()
 })
