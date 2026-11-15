@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { AppShell, type Screen } from '@/components/AppShell'
 import { fetchAppInfo } from '@/lib/api'
 import { usePreferences } from '@/lib/preferences'
+import { Analyze } from '@/pages/Analyze'
 import { Details } from '@/pages/Details'
 import { QuickLookup } from '@/pages/QuickLookup'
 import { Setup } from '@/pages/Setup'
@@ -15,6 +16,7 @@ const SCREENS: Screen[] = [
   { id: 'review', title: 'What to check' },
   { id: 'details', title: 'Details' },
   { id: 'lookup', title: 'Quick lookup' },
+  { id: 'analyze', title: 'Analyze telemetry' },
 ]
 const SETUP: Screen = { id: 'setup', title: 'Setup & CTI updates' }
 
@@ -34,6 +36,7 @@ export default function App() {
       {current === 'review' && <WhatToCheck />}
       {current === 'details' && <Details />}
       {current === 'lookup' && <QuickLookup />}
+      {current === 'analyze' && <Analyze />}
       {current === 'setup' && <Setup />}
     </AppShell>
   )

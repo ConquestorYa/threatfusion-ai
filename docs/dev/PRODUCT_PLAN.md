@@ -80,7 +80,8 @@ linked documents rather than being copied into this plan.
   UI. Design direction A "Konsol", dark by default (DEC-102). Scope set by
   the user for Monday 2026-11-16: What to check (done), Details + timelines (done),
   Quick lookup (done), Setup & CTI (done; keys are always saved,
-  stopping the app stays in Streamlit, DEC-103); telemetry analysis, Experimental ML, Model
+  stopping the app stays in Streamlit, DEC-103), and on the user's request
+  Analyze telemetry (DEC-104); Experimental ML, Model
   evaluation and history stay in Streamlit behind an "Open in Streamlit"
   link. Launcher switch and Node/packaging decision come later. This
   interface work runs beside the queue below; it does not re-measure P2 or

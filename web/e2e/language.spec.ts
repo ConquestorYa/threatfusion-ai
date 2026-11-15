@@ -56,12 +56,26 @@ test('every screen in Turkish has no English words and no raw ISO times', async 
   found['Hızlı sorgu'] = englishWords(lookup)
   expect(lookup).not.toMatch(/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/)
 
+  await screen(page, 'Telemetriyi analiz et')
+  await page.locator('input[type=file]').setInputFiles(new URL('../../data/samples/demo/dns.log', import.meta.url).pathname)
+  await page.getByRole('button', { name: 'Analiz et', exact: true }).click()
+  await expect(page.getByRole('region', { name: 'Öncelikli bulgular' })).toContainText('malicious.example.test')
+  await page.getByRole('button', { name: /^Girdi kalitesi/ }).click()
+  let analyze = await visibleText(page)
+  for (const tab of ['Cihaz incelemesi', 'Domain incelemesi', 'IOC kanıtı', 'İlişkili etkinlik', 'Dışa aktar ve kaydet']) {
+    await page.getByRole('tab', { name: tab }).click()
+    await page.waitForLoadState('networkidle')
+    analyze += '\n' + (await visibleText(page))
+  }
+  found['Telemetri'] = englishWords(analyze)
+  expect(analyze).not.toMatch(/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/)
+
   await screen(page, 'Kurulum ve CTI güncellemeleri')
   const setup = await visibleText(page)
   found['Kurulum'] = englishWords(setup)
   expect(setup).not.toMatch(/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/)
 
-  expect(found).toEqual({ 'Bakılacaklar': [], 'Ayrıntılar': [], 'Hızlı sorgu': [], 'Kurulum': [] })
+  expect(found).toEqual({ 'Bakılacaklar': [], 'Ayrıntılar': [], 'Hızlı sorgu': [], 'Telemetri': [], 'Kurulum': [] })
 })
 
 test('bucket tables are closed by default; the chart is shown', async ({ page }) => {

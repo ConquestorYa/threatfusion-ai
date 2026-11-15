@@ -84,3 +84,6 @@ data/collector/
 
 # Playwright MCP screenshots/snapshots (local review only)
 .playwright-mcp/
+
+# Synthetic demo telemetry (documentation addresses, .test names)
+!data/samples/demo/*.log

@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from ..i18n import _COLUMN_TR, _VALUE_TR
+from ..i18n import _COLUMN_TR, _TR, _VALUE_TR
 from .i18n import Language, evidence, short_time, translate
 from .settings import ApiSettings
 
@@ -47,11 +47,12 @@ def _table(rows: list[dict], language: Language) -> dict:
 
     def cell(value):
         if language == "tr" and isinstance(value, str):
-            return _VALUE_TR.get(value, value)
+            return _VALUE_TR.get(value, _TR.get(value, value))  # exact matches only; data stays as is
         return value
 
     return {
-        "columns": [_COLUMN_TR.get(column, column) if language == "tr" else column for column in columns],
+        # Column names: the table dictionary first, then the general one.
+        "columns": [_COLUMN_TR.get(column, _TR.get(column, column)) if language == "tr" else column for column in columns],
         "rows": [[cell(row.get(column)) for column in columns] for row in rows],
     }
 
@@ -332,10 +333,16 @@ def connection_timeline(settings: ApiSettings, language: Language, group: int, *
     row = next((row for row in view["findings"] if row.get("Group") == group), None)
     if row is None:
         raise NotAvailable(group)
-    t = lambda text, **values: translate(text, language, **values)  # noqa: E731
     revision = payload["collector"].get("selection_revision", payload["collector"]["updated_at"])
+    return connection_timeline_payload(row, payload.get("timelines", {}), language, revision)
+
+
+def connection_timeline_payload(row: dict, timelines: dict, language: Language, revision: str) -> dict:
+    """Guidance, chart and bucket table for one connection group (shared with uploads)."""
+    t = lambda text, **values: translate(text, language, **values)  # noqa: E731
+    group = row["Group"]
     result = {"revision": revision, "group": group, "guidance": _guidance_connection(row, language), "notices": []}
-    timeline = next((item for item in payload.get("timelines", {}).get("groups", []) if item["group"] == group), None)
+    timeline = next((item for item in timelines.get("groups", []) if item["group"] == group), None)
     if timeline is None:
         result["notices"].append(_block("info", t("No timeline for this group. Timelines cover the first 200 groups, with Review groups first; the full findings remain available.")))
         return result
@@ -370,7 +377,14 @@ def dns_timeline(settings: ApiSettings, language: Language, group: int, *, local
     row = next((row for row in block.get("report", {}).get("findings", []) if row.get("Group") == group), None)
     if row is None:
         raise NotAvailable(group)
+    revision = payload["collector"].get("selection_revision", payload["collector"]["updated_at"])
+    return dns_timeline_payload(row, block.get("report", {}).get("timelines") or {}, language, revision)
+
+
+def dns_timeline_payload(row: dict, payload_timelines: dict, language: Language, revision: str) -> dict:
+    """Guidance, chart and bucket table for one device/domain group (shared with uploads)."""
     t = lambda text, **values: translate(text, language, **values)  # noqa: E731
+    group = row["Group"]
     guidance = [_block("caption", t("Selected query evidence: {evidence}", evidence=evidence(row["Evidence"], language))),
                 _block("heading", t("Review guidance")),
                 _block("caption", t("Original queue priority: {priority}", priority=t(str(row["Queue priority"])))),
@@ -382,9 +396,7 @@ def dns_timeline(settings: ApiSettings, language: Language, group: int, *, local
     if row.get("Coverage limits"):
         guidance.append(_block("caption", t("Evidence limits: {limits}", limits=_joined(row["Coverage limits"], language))))
     guidance.append(_block("caption", t("A DNS query does not prove a connection, download or execution. Device and connection aliases cannot be joined by their numbers.")))
-    revision = payload["collector"].get("selection_revision", payload["collector"]["updated_at"])
     result = {"revision": revision, "group": group, "guidance": guidance, "notices": []}
-    payload_timelines = block.get("report", {}).get("timelines") or {}
     item = next((item for item in payload_timelines.get("groups", []) if item["group"] == group), None)
     if item is None:
         result["notices"].append(_block("info", t("No DNS timeline for this group. At most 200 eligible client/domain groups are charted; unknown clients and IP fallback targets are excluded.")))

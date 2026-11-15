@@ -36,6 +36,10 @@ framing is retired. No release date or tag is set.
   remaining column names, priorities and DNS evidence (also in Streamlit's
   dictionary), pinned first table column and collapsed bucket tables; tests
   that fail on mixed Turkish/English or raw ISO times.
+- React workspace: Analyze telemetry with the same analyzers, tables and
+  exports as Streamlit; raw-byte uploads capped at 100 MB, type- and
+  encoding-checked, analysed in memory only (DEC-104). Synthetic demo
+  samples in `data/samples/demo/`.
 
 ### Changed
 

@@ -62,6 +62,8 @@ UI_STRINGS = (
     # Quick lookup
     "Quick lookup",
     "Check one URL, domain or IP against your local threat intelligence without visiting it.",
+    # Analyze telemetry
+    "Analyze telemetry",
     # Setup & CTI updates
     "Setup & CTI updates",
     "Operating mode, your own API keys and threat-intelligence updates.",
@@ -87,7 +89,8 @@ def short_time(value) -> str:
     from datetime import datetime
 
     try:
-        moment = datetime.fromisoformat(str(value).replace("Z", "+00:00")).astimezone()
+        text = str(value).replace("Z", "+00:00").replace(" UTC", "+00:00")  # also format_timestamp output
+        moment = datetime.fromisoformat(text).astimezone()
     except (TypeError, ValueError):
         return str(value) if value else "—"
     pattern = "%d.%m %H:%M" if moment.year == datetime.now().astimezone().year else "%d.%m.%Y %H:%M"

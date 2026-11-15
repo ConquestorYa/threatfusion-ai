@@ -1219,3 +1219,33 @@ installation directory (Streamlit's "Save keys on this computer"), and
 returned in any response; empty fields remove a key; a malformed key saves
 nothing. "Stop local application" stays in Streamlit until the launcher starts
 the React workspace, because today it stops the Streamlit launcher, not this API.
+
+## DEC-104: Analyze telemetry in the React workspace; upload handling
+
+**Decision (2026-11-15, user):** the demo should run fully in the new UI, so
+"Analyze telemetry" moves too (ML, Model evaluation and history still do not).
+It calls the existing `runtime_analysis` analyzers and `dashboard`/`reporting`
+row and report builders.
+
+**Upload rules:** `POST /api/analyze` takes the raw file bytes
+(`application/octet-stream`) and the file name as a query parameter. That
+content type is the only exception to the JSON-only write rule and only for
+this path: unlike `multipart/form-data` it is not a "simple" CORS type, so a
+cross-site page cannot send it without a preflight, which the API never
+grants; Host, Origin and fetch-metadata checks still apply. The body is read
+with a hard 100 MB cap (Streamlit's limit, also against a false length
+header), the extension must be one Streamlit accepts for the chosen format,
+text formats must be UTF-8. Bytes are analysed in memory only, never written
+to disk or sent anywhere. Like Streamlit's session state, the last result is
+kept in process memory (one at a time, random id) so tabs and downloads can be
+rendered; a new upload replaces it.
+
+**Demo samples:** `data/samples/demo/` holds three synthetic files
+(documentation addresses, `.test` names). At the user's choice the publish
+guard has a narrow exception for `.log`/`.csv` files in exactly that folder;
+`tests/test_api_analyze.py` fails if any other file appears there or if a
+sample contains a non-documentation address or a non-`.test` name.
+
+**Not mirrored:** analysis history and analyst feedback (history-only), the
+verdict and related-activity charts (their values are shown as bars/tables),
+the optional expected-connection JSON in Connection activity.

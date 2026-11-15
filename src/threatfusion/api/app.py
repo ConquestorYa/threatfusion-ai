@@ -18,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..request_guard import LOOPBACK_HOSTNAMES, host_header_name, is_allowed_host
+from . import analyze as analyze_module
 from . import details as details_module
 from . import lookup as lookup_module
 from . import setup as setup_module
@@ -117,15 +118,18 @@ def create_app(
         if not is_allowed_host(request.headers.get("host"), environment):
             return JSONResponse({"detail": "Only requests addressed to 127.0.0.1 or localhost are accepted."},
                                 status_code=403)
-        if (request.url.path.startswith("/api/details/download/")
+        if ("/download/" in request.url.path and request.url.path.startswith("/api/")
                 and request.headers.get("sec-fetch-site", "same-origin") not in {"same-origin", "none"}):
             # Downloads carry sensitive telemetry: same-origin navigation only.
             return JSONResponse({"detail": "Cross-site request refused."}, status_code=403)
         if request.method not in SAFE_METHODS:
             content_type = request.headers.get("content-type", "").split(";")[0].strip().lower()
+            # Uploads send raw bytes; that type is not "simple" either, so a
+            # cross-site page cannot send it without a CORS preflight we never allow.
+            allowed = {"application/json"} | ({"application/octet-stream"} if request.url.path == "/api/analyze" else set())
             if (not _origin_allowed(request.headers.get("origin"), environment)
                     or request.headers.get("sec-fetch-site", "same-origin") not in {"same-origin", "none"}
-                    or content_type != "application/json"):
+                    or content_type not in allowed):
                 return JSONResponse({"detail": "Cross-site request refused."}, status_code=403)
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
@@ -300,6 +304,78 @@ def create_app(
             raise HTTPException(404, "Setup is available in a managed installation in real CTI mode.") from None
         except (OSError, ValueError, TypeError):
             raise HTTPException(409, "Local settings could not be read. Check private file permissions.") from None
+
+    @app.get("/api/analyze/status")
+    def analyze_status(lang: Language = Query("en"), resolved: ApiSettings = Depends(settings)) -> dict:
+        return analyze_module.status(resolved, lang)
+
+    @app.post("/api/analyze")
+    async def analyze_upload(request: Request, format: str = Query(max_length=64), name: str = Query(max_length=255),
+                             lang: Language = Query("en"), resolved: ApiSettings = Depends(settings)) -> dict:
+        from starlette.concurrency import run_in_threadpool
+
+        declared = request.headers.get("content-length")
+        if declared is not None and (not declared.isdigit() or int(declared) > analyze_module.MAX_UPLOAD_BYTES):
+            raise HTTPException(413, analyze_module.translate("Uploaded telemetry exceeds the 100 MB application limit.", lang))
+        body = bytearray()
+        async for chunk in request.stream():  # hard cap even if the length header lies
+            body.extend(chunk)
+            if len(body) > analyze_module.MAX_UPLOAD_BYTES:
+                raise HTTPException(413, analyze_module.translate("Uploaded telemetry exceeds the 100 MB application limit.", lang))
+        try:
+            return await run_in_threadpool(analyze_module.analyze, resolved, lang, format, name, bytes(body))
+        except analyze_module.UploadRejected as error:
+            raise HTTPException(error.status, str(error)) from None
+
+    def _analysis(analysis_id: str):
+        try:
+            return analyze_module.current(analysis_id)
+        except analyze_module.NoAnalysis:
+            raise HTTPException(404, "This analysis is no longer available. Upload the file again.") from None
+
+    @app.get("/api/analyze/{analysis_id}")
+    def analysis_overview(analysis_id: str, lang: Language = Query("en")) -> dict:
+        return analyze_module.overview(_analysis(analysis_id), lang)
+
+    @app.get("/api/analyze/{analysis_id}/domain")
+    def analysis_domain(analysis_id: str, name: str = Query(max_length=1024), lang: Language = Query("en")) -> dict:
+        try:
+            return analyze_module.domain_detail(_analysis(analysis_id), lang, name)
+        except analyze_module.NoAnalysis:
+            raise HTTPException(404, "This domain is not in the analysis.") from None
+
+    @app.get("/api/analyze/{analysis_id}/devices")
+    def analysis_devices(analysis_id: str, lang: Language = Query("en"), include_ips: bool = False,
+                         include_observe: bool = False, resolved: ApiSettings = Depends(settings)) -> dict:
+        return analyze_module.devices(_analysis(analysis_id), lang, include_ips=include_ips,
+                                      include_observe=include_observe, public_mode=resolved.public_mode)
+
+    @app.get("/api/analyze/{analysis_id}/device-timeline")
+    def analysis_device_timeline(analysis_id: str, group: int = Query(ge=0), lang: Language = Query("en")) -> dict:
+        try:
+            return analyze_module.device_timeline(_analysis(analysis_id), lang, group)
+        except analyze_module.NoAnalysis:
+            raise HTTPException(404, "This group is not in the current view. Refresh and retry.") from None
+
+    @app.get("/api/analyze/{analysis_id}/connections")
+    def analysis_connections(analysis_id: str, lang: Language = Query("en"), include_ips: bool = False,
+                             reviews_only: bool = True, resolved: ApiSettings = Depends(settings)) -> dict:
+        return analyze_module.connections(_analysis(analysis_id), lang, include_ips=include_ips,
+                                          reviews_only=reviews_only, public_mode=resolved.public_mode)
+
+    @app.get("/api/analyze/{analysis_id}/connection-timeline")
+    def analysis_connection_timeline(analysis_id: str, group: int = Query(ge=0), lang: Language = Query("en")) -> dict:
+        try:
+            return analyze_module.connection_timeline(_analysis(analysis_id), lang, group)
+        except analyze_module.NoAnalysis:
+            raise HTTPException(404, "This group is not in the current view. Refresh and retry.") from None
+
+    @app.get("/api/analyze/{analysis_id}/download/{kind}")
+    def analysis_download(analysis_id: str, kind: Literal["json", "csv", "devices", "connections"],
+                          include_ips: bool = False, resolved: ApiSettings = Depends(settings)) -> Response:
+        body, filename, media = analyze_module.download(_analysis(analysis_id), kind, include_ips=include_ips,
+                                                        public_mode=resolved.public_mode)
+        return Response(body, media_type=media, headers={"Content-Disposition": f'attachment; filename="{filename}"'})
 
     if static_dir is not None and (static_dir / "index.html").is_file():
         app.mount("/", StaticFiles(directory=static_dir, html=True), name="web")

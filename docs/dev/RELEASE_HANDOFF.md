@@ -2,6 +2,29 @@
 
 Newest section first. Status date: 2026-11-15.
 
+## Analyze telemetry in the React workspace; demo samples (2026-11-15)
+
+- `demo-stable` tag on `6f01e4e` (CI green) before this work.
+- Analyze telemetry (DEC-104): format choice, upload, input quality,
+  priority findings, verdict bars, overview, and the tabs Domain findings
+  (search/verdict/source filters as `filter_findings`), Device triage (+ DNS
+  timeline), Connection activity (+ timeline, attempts), Domain
+  investigation, IOC evidence, Related activity, Export (JSON/CSV, device and
+  connection JSON). Timelines reuse the Details builders.
+- `data/samples/demo/` (`conn.log`, `dns.log`, `dns_queries.csv`): synthetic,
+  documentation addresses and `.test` names; with the demo CTI they show a
+  threat-list match (`malicious.example.test` / `203.0.113.7`), regular
+  repeats (`updates.example.test`, `198.51.100.30`) and failed attempts
+  (`198.51.100.80`, 40 ports).
+- Turkish: more columns and values added to the shared dictionary; table
+  column names now fall back to the general dictionary; evidence/scope cells
+  translated label by label. The native file button (browser language) is
+  replaced by a page-language one. Long fractions shown with 3 decimals.
+- Tests: 9 API (limits, types, UTF-8, cross-site/multipart refused, nothing
+  written, replacement, parity with `assessment_rows`/`build_analysis_report`),
+  language scan extended to analysis output, 8 Playwright cases × 2 viewports
+  uploading the samples, language e2e covering the new screen.
+
 ## Monday demo checklist and launcher (2026-11-15)
 
 - `docs/dev/DEMO_CHECKLIST_TR.md`: preparation, start, a 12-minute flow over

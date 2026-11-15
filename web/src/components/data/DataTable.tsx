@@ -38,6 +38,8 @@ export function DataTable({ table, label, maxHeight = 'max-h-[28rem]' }: { table
     if (value === null || value === '') return '—'
     if (typeof value === 'boolean') return value ? t('Yes') : t('No')
     if (typeof value === 'string' && TIME.test(value)) return shortTime(value, utc[index])
+    // Long fractions (0.16666666) read as 0.167; integers and short values unchanged.
+    if (typeof value === 'number' && !Number.isInteger(value)) return String(Number(value.toFixed(3)))
     return String(value)
   }
   return (

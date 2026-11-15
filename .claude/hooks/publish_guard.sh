@@ -12,7 +12,9 @@ cd "$(dirname "$0")/../.." || exit 0
 private='(^|/)\.env($|\.)|\.(sqlite|sqlite3|db|joblib|pcap|pcapng|cap)$|^data/.+'
 check() {
   local found
-  found=$(grep -E "$private" | grep -v -E '^data/samples/\.gitkeep$' || true)
+  # Narrow exception (user decision DEC-104): synthetic demo samples only; tests
+  # check they hold documentation addresses and .test names only.
+  found=$(grep -E "$private" | grep -v -E '^data/samples/\.gitkeep$|^data/samples/demo/[A-Za-z0-9_.-]+\.(log|csv)$' || true)
   if [[ -n "$found" ]]; then
     echo "Blocked: private/local data would be published ($1):" >&2
     echo "$found" | head -20 >&2

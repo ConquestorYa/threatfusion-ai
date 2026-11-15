@@ -298,3 +298,142 @@ export const saveSchedule = (automatic: boolean, interval_hours: number) =>
 export const startRefresh = (force: boolean) => request<{ started: boolean }>('/api/setup/refresh', json({ force }))
 export const saveKeys = (keys: { threatfox: string; urlhaus: string }) => request<void>('/api/setup/keys', put(keys))
 export const forgetKeys = () => request<void>('/api/setup/keys/forget', json({}))
+
+// ---- Analyze telemetry (mirrors streamlit_app "Analyze telemetry") ----
+
+export interface AnalyzeStatus {
+  ready: boolean
+  notices: Block[]
+  intake?: string
+  format_label?: string
+  formats?: { value: string; label: string; caption: string; required: string; upload: string; types: string[]; help: string }[]
+  requirements_title?: string
+  requirements_note?: string
+  privacy?: string
+  analyze?: string
+  max_bytes?: number
+  too_large?: string
+  empty_title?: string
+  empty_text?: string
+}
+
+export interface AnalysisOverview {
+  id: string
+  file: string
+  input_quality_title: string
+  input_quality: string[]
+  priority_title: string
+  priority_caption: string
+  priority: { domain: string; verdict: string; verdict_label: string; events: number; sources: string; evidence: string }[]
+  priority_more: string | null
+  priority_empty: string
+  distribution_title: string
+  overview_title: string
+  metrics: { label: string; value: number; tone: 'threat' | 'high' | 'review' | 'low' | null }[]
+  metrics_caption: string
+  tabs: Record<'findings' | 'devices' | 'connections' | 'investigation' | 'ioc' | 'related' | 'export', string>
+  findings: Table & {
+    verdicts: string[]
+    sources: string[][]
+    domains: string[]
+    search_label: string
+    search_placeholder: string
+    verdict_label: string
+    source_label: string
+    all: string
+    verdict_options: { value: string; label: string }[]
+    empty_title: string
+    empty_text: string
+  }
+  ioc: {
+    corroboration_title: string
+    corroboration_caption: string
+    corroboration: Table | null
+    matches_title: string
+    matches: Table | null
+    empty: string
+  }
+  related: {
+    notices: Block[]
+    clusters_title?: string
+    clusters?: Table
+    relationships_title?: string
+    relationships?: Table
+    relationships_caption?: string
+  }
+  investigation: { label: string; domains: string[]; empty_title: string; empty_text: string }
+  export: { include_ips_label: string; json: string; csv: string; caption: string }
+}
+
+export interface DomainDetail {
+  title: string
+  domain: string
+  verdict: string
+  verdict_label: string
+  why_title: string
+  why: string[]
+  why_empty: string
+  known_note: string | null
+  primary: { title: string; summary: string; metrics: Metric[]; all_title: string; all: Table } | null
+  no_evidence: string
+  context_title: string
+  context: Metric[]
+  behavior_title: string
+  behavior: string[]
+}
+
+export interface AnalysisDevices extends Table {
+  captions: string[]
+  include_ips_label: string | null
+  include_observe_label: string
+  empty: string
+  footer: string
+  more: string | null
+  investigation: {
+    title: string
+    missing: string | null
+    devices: { value: string; label: string }[]
+    domains: { group: number; device: string; target: string }[]
+  } | null
+  download: string
+  download_caption: string
+}
+
+export interface AnalysisConnections extends Partial<Table> {
+  captions: string[]
+  missing?: string
+  include_ips_label?: string | null
+  reviews_only_label?: string
+  summary?: { metrics: Metric[]; captions: string[] }
+  empty?: string
+  more?: string | null
+  investigation_title?: string
+  select_label?: string
+  groups?: { group: number; label: string }[]
+  attempts?: (Table & { title: string; notices: Block[]; empty: string }) | null
+  download?: string
+  download_caption?: string
+}
+
+export class UploadError extends Error {}
+
+export const fetchAnalyzeStatus = (lang: Language) => request<AnalyzeStatus>(`/api/analyze/status?lang=${lang}`)
+
+export async function uploadTelemetry(lang: Language, format: string, file: File): Promise<AnalysisOverview> {
+  const query = new URLSearchParams({ format, name: file.name, lang })
+  return request<AnalysisOverview>(`/api/analyze?${query}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/octet-stream' },
+    body: file,
+  })
+}
+
+export const fetchAnalysis = (id: string, lang: Language) => request<AnalysisOverview>(`/api/analyze/${id}?lang=${lang}`)
+export const fetchDomainDetail = (id: string, lang: Language, name: string) =>
+  request<DomainDetail>(`/api/analyze/${id}/domain?${new URLSearchParams({ name, lang })}`)
+export const fetchAnalysisDevices = (id: string, lang: Language, includeIps: boolean, includeObserve: boolean) =>
+  request<AnalysisDevices>(`/api/analyze/${id}/devices?lang=${lang}&include_ips=${includeIps}&include_observe=${includeObserve}`)
+export const fetchAnalysisConnections = (id: string, lang: Language, includeIps: boolean, reviewsOnly: boolean) =>
+  request<AnalysisConnections>(`/api/analyze/${id}/connections?lang=${lang}&include_ips=${includeIps}&reviews_only=${reviewsOnly}`)
+export const fetchAnalysisTimeline = (id: string, kind: 'device' | 'connection', lang: Language, group: number) =>
+  request<Timeline>(`/api/analyze/${id}/${kind}-timeline?lang=${lang}&group=${group}`)
