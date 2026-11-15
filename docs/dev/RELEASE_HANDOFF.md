@@ -4,7 +4,11 @@ Newest section first. Status date: 2026-11-15.
 
 ## Analyze telemetry in the React workspace; demo samples (2026-11-15)
 
-- `demo-stable` tag on `6f01e4e` (CI green) before this work.
+- `demo-stable` tag on `6f01e4e` (CI green) before this work. The one-line
+  return (`git switch --detach demo-stable && (cd web && npm ci && npm run
+  build)`) was checked in a separate worktree. The checklist now has a
+  5-minute scenario (4 steps with what to say), Analyze telemetry in the
+  long flow with a Streamlit fallback, and an untested Kali source-run plan.
 - Analyze telemetry (DEC-104): format choice, upload, input quality,
   priority findings, verdict bars, overview, and the tabs Domain findings
   (search/verdict/source filters as `filter_findings`), Device triage (+ DNS

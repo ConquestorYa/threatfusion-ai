@@ -33,5 +33,6 @@ pids+=($!)
 
 echo "React workspace: http://127.0.0.1:$api_port"
 echo "Streamlit:       http://127.0.0.1:$streamlit_port"
+echo "Upload samples (Analyze telemetry): $repo/data/samples/demo/{dns.log,conn.log,dns_queries.csv}"
 echo "Synthetic data only. Ctrl+C stops everything and deletes $work."
 wait
