@@ -1,6 +1,6 @@
 # Product plan and AI continuation guide
 
-Updated: 2026-10-09. Product identity: DEC-090. The latest runtime candidate
+Updated: 2026-11-15. Product identity: DEC-090. The latest runtime candidate
 and verification are recorded in the newest [handoff](RELEASE_HANDOFF.md) section.
 This is the **current product direction and ordered work queue**, not a record
 of future features already delivered. Start here when continuing in a new chat.
@@ -73,6 +73,19 @@ linked documents rather than being copied into this plan.
 
 ## Current checkpoint
 
+- **Interface migration started (2026-11-15, user request, DEC-101):** on
+  branch `feat/react-workspace` a FastAPI backend and a React page
+  (`web/`) show **What to check** from the same code paths as the Streamlit
+  tab, on `127.0.0.1` only. Streamlit is unchanged and remains the supported
+  UI. Design direction A "Konsol", dark by default (DEC-102). Scope set by
+  the user for Monday 2026-11-16: What to check (done), Details + timelines (done),
+  Quick lookup (done), Setup & CTI (done; keys are always saved,
+  stopping the app stays in Streamlit, DEC-103), and on the user's request
+  Analyze telemetry (DEC-104); Experimental ML, Model
+  evaluation and history stay in Streamlit behind an "Open in Streamlit"
+  link. Launcher switch and Node/packaging decision come later. This
+  interface work runs beside the queue below; it does not re-measure P2 or
+  count as acceptance.
 - **P1 first increment (2026-10-07):** predeclared nine-case fault matrix on the
   real collector CLI found and fixed two defects — a CTI lock above the 5 s busy
   timeout stopped collection, and a deep copy of every indicator cost ~430 MiB /

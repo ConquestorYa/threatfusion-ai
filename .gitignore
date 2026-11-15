@@ -81,3 +81,9 @@ expected-connections*.json
 # Private automatically collected telemetry/state/snapshots
 data/collector/
 **/collector-identities.json
+
+# Playwright MCP screenshots/snapshots (local review only)
+.playwright-mcp/
+
+# Synthetic demo telemetry (documentation addresses, .test names)
+!data/samples/demo/*.log

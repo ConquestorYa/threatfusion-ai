@@ -11,7 +11,40 @@ The current unreleased state is an early prototype of a local Zeek/CTI
 investigation tool (DEC-090); the earlier v0.1.0 portfolio-release-candidate
 framing is retired. No release date or tag is set.
 
+### Added
+
+- Loopback FastAPI backend (`python -m threatfusion.api`, 127.0.0.1 only)
+  and a React + TypeScript + Tailwind + shadcn/ui page in `web/` for
+  **What to check** (DEC-101). It shows the same items, wording and marks as
+  the Streamlit tab, which is unchanged. CI builds, lints and tests the page.
+- React workspace design direction A (DEC-102): dark by default without a
+  light flash, IBM Plex type, dense aligned table, text mark buttons on
+  desktop and icon buttons with tooltips on narrow screens, an "Open in
+  Streamlit" link for screens that stay there, Playwright browser tests in CI
+  and `scripts/demo_review_snapshot.py` for a synthetic collector state.
+- React workspace: the collector Details tab with connection and DNS
+  timelines, the same tables, guidance and downloads as Streamlit (except the
+  experimental ML score column, which stays in Streamlit).
+- React workspace: Quick lookup with the same verdict, signals, reasons,
+  network owner, on-request site age, outside links and evidence table as
+  Streamlit (the experimental behavior card stays in Streamlit).
+- React workspace: Setup & CTI updates (mode, API keys saved to the
+  owner-only credentials file or forgotten, manual and automatic CTI updates
+  with progress, source table; DEC-103). Stopping the application stays in
+  Streamlit.
+- React workspace polish: short local times everywhere, Turkish for the
+  remaining column names, priorities and DNS evidence (also in Streamlit's
+  dictionary), pinned first table column and collapsed bucket tables; tests
+  that fail on mixed Turkish/English or raw ISO times.
+- React workspace: Analyze telemetry with the same analyzers, tables and
+  exports as Streamlit; raw-byte uploads capped at 100 MB, type- and
+  encoding-checked, analysed in memory only (DEC-104). Synthetic demo
+  samples in `data/samples/demo/`.
+
 ### Changed
+
+- Dependencies: `fastapi` 0.162.0 (with `pydantic` 2.14.2 and five small
+  dependencies) in the runtime lock; `httpx2` 2.16.0 for API tests.
 
 - Documentation: the real-traffic evidence is the 24-hour measurement on one
   laptop. Statements about a longer real-traffic run were removed; the review

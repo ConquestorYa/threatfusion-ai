@@ -1,6 +1,195 @@
 # Release handoff
 
-Newest section first. Status date: 2026-10-20.
+Newest section first. Status date: 2026-11-15.
+
+## Analyze telemetry in the React workspace; demo samples (2026-11-15)
+
+- `demo-stable` tag on `6f01e4e` (CI green) before this work. The one-line
+  return (`git switch --detach demo-stable && (cd web && npm ci && npm run
+  build)`) was checked in a separate worktree. The checklist now has a
+  5-minute scenario (4 steps with what to say), Analyze telemetry in the
+  long flow with a Streamlit fallback, and an untested Kali source-run plan.
+- Samples: three more `malicious.example.test` queries from a second device
+  in `dns.log` and `dns_queries.csv` (7 each; analysis code unchanged); both
+  give one Known Threat. e2e checks the red Known Threat bar (count ≥ 1) in
+  Verdict distribution; the scenario shows it.
+- `demo-stable` moved (user request) to the final commit of this work after
+  green CI; the return command was re-checked in a separate worktree.
+- Analyze telemetry (DEC-104): format choice, upload, input quality,
+  priority findings, verdict bars, overview, and the tabs Domain findings
+  (search/verdict/source filters as `filter_findings`), Device triage (+ DNS
+  timeline), Connection activity (+ timeline, attempts), Domain
+  investigation, IOC evidence, Related activity, Export (JSON/CSV, device and
+  connection JSON). Timelines reuse the Details builders.
+- `data/samples/demo/` (`conn.log`, `dns.log`, `dns_queries.csv`): synthetic,
+  documentation addresses and `.test` names; with the demo CTI they show a
+  threat-list match (`malicious.example.test` / `203.0.113.7`), regular
+  repeats (`updates.example.test`, `198.51.100.30`) and failed attempts
+  (`198.51.100.80`, 40 ports).
+- Turkish: more columns and values added to the shared dictionary; table
+  column names now fall back to the general dictionary; evidence/scope cells
+  translated label by label. The native file button (browser language) is
+  replaced by a page-language one. Long fractions shown with 3 decimals.
+- Tests: 9 API (limits, types, UTF-8, cross-site/multipart refused, nothing
+  written, replacement, parity with `assessment_rows`/`build_analysis_report`),
+  language scan extended to analysis output, 8 Playwright cases × 2 viewports
+  uploading the samples, language e2e covering the new screen.
+
+## Monday demo checklist and launcher (2026-11-15)
+
+- `docs/dev/DEMO_CHECKLIST_TR.md`: preparation, start, a 12-minute flow over
+  the four React screens, limits to state and troubleshooting. Synthetic data
+  only; the checklist says not to press "Site yaşını kontrol et" or "CTI
+  verilerini şimdi güncelle" (both reach the network) and to enter only fake
+  keys.
+- `scripts/demo_web.sh`: synthetic managed install + live collector (keeps
+  the snapshot fresh, no stale warning) + API + Streamlit on 127.0.0.1;
+  Ctrl+C stops all and deletes the temporary directory. Checked: both
+  listeners loopback-only, `stale: False`, no leftover process or directory.
+
+## Details polish: short local times, no mixed language (2026-11-15)
+
+- Look only, no new features (user request). Times: captions use local
+  `dd.mm HH:MM` (`api.i18n.short_time`); table cells with ISO or
+  "… UTC" times are shown short in the browser (local; UTC-labelled bucket
+  columns stay UTC to match the chart). No raw ISO or microseconds remain.
+- Turkish: added to the shared dictionary (Streamlit benefits too):
+  "NXDOMAIN ratio", "Periodic interval (s)", "Periodicity score",
+  "Stale after" (columns), "Observe", "Investigate", "Sustained periodic
+  DNS" and the semicolon label. Evidence text is translated label by label
+  (DNS table and guidance included; English output unchanged).
+- Tables keep scrolling inside themselves with the first column pinned;
+  bucket tables sit in a closed "Tabloyu göster" section under each chart.
+  Scan time rounded to two decimals; chart axis labels spaced wider.
+- New tests: `tests/test_api_language.py` (all endpoints in Turkish: no
+  English UI words, no raw ISO times in text; verified to fail when a
+  translation is removed) and `web/e2e/language.spec.ts` (visible text of
+  all four screens in Turkish), plus Vitest for time formatting.
+
+## Setup & CTI updates in the React workspace (2026-11-15)
+
+- `GET /api/setup`, `PUT /api/setup/mode`, `PUT /api/setup/schedule`,
+  `POST /api/setup/refresh` mirror `render_local_settings`,
+  `render_refresh_progress` and the CTI source table, reusing
+  `_refresh_summary`, `_next_download`, `_local_time`, `cti_status_rows`,
+  `save_settings` and `start_background_refresh`. `/api/app` now reports
+  `setup_available` (managed installation only) and `first_setup` (Setup
+  opens first until real CTI was downloaded once), as in Streamlit.
+- API keys (user decision DEC-103): `PUT /api/setup/keys` always saves to
+  the owner-only credentials file (empty field removes a key, bad format saves
+  nothing, keys never returned); `POST /api/setup/keys/forget` deletes it.
+  "Stop local application" stays in Streamlit (it stops the Streamlit
+  launcher, not this API); the page links there. Manual updates use the
+  saved keys.
+- `scripts/demo_review_snapshot.py --managed` builds a synthetic managed
+  installation; the e2e server now uses it (exercises the managed settings
+  path). e2e never presses "Update CTI now" (it downloads); the API test
+  replaces `start_background_refresh`. Tests: 6 API, 3 Vitest, 4 Playwright
+  cases × 2 viewports; screenshots in Turkish.
+- Test fix (not a runtime change): `test_real_process_sigterm_releases_lock_and_restart_is_idempotent`
+  sent SIGTERM once `connections.json` appeared, but the collector prints its
+  status after writing that file, so a signal in between left stdout empty.
+  It failed 2/3 runs on this machine (passed 4/4 on `main` by timing). The
+  test now waits for the first status line; same assertions, 5/5 passes.
+
+## Quick lookup in the React workspace (2026-11-15)
+
+- `GET /api/lookup/status`, `POST /api/lookup` (JSON body, ≤ 4,096 chars,
+  same-origin only) and `POST /api/lookup/domain-age` reuse
+  `analyze_quick_lookup_from_cache` and the `ui_quick_lookup` helpers
+  (`_presentation_for`, `_ml_signal_presentation`, `_reason_text`,
+  `_match_type_label`, `_age_text`). Those helpers translate with `tr`;
+  `api/lookup.in_language` swaps `i18n.current_language` under a lock for one
+  response (a test checks it is restored). Settings now mirror Streamlit's
+  `_mode_config` (CTI-only / public mode / trusted model).
+- Same states as Streamlit: model-not-ready error outside CTI-only, demo-model
+  and empty-cache warnings, HTTP and public-IP notices, owner block for IPs,
+  site age only after the button (one RDAP request for the registrable
+  domain, cached in-process), no registry block or links in public mode.
+- Not mirrored on purpose: "Behavior on this computer (experimental ML)"; the
+  page points to Streamlit.
+- User follow-up: review/demo screenshots are taken in Turkish (default
+  language). Doing so exposed a defect: switching language unmounted the
+  What to check rows and closed open explanations; fixed with
+  `keepPreviousData` and an e2e regression test.
+- `scripts/demo_review_snapshot.py` now also writes a synthetic CTI cache
+  (one documentation IP, one `.test` name); the e2e server runs CTI-only
+  like a default installation. Tests: 8 API (incl. AppTest parity of verdict,
+  reasons and signal values), 2 Vitest, 12 Playwright cases × 2 viewports.
+
+## Details + timelines in the React workspace (2026-11-15)
+
+- `GET /api/details` mirrors `ui_collector._render_details` block by block
+  (guide, metrics, scan/coverage notices, review summary, the three
+  checkboxes with Streamlit defaults, connection table, connection
+  investigation, TCP attempts, collected DNS with device/domain
+  investigation, downloads). `/api/details/{connection,dns}-timeline` mirror
+  the timeline renderers and review guidance (`connection_steps`). Downloads
+  return the same bytes as Streamlit (snapshot = aliases; full gzip only for
+  bounded snapshots, verified by `read_archive`) and refuse cross-site fetches.
+- Not mirrored on purpose: the DNS table's "Behavior score (ML)" column; the
+  experimental model stays in Streamlit and its scoring also trains. The page
+  says where to find it.
+- Charts: one SVG component, single validated series colour (`--chart-series`,
+  dataviz checks pass on both surfaces), UTC axis `dd.mm HH:MM`, crosshair and
+  tooltip on hover and arrow keys; the bucket table is the table view.
+- Parity test renders the real Streamlit tab with AppTest and compares the
+  connection, timeline, attempt and DNS tables with the API. 7 API tests,
+  11 Vitest tests, 38 Playwright tests (desktop + 375 px). Self-review fixed
+  tall rows, clipped/colliding axis labels and duplicate accessible names.
+
+## What to check in design direction A, dark by default (2026-11-15)
+
+- User chose direction A ("Konsol") from three mockups (DEC-102) with: dark
+  default even on a light system, light only via the button and remembered,
+  theme applied before first paint, text mark buttons on desktop / icon +
+  tooltip on narrow screens. Scope reduced to four screens for Monday.
+- Tokens in `web/src/index.css`; IBM Plex Sans/Mono self-hosted; theme set by
+  `public/theme-init.js` (CSP-compatible). Fixed-width column template keeps
+  header and rows aligned; rows stack below 1024 px; 44 px touch targets.
+  Header link to Streamlit (`/api/app`, loopback-only URL). Design rules in
+  CLAUDE.md; running both apps in `web/README.md`.
+- New `scripts/demo_review_snapshot.py` (synthetic collector state, one
+  synthetic indicator) feeds Playwright e2e (`web/e2e/`, real API on
+  127.0.0.1:8611). CI web job now runs the browser tests.
+- Verification: see the commit; screenshots (desktop + 375 px, dark then
+  light) were reviewed and a design critique fixed header alignment, time
+  wrapping, count layout and touch targets. All text tokens ≥ 4.99:1.
+- User follow-up: Turkish is the default language (EN by button, remembered;
+  e2e checks a clean visit is Turkish); the "Network owner" column from the
+  A mockup is back ("—" when unknown, owner under the address on narrow
+  screens). CI's first red run (jsdom lacked `ResizeObserver` for the Radix
+  tooltip) was fixed in a separate commit.
+- Limitation: control borders are low-contrast (≈1.3:1); controls are
+  identified by their text/icons. User manual check pending.
+
+## React + FastAPI "What to check" page on a branch (2026-11-15)
+
+- User request (DEC-101): move the UI from Streamlit to FastAPI + React,
+  without touching Streamlit, on a separate branch, starting with
+  "What to check"; servers on 127.0.0.1 only. Plan approved by the user; IP
+  display kept identical to Streamlit (real local IPs on screen).
+- Backend `src/threatfusion/api/`: `GET /api/review?lang=`, `PUT
+  /api/review/marks`, `GET /api/i18n`, `GET /api/health`. Reuses
+  `read_snapshot`, `local_identity_view`, `build_review_items`,
+  `load_labels`/`save_label`, `lookup_links` and the i18n dictionary.
+  Host allowlist, loopback Origin + same-origin + JSON for writes, CSP,
+  no CORS, no docs pages; uvicorn host fixed to 127.0.0.1.
+- Frontend `web/`: counts, the six Streamlit filters, rows with severity
+  rail, three marks, "Why? What to do?" with outside links
+  (`noopener noreferrer`), Known list with "Show again", 10 s refresh,
+  TR/EN and light/dark. Vite dev/preview bind 127.0.0.1 with strict ports.
+- Verification on this branch: Ruff clean; 1,465 Python tests (21 new API
+  tests, one end to end through a real collector snapshot); web typecheck,
+  oxlint (fast-refresh hints only), 5 Vitest tests, build; `pip-audit` and
+  `npm audit` clean; release privacy audit passed. Live check on a synthetic
+  documentation-range snapshot: listener only on `127.0.0.1:8600`, foreign
+  Host → 403, cross-site PUT → 403, marks written to the shared file;
+  screenshots reviewed in light/dark at 1280 and 520 px (headless Edge has
+  a minimum window width, so a true phone width was not captured).
+- Limitations: only the first screen exists; no launcher integration; Node 22
+  required to build `web/dist`; the user's manual check is pending; npm
+  installs hit an npm resolver crash with vitest 5.0.5, so vitest is 5.1.0.
 
 ## Turkish user documentation; uninstall documented (2026-10-20)
 

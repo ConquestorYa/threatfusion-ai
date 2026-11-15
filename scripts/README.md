@@ -26,6 +26,8 @@ supports development, CI or the [evidence records](../docs/README.md#evidence).
 | --- | --- |
 | `generate_demo_dns_csv.py` | Generate a safe local DNS CSV from the CTI cache for UI testing |
 | `analyze_dns.py` | Run the `threatfusion` command-line analysis from a source checkout |
+| `demo_web.sh` | Demo on 127.0.0.1: synthetic managed install, live collector, React workspace (8600) and Streamlit (8501); Ctrl+C stops all ([checklist](../docs/dev/DEMO_CHECKLIST_TR.md)) |
+| `demo_review_snapshot.py` | Write a synthetic private collector state (documentation IPs, `.test` names) for the React page and its browser tests |
 
 ## Retired lexical domain-name model (research record)
 

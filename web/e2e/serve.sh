@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Browser-test server: a fresh synthetic managed installation on every run
+# (documentation addresses, synthetic CTI, CTI-only mode, no network access),
+# served by the real API on loopback only. Used by playwright.config.ts.
+set -euo pipefail
+repo="$(cd "$(dirname "$0")/../.." && pwd)"
+python="$repo/.venv/bin/python"
+[ -x "$python" ] || python="$(command -v python3)"
+root="$(mktemp -d)/install"
+trap 'rm -rf "$(dirname "$root")"' EXIT
+"$python" "$repo/scripts/demo_review_snapshot.py" --managed "$root" >/dev/null
+export THREATFUSION_LOCAL_INSTALL_DIR="$root"
+export THREATFUSION_LOCAL_LOOPBACK=1
+export THREATFUSION_STREAMLIT_URL="http://127.0.0.1:8599"
+cd "$repo"
+"$python" -m threatfusion.api --port "${E2E_PORT:-8611}" --static-dir "$repo/web/dist"

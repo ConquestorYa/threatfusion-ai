@@ -228,6 +228,10 @@ Python 3.12, Streamlit, SQLite, pandas, Altair, Plotly and scikit-learn.
 CI runs lint, tests, a privacy audit of the repository, a container check and
 first-run installs on fresh Debian and Ubuntu. Linux only.
 
+A React + FastAPI workspace is replacing the Streamlit UI screen by screen
+(branch `feat/react-workspace`); [web/README.md](web/README.md) explains how
+to run it next to Streamlit, both on 127.0.0.1 only.
+
 This project is developed with extensive AI assistance (design, code, tests and
 documentation); changes are reviewed and tested before they are merged.
 

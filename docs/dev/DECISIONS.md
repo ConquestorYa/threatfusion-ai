@@ -1156,3 +1156,96 @@ a raw ISO timestamp. Timeline charts now use a language-neutral UTC axis
 (`15.10 20:30`), source names are translated, and the last attempt is shown in
 local time. The indicators may later leave their lists; the screenshots record
 a moment, not a permanent claim.
+
+## DEC-101: React + FastAPI workspace replaces Streamlit screen by screen
+
+**Decision (2026-11-15):** At the user's request the analyst workspace moves
+from Streamlit to a React front end (Vite, TypeScript, Tailwind, shadcn/ui in
+`web/`) served by a FastAPI backend (`src/threatfusion/api/`). The work happens
+on its own branch, one screen at a time, starting with **What to check**;
+Streamlit files are not changed and Streamlit stays the supported interface
+until every screen has moved and the user accepts the new one.
+
+**Rules:** both servers bind `127.0.0.1` only and expose no host option. The
+API reuses the Streamlit code paths (validated snapshot reader, local identity
+view, `build_review_items`, shared i18n dictionary, `review-labels.json`)
+instead of re-implementing evidence logic, so both interfaces show the same
+items and share marks. It rejects non-loopback `Host` headers, rejects writes
+without a loopback `Origin`, same-origin fetch metadata and a JSON body, sends
+no CORS headers and serves no OpenAPI pages. Only keys of the current list can
+be marked. Frontend and Python dependencies are pinned to exact versions
+released at least about two weeks earlier where possible.
+
+**Consequences:** FastAPI adds seven Python packages (`fastapi`, `pydantic`,
+`pydantic-core`, `annotated-types`, `annotated-doc`, `typing-inspection`,
+`opentelemetry-api`) to the runtime lock; `httpx2` is a test-only tool. Node 22
+is needed to build the page; whether installations will ship a pre-built page
+or need Node is decided before `threatfusion-ai start` switches over. The
+product queue (P2 re-measurement onward) is unchanged: a new interface is not
+evidence of usefulness and does not count as the user's acceptance.
+
+## DEC-102: Design direction A "Konsol", dark by default; migration scope
+
+**Decision (2026-11-15):** The user chose direction A ("Konsol": dense SOC
+table, graphite palette, IBM Plex Sans/Mono) out of three presented options,
+with changes: dark is the default theme even when the system is light; light
+only after the theme button, remembered in the browser; the theme is applied
+in `index.html` before the first paint (no light flash); mark buttons show
+text on desktop and become icon buttons with tooltip on narrow screens.
+Follow-up the same day: Turkish is the default language (English by button,
+remembered) and the network owner column stays in the table. The
+rules are in CLAUDE.md ("Design rules") and the tokens in `web/src/index.css`.
+
+**Scope (user, same day; delivery Monday 2026-11-16 evening):** migrate only
+What to check, Details + timelines, Quick lookup and Setup & CTI, in that
+order. Analyze telemetry, Experimental ML, Model evaluation and Analysis
+history stay in Streamlit; the React header links to Streamlit
+(`THREATFUSION_STREAMLIT_URL`, loopback `http://` only) and `web/README.md`
+explains running both. No new screen starts after Monday 12:00.
+
+**Consequences:** the theme script is a same-origin file
+(`public/theme-init.js`) because the CSP forbids inline scripts. Each screen
+ships with Vitest and Playwright e2e tests (desktop and 375 px, clean open is
+dark) and its own commit on PR #185; nothing is merged to `main`.
+
+## DEC-103: React Setup saves API keys; stopping the app stays in Streamlit
+
+**Decision (2026-11-15, user):** Streamlit keeps unsaved API keys only in the
+browser session; the loopback FastAPI has no sessions, so it cannot behave the
+same. The user chose: keys entered in the React Setup screen are always saved
+to the existing owner-only (0600) credentials file inside the private
+installation directory (Streamlit's "Save keys on this computer"), and
+"Forget" deletes that file. No key is held in API process memory, logged or
+returned in any response; empty fields remove a key; a malformed key saves
+nothing. "Stop local application" stays in Streamlit until the launcher starts
+the React workspace, because today it stops the Streamlit launcher, not this API.
+
+## DEC-104: Analyze telemetry in the React workspace; upload handling
+
+**Decision (2026-11-15, user):** the demo should run fully in the new UI, so
+"Analyze telemetry" moves too (ML, Model evaluation and history still do not).
+It calls the existing `runtime_analysis` analyzers and `dashboard`/`reporting`
+row and report builders.
+
+**Upload rules:** `POST /api/analyze` takes the raw file bytes
+(`application/octet-stream`) and the file name as a query parameter. That
+content type is the only exception to the JSON-only write rule and only for
+this path: unlike `multipart/form-data` it is not a "simple" CORS type, so a
+cross-site page cannot send it without a preflight, which the API never
+grants; Host, Origin and fetch-metadata checks still apply. The body is read
+with a hard 100 MB cap (Streamlit's limit, also against a false length
+header), the extension must be one Streamlit accepts for the chosen format,
+text formats must be UTF-8. Bytes are analysed in memory only, never written
+to disk or sent anywhere. Like Streamlit's session state, the last result is
+kept in process memory (one at a time, random id) so tabs and downloads can be
+rendered; a new upload replaces it.
+
+**Demo samples:** `data/samples/demo/` holds three synthetic files
+(documentation addresses, `.test` names). At the user's choice the publish
+guard has a narrow exception for `.log`/`.csv` files in exactly that folder;
+`tests/test_api_analyze.py` fails if any other file appears there or if a
+sample contains a non-documentation address or a non-`.test` name.
+
+**Not mirrored:** analysis history and analyst feedback (history-only), the
+verdict and related-activity charts (their values are shown as bars/tables),
+the optional expected-connection JSON in Connection activity.
