@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/logo.svg" alt="ThreatFusion AI logo" width="96">
+<img src="docs/assets/logo-mono.svg" alt="ThreatFusion AI logo" width="96">
 
 # ThreatFusion AI
 
