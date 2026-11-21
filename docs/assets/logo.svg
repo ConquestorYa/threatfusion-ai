@@ -1,16 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <defs>
-    <linearGradient id="tf-shield" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#22D3EE"/>
-      <stop offset="1" stop-color="#6366F1"/>
-    </linearGradient>
-  </defs>
-  <path d="M64 6 110 22v36c0 32-20 54-46 64C38 112 18 90 18 58V22Z" fill="url(#tf-shield)"/>
-  <g fill="none" stroke="#fff" stroke-width="7.5" stroke-linecap="round">
-    <path d="M40 38c0 26 24 22 24 44"/>
-    <path d="M88 38c0 26-24 22-24 44"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="ThreatFusion AI">
+  <rect x="1" y="1" width="126" height="126" rx="28" fill="#0a0a0a" stroke="#2e2e2e" stroke-width="2"/>
+  <!-- a regular pulse train (beaconing) meets the threat-list match -->
+  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M22 74h14l6-18 8 30 7-22h10" stroke-width="5.5"/>
+    <path d="M67 64h10" stroke-width="5.5"/>
   </g>
-  <circle cx="40" cy="36" r="7.5" fill="#fff"/>
-  <circle cx="88" cy="36" r="7.5" fill="#fff"/>
-  <circle cx="64" cy="84" r="12" fill="#FBBF24" stroke="#fff" stroke-width="5.5"/>
+  <circle cx="92" cy="64" r="15" fill="none" stroke="#fff" stroke-width="5.5"/>
+  <circle cx="92" cy="64" r="5.5" fill="#fff"/>
+  <path d="M92 41v8M92 79v8M69 64h8M107 64h8" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
 </svg>
