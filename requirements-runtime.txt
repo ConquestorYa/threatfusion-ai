@@ -51,7 +51,7 @@ threadpoolctl==3.7.0
 toml==0.10.2
 typing_extensions==4.16.0
 typing-inspection==0.4.4
-tzdata==2026.4
+tzdata==2026.6
 urllib3==2.8.0
 uvicorn==0.53.0
 watchdog==6.0.0
