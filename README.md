@@ -67,34 +67,53 @@ you can decide quickly. Details: [user guide](docs/USER_GUIDE.md#what-gets-flagg
 
 ## Screenshots
 
-The screenshots come from an isolated copy of the app fed with **crafted Zeek
-logs**. The flagged names and IP are real, public indicators from the
-ThreatFox and SGB lists (an AsyncRAT command server, a RemusStealer
-command domain and a phishing domain); no traffic was sent to them, and the
-addresses the malicious names resolve to in the logs are reserved documentation
-addresses.
+The screenshots show the new **React workspace** (dark theme, English; Turkish
+is the default). They come from the built-in demo: **synthetic data only**,
+reserved documentation addresses (`192.0.2.x`, `198.51.100.x`, `203.0.113.x`),
+`.test` names and a synthetic CTI list. No real traffic or real indicators are
+shown.
 
 <p align="center">
-  <img src="docs/screenshots/collected-connections.png" alt="What to check: three threat-list matches, a regular check-in and a failed-attempt pattern, with reasons and marks" width="100%">
+  <img src="docs/screenshots/collected-connections.png" alt="What to check: a threat-list match, regular repeats, a long connection, regular lookups and failed attempts, with reasons and marks; the regular-repeats item is open" width="100%">
 </p>
-<p align="center"><em>Collected connections → What to check: threat-list matches first, then behavior. Each item says why it is listed and what to do.</em></p>
+<p align="center"><em>What to check: threat-list matches first, then behavior. Each row says why it is listed; an open row says what to do and offers outside lookups.</em></p>
 
 <p align="center">
-  <img src="docs/screenshots/connection-investigation.png" alt="Investigation of the AsyncRAT connection group: guidance and connection starts over time" width="100%">
+  <img src="docs/screenshots/connection-investigation.png" alt="Details: collector counts, connection review groups, review guidance and connection starts over time" width="100%">
 </p>
-<p align="center"><em>Investigating a group: a device checking in with a listed command server every minute, over three hours.</em></p>
+<p align="center"><em>Details: the collected connection groups and an investigation of one of them (a device calling the same server every 5 minutes).</em></p>
 
 <p align="center">
-  <img src="docs/screenshots/analyze-telemetry.png" alt="Analyze telemetry: an uploaded Zeek dns.log with two known threats and one review" width="100%">
+  <img src="docs/screenshots/analyze-telemetry.png" alt="Analyze telemetry: an uploaded Zeek dns.log with one known threat, priority findings and the verdict distribution" width="100%">
 </p>
-<p align="center"><em>Analyze telemetry: upload one file (here a Zeek dns.log) for a one-time analysis.</em></p>
+<p align="center"><em>Analyze telemetry: upload one file (here the sample Zeek dns.log) for a one-time analysis.</em></p>
 
 <table>
 <tr>
-<td width="50%"><img src="docs/screenshots/quick-lookup.png" alt="Quick lookup of a ThreatFox command domain"><br><em>Quick lookup: check one URL, domain or IP without visiting it.</em></td>
+<td width="50%"><img src="docs/screenshots/quick-lookup.png" alt="Quick lookup of a synthetic listed domain: known threat"><br><em>Quick lookup: check one URL, domain or IP without visiting it.</em></td>
 <td width="50%"><img src="docs/screenshots/setup.png" alt="Setup and CTI updates page"><br><em>Setup: your own API keys, CTI updates and automatic refresh.</em></td>
 </tr>
 </table>
+
+### New interface (React)
+
+The app is moving from Streamlit to a **React + FastAPI** workspace, screen by
+screen. Moved so far: **What to check**, **Details**, **Quick lookup**,
+**Analyze telemetry** and **Setup & CTI updates**. Experimental ML, Model
+evaluation and Analysis history are still in Streamlit (the header link
+**Open in Streamlit** goes there). Both read the same collector data and share
+the same marks, and both listen on 127.0.0.1 only.
+
+The installer does not ship the React page yet: `threatfusion-ai` still opens
+the Streamlit interface. To try the new one from a source checkout, build the
+page and run the demo (synthetic data):
+
+```bash
+(cd web && npm ci && npm run build)
+scripts/demo_web.sh   # React: http://127.0.0.1:8600 · Streamlit: http://127.0.0.1:8501
+```
+
+Running it on your own collected data, and development: [web/README.md](web/README.md).
 
 ## Install (Linux, one command)
 
@@ -224,13 +243,11 @@ is more useful than these tools has not been measured.
 
 ## Development
 
-Python 3.12, Streamlit, SQLite, pandas, Altair, Plotly and scikit-learn.
-CI runs lint, tests, a privacy audit of the repository, a container check and
-first-run installs on fresh Debian and Ubuntu. Linux only.
-
-A React + FastAPI workspace is replacing the Streamlit UI screen by screen
-(branch `feat/react-workspace`); [web/README.md](web/README.md) explains how
-to run it next to Streamlit, both on 127.0.0.1 only.
+Python 3.12, FastAPI, Streamlit, SQLite, pandas, Altair, Plotly and
+scikit-learn; the new interface uses React 19, TypeScript, Vite and Tailwind CSS
+([web/README.md](web/README.md)). CI runs lint, tests, browser tests of the
+React page, a privacy audit of the repository, a container check and first-run
+installs on fresh Debian and Ubuntu. Linux only.
 
 This project is developed with extensive AI assistance (design, code, tests and
 documentation); changes are reviewed and tested before they are merged.

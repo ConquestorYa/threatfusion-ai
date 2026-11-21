@@ -68,34 +68,52 @@ Ayrıntılar: [kullanım kılavuzu](docs/USER_GUIDE.tr.md#neler-işaretlenir).
 
 ## Ekran görüntüleri
 
-Görüntüler, uygulamanın **elle hazırlanmış Zeek kayıtlarıyla** beslenen
-yalıtılmış bir kopyasından alındı. İşaretlenen adlar ve IP gerçektir:
-ThreatFox ve SGB listelerindeki herkese açık göstergelerdir (bir AsyncRAT
-komuta sunucusu, bir RemusStealer komuta alan adı ve bir oltalama alan adı).
-Bunlara hiçbir trafik gönderilmedi; zararlı adların kayıtlarda çözüldüğü
-adresler, belgeler için ayrılmış adreslerdir.
+Görüntüler yeni **React arayüzünden** alındı (koyu tema, Türkçe). Yerleşik
+demodan gelir: **yalnızca sentetik veri**, belgeler için ayrılmış adresler
+(`192.0.2.x`, `198.51.100.x`, `203.0.113.x`), `.test` adları ve sentetik bir CTI
+listesi. Gerçek trafik ya da gerçek gösterge yoktur.
 
 <p align="center">
-  <img src="docs/screenshots/tr/collected-connections.png" alt="Bakılacaklar: üç tehdit listesi eşleşmesi, düzenli bir haber verme ve bir başarısız deneme deseni; nedenleri ve işaretleriyle" width="100%">
+  <img src="docs/screenshots/tr/collected-connections.png" alt="Bakılacaklar: bir tehdit listesi eşleşmesi, düzenli tekrar, uzun bağlantı, düzenli sorgu ve başarısız denemeler; nedenleri ve işaretleriyle, düzenli tekrar satırı açık" width="100%">
 </p>
-<p align="center"><em>Toplanan bağlantılar → Bakılacaklar: önce tehdit listesi eşleşmeleri, sonra davranış. Her madde neden listede olduğunu ve ne yapılacağını söyler.</em></p>
+<p align="center"><em>Bakılacaklar: önce tehdit listesi eşleşmeleri, sonra davranış. Her satır neden listede olduğunu söyler; açılan satır ne yapılacağını söyler ve dış sorgu düğmelerini gösterir.</em></p>
 
 <p align="center">
-  <img src="docs/screenshots/tr/connection-investigation.png" alt="AsyncRAT bağlantı grubunun incelemesi: rehber ve zamana göre bağlantı başlangıçları" width="100%">
+  <img src="docs/screenshots/tr/connection-investigation.png" alt="Ayrıntılar: toplayıcı sayaçları, bağlantı inceleme grupları, inceleme rehberi ve zamana göre bağlantı başlangıçları" width="100%">
 </p>
-<p align="center"><em>Bir grubu incelemek: listedeki bir komuta sunucusuna üç saat boyunca dakikada bir bağlanan bir cihaz.</em></p>
+<p align="center"><em>Ayrıntılar: toplanan bağlantı grupları ve bunlardan birinin incelemesi (aynı sunucuya 5 dakikada bir bağlanan bir cihaz).</em></p>
 
 <p align="center">
-  <img src="docs/screenshots/tr/analyze-telemetry.png" alt="Telemetriyi analiz et: yüklenen bir Zeek dns.log dosyasında iki bilinen tehdit ve bir inceleme" width="100%">
+  <img src="docs/screenshots/tr/analyze-telemetry.png" alt="Telemetriyi analiz et: yüklenen bir Zeek dns.log dosyasında bir bilinen tehdit, öncelikli bulgular ve sonuç dağılımı" width="100%">
 </p>
-<p align="center"><em>Telemetriyi analiz et: tek seferlik analiz için bir dosya yükle (burada bir Zeek dns.log).</em></p>
+<p align="center"><em>Telemetriyi analiz et: tek seferlik analiz için bir dosya yükle (burada örnek Zeek dns.log).</em></p>
 
 <table>
 <tr>
-<td width="50%"><img src="docs/screenshots/tr/quick-lookup.png" alt="Bir ThreatFox komuta alan adının hızlı sorgusu"><br><em>Hızlı sorgu: tek bir URL, alan adı ya da IP'yi ziyaret etmeden kontrol et.</em></td>
+<td width="50%"><img src="docs/screenshots/tr/quick-lookup.png" alt="Listedeki sentetik bir alan adının hızlı sorgusu: bilinen tehdit"><br><em>Hızlı sorgu: tek bir URL, alan adı ya da IP'yi ziyaret etmeden kontrol et.</em></td>
 <td width="50%"><img src="docs/screenshots/tr/setup.png" alt="Kurulum ve CTI güncellemeleri sayfası"><br><em>Kurulum: kendi API anahtarların, CTI güncellemeleri ve otomatik yenileme.</em></td>
 </tr>
 </table>
+
+### Yeni arayüz (React)
+
+Uygulama, ekran ekran Streamlit'ten **React + FastAPI** arayüzüne taşınıyor.
+Şimdiye kadar taşınanlar: **Bakılacaklar**, **Ayrıntılar**, **Hızlı sorgu**,
+**Telemetriyi analiz et** ve **Kurulum ve CTI güncellemeleri**. Deneysel ML,
+Model değerlendirme ve Analiz geçmişi henüz Streamlit'te (üst menüdeki
+**Streamlit'te aç** bağlantısı oraya götürür). İkisi aynı toplayıcı verisini
+okur, aynı işaretleri paylaşır ve ikisi de yalnızca 127.0.0.1'de dinler.
+
+Kurulum henüz React sayfasını içermiyor: `threatfusion-ai` hâlâ Streamlit
+arayüzünü açar. Yeni arayüzü kaynak koddan denemek için sayfayı derle ve demoyu
+çalıştır (sentetik veri):
+
+```bash
+(cd web && npm ci && npm run build)
+scripts/demo_web.sh   # React: http://127.0.0.1:8600 · Streamlit: http://127.0.0.1:8501
+```
+
+Kendi toplanan verinle çalıştırma ve geliştirme: [web/README.md](web/README.md) (İngilizce).
 
 ## Kurulum (Linux, tek komut)
 
@@ -232,9 +250,11 @@ yerel uygulama. Bu araçlardan daha faydalı olup olmadığı ölçülmedi.
 
 ## Geliştirme
 
-Python 3.12, Streamlit, SQLite, pandas, Altair, Plotly ve scikit-learn. CI; kod
-denetimi, testler, deponun gizlilik denetimi, konteyner kontrolü ve sıfır Debian
-ile Ubuntu'da kurulum testlerini çalıştırır. Yalnızca Linux.
+Python 3.12, FastAPI, Streamlit, SQLite, pandas, Altair, Plotly ve
+scikit-learn; yeni arayüz React 19, TypeScript, Vite ve Tailwind CSS kullanır
+([web/README.md](web/README.md)). CI; kod denetimi, testler, React sayfasının
+tarayıcı testleri, deponun gizlilik denetimi, konteyner kontrolü ve temiz
+kurulumlu Debian ile Ubuntu'da kurulum testlerini çalıştırır. Yalnızca Linux.
 
 Bu proje yoğun yapay zekâ desteğiyle geliştiriliyor (tasarım, kod, test ve
 dokümantasyon); değişiklikler birleştirilmeden önce gözden geçirilir ve test edilir.
