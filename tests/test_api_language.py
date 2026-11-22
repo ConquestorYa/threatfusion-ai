@@ -48,7 +48,37 @@ def turkish_output(tmp_path_factory):
     with pytest.MonkeyPatch.context() as patch:
         # Documentation addresses are never scored; score them so the cards are checked too.
         patch.setattr(ml_behavior, "scorable", lambda responder, port, protocol: bool(responder) and port != 53)
-        return _pages(client)
+        pages = _pages(client)
+    return pages | _history_pages(tmp_path_factory.mktemp("language-history") / "dev")
+
+
+def _history_pages(root):
+    """Analysis history and the history-only Analyze parts (developer configuration with a model)."""
+    from scripts.demo_review_snapshot import main
+
+    assert main(["--history-model", str(root)]) == 0
+    env = {"THREATFUSION_CTI_ONLY": "0", "THREATFUSION_MODEL_DIR": str(root / "models/demo-synthetic"),
+           "THREATFUSION_DB_PATH": str(root / "cti.sqlite"), "THREATFUSION_COLLECTOR_STATE_DIR": str(root / "collector"),
+           "THREATFUSION_EVALUATION_REPORT": str(root / "missing.json")}
+    client = TestClient(create_app(lambda: resolve_settings(env), environment={}), base_url=ORIGIN)
+    samples = Path(__file__).resolve().parents[1] / "data/samples/demo"
+    upload = {**HEADERS, "Content-Type": "application/octet-stream"}
+    pages = {"history-empty": client.get("/api/history", params={"lang": "tr"}).json()}
+    for _ in range(2):  # two runs, so the comparison has a previous run
+        body = client.post("/api/analyze", params={"format": "Auto-detect", "name": "dns.log", "lang": "tr"},
+                           content=(samples / "dns.log").read_bytes(), headers=upload).json()
+        pages["history-save"] = client.post(f"/api/analyze/{body['id']}/save", params={"lang": "tr"}, json={},
+                                            headers=HEADERS).json()
+    domain = body["investigation"]["domains"][0]
+    assert client.put("/api/history/2/feedback", json={"domain": domain, "label": "Benign", "note": "not"},
+                      headers=HEADERS).status_code == 204
+    assert client.put("/api/analyze/suppression", json={"domain": domain, "reason": "güncelleyici"},
+                      headers=HEADERS).status_code == 204
+    pages["history-analyze"] = client.get(f"/api/analyze/{body['id']}", params={"lang": "tr"}).json()
+    pages["history-domain"] = client.get(f"/api/analyze/{body['id']}/domain", params={"lang": "tr", "name": domain}).json()
+    pages["history"] = client.get("/api/history", params={"lang": "tr"}).json()
+    pages["history-evaluation"] = client.get("/api/evaluation", params={"lang": "tr"}).json()
+    return pages
 
 
 def _pages(client):

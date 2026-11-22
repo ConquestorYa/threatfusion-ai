@@ -13,10 +13,11 @@ nothing is written to disk or sent anywhere. Like Streamlit's session state,
 the last result is kept in this process's memory (one at a time) so the tabs
 and downloads can be rendered; a new upload replaces it.
 
-Not mirrored: analysis history (disabled in CTI-only mode, not migrated),
-analyst feedback/suppression (history-only), the verdict and related-activity
-charts (their numbers are shown as tables), and the optional expected-
-connection JSON upload of Connection activity.
+History-only parts (saving aggregate history, previous analyst review,
+local suppressions) come from ``history`` and exist only when
+``history_enabled``, as in Streamlit. Not mirrored: the verdict and
+related-activity charts (their numbers are shown as tables) and the optional
+expected-connection JSON upload of Connection activity.
 """
 from __future__ import annotations
 
@@ -198,10 +199,14 @@ def analyze(settings: ApiSettings, language: Language, telemetry_format: str, na
             detection = None
     except ValueError as error:
         raise UploadRejected(422, t("DNS telemetry could not be analyzed: {error}", error=t(str(error)))) from None
+    from .history import capture_audit
+
     analysis = _Analysis(secrets.token_hex(16), result, diagnostics, detection, artifact, telemetry_format, base)
+    if settings.history_enabled:
+        analysis.extra["audit"] = capture_audit(settings, artifact)
     with _LOCK:
         _CURRENT["last"] = analysis  # replaces the previous result, like a new Streamlit upload
-    return overview(analysis, language)
+    return overview(analysis, language, settings)
 
 
 def _translated_rows(rows: list[dict], language: Language) -> list[dict]:
@@ -218,7 +223,8 @@ def _translated_rows(rows: list[dict], language: Language) -> list[dict]:
     return out
 
 
-def overview(analysis: _Analysis, language: Language) -> dict:
+def overview(analysis: _Analysis, language: Language, settings: ApiSettings | None = None, *,
+             include_suppressed: bool = False) -> dict:
     from ..dashboard import (
         assessment_rows,
         cluster_rows,
@@ -248,12 +254,20 @@ def overview(analysis: _Analysis, language: Language) -> dict:
                          queries=diagnostics.packet_dns_queries, paired=diagnostics.packet_paired_queries,
                          orphan=diagnostics.packet_response_only))
 
+    from .history import policy
+
+    history = settings is not None and settings.history_enabled
+    if history and "audit" in analysis.extra and analysis.extra["audit"] is None:
+        quality.append(t("Analysis completed, but reproducibility metadata could not be captured. Re-run the analysis before saving history."))
+    _feedback, suppressions = policy(settings, [a.domain for a in result.assessments]) if history else ({}, {})
     summary = summarize_runtime_result(result)
+    all_priority = priority_assessment_rows(result)
+    suppressed = sum(row["Domain"] in suppressions for row in all_priority)
     priority = [{"domain": row["Domain"], "verdict": row["Verdict"], "verdict_label": t(row["Verdict"]),
                  "events": row.get("DNS events", 0),
                  "sources": str(row.get("Known CTI sources") or t("No cached CTI match")),
                  "evidence": evidence(row.get("Evidence"), language) if row.get("Evidence") else t("No strong signal summary")}
-                for row in priority_assessment_rows(result)]
+                for row in all_priority if include_suppressed or row["Domain"] not in suppressions]
     rows = assessment_rows(result)
     corroboration, matches = ioc_corroboration_rows(result), match_rows(result)
     try:
@@ -286,7 +300,9 @@ def overview(analysis: _Analysis, language: Language) -> dict:
         "priority": priority[:5],
         "priority_more": t("{count} additional priority finding(s) are available in Domain findings.", count=len(priority) - 5)
         if len(priority) > 5 else None,
-        "priority_empty": t("No Known Threat, High Risk, or Review findings."),
+        "priority_empty": t("All current priority findings are locally suppressed. Enable the checkbox above to include them.")
+        if all_priority and suppressed and not priority else t("No Known Threat, High Risk, or Review findings."),
+        "suppressed_label": t("Include {count} locally suppressed finding(s)", count=suppressed) if suppressed else None,
         "distribution_title": t("Verdict distribution"),
         "overview_title": t("Analysis overview"),
         "metrics": [
@@ -326,12 +342,13 @@ def overview(analysis: _Analysis, language: Language) -> dict:
             "include_ips_label": t("Include literal IP targets in aggregate exports"),
             "json": t("Download JSON report"), "csv": t("Download CSV findings"),
             "caption": t("Exports contain aggregate/per-domain findings only. Raw DNS rows, client IP values, and response IP values are not included."),
+            "save": t("Save aggregate analysis history") if history else None,
         },
     }
 
 
-def domain_detail(analysis: _Analysis, language: Language, domain: str) -> dict:
-    """``ui_investigation._show_domain_detail`` without the history-only analyst policy."""
+def domain_detail(analysis: _Analysis, language: Language, domain: str, settings: ApiSettings | None = None) -> dict:
+    """``ui_investigation._show_domain_detail``; the analyst policy only when history is enabled."""
     from ..dashboard import assessment_detail, domain_match_rows
 
     t = lambda text, **values: translate(text, language, **values)  # noqa: E731
@@ -359,8 +376,11 @@ def domain_detail(analysis: _Analysis, language: Language, domain: str) -> dict:
             "all_title": t("Show all IOC evidence ({count})", count=len(evidence_rows)),
             "all": _table(_translated_rows(evidence_rows, language), language),
         }
+    from .history import domain_policy
+
     codes = ", ".join(f"{code}:{count}" for code, count in detail["response_code_counts"])
     return {
+        "policy": domain_policy(settings, detail["domain"], language) if settings is not None else None,
         "title": t("Domain investigation"),
         "domain": detail["domain"],
         "verdict": detail["verdict"],

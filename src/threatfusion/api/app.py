@@ -22,6 +22,7 @@ from . import analyze as analyze_module
 from . import behavior as behavior_module
 from . import details as details_module
 from . import evaluation as evaluation_module
+from . import history as history_module
 from . import lookup as lookup_module
 from . import setup as setup_module
 from .i18n import Language, ui_strings
@@ -76,6 +77,53 @@ class RefreshRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     force: bool = False
+
+
+FeedbackLabel = Literal["Confirmed Threat", "Benign", "Uncertain"]
+
+
+class FeedbackRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    domain: str = Field(min_length=1, max_length=1024)
+    label: FeedbackLabel
+    note: str = Field(default="", max_length=500)
+
+
+class BulkFeedbackRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    domains: list[str] = Field(min_length=1, max_length=10_000)
+    label: FeedbackLabel
+    note: str = Field(default="", max_length=500)
+    confirm: Literal[True]
+
+
+class ConfirmRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    confirm: Literal[True]
+
+
+class RetentionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    keep_latest: int = Field(ge=1, le=1000)
+    confirm: Literal[True]
+
+
+class SuppressionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    domain: str = Field(min_length=1, max_length=1024)
+    reason: str = Field(max_length=300)
+    expiry_days: int = Field(default=0, ge=0, le=3650)
+
+
+class DomainRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    domain: str = Field(min_length=1, max_length=1024)
 
 
 class MarkRequest(BaseModel):
@@ -166,7 +214,8 @@ def create_app(
         # Same screen rules as Streamlit: Setup only for a managed installation,
         # and it opens first until real CTI has been downloaded once.
         return {"streamlit_url": streamlit_url(environment), "setup_available": root is not None,
-                "first_setup": first, "evaluation_available": evaluation_module.available(resolved)}
+                "first_setup": first, "evaluation_available": evaluation_module.available(resolved),
+                "history_available": resolved.history_enabled}
 
     @app.get("/api/i18n")
     def strings(lang: Literal["en", "tr"] = "en") -> dict:
@@ -354,15 +403,69 @@ def create_app(
             raise HTTPException(404, "This analysis is no longer available. Upload the file again.") from None
 
     @app.get("/api/analyze/{analysis_id}")
-    def analysis_overview(analysis_id: str, lang: Language = Query("en")) -> dict:
-        return analyze_module.overview(_analysis(analysis_id), lang)
+    def analysis_overview(analysis_id: str, lang: Language = Query("en"), include_suppressed: bool = False,
+                          resolved: ApiSettings = Depends(settings)) -> dict:
+        return analyze_module.overview(_analysis(analysis_id), lang, resolved, include_suppressed=include_suppressed)
 
     @app.get("/api/analyze/{analysis_id}/domain")
-    def analysis_domain(analysis_id: str, name: str = Query(max_length=1024), lang: Language = Query("en")) -> dict:
+    def analysis_domain(analysis_id: str, name: str = Query(max_length=1024), lang: Language = Query("en"),
+                        resolved: ApiSettings = Depends(settings)) -> dict:
         try:
-            return analyze_module.domain_detail(_analysis(analysis_id), lang, name)
+            return analyze_module.domain_detail(_analysis(analysis_id), lang, name, resolved)
         except analyze_module.NoAnalysis:
             raise HTTPException(404, "This domain is not in the analysis.") from None
+
+    def _history(action):
+        try:
+            return action()
+        except history_module.HistoryDisabled:
+            raise HTTPException(404, "Analysis history is disabled in this mode.") from None
+        except history_module.UnknownRun:
+            raise HTTPException(404, "The selected saved run no longer exists.") from None
+        except (TypeError, ValueError) as error:
+            raise HTTPException(422, str(error)) from None
+        except OSError:
+            raise HTTPException(409, "Local settings could not be read. Check private file permissions.") from None
+
+    @app.post("/api/analyze/{analysis_id}/save")
+    def analysis_save(analysis_id: str, _body: EmptyRequest, lang: Language = Query("en"),
+                      resolved: ApiSettings = Depends(settings)) -> dict:
+        analysis = _analysis(analysis_id)
+        return {"message": _history(lambda: history_module.save_analysis(resolved, analysis, lang))}
+
+    @app.put("/api/analyze/suppression", status_code=204)
+    def analysis_suppress(body: SuppressionRequest, resolved: ApiSettings = Depends(settings)) -> Response:
+        _history(lambda: history_module.suppress(resolved, body.domain, body.reason, body.expiry_days))
+        return Response(status_code=204)
+
+    @app.post("/api/analyze/suppression/remove", status_code=204)
+    def analysis_unsuppress(body: DomainRequest, resolved: ApiSettings = Depends(settings)) -> Response:
+        _history(lambda: history_module.unsuppress(resolved, body.domain))
+        return Response(status_code=204)
+
+    @app.get("/api/history")
+    def history(lang: Language = Query("en"), run: int | None = Query(None, ge=1),
+                resolved: ApiSettings = Depends(settings)) -> dict:
+        return history_module.history_response(resolved, lang, run)
+
+    @app.put("/api/history/{run_id}/feedback", status_code=204)
+    def history_feedback(run_id: int, body: FeedbackRequest, resolved: ApiSettings = Depends(settings)) -> Response:
+        _history(lambda: history_module.save_feedback(resolved, run_id, body.domain, body.label, body.note))
+        return Response(status_code=204)
+
+    @app.put("/api/history/{run_id}/feedback/bulk")
+    def history_bulk_feedback(run_id: int, body: BulkFeedbackRequest, resolved: ApiSettings = Depends(settings)) -> dict:
+        return {"count": _history(lambda: history_module.save_bulk_feedback(resolved, run_id, body.domains,
+                                                                             body.label, body.note))}
+
+    @app.post("/api/history/{run_id}/delete")
+    def history_delete(run_id: int, _body: ConfirmRequest, resolved: ApiSettings = Depends(settings)) -> dict:
+        return {"deleted": _history(lambda: history_module.delete_run(resolved, run_id))}
+
+    @app.post("/api/history/retention")
+    def history_retention(body: RetentionRequest, lang: Language = Query("en"),
+                          resolved: ApiSettings = Depends(settings)) -> dict:
+        return {"message": _history(lambda: history_module.apply_retention(resolved, body.keep_latest, lang))}
 
     @app.get("/api/analyze/{analysis_id}/devices")
     def analysis_devices(analysis_id: str, lang: Language = Query("en"), include_ips: bool = False,

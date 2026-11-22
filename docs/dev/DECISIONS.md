@@ -1292,3 +1292,28 @@ or scored by this page.
 value instead of ✅/❌ (design rule: no emoji icons); the feature-importance
 and operating-point charts are plain bar charts with the numbers printed and
 the importance table one click away; the training time is a short local time.
+
+## DEC-107: Analysis history in the React workspace
+
+**Decision (2026-11-22):** "Analysis history" moves with Streamlit's rule
+unchanged: it exists only when `AppConfig.history_enabled` (a trusted model,
+not CTI-only, not public; the managed installation keeps it off). The page
+mirrors `ui_history._show_history` (runs, all statistics, reproducibility
+metadata, comparison with the previous run, findings with the same three
+filters, single and bulk analyst review, deletion and retention), and
+Analyze telemetry gets the history-only parts it had in Streamlit: "Save
+aggregate analysis history" (audit metadata captured at analysis time, as
+Streamlit does), previous analyst review, local suppression with
+"Include N locally suppressed finding(s)". All reads and writes go through
+`persistence`; rows through `dashboard` (`src/threatfusion/api/history.py`).
+
+**Rules:** writes follow the existing guard (loopback Origin, same-origin,
+JSON). Deletion, retention and bulk review require `confirm: true` in the
+body (Streamlit's confirmation checkboxes); feedback is accepted only for a
+domain of the selected run and a known label. Only aggregate findings are
+stored, as before.
+
+**Tests:** a second browser-test server (`web/e2e/serve-history.sh`, port
+8612) runs the developer configuration with the synthetic demo domain
+artifact (`demo_review_snapshot.py --history-model`, `demo_only_synthetic`,
+not a measured model) so the page can be exercised end to end.

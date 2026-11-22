@@ -1,4 +1,4 @@
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, Download, FileUp, Lock } from 'lucide-react'
 import { useId, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react'
 
@@ -15,8 +15,12 @@ import {
   fetchAnalysisTimeline,
   fetchAnalyzeStatus,
   fetchDomainDetail,
+  saveAnalysis,
+  suppressDomain,
+  unsuppressDomain,
   uploadTelemetry,
   type AnalysisOverview,
+  type AnalystPolicy,
   type AnalyzeStatus,
 } from '@/lib/api'
 import { usePreferences } from '@/lib/preferences'
@@ -37,9 +41,11 @@ export function Analyze() {
   const { lang, t, chrome } = usePreferences()
   const status = useQuery({ queryKey: ['analyze-status', lang], queryFn: () => fetchAnalyzeStatus(lang) })
   const [analysisId, setAnalysisId] = useState<string | null>(lastAnalysis)
+  // Streamlit: locally suppressed priority findings stay hidden unless this is ticked.
+  const [includeSuppressed, setIncludeSuppressed] = useState(false)
   const overview = useQuery({
-    queryKey: ['analysis', analysisId, lang],
-    queryFn: () => fetchAnalysis(analysisId!, lang),
+    queryKey: ['analysis', analysisId, lang, includeSuppressed],
+    queryFn: () => fetchAnalysis(analysisId!, lang, includeSuppressed),
     enabled: analysisId !== null,
     placeholderData: keepPreviousData,
     retry: false,
@@ -81,7 +87,7 @@ export function Analyze() {
       )}
       {overview.isError && <Notice tone="warn">{overview.error.message}</Notice>}
       {overview.data ? (
-        <Result data={overview.data} />
+        <Result data={overview.data} includeSuppressed={includeSuppressed} onIncludeSuppressed={setIncludeSuppressed} />
       ) : (
         <div className="rounded-sm border border-dashed px-4 py-8 text-center">
           <p className="font-medium">{info.empty_title}</p>
@@ -179,7 +185,15 @@ function Intake({ info, onAnalyzed }: { info: AnalyzeStatus; onAnalyzed: (r: Ana
   )
 }
 
-function Result({ data }: { data: AnalysisOverview }) {
+function Result({
+  data,
+  includeSuppressed,
+  onIncludeSuppressed,
+}: {
+  data: AnalysisOverview
+  includeSuppressed: boolean
+  onIncludeSuppressed: (value: boolean) => void
+}) {
   const max = Math.max(1, ...data.metrics.slice(2).map((metric) => metric.value))
   return (
     <div className="space-y-4">
@@ -201,6 +215,7 @@ function Result({ data }: { data: AnalysisOverview }) {
         <section aria-label={data.priority_title} className="space-y-2">
           <h2 className="text-base font-semibold tracking-tight">{data.priority_title}</h2>
           <p className="text-xs text-muted-foreground">{data.priority_caption}</p>
+          {data.suppressed_label && <Check label={data.suppressed_label} checked={includeSuppressed} onChange={onIncludeSuppressed} />}
           {data.priority.length ? (
             <ul className="divide-y overflow-hidden rounded-sm border bg-card">
               {data.priority.map((row) => (
@@ -514,6 +529,8 @@ function Investigation({ data }: { data: AnalysisOverview }) {
             </div>
             <span className={cn('text-sm font-semibold', d.verdict === 'Known Threat' ? 'text-threat' : 'text-review')}>{d.verdict_label}</span>
           </div>
+          {d.policy?.previous && <Notice tone="info">{d.policy.previous}</Notice>}
+          {d.policy?.suppressed && <Notice tone="warn">{d.policy.suppressed}</Notice>}
           <Part title={d.why_title}>
             {d.why.length ? (
               <ul className="list-disc space-y-0.5 pl-5 text-[13px]">
@@ -559,9 +576,86 @@ function Investigation({ data }: { data: AnalysisOverview }) {
               </CollapsibleContent>
             </Collapsible>
           </Part>
+          {d.policy && <Policy policy={d.policy} domain={d.domain} />}
         </section>
       )}
     </div>
+  )
+}
+
+/** ui_investigation "Local analyst policy": suppress from priority triage, or remove the suppression. */
+function Policy({ policy, domain }: { policy: AnalystPolicy; domain: string }) {
+  const queryClient = useQueryClient()
+  const reasonId = useId()
+  const expiryId = useId()
+  const [reason, setReason] = useState('')
+  const [days, setDays] = useState(0)
+  const [saved, setSaved] = useState(false)
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['analysis'] })
+    queryClient.invalidateQueries({ queryKey: ['analysis-domain'] })
+  }
+  const save = useMutation({
+    mutationFn: () => suppressDomain(domain, reason, days),
+    onSuccess: () => {
+      setSaved(true)
+      setReason('')
+      refresh()
+    },
+  })
+  const remove = useMutation({ mutationFn: () => unsuppressDomain(domain), onSuccess: refresh })
+  return (
+    <Part title={policy.title}>
+      {policy.suppressed ? (
+        <Button variant="outline" size="sm" disabled={remove.isPending} onClick={() => remove.mutate()}>
+          {policy.remove}
+        </Button>
+      ) : (
+        <Collapsible className="rounded-sm border">
+          <CollapsibleTrigger className="group flex min-h-11 w-full items-center gap-2 px-3 py-2 text-left text-[13px] font-medium focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none lg:min-h-0">
+            <ChevronDown aria-hidden className="size-4 transition-transform group-data-[state=open]:rotate-180" />
+            {policy.suppress_title}
+          </CollapsibleTrigger>
+          <CollapsibleContent className="border-t p-3">
+            <form
+              className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_12rem_auto] sm:items-end"
+              onSubmit={(event) => {
+                event.preventDefault()
+                save.mutate()
+              }}
+            >
+              <label htmlFor={reasonId} className="flex flex-col gap-1 text-xs text-muted-foreground">
+                {policy.reason_label}
+                <input
+                  id={reasonId}
+                  value={reason}
+                  maxLength={300}
+                  onChange={(event) => setReason(event.target.value)}
+                  className="h-9 rounded-sm border bg-card px-2 text-[13px] text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                />
+              </label>
+              <label htmlFor={expiryId} className="flex flex-col gap-1 text-xs text-muted-foreground">
+                {policy.expiry_label}
+                <input
+                  id={expiryId}
+                  type="number"
+                  min={0}
+                  max={3650}
+                  value={days}
+                  onChange={(event) => setDays(Math.max(0, Math.min(3650, Number(event.target.value) || 0)))}
+                  className="h-9 rounded-sm border bg-card px-2 text-[13px] text-foreground tabular-nums focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                />
+              </label>
+              <Button type="submit" size="sm" className="h-9" disabled={save.isPending || !reason.trim()}>
+                {policy.save}
+              </Button>
+            </form>
+            {save.isError && <Notice tone="warn">{save.error.message}</Notice>}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+      {saved && !policy.suppressed && <p className="text-xs text-muted-foreground">{policy.saved}</p>}
+    </Part>
   )
 }
 
@@ -633,6 +727,30 @@ function Export({ data }: { data: AnalysisOverview }) {
         <DownloadLink href={`/api/analyze/${data.id}/download/csv?include_ips=${includeIps}`} label={data.export.csv} />
       </div>
       <p className="text-xs text-muted-foreground">{data.export.caption}</p>
+      {data.export.save && <SaveToHistory id={data.id} label={data.export.save} />}
+    </div>
+  )
+}
+
+/** "Save aggregate analysis history" (only when history is enabled, as in Streamlit). */
+function SaveToHistory({ id, label }: { id: string; label: string }) {
+  const { lang } = usePreferences()
+  const queryClient = useQueryClient()
+  const save = useMutation({
+    mutationFn: () => saveAnalysis(id, lang),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['history'] }),
+  })
+  return (
+    <div className="space-y-2 border-t pt-3">
+      <Button size="sm" disabled={save.isPending} onClick={() => save.mutate()}>
+        {label}
+      </Button>
+      {save.data && (
+        <p role="status" className="text-xs text-muted-foreground">
+          {save.data.message}
+        </p>
+      )}
+      {save.isError && <Notice tone="warn">{save.error.message}</Notice>}
     </div>
   )
 }

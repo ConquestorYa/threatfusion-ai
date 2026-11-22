@@ -63,6 +63,8 @@ UI_STRINGS = (
     "Experimental ML",
     # Model evaluation
     "Model evaluation",
+    # Analysis history
+    "Analysis history",
     # Quick lookup
     "Quick lookup",
     "Check one URL, domain or IP against your local threat intelligence without visiting it.",

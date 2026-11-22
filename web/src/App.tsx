@@ -8,6 +8,7 @@ import { Analyze } from '@/pages/Analyze'
 import { Behavior } from '@/pages/Behavior'
 import { Details } from '@/pages/Details'
 import { Evaluation } from '@/pages/Evaluation'
+import { History } from '@/pages/History'
 import { QuickLookup } from '@/pages/QuickLookup'
 import { Setup } from '@/pages/Setup'
 import { WhatToCheck } from '@/pages/WhatToCheck'
@@ -21,6 +22,7 @@ const SCREENS: Screen[] = [
   { id: 'lookup', title: 'Quick lookup' },
   { id: 'analyze', title: 'Analyze telemetry' },
 ]
+const HISTORY: Screen = { id: 'history', title: 'Analysis history' }
 const EVALUATION: Screen = { id: 'evaluation', title: 'Model evaluation' }
 const SETUP: Screen = { id: 'setup', title: 'Setup & CTI updates' }
 
@@ -30,6 +32,7 @@ export default function App() {
   // Same order and visibility rules as the Streamlit navigation.
   const screens = [
     ...SCREENS,
+    ...(app.data?.history_available ? [HISTORY] : []),
     ...(app.data?.evaluation_available ? [EVALUATION] : []),
     ...(app.data?.setup_available ? [SETUP] : []),
   ]
@@ -47,6 +50,7 @@ export default function App() {
       {current === 'behavior' && <Behavior />}
       {current === 'lookup' && <QuickLookup />}
       {current === 'analyze' && <Analyze />}
+      {current === 'history' && <History />}
       {current === 'evaluation' && <Evaluation />}
       {current === 'setup' && <Setup />}
     </AppShell>

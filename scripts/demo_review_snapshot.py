@@ -18,6 +18,11 @@ model (``synthetic-demo``, never trained: it flags steady rhythms) so the
 Experimental ML and Model evaluation screens can be exercised. Its evaluation
 block is the shipped recipe report (``behavior-local-evaluation.json``), not
 a measurement of this synthetic model.
+``--history-model`` (without ``--managed``) adds the synthetic demo domain
+artifact (``demo-synthetic``, ``demo_only_synthetic``) at ``models/demo-synthetic``
+so Analysis history can be exercised in the developer configuration
+(``THREATFUSION_CTI_ONLY=0``, ``THREATFUSION_MODEL_DIR``); it is not a
+measured model either.
     THREATFUSION_COLLECTOR_STATE_DIR=/tmp/tf-demo/collector THREATFUSION_DB_PATH=/tmp/tf-demo/cti.sqlite \
       .venv/bin/python -m threatfusion.api
 """
@@ -90,9 +95,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--managed", action="store_true", help="managed-installation layout")
     parser.add_argument("--behavior-model", action="store_true",
                         help="with --managed: add a synthetic (untrained) behavior model")
+    parser.add_argument("--history-model", action="store_true",
+                        help="without --managed: add the synthetic demo domain artifact for Analysis history")
     args = parser.parse_args(argv)
+    parser_error = None
     if args.behavior_model and not args.managed:
-        parser.error("--behavior-model requires --managed")
+        parser_error = "--behavior-model requires --managed"
+    if args.history_model and args.managed:
+        parser_error = "--history-model is for the developer layout (no --managed)"
+    if parser_error:
+        parser.error(parser_error)
     root = args.root.resolve()
     root.mkdir(mode=0o700, parents=True, exist_ok=False)
     cti = root / ("runtime/cti/threatfusion.sqlite" if args.managed else "cti.sqlite")
@@ -119,6 +131,15 @@ def main(argv: list[str] | None = None) -> int:
             "skipped": ["ThreatFox", "URLhaus"]}))
         if args.behavior_model:
             write_behavior_model(root)
+    if args.history_model:
+        from dataclasses import replace
+
+        from threatfusion.demo_runtime import build_public_demo_model_samples
+        from threatfusion.ml_artifact import train_selected_model_artifact, write_ml_artifact
+
+        artifact = train_selected_model_artifact(build_public_demo_model_samples())
+        artifact = replace(artifact, metadata=replace(artifact.metadata, evaluation_status="demo_only_synthetic"))
+        write_ml_artifact(artifact, root / "models" / "demo-synthetic")
     print(f"state: {root / 'collector'}  review groups: {counts['review_groups']}  dns: {counts['dns_review_groups']}")
     return 0
 

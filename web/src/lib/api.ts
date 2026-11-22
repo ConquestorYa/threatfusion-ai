@@ -85,6 +85,8 @@ export interface AppInfo {
   first_setup: boolean
   /** Same rule as Streamlit: hidden in CTI-only mode without the on-device behavior model. */
   evaluation_available: boolean
+  /** AppConfig.history_enabled: a trusted model, not CTI-only, not public. */
+  history_available: boolean
 }
 export const fetchAppInfo = () => request<AppInfo>('/api/app')
 
@@ -370,7 +372,9 @@ export interface AnalysisOverview {
     relationships_caption?: string
   }
   investigation: { label: string; domains: string[]; empty_title: string; empty_text: string }
-  export: { include_ips_label: string; json: string; csv: string; caption: string }
+  export: { include_ips_label: string; json: string; csv: string; caption: string; save: string | null }
+  /** "Include N locally suppressed finding(s)"; null when nothing is suppressed. */
+  suppressed_label: string | null
 }
 
 export interface DomainDetail {
@@ -388,6 +392,8 @@ export interface DomainDetail {
   context: Metric[]
   behavior_title: string
   behavior: string[]
+  /** History-only local analyst policy (previous review, suppression); null without history. */
+  policy: AnalystPolicy | null
 }
 
 export interface AnalysisDevices extends Table {
@@ -436,7 +442,8 @@ export async function uploadTelemetry(lang: Language, format: string, file: File
   })
 }
 
-export const fetchAnalysis = (id: string, lang: Language) => request<AnalysisOverview>(`/api/analyze/${id}?lang=${lang}`)
+export const fetchAnalysis = (id: string, lang: Language, includeSuppressed = false) =>
+  request<AnalysisOverview>(`/api/analyze/${id}?lang=${lang}&include_suppressed=${includeSuppressed}`)
 export const fetchDomainDetail = (id: string, lang: Language, name: string) =>
   request<DomainDetail>(`/api/analyze/${id}/domain?${new URLSearchParams({ name, lang })}`)
 export const fetchAnalysisDevices = (id: string, lang: Language, includeIps: boolean, includeObserve: boolean) =>
@@ -566,3 +573,114 @@ export type EvaluationResponse =
   | { state: 'ok'; subtitle: string; report: BehaviorEvaluation | LexicalEvaluation }
 
 export const fetchEvaluation = (lang: Language) => request<EvaluationResponse>(`/api/evaluation?lang=${lang}`)
+
+// ---- Analysis history (mirrors ui_history._show_history) ----
+
+export interface AnalystPolicy {
+  previous: string | null
+  suppressed: string | null
+  title: string
+  remove: string
+  suppress_title: string
+  reason_label: string
+  expiry_label: string
+  save: string
+  saved: string
+}
+
+export type FeedbackLabel = 'Confirmed Threat' | 'Benign' | 'Uncertain'
+export interface Choice {
+  value: string
+  label: string
+}
+
+export interface HistoryOk {
+  state: 'ok'
+  subtitle: string
+  runs: Table
+  all_runs_title: string
+  all_runs: Table
+  run_label: string
+  run_ids: number[]
+  run: number
+  metadata_title: string
+  metadata:
+    | { legacy: string }
+    | {
+        captured: string
+        artifact: string
+        checksum: string
+        schemas: string
+        thresholds: string | null
+        sources: (Table & { title: string }) | null
+        no_sources: string | null
+      }
+  comparison: {
+    title: string
+    caption: string
+    metrics: Metric[]
+    new: (Table & { title: string }) | null
+    removed: (Table & { title: string }) | null
+    changes: (Table & { title: string }) | null
+  }
+  findings: Table & {
+    domains: string[]
+    verdicts: string[]
+    feedback: string[]
+    sources: string[][]
+    verdict_label: string
+    verdict_options: Choice[]
+    review_label: string
+    review_options: Choice[]
+    source_label: string
+    source_options: Choice[]
+    empty: string
+  }
+  review: {
+    title: string
+    caption: string
+    options: Choice[]
+    current: Record<string, { label: string; note: string }>
+    bulk_title: string
+    bulk_domains_label: string
+    bulk_label: string
+    bulk_note_label: string
+    bulk_confirm: string
+    bulk_button: string
+    domain_label: string
+    label: string
+    note_label: string
+    button: string
+    saved: string
+    bulk_saved: string
+  }
+  retention: {
+    title: string
+    warning: string
+    delete_confirm: string
+    delete_button: string
+    deleted: string
+    keep_label: string
+    keep_default: number
+    keep_confirm: string
+    keep_button: string
+    kept_none: string
+  }
+}
+
+export type HistoryResponse = HistoryOk | { state: 'disabled' } | { state: 'empty'; subtitle: string; title: string; text: string }
+
+export const fetchHistory = (lang: Language, run: number | null) =>
+  request<HistoryResponse>(`/api/history?lang=${lang}${run === null ? '' : `&run=${run}`}`)
+export const saveFeedback = (run: number, body: { domain: string; label: FeedbackLabel; note: string }) =>
+  request<void>(`/api/history/${run}/feedback`, put(body))
+export const saveBulkFeedback = (run: number, body: { domains: string[]; label: FeedbackLabel; note: string }) =>
+  request<{ count: number }>(`/api/history/${run}/feedback/bulk`, put({ ...body, confirm: true }))
+export const deleteRun = (run: number) => request<{ deleted: boolean }>(`/api/history/${run}/delete`, json({ confirm: true }))
+export const applyRetention = (lang: Language, keep_latest: number) =>
+  request<{ message: string }>(`/api/history/retention?lang=${lang}`, json({ keep_latest, confirm: true }))
+export const saveAnalysis = (id: string, lang: Language) =>
+  request<{ message: string }>(`/api/analyze/${id}/save?lang=${lang}`, json({}))
+export const suppressDomain = (domain: string, reason: string, expiry_days: number) =>
+  request<void>('/api/analyze/suppression', put({ domain, reason, expiry_days }))
+export const unsuppressDomain = (domain: string) => request<void>('/api/analyze/suppression/remove', json({ domain }))

@@ -1,28 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
 
+import { englishWords, visibleText } from './helpers.ts'
+
 // No screen mixes Turkish and English (Turkish is the default language), and
 // no raw ISO time is shown. Same word list as tests/test_api_language.py.
-const ENGLISH = new Set(
-  `the and with for from after before into than this that these those are was were has have
-interval periodic periodicity pattern inspect software activity score ratio timing sustained stale
-observe investigate review query queries connection connections session sessions record records
-match matches seen first last unknown fresh state reason needs insufficient exact response confidence
-refreshed active events verdict same addresses unanswered rejected observed duration payload endings
-closes duplicate conflicting originator responder count update updates download show table loading
-group device target threat evidence coverage limits check lookup details setup mark suspicious
-why open light dark theme language screens bucket bytes window distinct failed attempts known`.split(/\s+/),
-)
-// Data shown on purpose: CTI source/threat type/tags, file names, brand names.
-const DATA = /\b[\w-]+(?:\.[\w-]+)+(?::\d+)?\b|https?:\/\/\S+|Synthetic demo|ThreatFox|URLhaus|VirusTotal|AbuseIPDB|urlscan|Streamlit/g
-
-async function visibleText(page: Page) {
-  return page.evaluate(() => document.body.innerText)
-}
-
-function englishWords(text: string) {
-  const words = text.replace(DATA, ' ').match(/[A-Za-zÇĞİÖŞÜçğıöşü]+/g) ?? []
-  return [...new Set(words.filter((word) => ENGLISH.has(word.toLowerCase())))]
-}
 
 async function screen(page: Page, name: string) {
   await page.getByRole('navigation').getByRole('button', { name }).click()
