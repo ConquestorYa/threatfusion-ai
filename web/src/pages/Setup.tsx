@@ -1,12 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ExternalLink, RefreshCw } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import { useEffect, useId, useState, type FormEvent, type ReactNode } from 'react'
 
 import { Blocks, Notice } from '@/components/data/Blocks'
 import { DataTable } from '@/components/data/DataTable'
 import { Markdown } from '@/components/data/Markdown'
 import { Button } from '@/components/ui/button'
-import { fetchAppInfo, fetchSetup, forgetKeys, saveKeys, saveMode, saveSchedule, startRefresh, type SetupOk } from '@/lib/api'
+import {
+  fetchSetup,
+  forgetKeys,
+  saveKeys,
+  saveMode,
+  saveSchedule,
+  startRefresh,
+  stopApplication,
+  type SetupOk,
+} from '@/lib/api'
 import { usePreferences } from '@/lib/preferences'
 import { cn } from 'cn'
 
@@ -71,7 +80,7 @@ export function Setup() {
       </div>
       <Panel title={data.application.title}>
         <p className="text-xs text-muted-foreground">{data.application.caption}</p>
-        <StreamlitNote text={chrome('stopInStreamlit')} />
+        <StopApplication application={data.application} />
       </Panel>
       {data.sources && (
         <Panel title={data.sources.title}>
@@ -92,24 +101,17 @@ function Panel({ title, children, className }: { title: string; children: ReactN
   )
 }
 
-function StreamlitNote({ text }: { text: string }) {
-  const { chrome } = usePreferences()
-  const app = useQuery({ queryKey: ['app'], queryFn: fetchAppInfo, staleTime: Infinity })
+/** "Stop local application": asks the launcher to stop (ui_local_settings). */
+function StopApplication({ application }: { application: SetupOk['application'] }) {
+  const stop = useMutation({ mutationFn: stopApplication })
   return (
-    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-      <span>{text}</span>
-      {app.data && (
-        <a
-          href={app.data.streamlit_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 font-medium text-foreground underline underline-offset-2"
-        >
-          {chrome('openInStreamlit')}
-          <ExternalLink aria-hidden className="size-3" />
-        </a>
-      )}
-    </p>
+    <div className="space-y-2">
+      <Button variant="outline" size="sm" disabled={stop.isPending || stop.data?.stopping} onClick={() => stop.mutate()}>
+        {application.stop}
+      </Button>
+      {stop.data && <Notice tone="info">{stop.data.stopping ? application.stopping : application.not_running}</Notice>}
+      {stop.isError && <Notice tone="warn">{stop.error.message}</Notice>}
+    </div>
   )
 }
 

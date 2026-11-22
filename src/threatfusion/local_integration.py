@@ -57,7 +57,11 @@ def install_user_integration(
         "[Desktop Entry]\n" + MARKER + "\nType=Application\nVersion=1.0\n"
         "Name=ThreatFusion AI\nComment=Local threat intelligence workspace\n"
         "Categories=Network;Security;\nTerminal=true\nIcon=security-high\n"
-        "Exec=" + desktop_quote(str(launcher)) + "\n",
+        "Exec=" + desktop_quote(str(launcher)) + "\n"
+        # The previous Streamlit workspace stays one right-click away.
+        "Actions=streamlit;\n\n[Desktop Action streamlit]\n"
+        "Name=ThreatFusion AI (Streamlit)\n"
+        "Exec=" + desktop_quote(str(launcher)) + " --streamlit\n",
         0o600,
     )
     # Existing terminals cannot inherit a PATH change. New interactive shells can.

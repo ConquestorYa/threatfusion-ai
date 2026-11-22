@@ -24,9 +24,41 @@ def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def check_running(root: Path, mode: str, port: int, *, auto_port: bool = False) -> None:
+def _healthy(interface: str, body: bytes) -> bool:
+    if interface == "streamlit":
+        return body == b"ok"
+    try:
+        return json.loads(body) == {"status": "ok"}
+    except ValueError:
+        return False
+
+
+def check_web_ui(url: str, http, *, stop: bool) -> None:
+    """The pre-built React page and its API answer from the same loopback origin."""
+    with http.open(url + "/", timeout=5) as response:
+        page = response.read().decode()
+    assert '<div id="root">' in page and "/assets/" in page, page[:200]
+    asset = page.split('src="', 1)[1].split('"', 1)[0]
+    with http.open(url + asset, timeout=5) as response:
+        assert response.status == 200 and len(response.read()) > 10_000
+    with http.open(url + "/api/app", timeout=5) as response:
+        info = json.loads(response.read())
+    assert info["setup_available"] is True, info
+    with http.open(url + "/api/lookup/status?lang=tr", timeout=5) as response:
+        assert json.loads(response.read())["ready"] is True
+    if stop:  # the Setup page's "Stop local application" button
+        request = urllib.request.Request(
+            url + "/api/app/stop", data=b"{}", method="POST",
+            headers={"Content-Type": "application/json", "Origin": url, "Sec-Fetch-Site": "same-origin"})
+        with http.open(request, timeout=5) as response:
+            assert json.loads(response.read()) == {"stopping": True}
+
+
+def check_running(root: Path, mode: str, port: int, *, auto_port: bool = False, interface: str = "web") -> None:
     source = Path(json.loads((root / "installation.json").read_text())["source"])
     command = [str(root / "start"), "--mode", mode, "--no-browser"]
+    if interface == "streamlit":
+        command.append("--streamlit")
     if not auto_port:
         command += ["--port", str(port)]
     with tempfile.TemporaryFile(mode="w+") as log:
@@ -41,9 +73,10 @@ def check_running(root: Path, mode: str, port: int, *, auto_port: bool = False) 
                 if process.poll() is not None:
                     log.seek(0)
                     raise RuntimeError(log.read())
+                health = "/_stcore/health" if interface == "streamlit" else "/api/health"
                 try:
-                    with http.open(url + "/_stcore/health", timeout=1) as response:
-                        if response.read() == b"ok":
+                    with http.open(url + health, timeout=1) as response:
+                        if _healthy(interface, response.read()):
                             break
                 except (OSError, urllib.error.URLError):
                     pass
@@ -51,12 +84,15 @@ def check_running(root: Path, mode: str, port: int, *, auto_port: bool = False) 
                     raise RuntimeError("local health endpoint timed out")
                 time.sleep(0.2)
             # Health alone does not execute the application. Render its real UI.
-            spec = importlib.util.spec_from_file_location(
-                "session_check", source / "scripts/check_public_demo_session.py"
-            )
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            asyncio.run(module.check_session(url))
+            if interface == "streamlit":
+                spec = importlib.util.spec_from_file_location(
+                    "session_check", source / "scripts/check_public_demo_session.py"
+                )
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                asyncio.run(module.check_session(url))
+            else:
+                check_web_ui(url, http, stop=False)
             listeners = [
                 line.split()[1]
                 for line in Path("/proc/net/tcp").read_text().splitlines()[1:]
@@ -76,6 +112,8 @@ def check_running(root: Path, mode: str, port: int, *, auto_port: bool = False) 
             assert json.loads(status.stdout) == {"running": True, "url": url}
             if mode == "demo":
                 process.send_signal(signal.SIGINT)
+            elif interface == "web":
+                check_web_ui(url, http, stop=True)
             else:
                 subprocess.run([str(root / "start"), "stop"], check=True)
             assert process.wait(timeout=25) == 0
@@ -90,7 +128,7 @@ def check_running(root: Path, mode: str, port: int, *, auto_port: bool = False) 
             if process.poll() is None:
                 os.killpg(process.pid, signal.SIGTERM)
                 process.wait(timeout=30)
-    print(f"{mode}: real UI, loopback binding, duplicate lock and shutdown passed")
+    print(f"{mode} ({interface}): real UI, loopback binding, duplicate lock and shutdown passed")
 
 
 def main() -> None:
@@ -141,6 +179,8 @@ def main() -> None:
         [IOCRecord("fixture.example", IOCType.DOMAIN, "Installer Test")],
     )
     check_running(root, "cti-only", 18511)
+    # The previous Streamlit workspace stays available with --streamlit.
+    check_running(root, "cti-only", 18512, interface="streamlit")
     # Exercise the installed launcher, not just the module entry point.
     with tempfile.TemporaryDirectory() as temporary:
         source_logs = Path(temporary)

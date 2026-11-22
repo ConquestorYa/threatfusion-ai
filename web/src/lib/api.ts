@@ -259,7 +259,7 @@ export interface SetupOk {
   state: 'ok'
   caption: string
   mode: { title: string; value: 'cti-only' | 'demo'; options: { value: 'cti-only' | 'demo'; label: string }[] }
-  application: { title: string; caption: string }
+  application: { title: string; caption: string; stop: string; stopping: string; not_running: string }
   demo_note?: string
   keys?: {
     title: string
@@ -308,6 +308,7 @@ export const saveSchedule = (automatic: boolean, interval_hours: number) =>
 export const startRefresh = (force: boolean) => request<{ started: boolean }>('/api/setup/refresh', json({ force }))
 export const saveKeys = (keys: { threatfox: string; urlhaus: string }) => request<void>('/api/setup/keys', put(keys))
 export const forgetKeys = () => request<void>('/api/setup/keys/forget', json({}))
+export const stopApplication = () => request<{ stopping: boolean }>('/api/app/stop', json({}))
 
 // ---- Analyze telemetry (mirrors streamlit_app "Analyze telemetry") ----
 

@@ -8,7 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
+# dist is committed: installations serve the pre-built page without Node (DEC-108).
 dist-ssr
 *.local
 

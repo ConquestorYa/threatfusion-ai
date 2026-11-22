@@ -1317,3 +1317,34 @@ stored, as before.
 8612) runs the developer configuration with the synthetic demo domain
 artifact (`demo_review_snapshot.py --history-model`, `demo_only_synthetic`,
 not a measured model) so the page can be exercised end to end.
+
+## DEC-108: The launcher opens the React workspace; the built page ships with the source
+
+**Decision (2026-11-22, user: "simplest safe way"):** `threatfusion-ai` and
+the desktop entry now start the React workspace: the launcher runs
+`python -m threatfusion.api --port <port> --static-dir <source>/web/dist` on
+127.0.0.1 (same port choice, readiness wait on `/api/health`, owner-only
+control socket, automatic CTI refresh loop and clean shutdown as before) and
+FastAPI serves the page from the same origin. `threatfusion-ai --streamlit`
+(and the desktop entry's "ThreatFusion AI (Streamlit)" action) opens the
+previous Streamlit workspace exactly as before; Streamlit stays a supported
+interface until the user accepts the new one (DEC-101).
+
+**Packaging:** the pre-built page `web/dist` (about 1.3 MB: HTML, JS, CSS,
+self-hosted fonts) is committed. Installations download the source archive
+of a commit, so the page arrives with it and **neither the installer nor the
+running app needs Node**, a CDN or a second download. The Vite build is
+deterministic for the locked dependencies; the CI web job rebuilds and fails
+when `web/dist` differs from the committed files, and
+`tests/test_launcher_web.py` checks that the page is tracked, self-contained
+(no external URLs in `index.html`, no source maps) and that the real launcher
+serves it and stops from the Setup button. A source without `web/dist` falls
+back to Streamlit with a message. Considered and rejected: building with Node
+during installation (new toolchain and supply-chain surface on every user
+machine) and a separate release download (no release channel exists; a
+second unverified artifact).
+
+**Stop:** Setup & CTI updates gets "Stop local application"
+(`POST /api/app/stop`, same write guard as every other write); it sends the
+launcher the same `stop` request as Streamlit's button. Outside the launcher
+it reports that nothing is running under it.

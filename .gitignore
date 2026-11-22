@@ -10,6 +10,8 @@ __pycache__/
 # Python build files
 build/
 dist/
+# The pre-built React workspace is shipped with the source (DEC-108).
+!web/dist/
 *.egg-info/
 
 # Environment variables / secrets

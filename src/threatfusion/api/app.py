@@ -374,6 +374,15 @@ def create_app(
         except (OSError, ValueError, TypeError):
             raise HTTPException(409, "Local settings could not be read. Check private file permissions.") from None
 
+    @app.post("/api/app/stop")
+    def stop_application(_body: EmptyRequest, resolved: ApiSettings = Depends(settings)) -> dict:
+        try:
+            return {"stopping": setup_module.stop_application(resolved)}
+        except setup_module.NotManaged:
+            raise HTTPException(404, "Setup is available in a managed installation in real CTI mode.") from None
+        except (OSError, ValueError, TypeError):
+            raise HTTPException(409, "Local settings could not be read. Check private file permissions.") from None
+
     @app.get("/api/analyze/status")
     def analyze_status(lang: Language = Query("en"), resolved: ApiSettings = Depends(settings)) -> dict:
         return analyze_module.status(resolved, lang)

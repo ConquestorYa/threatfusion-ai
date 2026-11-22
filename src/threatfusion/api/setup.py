@@ -9,13 +9,15 @@ in the requested language. Writes go through the same functions
 API keys (user decision, DEC-103): this API has no browser session, so keys
 entered here are always saved to the owner-only credentials file (Streamlit's
 "Save keys on this computer"), and "Forget" deletes that file. No key is kept
-in process memory or ever returned. "Stop local application" stays in
-Streamlit (it stops the Streamlit launcher, not this API).
+in process memory or ever returned. "Stop local application" asks the
+installation's launcher to stop over its owner-only control socket, the same
+request Streamlit's button sends (``request_local_control``).
 A manual update from here uses the saved keys only.
 """
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 
 from .. import i18n
 from .lookup import in_language
@@ -135,7 +137,10 @@ def setup_state(settings: ApiSettings, language: str) -> dict:
                 {"value": "cti-only", "label": tr("Real CTI · ML trained on this computer")},
                 {"value": "demo", "label": tr("Synthetic demo")}]},
             "application": {"title": tr("Application"), "caption": tr(
-                "Reopen from the applications menu or run threatfusion-ai. Closing the browser tab does not stop the local server.")},
+                "Reopen from the applications menu or run threatfusion-ai. Closing the browser tab does not stop the local server."),
+                "stop": tr("Stop local application"),
+                "stopping": tr("The local application is stopping. You can close this tab."),
+                "not_running": tr("This page is not running under the local launcher. Stop it in the terminal that started it.")},
         }
         if mode == "demo":
             result["demo_note"] = tr("Demo data is synthetic. Switch to real CTI to configure sources and updates.")
@@ -239,3 +244,13 @@ def start_refresh(settings: ApiSettings, force: bool) -> bool:
     if load_settings(root)["mode"] == "demo":
         raise NotManaged()
     return start_background_refresh(root, credentials=load_credentials(root), force=force)
+
+
+def stop_application(settings: ApiSettings) -> bool:
+    """``ui_local_settings``' stop button: True when the launcher accepted the request."""
+    from ..local_setup import request_local_control
+
+    if settings.local_root is None:
+        raise NotManaged()
+    result = request_local_control(Path(settings.local_root), "stop")
+    return bool(result.get("running") and result.get("stopping"))

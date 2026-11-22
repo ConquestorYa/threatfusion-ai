@@ -415,6 +415,7 @@ _TR: dict[str, str] = {
     "Reopen from the applications menu or run threatfusion-ai. Closing the browser tab does not stop the local server.": "Uygulamalar menüsünden veya threatfusion-ai komutuyla yeniden aç. Tarayıcı sekmesini kapatmak local sunucuyu durdurmaz.",
     "Stop local application": "Yerel uygulamayı kapat",
     "The local application is stopping. You can close this tab.": "Yerel uygulama kapanıyor. Bu sekmeyi kapatabilirsin.",
+    "This page is not running under the local launcher. Stop it in the terminal that started it.": "Bu sayfa yerel başlatıcıyla çalışmıyor. Onu başlatan terminalden durdur.",
     "No refresh yet. Use Update CTI now to download source data.": "Henüz güncelleme yok. Kaynak verilerini indirmek için CTI verilerini şimdi güncelle düğmesini kullan.",
     "Last attempt: {time}": "Son deneme: {time}",
     "IP owners": "IP sahipleri",

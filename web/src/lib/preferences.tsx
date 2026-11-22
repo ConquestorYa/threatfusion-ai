@@ -54,7 +54,6 @@ const CHROME = {
     connectionActivity: 'Connection activity',
     setupManagedOnly: 'Setup & CTI updates is available in a managed installation (threatfusion-ai start), as in Streamlit.',
     keysStorage: 'Keys entered here are saved on this computer in a plaintext owner-only (0600) file inside the private installation directory. They are never shown again.',
-    stopInStreamlit: 'Stopping the local application stays in Streamlit for now.',
   },
   tr: {
     language: 'Dil',
@@ -88,7 +87,6 @@ const CHROME = {
     connectionActivity: 'Bağlantı etkinliği',
     setupManagedOnly: "Kurulum ve CTI güncellemeleri, Streamlit'teki gibi yönetilen bir kurulumda (threatfusion-ai start) kullanılabilir.",
     keysStorage: 'Buraya girilen anahtarlar bu bilgisayarda, özel kurulum klasöründe yalnızca sahibinin okuyabildiği (0600) düz metin bir dosyaya kaydedilir. Bir daha gösterilmez.',
-    stopInStreamlit: "Yerel uygulamayı durdurmak şimdilik Streamlit'te.",
   },
 } satisfies Record<Language, Record<string, string>>
 

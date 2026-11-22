@@ -137,6 +137,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Committed page matches the source (DEC-108)
+        run: |
+          # Installations serve the committed web/dist; it must be this build.
+          git status --porcelain -- dist
+          test -z "$(git status --porcelain -- dist)"
+
       - name: Browser tests (Playwright, loopback API)
         run: |
           npx playwright install --with-deps chromium

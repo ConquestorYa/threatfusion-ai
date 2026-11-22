@@ -38,6 +38,15 @@ test.describe('in English', () => {
     console.expectClean()
   })
 
+  test('Stop local application asks the launcher; this test server has none', async ({ page }) => {
+    const console = watchConsole(page)
+    const application = page.getByRole('region', { name: 'Application' })
+    await application.getByRole('button', { name: 'Stop local application' }).click()
+    await expect(application.getByRole('status')).toContainText('This page is not running under the local launcher.')
+    await expect(application).not.toContainText('Streamlit')
+    console.expectClean()
+  })
+
   test('keys are saved without being shown again, then forgotten', async ({ page }) => {
     const keys = page.getByRole('region', { name: 'API keys' })
     await keys.getByLabel('ThreatFox API key').fill('synthetic-e2e-key')
