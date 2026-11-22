@@ -127,20 +127,3 @@ def test_details_dns_score_column(tmp_path, monkeypatch):
     assert dns["rows"][0][dns["columns"].index("Davranış puanı (ML)")] == "91 · Yüksek"
 
 
-def test_streamlit_parity_for_the_metrics(tmp_path, global_destinations):
-    """Render the real Streamlit Experimental ML tab and compare its numbers with the API."""
-    from streamlit.testing.v1 import AppTest
-
-    root = _install(tmp_path, model=True)
-    script = (
-        "from pathlib import Path\n"
-        "from threatfusion.ui_behavior import render_behavior_tab\n"
-        f"render_behavior_tab(Path({str(root / 'collector')!r}))\n"
-    )
-    app = AppTest.from_string(script).run(timeout=60)
-    assert not app.exception
-    model = _client(root).get("/api/behavior").json()["model"]
-    assert [str(metric.value) for metric in app.metric if metric.label != "Behavior score"] == \
-        [str(metric["value"]) for metric in model["metrics"]]
-    assert [metric.value for metric in app.metric if metric.label == "Behavior score"] == \
-        [card["score"] for card in model["cards"]]

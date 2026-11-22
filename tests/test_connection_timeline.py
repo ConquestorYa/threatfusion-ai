@@ -6,8 +6,6 @@ from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from streamlit.testing.v1 import AppTest
-
 from threatfusion.connection_timeline import MAX_BUCKETS, MAX_GROUPS, build_timelines, validate_timeline_report
 from threatfusion.connections import ConnectionRecord, analyze_connections
 from threatfusion.reporting import build_connection_report
@@ -98,82 +96,6 @@ def test_snapshot_validation_rejects_corrupt_or_misleading_details(change):
     change(modified)
     with pytest.raises(ValueError):
         validate_timeline_report(modified, payload["findings"])
-
-
-def test_upload_ui_group_selection_filters_and_turkish_detail():
-    app = AppTest.from_string(
-        "from datetime import datetime, timezone\n"
-        "from threatfusion.connections import ConnectionRecord\n"
-        "from threatfusion.runtime_analysis import analyze_dns_events\n"
-        "from threatfusion.ui_connections import render_connections\n"
-        f"rows = {repr((record(), record('second', responder_port=8443, duration_seconds=1))).replace('datetime.datetime', 'datetime').replace('datetime.timezone', 'timezone')}\n"
-        "result = analyze_dns_events([], [], None, connections=rows)\n"
-        "render_connections(result, public_mode=False)\n"
-    ).run(timeout=15)
-    assert not app.exception
-    assert app.selectbox(key="connection_timeline_group").options == ["1: Host 001 → Host 002:443 / tcp"]
-    details = app.dataframe[-1].value
-    assert details.iloc[0]["Zeek states"] == "SF: 1"
-    app.checkbox(key="connection_reviews_only").uncheck().run(timeout=15)
-    app.selectbox(key="connection_timeline_group").select(2).run(timeout=15)
-    assert not app.exception
-    app.session_state["language_selector"] = "🇹🇷 Türkçe"
-    app.run(timeout=15)
-    assert app.dataframe[-1].value.iloc[0]["Zeek durumları"] == "SF: 1"
-    app.checkbox(key="connection_reviews_only").check().run(timeout=15)
-    assert not app.exception
-    assert app.selectbox(key="connection_timeline_group").value == 1
-
-
-def test_old_snapshots_and_missing_detail_do_not_fabricate_a_chart():
-    app = AppTest.from_string(
-        "from threatfusion.ui_connection_timeline import render_timeline\n"
-        "render_timeline([{'Originator': 'Host 001'}], {}, key='legacy')\n"
-    ).run(timeout=15)
-    assert not app.exception and not app.selectbox and not app.dataframe
-    app = AppTest.from_string(
-        "from threatfusion.ui_connection_timeline import render_timeline\n"
-        "render_timeline([{'Group': 201, 'Originator': 'Host 001', 'Responder': 'Host 002'}], {}, key='omitted')\n"
-    ).run(timeout=15)
-    assert not app.exception and not app.dataframe
-    assert 'first 200' in app.info[0].value
-
-
-def test_new_snapshot_resets_report_local_group_selection():
-    rows = [{"Group": i, "Originator": "Host 001", "Responder": f"Host {i+1:03d}"} for i in (1, 2)]
-    app = AppTest.from_string(
-        "import streamlit as st\n"
-        "from threatfusion.ui_connection_timeline import render_timeline\n"
-        "revision = st.text_input('Snapshot revision', value='first')\n"
-        f"render_timeline({rows!r}, {{}}, key='test', revision=revision)\n"
-    ).run(timeout=15)
-    app.selectbox(key="test_timeline_group").select(2).run(timeout=15)
-    assert app.selectbox(key="test_timeline_group").value == 2
-    app.text_input[0].input("second").run(timeout=15)
-    assert not app.exception
-    assert app.selectbox(key="test_timeline_group").value == 1
-
-
-def test_large_upload_bounds_rendering_and_preserves_exported_findings():
-    app = AppTest.from_string(
-        "from datetime import datetime, timezone\n"
-        "from threatfusion.connections import ConnectionRecord\n"
-        "from threatfusion.runtime_analysis import analyze_dns_events\n"
-        "from threatfusion.ui_connections import render_connections\n"
-        "from threatfusion.reporting import build_connection_report\n"
-        "import json, streamlit as st\n"
-        "rows = tuple(ConnectionRecord(str(i), datetime(2026, 10, 4, tzinfo=timezone.utc), '192.0.2.1', '198.51.100.1', 40000, i, 'tcp', 4000, 10, 20, 'SF', 0) for i in range(501))\n"
-        "result = analyze_dns_events([], [], None, connections=rows)\n"
-        "st.session_state['exported_count'] = len(json.loads(build_connection_report(result))['findings'])\n"
-        "render_connections(result, public_mode=True)\n"
-    ).run(timeout=15)
-    assert not app.exception
-    assert len(app.dataframe[0].value) == 500
-    assert len(app.selectbox(key="connection_timeline_group").options) == 500
-    assert app.session_state["exported_count"] == 501
-    app.selectbox(key="connection_timeline_group").select(201).run(timeout=15)
-    assert not app.exception and len(app.dataframe) == 1
-    assert 'first 200' in app.info[0].value
 
 
 @pytest.mark.skipif(__import__("os").name != "posix", reason="Linux live analyzer contract")

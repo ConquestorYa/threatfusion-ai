@@ -1379,3 +1379,42 @@ on the agent's walk-through, not on the user's own hands-on test of each
 screen; it is not P2 evidence and does not measure detection or usefulness.
 Removing Streamlit is a separate change: the API still reuses `ui_*` modules
 that import Streamlit, so dropping it means moving that logic first.
+
+## DEC-111: Streamlit removed; React is the only interface
+
+**Decision (2026-11-22, user: "gereksizse Streamlit'i kaldır, ama yeni
+arayüzün çalıştığından emin ol"):** after DEC-110 nothing needed Streamlit,
+so it was removed. Supersedes the Streamlit parts of DEC-108 (`--streamlit`,
+the desktop action) and DEC-109 (the conditional header link).
+
+**What changed:** `streamlit_app.py`, `.streamlit/`, `static/`,
+`brand_assets.py` and the rendering-only modules (`ui_theme`, `ui_charts`,
+`ui_components`, `ui_connections`, `ui_connection_timeline`, `ui_dns_timeline`,
+`ui_device_triage`, `ui_collected_dns`, `ui_connection_attempts`,
+`ui_investigation`, `ui_history`, `ui_evaluation`) were deleted. The modules
+the API reuses (`ui_simple_review`, `ui_collector`, `ui_behavior`,
+`ui_new_destinations`, `ui_quick_lookup`, `ui_review_guidance`,
+`ui_local_settings`) keep their logic with every Streamlit call removed;
+their names were kept to avoid churn. `st.cache_data`/`st.cache_resource`
+became `memo.cached` (keyed, TTL, one lock per function so on-device
+training runs once). The translation language is a `ContextVar`
+(`i18n.use_language`), which replaces the global language lock.
+
+**Dependencies:** `streamlit`, `altair` and `plotly` were removed; `uvicorn`
+(previously only present through Streamlit) became a direct dependency at
+the same version. The runtime lock went from 56 to 32 packages with no
+version change (`uv pip compile` constrained by the previous pins).
+
+**Launcher and Docker:** the launcher only starts the API; a source without
+`web/dist` refuses to start instead of falling back. Old desktop entries
+that still pass `--streamlit` get a message and the React workspace. The
+Docker image runs the API on the container's loopback (no host option is
+added, DEC-101) and is used with `docker run --network host`.
+
+**Tests:** 97 tests that rendered Streamlit (AppTest) or compared the API with
+Streamlit were removed; the logic tests stay, and API tests cover the same
+features. Verified without Streamlit installed: full pytest, Playwright
+(`E2E_PYTHON`), and a real installation from the new lock (launch, every
+screen at 1280 and 375 px, lookup, uploads, Stop). `scripts/lab/wallclock_soak.py`
+is kept unchanged as the record of the P1 method; it measured the Streamlit
+app and does not run on this source.

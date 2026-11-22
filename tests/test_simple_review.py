@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
-from streamlit.testing.v1 import AppTest
 
 from threatfusion.ui_simple_review import build_review_items
 
@@ -55,26 +52,6 @@ def test_empty_snapshot_has_no_items():
     assert build_review_items({"findings": []}) == []
 
 
-def test_review_tab_renders_in_both_languages(monkeypatch):
-    from threatfusion import ui_collector
-
-    snapshot = dict(VIEW, collector={"updated_at": datetime.now(timezone.utc).isoformat(), "cti_indicators": 1,
-                                     "window_seconds": 86400,
-                                     "counts": {"retained_records": 4, "review_groups": 2, "rejected_files": 0}})
-    monkeypatch.setattr(ui_collector, "read_snapshot", lambda root: snapshot)
-    script = ("from pathlib import Path\nfrom threatfusion.ui_simple_review import render_review_list\n"
-              "from threatfusion import ui_collector\n"
-              "render_review_list(ui_collector.read_snapshot(Path('/x')))\n")
-    app = AppTest.from_string(script).run(timeout=15)
-    assert not app.exception
-    assert any(m.label == "To check" and m.value == "5" for m in app.metric)
-    assert any("Long connection" in md.value for md in app.markdown)
-    app.session_state["language_selector"] = "🇹🇷 Türkçe"
-    app.run(timeout=15)
-    assert not app.exception
-    assert any("Uzun bağlantı" in md.value for md in app.markdown)
-
-
 def test_semicolon_label_stays_one_sentence_and_sources_are_listed():
     view = {"findings": [], "dns": {"report": {"findings": [dict(
         _dns("Device 001", "x.example.test", "High DNS query volume; Sustained periodic DNS; inspect expected software activity"),
@@ -120,23 +97,3 @@ _LIST_SCRIPT = (
 )
 
 
-def test_one_click_labels_hide_known_pin_suspicious_and_keep_threats(tmp_path):
-    from threatfusion.ui_simple_review import load_labels
-
-    path = tmp_path / "review-labels.json"
-    app = AppTest.from_string(_LIST_SCRIPT.format(path=str(path))).run(timeout=15)
-    assert not app.exception
-    metrics = lambda: {m.label: m.value for m in app.metric}  # noqa: E731
-    assert metrics() == {"To check": "5", "Suspicious": "0", "On a threat list": "2", "Known": "0"}
-    app.button(key="label-known-dns:cdn.example.test").click().run(timeout=15)
-    app.button(key="label-suspicious-attempt:Host 006").click().run(timeout=15)
-    app.button(key="label-known-dns:listed.example.test").click().run(timeout=15)  # a threat stays visible
-    assert not app.exception
-    assert metrics() == {"To check": "2", "Suspicious": "1", "On a threat list": "2", "Known": "1"}
-    first = next(md.value for md in app.markdown if md.value.startswith(("🔴", "🟡")))
-    assert "Host 006" in first and "Suspicious" in first  # suspicious is pinned on top
-    assert {k: v["label"] for k, v in load_labels(path).items()} == {
-        "dns:cdn.example.test": "known", "attempt:Host 006": "suspicious", "dns:listed.example.test": "known"}
-    app.button(key="label-suspicious-attempt:Host 006").click().run(timeout=15)  # click again: unmark
-    app.button(key="unhide-dns:cdn.example.test").click().run(timeout=15)
-    assert metrics()["Suspicious"] == "0" and metrics()["Known"] == "0"

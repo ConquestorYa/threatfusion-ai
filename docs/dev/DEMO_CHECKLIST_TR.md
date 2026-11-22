@@ -1,7 +1,7 @@
 # Pazartesi demosu: kontrol listesi (React çalışma alanı)
 
 Branch: `feat/react-workspace` (PR #185, taslak; `main`'e birleştirilmedi).
-Demonun tamamı yeni arayüzde yapılır; Streamlit yalnızca yedek.
+Demonun tamamı yeni arayüzde yapılır (Streamlit 2026-11-22'de kaldırıldı, DEC-111).
 
 **Güvenli hale dönüş (tek komut):** son denenmiş sağlam sürüm `demo-stable`
 etiketidir (beş ekran, Telemetri analizi ve örnek dosyalar dahil; CI yeşil):
@@ -32,13 +32,13 @@ gerçek API anahtarı ekrana gelmez. Her şey yalnızca `127.0.0.1`'de çalış�
 ## 2. Demoyu başlat (demodan hemen önce)
 
 - [ ] `scripts/demo_web.sh` — sentetik yönetilen kurulumu yaratır, toplayıcıyı
-      (10 sn'de bir), React API'sini ve Streamlit'i başlatır.
-- [ ] React: http://127.0.0.1:8600 · Streamlit: http://127.0.0.1:8501
+      (10 sn'de bir) ve React API'sini başlatır.
+- [ ] http://127.0.0.1:8600
 - [ ] Sunucular yalnızca loopback'te mi?
       `ss -ltnp | grep -E ':8600|:8501'` → yalnızca `127.0.0.1`.
 - [ ] Bitince **Ctrl+C**: üç süreç durur, geçici klasör silinir.
 
-Portlar doluysa: `API_PORT=8610 STREAMLIT_PORT=8511 scripts/demo_web.sh`.
+Port doluysa: `API_PORT=8610 scripts/demo_web.sh`.
 
 ## 3. Kısa senaryo (5 dakika)
 
@@ -94,10 +94,9 @@ Hepsi koyu tema ve Türkçe, yalnızca sentetik veriyle.
 - [ ] Bir satırın oku → "Neden? Ne yapmalı?" + dış siteler (uyarı metni: ad/IP o
       siteye gider; **tıklama**, sentetik adresler).
 - [ ] Filtreler: Tehdit listesi / Bağlantılar / DNS sorguları.
-- [ ] İşaretler Streamlit'le ortak: Streamlit'te aynı öğe aynı işaretle görünür.
 
 **Ayrıntılar**
-- [ ] Metrikler, inceleme özeti, üç onay kutusu (Streamlit varsayılanları).
+- [ ] Metrikler, inceleme özeti, üç onay kutusu.
 - [ ] "Yalnızca inceleme gerektiren…" kapat → tablo büyür; ilk sütun sabit,
       tablo kendi içinde kayar.
 - [ ] Bağlantı incelemesi: grup seç → inceleme rehberi + grafik (fare ya da ok
@@ -123,9 +122,6 @@ Hepsi koyu tema ve Türkçe, yalnızca sentetik veriyle.
 - [ ] `dns_queries.csv`: aynı sonuç, "Ayrılmış DNS tablosu" olarak algılanır;
       Sonuç filtresi "Bilinen Tehdit" → tek satır.
 - [ ] Dışa aktar ve kaydet → JSON raporu: domain'ler var, istemci IP'si yok.
-- [ ] **Yedek:** bu adım yeni arayüzde 3 denemede çalışmazsa (hata,
-      boş sonuç), Streamlit'e geç: "Streamlit'te aç" → **Telemetri analizi**
-      → aynı dosyayı yükle. Sonuçlar aynı fonksiyonlardan gelir.
 
 **Kurulum ve CTI güncellemeleri**
 - [ ] Çalışma modu, kayıtlı anahtarlar (Yok), CTI durumu, kaynak tablosu.
@@ -140,21 +136,20 @@ Hepsi koyu tema ve Türkçe, yalnızca sentetik veriyle.
 - [ ] Tema düğmesi → açık tema; yenile → hatırlanır; koyuya dön.
 - [ ] **Deneysel ML** ve **Model değerlendirmesi** ekranları (demo sentetik,
       eğitilmemiş bir davranış modeli taşır; belge adreslerini puanlamaz, bu
-      yüzden "olağandışı bir şey yok" görünür). "Streamlit'te aç" yalnızca
-      demo Streamlit'i yanında çalıştırdığı için görünür.
+      yüzden "olağandışı bir şey yok" görünür).
 
 ## 5. Söylenmesi gereken sınırlar
 
-- Taşınan: bütün ekranlar (Bakılacaklar, Ayrıntılar, Deneysel ML, Hızlı
-  sorgu, Telemetri analizi, Analiz geçmişi — yalnızca geçmiş modunda —, Model
-  değerlendirmesi, Kurulum ve CTI). Mantık yeniden yazılmadı; Streamlit'in
-  fonksiyonları kullanılıyor ve bilinçli farklar dışında ekranlar
-  Streamlit'le aynı.
+- Ekranlar: Bakılacaklar, Ayrıntılar, Deneysel ML, Hızlı sorgu, Telemetri
+  analizi, Analiz geçmişi (yalnızca geçmiş modunda), Model değerlendirmesi,
+  Kurulum ve CTI. Kanıt mantığı yeniden yazılmadı; eski Streamlit
+  arayüzünün kullandığı Python kodu aynen kullanılıyor (Streamlit kaldırıldı,
+  DEC-111).
 - Bilinçli farklar: iki grafik (sonuç dağılımı ve ilişkili etkinlik)
   değerleriyle tablo/çubuk olarak; React'te girilen API anahtarları her zaman
   0600 dosyaya kaydedilir (DEC-103).
-- `threatfusion-ai` artık React'i açar (önceden derlenmiş sayfa, Node
-  gerekmez, DEC-108); `threatfusion-ai --streamlit` Streamlit'i açar.
+- `threatfusion-ai` React'i açar (önceden derlenmiş sayfa, Node gerekmez,
+  DEC-108).
 - Bu bir arayüz değişikliği; P2 ölçümü ya da kullanıcı kabulü değildir.
   Gerçek trafikle yeniden ölçüm yapılmadı.
 
@@ -187,7 +182,6 @@ scripts/demo_web.sh
 | "Bu rapor bir dakikadan eski" | Toplayıcı durmuş; betiği yeniden başlat. |
 | Sayfa beyaz/eski | `cd web && npm run build`, sonra sayfayı yenile. |
 | Açılış açık temada ya da İngilizce | Tarayıcıdaki site verilerini temizle (`tf-theme`, `tf-lang`) ya da gizli pencere. |
-| "Streamlit'te aç" açılmıyor | Streamlit portu farklıysa `STREAMLIT_PORT` ile başlat. |
-| Port dolu | `API_PORT` / `STREAMLIT_PORT` ortam değişkenleriyle başka port seç. |
-| Telemetri analizi hata veriyor | Dosyayı bir kez daha seç; 3 denemede olmazsa Streamlit'te aynı ekranı kullan (yukarıdaki yedek). |
+| Port dolu | `API_PORT` ortam değişkeniyle başka port seç. |
+| Telemetri analizi hata veriyor | Dosyayı bir kez daha seç; API terminalindeki hata satırına bak. |
 | Yeni sürümde beklenmeyen bir sorun | Güvenli hale dön: `git switch --detach demo-stable && (cd web && npm ci && npm run build)` |

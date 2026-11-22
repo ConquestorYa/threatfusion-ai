@@ -8,8 +8,6 @@ import sys
 from datetime import timedelta
 
 import pytest
-from streamlit.testing.v1 import AppTest
-
 from scripts.lab.evaluate_dns_collector import NOW, cases, log
 from scripts.lab.verify_log_preparation import expected_payloads
 from tests.test_connections import log as conn_log, row as conn_row
@@ -295,26 +293,6 @@ def test_quarantine_alone_disables_expectations_and_survives_restart(tmp_path):
     with collector_module.ZeekCollector(root, state) as collector:
         assert collector.tick(now=NOW+timedelta(seconds=1), rules=rules)["input_coverage_loss"]
         assert not read_snapshot(state)["findings"][0]["Declared expected"]
-
-
-@pytest.mark.parametrize("language", ["en", "tr"])
-def test_local_ui_shows_quarantine_counts_and_public_view_stays_empty(tmp_path, language):
-    source = tmp_path / "dns.log"
-    rows = [list(cases(7)[0]["rows"][0])]
-    rows[0][8] = "-"
-    source.write_text(log(rows))
-    module.prepare_file(source, tmp_path / "bundle", quarantine_incomplete_dns=True)
-    state = tmp_path / "state"
-    with collector_module.ZeekCollector(tmp_path / "bundle", state) as collector:
-        collector.tick(now=NOW)
-    label = "🇹🇷 Türkçe" if language == "tr" else "🇬🇧 English"
-    code = f'from pathlib import Path\nimport streamlit as st\nfrom threatfusion.ui_collector import render_collector\nst.session_state["language_selector"]={label!r}\nrender_collector(Path({str(state)!r}), public_mode=False)'
-    app = AppTest.from_string(code).run()
-    assert not app.exception
-    captions = " ".join(element.value for element in app.caption)
-    assert ("quarantined DNS rows: 1" if language == "en" else "karantinadaki DNS satırları: 1") in captions
-    app = AppTest.from_string(code.replace("public_mode=False", "public_mode=True")).run()
-    assert not app.exception and not app.caption and not app.warning and not app.metric
 
 
 def test_cli_failure_never_echoes_private_input_content(tmp_path):

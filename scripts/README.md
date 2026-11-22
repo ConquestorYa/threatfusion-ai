@@ -10,7 +10,6 @@ supports development, CI or the [evidence records](../docs/README.md#evidence).
 | `install_linux.sh`, `bootstrap_linux.py` | The one-command Linux installer and its standard-library bootstrap |
 | `check_linux_installation.py` | Black-box checks of a disposable installation (used by CI) |
 | `start_local.py`, `manage_local.py` | Start the app and the small installed command interface |
-| `check_public_demo_session.py` | Check a real Streamlit session on the synthetic demo |
 
 ## CTI and repository maintenance
 
@@ -26,7 +25,7 @@ supports development, CI or the [evidence records](../docs/README.md#evidence).
 | --- | --- |
 | `generate_demo_dns_csv.py` | Generate a safe local DNS CSV from the CTI cache for UI testing |
 | `analyze_dns.py` | Run the `threatfusion` command-line analysis from a source checkout |
-| `demo_web.sh` | Demo on 127.0.0.1: synthetic managed install, live collector, React workspace (8600) and Streamlit (8501); Ctrl+C stops all ([checklist](../docs/dev/DEMO_CHECKLIST_TR.md)) |
+| `demo_web.sh` | Demo on 127.0.0.1: synthetic managed install, live collector, React workspace (8600); Ctrl+C stops all ([checklist](../docs/dev/DEMO_CHECKLIST_TR.md)) |
 | `demo_review_snapshot.py` | Write a synthetic private collector state (documentation IPs, `.test` names) for the React page and its browser tests |
 
 ## Retired lexical domain-name model (research record)

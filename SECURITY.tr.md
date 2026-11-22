@@ -46,10 +46,10 @@ Kapsam dışında:
 
 CTI anahtarları uygulamayı çalıştıran kullanıcıya ait olmalıdır. Pakette
 geliştirici anahtarı ya da paylaşılan bir yedek anahtar yoktur. Linux ilk
-çalıştırma profili anahtarları kurulum meta verisinin ve Streamlit alt işlem
+çalıştırma profili anahtarları kurulum meta verisinin ve web sunucusu alt işlem
 ortamının dışında tutar. Varsayılan demo anahtar gerektirmez; eksik anahtarlar
 ilgili anahtarlı beslemenin atlanmasına yol açar. Güncelleme tanılamaları ham
-istisna metnini ve kimlik bilgisi içeren URL'leri göstermez. `.env`, Streamlit
+istisna metnini ve kimlik bilgisi içeren URL'leri göstermez. `.env`,
 `secrets.toml` ve özel anahtar dosyaları yerelde kalmalıdır; yayın denetimi
 bunları hem izlenen dosyalarda hem de erişilebilir Git geçmişinde reddeder.
 Özel CTI/veri seti/model/telemetri dosyaları dağıtılmamalıdır.

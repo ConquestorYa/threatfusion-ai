@@ -25,12 +25,6 @@ def main() -> int:
     parser.add_argument("--port", type=int)
     parser.add_argument("--prepare-only", action="store_true")
     parser.add_argument("--no-browser", action="store_true")
-    parser.add_argument(
-        "--interface",
-        choices=("web", "streamlit"),
-        default="web",
-        help="web: the React workspace and its local API (default); streamlit: the previous Streamlit workspace",
-    )
     args = parser.parse_args()
     if args.refresh_cti and args.mode != "cti-only":
         parser.error("--refresh-cti requires --mode cti-only")
@@ -64,7 +58,6 @@ def main() -> int:
             port=args.port,
             open_browser=not args.no_browser,
             install_dir=args.install_dir.resolve(),
-            interface=args.interface,
         )
     except (OSError, TypeError, ValueError, RuntimeError) as error:
         print(

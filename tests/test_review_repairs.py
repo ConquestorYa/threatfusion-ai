@@ -505,30 +505,6 @@ def test_failed_analysis_preserves_snapshot_and_retries_committed_records(
         assert status["scan"]["analysis_recomputed"]
 
 
-def test_collector_ui_local_identity_toggle_and_stale_mapping_are_safe(tmp_path):
-    from streamlit.testing.v1 import AppTest
-
-    source = tmp_path / "input"
-    source.mkdir()
-    state = tmp_path / "private"
-    (source / "dns.log").write_text(log(cases(1)[0]["rows"][:1]))
-    with ZeekCollector(source, state) as collector:
-        collector.tick(now=NOW)
-    app = AppTest.from_string(
-        "from pathlib import Path\nfrom threatfusion.ui_collector import render_collector\nrender_collector(Path("
-        + repr(str(state))
-        + "), public_mode=False)"
-    )
-    app.run(timeout=15)
-    assert not app.exception
-    app.checkbox(key="collector_local_ips").set_value(True).run(timeout=15)
-    assert not app.exception
-    (state / IDENTITY_FILE).unlink()
-    app.run(timeout=15)
-    assert not app.exception
-    assert any("mapping" in warning.value for warning in app.warning)
-
-
 def test_new_history_does_not_save_literal_endpoint_values(tmp_path):
     from threatfusion.persistence import save_runtime_analysis
 

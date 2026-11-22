@@ -1,10 +1,8 @@
-import { useQuery } from '@tanstack/react-query'
-import { ExternalLink, Moon, Sun } from 'lucide-react'
+import { Moon, Sun } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { fetchAppInfo } from '@/lib/api'
 import { usePreferences } from '@/lib/preferences'
 
 export interface Screen {
@@ -25,7 +23,6 @@ export function AppShell({
   children: ReactNode
 }) {
   const { lang, setLang, dark, toggleDark, t, chrome } = usePreferences()
-  const app = useQuery({ queryKey: ['app'], queryFn: fetchAppInfo, staleTime: Infinity })
   const themeLabel = dark ? chrome('themeToLight') : chrome('themeToDark')
 
   return (
@@ -47,18 +44,6 @@ export function AppShell({
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-1.5 py-2">
-            {app.data?.streamlit_url && (
-              <a
-                href={app.data.streamlit_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={chrome('streamlitScreens')}
-                className="mr-1 inline-flex items-center gap-1 rounded-sm px-1.5 py-1 text-xs text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-              >
-                {chrome('openInStreamlit')}
-                <ExternalLink className="size-3.5" aria-hidden />
-              </a>
-            )}
             <ToggleGroup
               type="single"
               size="sm"

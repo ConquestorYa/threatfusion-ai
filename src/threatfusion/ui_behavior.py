@@ -14,12 +14,10 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-import streamlit as st
-
 from .i18n import tr
+from .memo import cached
 from . import ml_local
 from .ml_behavior import WINDOW_SECONDS, BehaviorModel, Connection, build_groups, reasons
-from .ui_simple_review import _rerun, item_key, load_labels, lookup_links, save_label
 
 MODEL_FILE = Path("ml") / "behavior-model.json"
 REFRESH_SECONDS = 300
@@ -63,12 +61,12 @@ def model_path(install_dir: Path) -> Path:
     return install_dir / MODEL_FILE
 
 
-@st.cache_resource(show_spinner=False, max_entries=2)
+@cached(max_entries=2)
 def _load_model(path: str, modified: float) -> BehaviorModel:
     return BehaviorModel.load(Path(path))
 
 
-@st.cache_resource(show_spinner=False, max_entries=2)
+@cached(max_entries=2)
 def _popular(db_path: str):
     from .popular_domains import load_popular_domains
     return load_popular_domains(Path(db_path))
@@ -95,7 +93,7 @@ def read_collector_records(db_path: Path) -> tuple[list[Connection], dict[str, s
     return connections, names
 
 
-@st.cache_data(show_spinner=False, max_entries=2, ttl=REFRESH_SECONDS * 2)
+@cached(max_entries=2, ttl=REFRESH_SECONDS * 2)
 def score_groups(db_path: str, model_file: str, model_modified: float, cti_db: str | None, bucket: int) -> list[dict]:
     """Scored groups, highest first (recomputed at most every REFRESH_SECONDS)."""
     model = _load_model(model_file, model_modified)
@@ -133,7 +131,7 @@ def score_groups(db_path: str, model_file: str, model_modified: float, cti_db: s
     return list(best.values())
 
 
-@st.cache_data(show_spinner=False, max_entries=2, ttl=REFRESH_SECONDS * 2)
+@cached(max_entries=2, ttl=REFRESH_SECONDS * 2)
 def learn(db_path: str, install_dir: str, cti_db: str | None, bucket: int) -> dict:
     """Store complete days of this computer's groups; train the model when it is due."""
     if not ml_local.PUBLIC_FEATURES.exists():
@@ -211,179 +209,8 @@ def _ml_item(row) -> dict:
     return {"kind": "ml", "title": f"{row['name'] or row['address']}:{row['port']}"}
 
 
-def _rhythm_chart(times: list[float]):
-    """Each connection as a tick on a time line: malware check-ins look like an even comb."""
-    import altair as alt
-    import pandas as pd
-    frame = pd.DataFrame({"time": [datetime.fromtimestamp(t) for t in times]})  # local clock, like the labels
-    return (alt.Chart(frame).mark_tick(thickness=2, size=26)
-            .encode(x=alt.X("time:T", title=None, axis=alt.Axis(format="%d.%m %H:%M", labelAngle=0, tickCount=6)))
-            .properties(height=56))
-
-
-def _render_card(row, model, labels, labels_path, ip_owner, key_prefix="ml"):
-    item = _ml_item(row)
-    current = (labels.get(item_key(item)) or {}).get("label")
-    score = round(row["score"] * 100)
-    with st.container(border=True):
-        left, right = st.columns([3, 1])
-        title = row["name"] or row["address"]
-        badge = {"suspicious": " · " + tr("🟣 Suspicious"), "unsure": " · " + tr("⚪ Not sure")}.get(current, "")
-        left.markdown(f"#### {title}{badge}")
-        where = f"`{row['device']}` → `{row['address']}:{row['port']}/{row['protocol']}`"
-        owner = ip_owner(row["address"]) if ip_owner else None
-        left.markdown(where + (f" · {owner.label}" if owner else ""))
-        right.metric(tr("Behavior score"), f"{score}/100", tr(level(row["score"], model.threshold)),
-                     delta_color="off", delta_arrow="off")
-        if row["reasons"]:
-            st.markdown("**" + tr("Why it stands out") + ":** " + " · ".join(tr(REASONS[r]) for r in row["reasons"]))
-        if row.get("times"):
-            st.caption(tr("Connection rhythm · {count} connections, {first} – {last}", count=row["connections"],
-                          first=_clock(row["first"]), last=_clock(row["last"])))
-            st.altair_chart(_rhythm_chart(row["times"]), width="stretch")
-        if labels_path is not None:
-            buttons = st.container(horizontal=True, gap="small")
-            for label, text in (("known", "✓ I know this"), ("unsure", "? Not sure"), ("suspicious", "⚠ Suspicious")):
-                selected = current == label
-                if buttons.button(tr(text), key=f"{key_prefix}-{label}-{item_key(item)}", type="primary" if selected else "secondary"):
-                    try:
-                        save_label(labels_path, item_key(item), None if selected else label)
-                    except OSError:
-                        st.warning(tr("Could not save. Check the folder permissions."))
-                    _rerun()
-        with st.expander(tr("What should I do?")):
-            st.markdown(tr(ADVICE))
-            st.code(f"ss -tunp dst {row['address']}", language="shell")
-            links = lookup_links(row["name"], row["address"])
-            if links:
-                st.caption(tr("Opens in a new tab; the name or IP is sent to that site."))
-                for column, (label, url) in zip(st.columns(len(links)), links):
-                    column.link_button(label, url)
-
-
 def _percent(value) -> str:
     return "–" if value is None else f"%{round(value * 100)}"
-
-
-def render_behavior_tab(state_dir: Path, *, cti_db_path: Path | None = None, ip_owner=None) -> None:
-    install_dir = state_dir.parent
-    path = model_path(install_dir)
-    st.caption(tr("Experimental · a machine-learning hint beside What to check, never a verdict"))
-    from .ui_new_destinations import render_new_destinations
-    render_new_destinations(state_dir, cti_db_path=cti_db_path, ip_owner=ip_owner)
-    learning = None
-    if (state_dir / "collector.sqlite").exists():
-        with st.spinner(tr("Training the behavior model on this computer…")):
-            learning = learn(str(state_dir / "collector.sqlite"), str(install_dir),
-                             str(cti_db_path) if cti_db_path else None, int(time.time() // REFRESH_SECONDS))
-    if not path.exists():
-        st.markdown("### " + tr("Behavior model"))
-        if learning and learning.get("available"):
-            st.caption(tr("The model is learning what is normal for this computer: {days} of {needed} days collected. "
-                          "It then trains here, on public malware examples plus these days, and never sends anything out.",
-                          days=learning["days"], needed=ml_local.LEARNING_DAYS))
-        else:
-            st.caption(tr("No behavior model is available in this installation."))
-        if learning and learning.get("error"):
-            st.caption(tr("Training failed: {error}", error=learning["error"]))
-        return
-    try:
-        modified = path.stat().st_mtime
-        model = _load_model(str(path), modified)
-        rows = score_groups(str(state_dir / "collector.sqlite"), str(path), modified,
-                            str(cti_db_path) if cti_db_path else None, int(time.time() // REFRESH_SECONDS))
-    except (OSError, ValueError, KeyError, TypeError, sqlite3.Error):
-        st.warning(tr("The behavior model or the collected data could not be read right now."))
-        return
-    labels_path = install_dir / "review-labels.json"
-    labels = load_labels(labels_path)
-    evaluation = model.evaluation.get("eval", {})
-    flagged = [r for r in rows if r["score"] >= model.threshold]
-    hidden = [r for r in flagged if (labels.get(item_key(_ml_item(r))) or {}).get("label") == "known"]
-    shown = [r for r in flagged if r not in hidden]
-    shown.sort(key=lambda r: ((labels.get(item_key(_ml_item(r))) or {}).get("label") != "suspicious", -r["score"]))
-    devices = len({r["device"] for r in rows})
-    with st.container(border=True):
-        if shown:
-            st.markdown("### " + tr("{count} connection(s) stand out", count=len(shown)))
-        else:
-            st.markdown("### " + tr("Nothing unusual in how your devices talk"))
-        st.caption(tr("In the last 48 hours the model checked how {devices} device(s) talked to {count} destination(s).",
-                      devices=devices, count=len(rows)))
-    columns = st.columns(4)
-    columns[0].metric(tr("Stands out"), len(shown))
-    columns[1].metric(tr("Destinations checked"), len(rows))
-    columns[2].metric(tr("Caught in testing"), _percent(evaluation.get("malware_capture_recall")),
-                      help=tr("Share of never-seen malware recordings in which the model flagged at least one connection."))
-    columns[3].metric(tr("False flags per day (test)"), evaluation.get("normal_flagged_per_unit_day", "–"),
-                      help=tr("Average flags per computer per day on never-seen normal computers."))
-    for row in shown[:MAX_SHOWN]:
-        _render_card(row, model, labels, labels_path, ip_owner)
-    if hidden:
-        st.caption(tr("{count} you marked as known are hidden.", count=len(hidden)))
-    below = [r for r in rows if r["score"] < model.threshold][:10]
-    if below:
-        with st.expander(tr("Highest scores below the line")):
-            st.dataframe([{tr("Destination"): r["name"] or r["address"], tr("Port"): r["port"],
-                           tr("Score"): _score_text(r["score"], model.threshold),
-                           tr("Why"): ", ".join(tr(REASONS[x]) for x in r["reasons"])} for r in below],
-                         hide_index=True, width="stretch")
-    with st.expander(tr("What is this?")):
-        st.markdown(_guide())
-        grade = model.evaluation.get("grade", "")
-        st.caption(tr("Model {model} · trained {time} · test grade: {grade}", model=model.model_id or "?",
-                      time=model.trained_at or "?", grade=grade.split(":")[0]))
-
-
-def render_behavior_evaluation(install_dir: Path) -> None:
-    """Model evaluation page for the local behavior model: what was measured, and its limits."""
-    path = model_path(install_dir)
-    try:
-        model = _load_model(str(path), path.stat().st_mtime)
-    except (OSError, ValueError, KeyError, TypeError):
-        st.warning(tr("The behavior model could not be read."))
-        return
-    report = model.evaluation
-    test, dev = report.get("eval", {}), report.get("dev", {})
-    st.markdown("### " + tr("Experimental behavior model"))
-    st.caption(tr("Model {model} · trained {time} · test grade: {grade}", model=model.model_id or "?",
-                  time=model.trained_at or "?", grade=str(report.get("grade", "")).split(":")[0]))
-    columns = st.columns(4)
-    columns[0].metric(tr("Caught in testing"), _percent(test.get("malware_capture_recall")))
-    columns[1].metric(tr("Malicious connections caught"), _percent(test.get("malware_group_recall")))
-    columns[2].metric(tr("False flags per day (test)"), test.get("normal_flagged_per_unit_day", "–"))
-    columns[3].metric(tr("Score line"), round(model.threshold * 100))
-    checks = report.get("checks", {})
-    if checks:
-        if report.get("pass"):
-            st.success(tr("Passed its declared test: at least half of never-seen malware recordings caught, "
-                          "at most one false flag per computer per day."))
-        else:
-            st.warning(tr("Did not pass every declared test; treat its hints with extra care."))
-    tests = report.get("tests", {})
-    if tests and checks:
-        st.markdown("**" + tr("Declared tests (fixed before the results were seen)") + "**")
-        st.dataframe(declared_test_rows(tests, checks), hide_index=True, width="stretch")
-    rows = []
-    for title, values in ((tr("Never-seen test recordings"), test), (tr("Development recordings"), dev)):
-        if not values:
-            continue
-        rows.append({tr("Data"): title,
-                     tr("Malware recordings"): values.get("malware_captures"),
-                     tr("Caught"): _percent(values.get("malware_capture_recall")),
-                     tr("Normal computer-days"): values.get("normal_unit_days"),
-                     tr("False flags per day"): values.get("normal_flagged_per_unit_day")})
-    st.dataframe(rows, hide_index=True, width="stretch")
-    importance = report.get("importance") or []
-    if importance:
-        from .i18n import current_language
-        names = FEATURE_NAMES_TR if current_language() == "tr" else FEATURE_NAMES
-        st.markdown("**" + tr("What the model looks at most") + "**")
-        st.bar_chart({names.get(f, f): v for f, v in importance[:10]}, horizontal=True)
-    st.markdown("**" + tr("Limits") + "**")
-    st.markdown(tr(LIMITS))
-    with st.expander(tr("What is this?")):
-        st.markdown(_guide())
 
 
 TESTS = (
@@ -440,21 +267,3 @@ LIMITS = """- The malware recordings are lab infections from 2011–2024; new ma
 - A group needs at least 4 connections to the same destination within a day; single or rare connections are not scored."""
 
 
-def render_lookup_behavior(name: str | None, address: str | None, state_dir: Path | None,
-                           cti_db_path: Path | None = None) -> None:
-    """Quick lookup: how this computer talked to the looked-up name or IP (no network, local data only)."""
-    result = scored(state_dir, cti_db_path)
-    if result is None:
-        return
-    model, rows = result
-    wanted = (name or "").strip().rstrip(".").lower()
-    matches = [r for r in rows if (address and r["address"] == address)
-               or (wanted and any(n == wanted or n.endswith("." + wanted) for n in r["names"]))]
-    st.markdown("**" + tr("Behavior on this computer (experimental ML)") + "**")
-    if not matches:
-        st.caption(tr("This computer did not talk to it often enough in the last 48 hours for a behavior score "
-                      "(at least 4 connections to the same destination are needed)."))
-        return
-    labels = load_labels(Path(state_dir).parent / "review-labels.json")
-    for row in sorted(matches, key=lambda r: -r["score"])[:3]:
-        _render_card(row, model, labels, Path(state_dir).parent / "review-labels.json", None, key_prefix="lookup-ml")

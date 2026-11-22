@@ -6,8 +6,6 @@ from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from streamlit.testing.v1 import AppTest
-
 from threatfusion import cli, runtime_analysis
 from threatfusion.dashboard import device_finding_rows
 from threatfusion.device_triage import build_device_findings
@@ -173,39 +171,6 @@ def test_device_cli_requires_explicit_raw_export_and_refuses_overwrite(tmp_path,
     assert "192.0.2.1" in raw.read_text()
 
 
-@pytest.mark.parametrize("public_mode", [True, False])
-def test_device_ui_exercises_privacy_toggle_and_observe_filter(public_mode):
-    app = AppTest.from_string(
-        "import streamlit as st\n"
-        "from threatfusion.dns import DNSEvent\n"
-        "from threatfusion.models import IOCRecord, IOCType\n"
-        "from threatfusion.runtime_analysis import analyze_dns_events\n"
-        "from threatfusion.ui_device_triage import render_device_triage\n"
-        "result = analyze_dns_events([DNSEvent('ioc.test', client_ip='192.0.2.1'), "
-        "DNSEvent('normal.test', client_ip='192.0.2.2')], "
-        "[IOCRecord('ioc.test', IOCType.DOMAIN, 'Synthetic-Lab')], None)\n"
-        f"render_device_triage(result, public_mode={public_mode!r})\n"
-    ).run(timeout=15)
-    assert not app.exception
-    assert len(app.dataframe[0].value) == 1
-    assert app.dataframe[0].value.iloc[0]["Device"] == "Device 001"
-    ips = [c for c in app.checkbox if c.key == "device_triage_include_ips"]
-    assert bool(ips) is not public_mode
-    if ips:
-        ips[0].check().run(timeout=15)
-        assert app.dataframe[0].value.iloc[0]["Device"] == "192.0.2.1"
-    app.checkbox(key="device_triage_include_observe").check().run(timeout=15)
-    assert not app.exception
-    assert len(app.dataframe[0].value) == 2
-    if ips:
-        app.checkbox(key="device_triage_include_ips").uncheck()
-    app.session_state["language_selector"] = "🇹🇷 Türkçe"
-    app.run(timeout=15)
-    assert not app.exception
-    assert app.dataframe[0].value.iloc[0]["Cihaz"] == "Cihaz 001"
-    assert "30 dakikadan kısa" in app.dataframe[0].value.iloc[0]["Veri sınırlamaları"]
-
-
 def test_foreign_matches_are_not_assigned_to_unrelated_events():
     from threatfusion.matching import DNSIOCMatch
     foreign = DNSEvent("service.test", client_ip="192.0.2.1")
@@ -215,26 +180,3 @@ def test_foreign_matches_are_not_assigned_to_unrelated_events():
     assert device_finding_rows((finding,))[0]["Verdict"] == "Low"
 
 
-def test_complete_dashboard_renders_device_tab_with_real_pipeline(tmp_path, monkeypatch):
-    monkeypatch.setenv("THREATFUSION_CTI_ONLY", "1")
-    monkeypatch.setenv("THREATFUSION_PUBLIC_MODE", "0")
-    monkeypatch.setenv("THREATFUSION_DB_PATH", str(tmp_path / "cti.sqlite"))
-    monkeypatch.setenv("THREATFUSION_EVALUATION_REPORT", str(tmp_path / "missing.json"))
-    app = AppTest.from_string(
-        "import streamlit as st\n"
-        "from datetime import datetime, timedelta, timezone\n"
-        "from threatfusion.dns import DNSEvent\n"
-        "from threatfusion.runtime_analysis import analyze_dns_events\n"
-        "events = [DNSEvent('service.test', client_ip='192.0.2.1', "
-        "timestamp=datetime(2026, 10, 4, tzinfo=timezone.utc) + timedelta(seconds=i*300)) "
-        "for i in range(24)]\n"
-        "st.session_state['analysis_result'] = analyze_dns_events(events, [], None)\n"
-        "import streamlit_app\nstreamlit_app.main()\n"
-    ).run(timeout=15)
-    assert not app.exception
-    assert "Device triage" in [tab.label for tab in app.tabs]
-    frames = [frame.value for frame in app.dataframe if "Queue priority" in frame.value.columns]
-    assert len(frames) == 1
-    assert frames[0].iloc[0]["Queue priority"] == "Review"
-    assert frames[0].iloc[0]["Verdict"] == "Low"
-    assert "192.0.2.1" not in frames[0].to_json()

@@ -80,8 +80,6 @@ export const saveMark = (key: string, mark: Mark | null) =>
   })
 
 export interface AppInfo {
-  /** A Streamlit workspace explicitly configured beside this one; null otherwise (DEC-109). */
-  streamlit_url: string | null
   setup_available: boolean
   first_setup: boolean
   /** Same rule as Streamlit: hidden in CTI-only mode without the on-device behavior model. */
@@ -260,7 +258,7 @@ export interface SetupOk {
   state: 'ok'
   caption: string
   mode: { title: string; value: 'cti-only' | 'demo'; options: { value: 'cti-only' | 'demo'; label: string }[] }
-  application: { title: string; caption: string; stop: string; stopping: string; not_running: string; streamlit: string }
+  application: { title: string; caption: string; stop: string; stopping: string; not_running: string }
   demo_note?: string
   keys?: {
     title: string

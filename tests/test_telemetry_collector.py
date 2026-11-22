@@ -8,11 +8,8 @@ import signal
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
 import pytest
-from streamlit.testing.v1 import AppTest
-
 from threatfusion import telemetry_collector as module
 from threatfusion.expected_connections import parse_expected_connections
 from threatfusion.models import IOCRecord, IOCType
@@ -191,54 +188,6 @@ def test_fifo_lock_is_rejected_without_blocking(paths):
         module.ZeekCollector(source, state)
 
 
-def test_collector_ui_bilingual_snapshot_and_public_boundary(paths):
-    source, state = paths
-    (source / "conn.log").write_text(text(long=True))
-    with module.ZeekCollector(source, state) as collector:
-        collector.tick(now=datetime.now(timezone.utc))
-    app = AppTest.from_string(
-        "from pathlib import Path\nfrom threatfusion.ui_collector import render_collector\n"
-        f"render_collector(Path({str(state)!r}), public_mode=False)\n"
-    ).run(timeout=15)
-    assert not app.exception and app.dataframe[0].value.iloc[0]["Originator"] == "192.0.2.1"
-    app.checkbox(key="collector_local_ips").set_value(False).run(timeout=15)
-    assert not app.exception and app.dataframe[0].value.iloc[0]["Originator"] == "Host 001"
-    assert app.selectbox(key="collector_timeline_group").value == 1
-    assert app.dataframe[-1].value.iloc[0]["Zeek states"] == "SF: 1"
-    before = read_snapshot(state)
-    app.session_state["language_selector"] = "🇹🇷 Türkçe"
-    app.run(timeout=20)
-    assert not app.exception
-    assert app.dataframe[-1].value.iloc[0]["Zeek durumları"] == "SF: 1"
-    assert read_snapshot(state) == before
-    assert not app.exception and app.dataframe[0].value.iloc[0]["Başlatan"] == "Sistem 001"
-    public = AppTest.from_string(
-        "from pathlib import Path\nfrom threatfusion.ui_collector import render_collector\n"
-        f"render_collector(Path({str(state)!r}), public_mode=True)\n"
-    ).run(timeout=15)
-    assert not public.exception and not public.dataframe and not public.metric
-
-
-def test_collector_page_revalidates_the_local_identity_view_once_per_refresh(paths):
-    source, state = paths
-    (source / "conn.log").write_text(text(long=True))
-    with module.ZeekCollector(source, state) as collector:
-        collector.tick(now=datetime.now(timezone.utc))
-    app = AppTest.from_string(
-        "from pathlib import Path\nimport threatfusion.collector_identity as identity\n"
-        "from threatfusion.ui_collector import render_collector\n"
-        "original = identity.local_identity_view\ncalls = []\n"
-        "def counted(*args):\n    calls.append(1)\n    return original(*args)\n"
-        "identity.local_identity_view = counted\n"
-        "try:\n"
-        f"    render_collector(Path({str(state)!r}), public_mode=False)\n"
-        "finally:\n    identity.local_identity_view = original\n"
-        "import streamlit as st\nst.caption(f'identity calls: {len(calls)}')\n"
-    ).run(timeout=15)
-    assert not app.exception and app.dataframe[0].value.iloc[0]["Originator"] == "192.0.2.1"
-    assert app.caption[-1].value == "identity calls: 1"
-
-
 def test_real_process_sigterm_releases_lock_and_restart_is_idempotent(paths):
     source, state = paths
     (source / "conn.log").write_text(text())
@@ -264,41 +213,6 @@ def test_real_process_sigterm_releases_lock_and_restart_is_idempotent(paths):
         if process.poll() is None:
             process.kill()
             process.wait()
-
-
-def test_complete_managed_application_exposes_collector_but_hosted_profile_does_not(tmp_path, monkeypatch):
-    from threatfusion.cti_cache import initialize_cti_cache
-    from threatfusion.ui_local_settings import _mode_config
-
-    root = tmp_path / "installation"
-    root.mkdir(mode=0o700)
-    (root / ".threatfusion-install").write_text("1\n")
-    root.joinpath("runtime/cti").mkdir(parents=True)
-    initialize_cti_cache(root / "runtime/cti/threatfusion.sqlite")
-    logs = tmp_path / "logs"
-    logs.mkdir()
-    (logs / "conn.log").write_text(text(long=True))
-    with module.ZeekCollector(logs, root / "collector") as collector:
-        collector.tick(now=datetime.now(timezone.utc))
-    monkeypatch.setenv("THREATFUSION_LOCAL_INSTALL_DIR", str(root))
-    monkeypatch.setenv("THREATFUSION_LOCAL_LOOPBACK", "1")
-    _mode_config.clear()
-    application = Path(__file__).resolve().parents[1] / "streamlit_app.py"
-    app = AppTest.from_file(str(application))
-    app.session_state["workspace_nav"] = "Collected connections"
-    app.run(timeout=20)
-    assert not app.exception and app.dataframe[0].value.iloc[0]["Originator"] == "192.0.2.1"
-    monkeypatch.delenv("THREATFUSION_LOCAL_INSTALL_DIR")
-    monkeypatch.delenv("THREATFUSION_LOCAL_LOOPBACK")
-    monkeypatch.setenv("THREATFUSION_PUBLIC_MODE", "1")
-    monkeypatch.setenv("THREATFUSION_CTI_ONLY", "1")
-    monkeypatch.setenv("THREATFUSION_DB_PATH", str(root / "runtime/cti/threatfusion.sqlite"))
-    monkeypatch.setenv("THREATFUSION_COLLECTOR_STATE_DIR", str(root / "collector"))
-    public = AppTest.from_file(str(application))
-    public.session_state["workspace_nav"] = "Collected connections"
-    public.run(timeout=20)
-    assert not public.exception and all(b.key != "nav_collector" for b in public.button)
-    assert not public.dataframe
 
 
 def test_local_discovery_chatter_is_not_retained(paths):

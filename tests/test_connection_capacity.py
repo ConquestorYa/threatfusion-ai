@@ -9,9 +9,6 @@ from dataclasses import replace
 from datetime import timedelta
 
 import pytest
-import streamlit as st
-from streamlit.testing.v1 import AppTest
-
 from tests.test_connections import log, row
 from tests.test_telemetry_collector import NOW
 from threatfusion import collector_reports as reports
@@ -251,34 +248,6 @@ def test_unrelated_archive_slot_file_survives(tmp_path, small_snapshot):
         with pytest.raises(ValueError, match="unrelated"):
             collector.tick(now=NOW)
     assert user_file.read_text() == "preserve user contents"
-
-
-@pytest.mark.parametrize("language", ["en", "tr"])
-def test_bilingual_partial_ui_defers_download_and_public_view_has_no_io(tmp_path, small_snapshot, monkeypatch, language):
-    source, state = make_input(tmp_path, long=True)
-    with collector_module.ZeekCollector(source, state) as collector:
-        collector.tick(now=NOW)
-    callbacks = []
-    original = st.download_button
-    def capture(*args, **kwargs):
-        if callable(kwargs.get("data")):
-            callbacks.append(kwargs["data"])
-        return original(*args, **kwargs)
-    monkeypatch.setattr(st, "download_button", capture)
-    label = "🇹🇷 Türkçe" if language == "tr" else "🇬🇧 English"
-    code = f'from pathlib import Path\nimport streamlit as st\nfrom threatfusion.ui_collector import render_collector\nst.session_state["language_selector"]={label!r}\nrender_collector(Path({str(state)!r}), public_mode=False)'
-    app = AppTest.from_string(code).run()
-    assert not app.exception and len(callbacks) == 1
-    assert len(json.loads(gzip.decompress(callbacks[0]()))["findings"]) == 5
-    metric = next(m for m in app.metric if m.label == ("Original TCP reviews" if language == "en" else "Asıl TCP incelemeleri"))
-    assert metric.value == "5"
-    callback = callbacks[0]
-    (state / read_snapshot(state)["full_report"]["file"]).unlink()
-    with pytest.raises(RuntimeError):
-        callback()
-    callbacks.clear()
-    app = AppTest.from_string(code.replace("public_mode=False", "public_mode=True")).run()
-    assert not app.exception and not callbacks and not app.metric and not app.warning
 
 
 def test_malformed_projection_counts_and_mapping_fail_closed(tmp_path, small_snapshot):

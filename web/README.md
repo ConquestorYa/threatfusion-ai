@@ -1,16 +1,13 @@
 # ThreatFusion web workspace (React)
 
 React + TypeScript + Tailwind + shadcn/ui front end for the local FastAPI
-backend in `src/threatfusion/api/`. It replaces the Streamlit workspace screen
-by screen ([DEC-101](../docs/dev/DECISIONS.md)); **every screen has moved**:
-What to check, Details (with timelines and the DNS ML column), Experimental
-ML (DEC-105), Quick lookup, Analyze telemetry (samples in
-`data/samples/demo/`), Analysis history (only in history mode, DEC-107),
-Model evaluation (same visibility as Streamlit, DEC-106) and Setup & CTI
-updates (keys are always saved, DEC-103; Stop local application). Streamlit
-stays supported: `threatfusion-ai --streamlit` (DEC-108). The header links to
-Streamlit only when `THREATFUSION_STREAMLIT_URL` names one running beside it
-(DEC-109).
+backend in `src/threatfusion/api/`. It is the application's only interface:
+What to check, Details, Experimental ML (DEC-105), Quick lookup, Analyze
+telemetry (samples in `data/samples/demo/`), Analysis history (history mode
+only, DEC-107), Model evaluation (DEC-106) and Setup & CTI updates (DEC-103).
+It replaced the Streamlit workspace screen by screen (DEC-101); Streamlit was
+removed on 2026-11-22 (DEC-111). The shared view logic still lives in the
+Python `ui_*` modules, without any Streamlit code.
 Design rules (dark by default, tokens, density) are in
 [CLAUDE.md](../CLAUDE.md#design-rules-react-workspace-web-dec-102).
 
@@ -23,33 +20,24 @@ Every server here listens on `127.0.0.1` only. None has a host option.
 from the same origin, so installing or running needs no Node (DEC-108). After
 changing anything under `web/src`, run `npm run build` and commit `web/dist`
 with the source; CI rebuilds and fails when they differ. A source without
-`web/dist` falls back to Streamlit with a message.
+`web/dist` refuses to start.
 
-## Run both applications together
+## Run it from a source checkout
 
 Quickest, with synthetic data: `scripts/demo_web.sh` (see the
 [demo checklist](../docs/dev/DEMO_CHECKLIST_TR.md)); it also adds a synthetic,
 untrained behavior model so Experimental ML and Model evaluation appear.
 
-Two terminals, from the repository root. The project's `.venv` (with
-`requirements.txt`) is needed; Node 22 (`nvm install 22`) only to rebuild.
+With your own collector state, from the repository root (the project's
+`.venv` with `requirements.txt`; Node 22 only to rebuild the page):
 
 ```bash
-# Terminal 1 — Streamlit workspace (unchanged), 127.0.0.1:8501
-.venv/bin/streamlit run streamlit_app.py --server.address=127.0.0.1 --server.port=8501
-
-# Terminal 2 — React page + API, 127.0.0.1:8600
-THREATFUSION_COLLECTOR_STATE_DIR=/path/to/private/collector \
-THREATFUSION_STREAMLIT_URL=http://127.0.0.1:8501 \
-  .venv/bin/python -m threatfusion.api
+THREATFUSION_COLLECTOR_STATE_DIR=/path/to/private/collector .venv/bin/python -m threatfusion.api
 ```
 
-Open http://127.0.0.1:8600 for the new page and http://127.0.0.1:8501 for
-Streamlit. Both read the same collector snapshot and share the same marks
-(`review-labels.json`).
+Open http://127.0.0.1:8600.
 
-- **With a managed installation**: `threatfusion-ai` opens the React
-  workspace; `threatfusion-ai --streamlit` opens Streamlit. To run this
+- **With a managed installation**: `threatfusion-ai` opens it. To run this
   checkout's API against the installation instead:
   `THREATFUSION_LOCAL_INSTALL_DIR=~/.local/share/threatfusion-ai
   THREATFUSION_LOCAL_LOOPBACK=1 .venv/bin/python -m threatfusion.api`.
@@ -61,8 +49,9 @@ Streamlit. Both read the same collector snapshot and share the same marks
   for Analysis history (`THREATFUSION_CTI_ONLY=0`,
   `THREATFUSION_MODEL_DIR=/tmp/tf-demo/models/demo-synthetic`,
   `THREATFUSION_DB_PATH=/tmp/tf-demo/cti.sqlite`). Neither is a measured model.
-- `THREATFUSION_STREAMLIT_URL` accepts only a loopback `http://` address; any
-  other value, or none, means no Streamlit link.
+- **Docker**: `docker build -t threatfusion . && docker run --rm --network host
+  threatfusion` serves it on the host's 127.0.0.1:8600 (public demo mode; the
+  API binds loopback only, so host networking is how the host reaches it).
 
 ## Development with live reload
 
@@ -85,15 +74,15 @@ The browser tests start two APIs with fresh synthetic states: `e2e/serve.sh`
 and `e2e/serve-history.sh` (developer configuration with the synthetic demo
 domain artifact and history enabled, port 8612, for `history.spec.ts`). They
 need the Playwright Chromium (`npx playwright install chromium`).
+`E2E_PYTHON=/path/to/python` runs them with another Python environment.
 
 ## Rules the page relies on
 
-- The list, wording and marks come from the same Python code as the Streamlit
-  tab (`build_review_items`, the shared i18n dictionary and
-  `review-labels.json`), so both interfaces agree.
-- Real IPs of the user's own network are shown on screen exactly as Streamlit
-  does (the local identity view); nothing leaves the computer unless the
-  analyst clicks an outside lookup link.
+- The list, wording and marks come from the shared Python view code
+  (`build_review_items`, the shared i18n dictionary and `review-labels.json`).
+- Real IPs of the user's own network are shown on screen (the local identity
+  view); nothing leaves the computer unless the analyst clicks an outside
+  lookup link.
 - The API refuses foreign `Host` headers (DNS rebinding) and refuses writes
   without a loopback `Origin`, a same-origin fetch and a JSON body. There is no
   CORS and no OpenAPI page. The CSP allows only same-origin scripts.

@@ -49,7 +49,7 @@ yazılmaz, dışa aktarılmaz, GitHub'a kopyalanmaz ya da Docker imajlarına gir
 **Kayıtlı ve oturumdaki anahtarları unut**, uygulamanın kayıtlı dosyasını ve
 geçerli tarayıcı oturumunun anahtar seçimini kaldırır. Açık diğer tarayıcı
 oturumlarının kendi belleği vardır; onların seçimlerini silmek için o sekmeleri
-kapat. Yedek olarak hiçbir geliştirici anahtarı, `.env`, Streamlit secret ya da
+kapat. Yedek olarak hiçbir geliştirici anahtarı, `.env`, gizli ayar dosyası ya da
 özel geliştirme önbelleği kullanılmaz. Ayrı geliştirici CLI ortam seçenekleri
 yönetilen kurulumdan ayrı kalır.
 

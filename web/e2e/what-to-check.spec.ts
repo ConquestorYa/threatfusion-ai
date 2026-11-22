@@ -100,7 +100,7 @@ test('Turkish uses the shared dictionary', async ({ page }) => {
   await page.getByRole('radio', { name: 'EN' }).click()
 })
 
-test('there is no Streamlit link unless one is configured beside this workspace', async ({ page }) => {
+test('the header has no link to the removed Streamlit workspace', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Open in Streamlit' })).toHaveCount(0)
 })

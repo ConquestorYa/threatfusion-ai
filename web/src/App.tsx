@@ -13,8 +13,7 @@ import { QuickLookup } from '@/pages/QuickLookup'
 import { Setup } from '@/pages/Setup'
 import { WhatToCheck } from '@/pages/WhatToCheck'
 
-// Screens in migration order (PRODUCT_PLAN, DEC-101); every Streamlit screen
-// has moved. `threatfusion-ai --streamlit` still opens Streamlit (DEC-108/109).
+// Screens in the order of the former Streamlit navigation (DEC-101, DEC-111).
 const SCREENS: Screen[] = [
   { id: 'review', title: 'What to check' },
   { id: 'details', title: 'Details' },
@@ -29,7 +28,7 @@ const SETUP: Screen = { id: 'setup', title: 'Setup & CTI updates' }
 export default function App() {
   const { t } = usePreferences()
   const app = useQuery({ queryKey: ['app'], queryFn: fetchAppInfo, staleTime: Infinity })
-  // Same order and visibility rules as the Streamlit navigation.
+  // Same order and visibility rules as the former Streamlit navigation.
   const screens = [
     ...SCREENS,
     ...(app.data?.history_available ? [HISTORY] : []),

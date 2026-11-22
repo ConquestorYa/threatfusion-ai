@@ -1,10 +1,8 @@
 """Quick lookup as JSON, built with the Streamlit page's own helpers.
 
-``ui_quick_lookup`` translates inside its presentation helpers with ``tr``,
-which reads the Streamlit session language. ``in_language`` swaps
-``threatfusion.i18n.current_language`` for the duration of one response
-(under a lock), so the same helpers produce the same wording in either
-language without being copied. The analysis is ``analyze_quick_lookup_from_cache``.
+``ui_quick_lookup`` translates inside its presentation helpers with ``tr``;
+``in_language`` sets the language of one response (a context variable, so
+concurrent requests do not interfere). The analysis is ``analyze_quick_lookup_from_cache``.
 The experimental "Behavior on this computer" card comes from
 ``behavior.lookup_behavior`` (``ui_behavior.render_lookup_behavior``); its
 scoring (which may train) runs before the language lock is taken.
@@ -13,27 +11,19 @@ from __future__ import annotations
 
 import threading
 from collections import OrderedDict
-from contextlib import contextmanager
 from pathlib import Path
 
 from .. import i18n
 from .settings import ApiSettings
 
-_LANGUAGE_LOCK = threading.RLock()
 _AGES: OrderedDict[str, object] = OrderedDict()  # per-process cache, like Streamlit's per-session one
 _AGES_LOCK = threading.Lock()
 MAX_CACHED_AGES = 256
 
 
-@contextmanager
 def in_language(language: str):
-    with _LANGUAGE_LOCK:
-        original = i18n.current_language
-        i18n.current_language = lambda: language
-        try:
-            yield
-        finally:
-            i18n.current_language = original
+    """Shared helpers translate with ``i18n.tr``; this sets the language for one response."""
+    return i18n.use_language(language)
 
 
 class LookupUnavailable(RuntimeError):

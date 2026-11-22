@@ -40,10 +40,10 @@ Out of scope:
 
 CTI credentials must belong to the user running the application. There is no
 bundled developer key or shared fallback. The Linux first-run profile keeps
-keys out of installation metadata and the Streamlit child environment. The
+keys out of installation metadata and the web server child environment. The
 default demo requires no key; missing keys skip the corresponding keyed feed.
 Refresh diagnostics omit raw exception text and authenticated URLs. `.env`,
-Streamlit `secrets.toml` and private-key files must remain local; the release
+`secrets.toml` files and private-key files must remain local; the release
 audit rejects them in both tracked files and reachable Git history. Private
 CTI/dataset/model/telemetry files must not be distributed.
 

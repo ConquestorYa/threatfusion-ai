@@ -5,8 +5,6 @@ from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from streamlit.testing.v1 import AppTest
-
 from scripts.lab.evaluate_connection_controls import zeek_text
 from scripts.lab.evaluate_session_coverage import controls
 from threatfusion.connections import ConnectionRecord, analyze_connections
@@ -62,26 +60,6 @@ def test_declared_contract_controls_cover_benign_noise_and_incomplete_metadata()
         result, _ = analyze_zeek_conn_log_with_diagnostics(zeek_text(case["records"]),[],None)
         actual = "review" if any(f.priority == "review" for f in result.connection_findings) else "observe"
         assert actual == case["expected_priority"],case["name"]
-
-
-def test_reset_session_ui_explains_coverage_and_translates_counts():
-    records = next(c["records"] for c in controls(20261005) if c["name"] == "periodic_RSTR")
-    app = AppTest.from_string(
-        "from threatfusion.runtime_analysis import analyze_zeek_conn_log_with_diagnostics\n"
-        "from threatfusion.ui_connections import render_connections\n"
-        f"r,_=analyze_zeek_conn_log_with_diagnostics({zeek_text(records)!r},[],None)\n"
-        "render_connections(r,public_mode=True)\n"
-    ).run(timeout=15)
-    assert not app.exception
-    row = app.dataframe[0].value.iloc[0]
-    assert row["Reset endings"] == row["Bidirectional payload sessions"] == 24
-    assert "reset" in row["Coverage limits"]
-    app.session_state["language_selector"] = "🇹🇷 Türkçe"
-    app.run(timeout=15)
-    assert not app.exception
-    row = app.dataframe[0].value.iloc[0]
-    assert row["Reset ile bitenler"] == row["Çift yönlü veri oturumları"] == 24
-    assert "reset" in row["Kanıt"]
 
 
 def test_completed_reset_log_reaches_private_collector_snapshot(tmp_path):

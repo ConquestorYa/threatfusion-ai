@@ -42,23 +42,9 @@ def test_launcher_commands_are_loopback_only():
     assert command[-1] == str(REPO / "web" / "dist") and "--host" not in command
 
 
-def test_missing_page_falls_back_to_streamlit(tmp_path, monkeypatch, capsys):
-    started = []
-
-    class Stop(Exception):
-        pass
-
-    def popen(command, **kwargs):
-        started.append(command)
-        raise Stop
-
-    monkeypatch.setattr(local_setup.subprocess, "Popen", popen)
-    monkeypatch.setattr(local_setup.signal, "signal", lambda *args: None)
-    with pytest.raises(Stop):
+def test_missing_page_is_an_error_not_a_fallback(tmp_path):
+    with pytest.raises(RuntimeError, match="web/dist"):
         local_setup.run_local_server(tmp_path, {}, port=_free_port(), open_browser=False)
-    assert "streamlit" in started[0] and "Streamlit arayüzü açılıyor" in capsys.readouterr().out
-    with pytest.raises(ValueError):
-        local_setup.run_local_server(tmp_path, {}, interface="other")
 
 
 def test_real_launcher_serves_the_page_and_stops_from_the_setup_button(tmp_path):

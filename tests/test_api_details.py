@@ -55,38 +55,6 @@ def test_filters_and_aliases(client):
     assert aliases["columns"][:3] == ["Grup", "Başlatan", "Yanıtlayan"]
 
 
-def test_streamlit_parity_for_the_tables(state, monkeypatch):
-    """Render the real Streamlit Details tab and compare its tables with the API."""
-    from streamlit.testing.v1 import AppTest
-
-    script = (
-        "from pathlib import Path\n"
-        "from threatfusion import ui_collector\n"
-        f"state = Path({str(state)!r})\n"
-        "payload = ui_collector.read_snapshot(state)\n"
-        "status = payload['collector']\n"
-        "ui_collector._render_details(state, payload, status, status['counts'],\n"
-        "                             local_view=ui_collector._local_view(state, payload))\n"
-    )
-    app = AppTest.from_string(script).run(timeout=30)
-    assert not app.exception
-    frames = [frame.value for frame in app.dataframe]
-    client = TestClient(create_app(lambda: ApiSettings(True, state, None), environment={}), base_url=ORIGIN)
-    body = client.get("/api/details").json()
-    # Order on the page: connections, timeline of the first group, attempts, DNS, DNS timeline.
-    connections, timeline, attempts, dns = frames[0], frames[1], frames[2], frames[3]
-    assert list(connections.columns) == body["connections"]["columns"]
-    streamlit_rows = connections.astype(object).where(connections.notna(), None).values.tolist()
-    assert [[str(v) for v in row] for row in streamlit_rows] == [[str(v) for v in row] for row in body["connections"]["rows"]]
-    first_group = body["connections"]["groups"][0]["group"]
-    ours = client.get("/api/details/connection-timeline", params={"group": first_group}).json()["table"]
-    assert list(timeline.columns) == ours["columns"]
-    assert timeline.astype(str).values.tolist() == [[str(v) for v in row] for row in ours["rows"]]
-    assert list(attempts.columns) == body["attempts"]["columns"]
-    # Streamlit adds the experimental ML column only when a local model exists.
-    assert [c for c in dns.columns if c != "Behavior score (ML)"] == body["dns"]["columns"]
-
-
 def test_connection_timeline_and_guidance(client, state):
     from threatfusion.ui_collector import read_snapshot
 

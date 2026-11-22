@@ -151,19 +151,3 @@ def test_previous_review_shows_in_a_new_analysis(dev):
     assert policy["previous"].startswith("Previous analyst review: Benign · ") and policy["previous"].endswith(" · lab")
 
 
-def test_runs_table_matches_streamlit(dev):
-    from streamlit.testing.v1 import AppTest
-
-    root, client = dev
-    _save(client, _analyze(client))
-    script = ("from pathlib import Path\nfrom threatfusion.ui_history import _show_history\n"
-              f"_show_history(Path({str(root / 'cti.sqlite')!r}))\n")
-    app = AppTest.from_string(script).run(timeout=30)
-    assert not app.exception
-    history = client.get("/api/history").json()
-    runs = app.dataframe[0].value
-    assert list(runs.columns) == history["runs"]["columns"]
-    assert [[str(v) for v in row] for row in runs.values.tolist()] == \
-        [[str(v) for v in row] for row in history["runs"]["rows"]]
-    findings = app.dataframe[-1].value
-    assert findings["Domain"].tolist() == history["findings"]["domains"]

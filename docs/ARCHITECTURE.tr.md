@@ -95,7 +95,7 @@ Durum dizinleri yalnızca sahibine açıktır (0700, dosyalar 0600). Uygulama
 | Tespit | `connections.py`, `connection_attempts.py`, `device_triage.py`, `dns_behavior.py`, `hybrid_assessment.py` |
 | İnceleme görünümleri | `connection_timeline.py`, `dns_timeline.py`, `expected_connections.py` |
 | Yükleme analizi | `dns_ingest.py`, `network_telemetry.py`, `runtime_analysis.py` ve biçim bağdaştırıcıları |
-| Web uygulaması | `streamlit_app.py`, `ui_*.py`, `local_workspace.py`, `request_guard.py` |
+| Web uygulaması | `src/threatfusion/api/` (loopback FastAPI), `web/` (React; derlenmiş sayfa `web/dist`), ortak görünüm mantığı `ui_*.py`, `local_workspace.py`, `request_guard.py` |
 | Kurulum aracı | `scripts/install_linux.sh`, `scripts/bootstrap_linux.py`, `local_setup.py` |
 | Deneysel ML | `baseline.py`, `rhythm.py`, `ml_behavior.py`, `ml_local.py` (+ `models/`), `ui_new_destinations.py`, `ui_behavior.py`; sözcüksel model `ml_*.py` ([değerlendirme geçmişi](evidence/ML_DATASET.md), İngilizce) |
 

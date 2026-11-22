@@ -4,7 +4,7 @@
 # served by the real API on loopback only. Used by playwright.config.ts.
 set -euo pipefail
 repo="$(cd "$(dirname "$0")/../.." && pwd)"
-python="$repo/.venv/bin/python"
+python="${E2E_PYTHON:-$repo/.venv/bin/python}"
 [ -x "$python" ] || python="$(command -v python3)"
 root="$(mktemp -d)/install"
 trap 'rm -rf "$(dirname "$root")"' EXIT

@@ -16,9 +16,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote
 
-import streamlit as st
-
-from .i18n import tr
 
 # Evidence label from the snapshot -> (short label, one plain sentence).
 _REASONS = {
@@ -242,31 +239,6 @@ def save_label(path: Path, key: str, label: str | None, *, now: datetime | None 
     return kept
 
 
-def _show(value) -> str:
-    text = str(value or "")
-    if text.startswith("Host "):
-        return tr("Host {number}", number=text[5:])
-    if text.startswith("Device "):
-        return tr("Device {number}", number=text[7:])
-    return text
-
-
-@st.cache_resource(show_spinner=False)
-def _ip_owner_reader(db_path: str):
-    from .ip_owners import IPOwnerReader
-    return IPOwnerReader(Path(db_path))
-
-
-def ip_owner_lookup(cti_db_path: Path | None):
-    if cti_db_path is None:
-        return None
-    reader = _ip_owner_reader(str(cti_db_path))
-    if not reader:
-        _ip_owner_reader.clear()  # table not downloaded yet; look again on the next render
-        return None
-    return reader.lookup
-
-
 def _address_of(item) -> str | None:
     """The real destination IP of an item, when this screen shows one (not an alias)."""
     where = item.get("where") or ()
@@ -294,111 +266,3 @@ def lookup_links(name: str | None, address: str | None) -> list[tuple[str, str]]
     return links
 
 
-def _rerun() -> None:
-    """Redraw only the auto-refreshing collector fragment when possible, else the page."""
-    try:
-        st.rerun(scope="fragment")
-    except st.errors.StreamlitAPIException:
-        st.rerun()
-
-
-_BADGES = {"suspicious": "🟣 Suspicious", "unsure": "⚪ Not sure", "known": "✓ I know this"}
-_BUTTONS = (("known", "✓ I know this"), ("unsure", "? Not sure"), ("suspicious", "⚠ Suspicious"))
-
-
-def _render_label_buttons(item, labels, labels_path):
-    key = item_key(item)
-    current = (labels.get(key) or {}).get("label")
-    row = st.container(horizontal=True, gap="small")
-    for label, text in _BUTTONS:
-        selected = current == label
-        if row.button(tr(text), key=f"label-{label}-{key}", type="primary" if selected else "secondary",
-                         help=tr("Click again to remove the mark") if selected else None):
-            try:
-                save_label(labels_path, key, None if selected else label)
-            except OSError:
-                st.warning(tr("Could not save. Check the folder permissions."))
-            _rerun()
-
-
-def _render_item(item, labels, labels_path, ip_owner=None):
-    with st.container(border=True):
-        icon = "🔴" if item["threat"] else "🟡"
-        name = item["title"] if not item["unnamed"] else _show(item["title"])
-        badge = _BADGES.get((labels.get(item_key(item)) or {}).get("label"))
-        left, middle, right = st.columns([5, 4, 2])
-        left.markdown(f"{icon} **{name}**" + (f" · {tr(badge)}" if badge else "")
-                      + f"  \n{tr(item['label'])} · {tr(item['metric'][0], **item['metric'][1])}")
-        devices = ", ".join(dict.fromkeys(_show(d) for d in item["devices"] if d))
-        address = _address_of(item)
-        if item["where"] and item["where"][0] == "address":
-            middle.markdown(f"`{devices}` → `{_show(item['where'][1])}:{item['where'][2]}`")
-        else:
-            middle.markdown(f"`{devices}`")
-        owner = ip_owner(address) if ip_owner and address else None
-        if owner:
-            middle.caption(owner.label)
-        right.markdown(item["when"] or "")
-        if labels_path is not None:
-            _render_label_buttons(item, labels, labels_path)
-        with st.expander(tr("Why? What to do?")):
-            st.markdown(" ".join(tr(s) for s in item["what"]))
-            st.markdown("**" + tr(ADVICE[item["advice"]]) + "**")
-            facts = []
-            if item["also"]:
-                facts.append(tr("Same addresses as: {names}", names=", ".join(item["also"])))
-            if item.get("sources"):
-                facts.append(tr("Lists: {sources}", sources=", ".join(item["sources"])))
-            if facts:
-                st.caption(" · ".join(facts))
-            target = item["title"] if not str(item["title"]).startswith(("Host ", "Device ")) else None
-            links = lookup_links(target, address)
-            if links:
-                st.caption(tr("Look up on outside sites (opens in a new tab; the name or IP is sent to that site):"))
-                for column, (label, url) in zip(st.columns(len(links)), links):
-                    column.link_button(label, url)
-
-
-def render_review_list(view, *, labels_path: Path | None = None, legacy_hidden_path: Path | None = None,
-                       ip_owner=None) -> None:
-    items = build_review_items(view)
-    labels = load_labels(labels_path, legacy_hidden_path)
-    label_of = {item_key(item): (labels.get(item_key(item)) or {}).get("label") for item in items}
-    # "I know this" hides an item; items on a threat list always stay visible.
-    visible = [item for item in items if item["threat"] or label_of[item_key(item)] != "known"]
-    muted = [item for item in items if item not in visible]
-    # Suspicious items stay on top.
-    visible.sort(key=lambda item: label_of[item_key(item)] != "suspicious")
-    columns = st.columns(4)
-    columns[0].metric(tr("To check"), sum(not label_of[item_key(item)] for item in visible))
-    columns[1].metric(tr("Suspicious"), sum(label == "suspicious" for label in label_of.values()))
-    columns[2].metric(tr("On a threat list"), sum(item["threat"] for item in items))
-    columns[3].metric(tr("Known"), len(muted))
-    if not visible:
-        st.success(tr("Nothing to check. Everything collected is under Details."))
-    else:
-        options = ["All", "Not marked", "Suspicious", "Threat lists", "Connections", "Name lookups"]
-        choice = st.radio(tr("Show"), options, horizontal=True, format_func=tr, key="review_filter",
-                          label_visibility="collapsed")
-        tests = {"All": lambda item: True, "Not marked": lambda item: not label_of[item_key(item)],
-                 "Suspicious": lambda item: label_of[item_key(item)] == "suspicious",
-                 "Threat lists": lambda item: item["threat"], "Connections": lambda item: item["kind"] == "connection",
-                 "Name lookups": lambda item: item["kind"] == "dns"}
-        shown = [item for item in visible if tests[choice](item)]
-        st.caption(tr("A flag means look, not danger. Most are normal programs. Mark each one: "
-                      "I know this hides it next time, Suspicious keeps it on top."))
-        for item in shown[:200]:
-            _render_item(item, labels, labels_path, ip_owner)
-        if len(shown) > 200:
-            st.caption(tr("Showing the first 200. Details lists everything."))
-    if muted and labels_path is not None:
-        with st.expander(tr("Known ({count})", count=len(muted))):
-            for item in muted:
-                left, right = st.columns([4, 1])
-                left.markdown(f"{item['title']} · {tr(item['label'])}")
-                if right.button(tr("Show again"), key="unhide-" + item_key(item)):
-                    try:
-                        save_label(labels_path, item_key(item), None)
-                    except OSError:
-                        st.warning(tr("Could not save. Check the folder permissions."))
-                    _rerun()

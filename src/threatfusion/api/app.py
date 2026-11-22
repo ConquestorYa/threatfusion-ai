@@ -17,7 +17,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
-from ..request_guard import LOOPBACK_HOSTNAMES, host_header_name, is_allowed_host
+from ..request_guard import host_header_name, is_allowed_host
 from . import analyze as analyze_module
 from . import behavior as behavior_module
 from . import details as details_module
@@ -139,21 +139,6 @@ class MarkRequest(BaseModel):
     mark: Mark | None
 
 
-def streamlit_url(environment: Mapping[str, str]) -> str | None:
-    """A Streamlit workspace running beside this one, or None (DEC-109).
-
-    Every screen has moved, so the header links to Streamlit only when it is
-    explicitly configured (developers running both, ``web/README.md``); the
-    launcher's React mode does not start Streamlit. Only a loopback ``http``
-    address is ever linked; anything else means no link.
-    """
-    value = environment.get("THREATFUSION_STREAMLIT_URL", "").strip().rstrip("/")
-    scheme, separator, rest = value.partition("://")
-    if scheme == "http" and separator and "/" not in rest and host_header_name(rest) in LOOPBACK_HOSTNAMES:
-        return value
-    return None
-
-
 def _origin_allowed(origin: str | None, environment: Mapping[str, str]) -> bool:
     if not origin:
         return False
@@ -222,7 +207,7 @@ def create_app(
             first = False
         # Same screen rules as Streamlit: Setup only for a managed installation,
         # and it opens first until real CTI has been downloaded once.
-        return {"streamlit_url": streamlit_url(environment), "setup_available": root is not None,
+        return {"setup_available": root is not None,
                 "first_setup": first, "evaluation_available": evaluation_module.available(resolved),
                 "history_available": resolved.history_enabled}
 

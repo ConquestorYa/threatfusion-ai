@@ -7,8 +7,6 @@ import pytest
 import requests
 
 from threatfusion import domain_age
-from tests.test_streamlit_feedback import feedback_app  # noqa: F401,F811
-
 NOW = datetime(2026, 10, 11, tzinfo=timezone.utc)
 BOOTSTRAP = {"services": [[["test"], ["http://insecure.example/", "https://rdap.registry.test/rdap"]],
                           [["plain"], ["http://only-http.example/"]]]}
@@ -100,29 +98,6 @@ def test_oversized_answer_is_refused(monkeypatch):
                                         now=NOW).status == "error"
 
 
-def test_quick_lookup_button_sends_nothing_until_pressed(tmp_path, monkeypatch):
-    from streamlit.testing.v1 import AppTest
-
-    calls = []
-    script = (
-        "from pathlib import Path\n"
-        "from threatfusion import domain_age, ui_quick_lookup\n"
-        "from threatfusion.quick_lookup import analyze_quick_lookup\n"
-        "from tests.test_domain_age import record\n"
-        "ui_quick_lookup.lookup_domain_age = record\n"
-        "result = analyze_quick_lookup('https://login.example.test/x', [], None)\n"
-        f"ui_quick_lookup.render_quick_lookup_result(result, registry_db_path=Path({str(tmp_path / 'none.sqlite')!r}))\n"
-    )
-    monkeypatch.setattr("tests.test_domain_age.CALLS", calls)
-    app = AppTest.from_string(script).run(timeout=15)
-    assert not app.exception and calls == []
-    assert any("example.test" in c.value for c in app.caption)
-    next(b for b in app.button if b.label == "Check site age").click().run(timeout=15)
-    assert not app.exception and calls == ["example.test"]
-    assert not [b for b in app.button if b.label == "Check site age"]  # the result replaces the button
-    assert any("Very new site" in md.value for md in app.markdown)
-
-
 CALLS: list[str] = []
 
 
@@ -134,27 +109,6 @@ def record(domain, **kwargs):
 def test_tests_cannot_reach_a_registry():
     with pytest.raises(RuntimeError, match="network access is disabled"):
         domain_age.lookup_domain_age("example.test", suffix_rules=RULES)
-
-
-def test_site_age_stays_turkish_through_the_whole_app_flow(feedback_app, monkeypatch, tmp_path):  # noqa: F811
-    from streamlit.testing.v1 import AppTest
-
-    from threatfusion import ui_quick_lookup
-    from threatfusion.quick_lookup import analyze_quick_lookup
-
-    app_module = feedback_app[0]
-    monkeypatch.setattr(app_module, "analyze_quick_lookup_from_cache", lambda value, db, artifact: analyze_quick_lookup(value, [], None))
-    monkeypatch.setattr(ui_quick_lookup, "lookup_domain_age",
-                        lambda domain, **kw: domain_age.DomainAge(domain, "found", NOW, 340, "Example Registrar"))
-    app = AppTest.from_string("import streamlit_app\nstreamlit_app.main()")
-    app.session_state["language_selector"] = "🇹🇷 Türkçe"
-    app.run(timeout=15)
-    app.text_input(key="quick_lookup_input").input("fujei.example.com").run(timeout=15)
-    app.button(key="quick_lookup_analyze").click().run(timeout=15)
-    next(b for b in app.button if b.label == "Site yaşını öğren").click().run(timeout=15)
-    assert not app.exception
-    cards = " ".join(m.value for m in app.markdown if "Site" in m.value)
-    assert "Eski site · 11 aylık" in cards and "Established" not in cards
 
 
 def test_a_name_on_a_shared_platform_reports_the_platform():

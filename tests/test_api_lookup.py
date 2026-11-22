@@ -101,22 +101,3 @@ def test_public_mode_has_no_registry_or_links(demo):
     assert client.post("/api/lookup/domain-age", json={"domain": "example.test"}, headers=HEADERS).status_code == 409
 
 
-def test_streamlit_renders_the_same_verdict_and_reasons(demo):
-    """The Streamlit page and the API agree on the banner and reasons for the same input."""
-    from streamlit.testing.v1 import AppTest
-
-    script = (
-        "from pathlib import Path\n"
-        "from threatfusion.quick_lookup import analyze_quick_lookup_from_cache\n"
-        "from threatfusion.ui_quick_lookup import render_quick_lookup_result\n"
-        f"result = analyze_quick_lookup_from_cache('http://203.0.113.7/x', Path({str(demo / 'cti.sqlite')!r}), None)\n"
-        "render_quick_lookup_result(result)\n"
-    )
-    app = AppTest.from_string(script).run(timeout=30)
-    assert not app.exception
-    html = " ".join(md.value for md in app.markdown)
-    settings = ApiSettings(False, None, demo / "cti.sqlite", public_mode=True)
-    body = post(TestClient(create_app(lambda: settings, environment={}), base_url=ORIGIN), "http://203.0.113.7/x").json()
-    for text in [body["banner"]["kicker"], body["banner"]["title"], *body["reasons"],
-                 body["evidence_state"]["heading"], *(node["value"] for node in body["console"])]:
-        assert text in html, text
