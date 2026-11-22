@@ -82,9 +82,9 @@ linked documents rather than being copied into this plan.
   Setup & CTI updates (with Stop). `threatfusion-ai` and the desktop entry
   open the React workspace from the committed pre-built `web/dist` (no Node
   needed); `threatfusion-ai --streamlit` keeps Streamlit, which stays the
-  supported fallback until the user accepts the new interface. Branch
-  `feat/react-workspace-2`, PR not merged. The user's manual check of the
-  screens and of the launcher on a real installation is **pending**. This
+  supported fallback. The user approved the migration and its merge on
+  2026-11-22 (DEC-110), based on the agent's walk-through on a disposable
+  installation; the user's own hands-on use is still to come. This
   interface work runs beside the queue below; it does not re-measure P2 or
   count as acceptance.
 - **P1 first increment (2026-10-07):** predeclared nine-case fault matrix on the

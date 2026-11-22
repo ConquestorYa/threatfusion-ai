@@ -12,8 +12,8 @@ history, Model evaluation and Setup & CTI updates (DEC-105–DEC-109). The
 API calls the Streamlit code paths; Streamlit files are unchanged and still
 supported. `threatfusion-ai` now opens the React workspace from the committed
 pre-built page (`web/dist`, no Node needed); `threatfusion-ai --streamlit`
-opens Streamlit (DEC-108). Branch `feat/react-workspace-2`, PR to main not
-merged; the user's manual check of the new screens and launcher is pending.
+opens Streamlit (DEC-108). The user approved the migration and merge on
+2026-11-22 (DEC-110, PR #191), based on the agent's walk-through.
 
 ### Previous checkpoint (2026-11-15)
 

@@ -1368,3 +1368,14 @@ in process memory only (Streamlit: "local session only"), an invalid file
 applies nothing, and the connection report download uses them as Streamlit's
 does. Still shown differently, not missing: the verdict and related-activity
 charts are tables/bars (DEC-104).
+
+## DEC-110: User approves the React workspace migration
+
+**Decision (2026-11-22, user):** after the agent's browser walk-through on a
+disposable installation (RELEASE_HANDOFF, 2026-11-22) and green CI on PR #191,
+the user approved the migration ("onaylıyorum") and asked for it to be
+merged. The React workspace is the default interface. This approval is based
+on the agent's walk-through, not on the user's own hands-on test of each
+screen; it is not P2 evidence and does not measure detection or usefulness.
+Removing Streamlit is a separate change: the API still reuses `ui_*` modules
+that import Streamlit, so dropping it means moving that logic first.

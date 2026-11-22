@@ -4,8 +4,8 @@ Newest section first. Status date: 2026-11-22.
 
 ## React migration completed; launcher opens React (2026-11-22)
 
-Branch `feat/react-workspace-2`, one commit per screen, PR to `main` (not
-merged). Streamlit files are unchanged and Streamlit stays supported.
+Branch `feat/react-workspace-2`, one commit per screen, PR #191; the user
+approved it and asked for the merge (DEC-110). Streamlit files are unchanged and Streamlit stays supported.
 
 - Experimental ML (DEC-105): `api/behavior.py` calls `ui_new_destinations`
   and `ui_behavior` (learning, scoring, levels, reasons, marks); Details gets
