@@ -189,7 +189,7 @@ function Model({ data, busy, onMark }: CardProps) {
         </Collapsible>
       )}
       {model.guide_title && model.guide && <Guide title={model.guide_title} text={model.guide} />}
-      {model.model_caption && <p className="font-mono text-xs text-muted-foreground">{model.model_caption}</p>}
+      {model.model_caption && <p className="text-xs text-muted-foreground">{model.model_caption}</p>}
     </Part>
   )
 }

@@ -33,6 +33,19 @@ merged). Streamlit files are unchanged and Streamlit stays supported.
   launcher test: page served, stopped from the Setup endpoint); web lint
   clean, Vitest 28, build, Playwright 114 (desktop + 375 px, both servers).
   The Docker installer job (`linux-first-run`) only runs in CI.
+- Agent's browser walk-through (2026-11-22, not the user's acceptance): a
+  disposable installation from this branch (`install_linux.sh --source-dir
+  --no-integrations`) opened the React workspace on 127.0.0.1 only, Setup
+  first (no CTI yet), What to check from collected synthetic logs, no
+  horizontal scroll on any screen at 375 px, light theme; "Stop local
+  application" stopped the launcher (exit 0, port and control socket gone);
+  `--streamlit` opened Streamlit and `start stop` stopped it. ML cards,
+  rhythm chart and a Suspicious mark (written to `review-labels.json`) and
+  Model evaluation were viewed with scoring enabled for documentation
+  addresses in a throwaway server. Found and fixed: three sentences in the
+  data font (model caption, evaluation caption, Streamlit hint). Known limit:
+  an installation path longer than about 80 characters cannot create the
+  control socket (Unix socket path limit; pre-existing).
 - Limits: the demo/test behavior model is synthetic and never scores
   documentation addresses, so browser tests see the empty ML state (cards are
   covered by Vitest and by pytest with scoring enabled). The user's manual

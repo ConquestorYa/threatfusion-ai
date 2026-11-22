@@ -81,7 +81,7 @@ export function Setup() {
       <Panel title={data.application.title}>
         <p className="text-xs text-muted-foreground">{data.application.caption}</p>
         <StopApplication application={data.application} />
-        <p className="font-mono text-xs text-muted-foreground">{data.application.streamlit}</p>
+        <CommandHint text={data.application.streamlit} />
       </Panel>
       {data.sources && (
         <Panel title={data.sources.title}>
@@ -99,6 +99,22 @@ function Panel({ title, children, className }: { title: string; children: ReactN
       <h2 className="text-[13px] font-semibold">{title}</h2>
       {children}
     </section>
+  )
+}
+
+/** Sentence in the UI font, the command itself (after the colon) in the data font. */
+function CommandHint({ text }: { text: string }) {
+  const [sentence, command] = text.split(/:\s+(?=threatfusion-ai)/)
+  return (
+    <p className="text-xs text-muted-foreground">
+      {command ? (
+        <>
+          {sentence}: <code className="rounded-sm bg-muted px-1 font-mono text-foreground">{command}</code>
+        </>
+      ) : (
+        text
+      )}
+    </p>
   )
 }
 

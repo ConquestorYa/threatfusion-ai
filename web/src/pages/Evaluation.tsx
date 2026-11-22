@@ -75,7 +75,7 @@ function Behavior({ report }: { report: BehaviorEvaluation }) {
     <section aria-label={report.title} className="space-y-3">
       <div className="space-y-0.5">
         <h2 className="text-base font-semibold tracking-tight">{report.title}</h2>
-        <p className="font-mono text-xs text-muted-foreground">{report.caption}</p>
+        <p className="text-xs text-muted-foreground">{report.caption}</p>
       </div>
       <MetricStrip metrics={report.metrics} />
       {report.verdict &&

@@ -10,7 +10,14 @@ const OK = {
   state: 'ok',
   caption: 'This installation uses your own credentials.',
   mode: { title: 'Operating mode', value: 'cti-only', options: [{ value: 'cti-only', label: 'Real CTI' }, { value: 'demo', label: 'Synthetic demo' }] },
-  application: { title: 'Application', caption: 'Reopen from the applications menu.' },
+  application: {
+    title: 'Application',
+    caption: 'Reopen from the applications menu.',
+    stop: 'Stop local application',
+    stopping: 'The local application is stopping. You can close this tab.',
+    not_running: 'This page is not running under the local launcher.',
+    streamlit: 'The previous Streamlit workspace opens with: threatfusion-ai --streamlit',
+  },
   keys: {
     title: 'API keys', caption: 'SGB works without a key.', saved: 'Saved keys: None', missing: 'Get one at [auth.abuse.ch](https://auth.abuse.ch/).',
     fields: [{ name: 'threatfox', label: 'ThreatFox API key' }, { name: 'urlhaus', label: 'URLhaus API key' }],
