@@ -80,7 +80,8 @@ export const saveMark = (key: string, mark: Mark | null) =>
   })
 
 export interface AppInfo {
-  streamlit_url: string
+  /** A Streamlit workspace explicitly configured beside this one; null otherwise (DEC-109). */
+  streamlit_url: string | null
   setup_available: boolean
   first_setup: boolean
   /** Same rule as Streamlit: hidden in CTI-only mode without the on-device behavior model. */
@@ -259,7 +260,7 @@ export interface SetupOk {
   state: 'ok'
   caption: string
   mode: { title: string; value: 'cti-only' | 'demo'; options: { value: 'cti-only' | 'demo'; label: string }[] }
-  application: { title: string; caption: string; stop: string; stopping: string; not_running: string }
+  application: { title: string; caption: string; stop: string; stopping: string; not_running: string; streamlit: string }
   demo_note?: string
   keys?: {
     title: string
@@ -419,6 +420,8 @@ export interface AnalysisConnections extends Partial<Table> {
   missing?: string
   include_ips_label?: string | null
   reviews_only_label?: string
+  /** Optional expected-connection JSON (kept with this analysis in memory); null in public mode. */
+  expected?: { caption: string; label: string; invalid: string; rules: number; include_label: string | null } | null
   summary?: { metrics: Metric[]; captions: string[] }
   empty?: string
   more?: string | null
@@ -449,8 +452,18 @@ export const fetchDomainDetail = (id: string, lang: Language, name: string) =>
   request<DomainDetail>(`/api/analyze/${id}/domain?${new URLSearchParams({ name, lang })}`)
 export const fetchAnalysisDevices = (id: string, lang: Language, includeIps: boolean, includeObserve: boolean) =>
   request<AnalysisDevices>(`/api/analyze/${id}/devices?lang=${lang}&include_ips=${includeIps}&include_observe=${includeObserve}`)
-export const fetchAnalysisConnections = (id: string, lang: Language, includeIps: boolean, reviewsOnly: boolean) =>
-  request<AnalysisConnections>(`/api/analyze/${id}/connections?lang=${lang}&include_ips=${includeIps}&reviews_only=${reviewsOnly}`)
+export const fetchAnalysisConnections = (
+  id: string,
+  lang: Language,
+  includeIps: boolean,
+  reviewsOnly: boolean,
+  includeExpected = false,
+) =>
+  request<AnalysisConnections>(
+    `/api/analyze/${id}/connections?lang=${lang}&include_ips=${includeIps}&reviews_only=${reviewsOnly}&include_expected=${includeExpected}`,
+  )
+export const saveExpected = (id: string, lang: Language, content: string | null) =>
+  request<{ rules: number }>(`/api/analyze/${id}/expected?lang=${lang}`, put({ content }))
 export const fetchAnalysisTimeline = (id: string, kind: 'device' | 'connection', lang: Language, group: number) =>
   request<Timeline>(`/api/analyze/${id}/${kind}-timeline?lang=${lang}&group=${group}`)
 

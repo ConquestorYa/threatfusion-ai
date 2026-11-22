@@ -13,8 +13,8 @@ import { QuickLookup } from '@/pages/QuickLookup'
 import { Setup } from '@/pages/Setup'
 import { WhatToCheck } from '@/pages/WhatToCheck'
 
-// Screens in migration order (PRODUCT_PLAN, DEC-101). Screens that stay in
-// Streamlit are reached through the "Open in Streamlit" link in the header.
+// Screens in migration order (PRODUCT_PLAN, DEC-101); every Streamlit screen
+// has moved. `threatfusion-ai --streamlit` still opens Streamlit (DEC-108/109).
 const SCREENS: Screen[] = [
   { id: 'review', title: 'What to check' },
   { id: 'details', title: 'Details' },

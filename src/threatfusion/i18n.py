@@ -416,6 +416,7 @@ _TR: dict[str, str] = {
     "Stop local application": "Yerel uygulamayı kapat",
     "The local application is stopping. You can close this tab.": "Yerel uygulama kapanıyor. Bu sekmeyi kapatabilirsin.",
     "This page is not running under the local launcher. Stop it in the terminal that started it.": "Bu sayfa yerel başlatıcıyla çalışmıyor. Onu başlatan terminalden durdur.",
+    "The previous Streamlit workspace opens with: threatfusion-ai --streamlit": "Önceki Streamlit çalışma alanı şu komutla açılır: threatfusion-ai --streamlit",
     "No refresh yet. Use Update CTI now to download source data.": "Henüz güncelleme yok. Kaynak verilerini indirmek için CTI verilerini şimdi güncelle düğmesini kullan.",
     "Last attempt: {time}": "Son deneme: {time}",
     "IP owners": "IP sahipleri",

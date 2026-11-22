@@ -120,6 +120,12 @@ class SuppressionRequest(BaseModel):
     expiry_days: int = Field(default=0, ge=0, le=3650)
 
 
+class ExpectedRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    content: str | None = Field(default=None, max_length=65_536)  # expected_connections.MAX_RULE_BYTES
+
+
 class DomainRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -133,16 +139,19 @@ class MarkRequest(BaseModel):
     mark: Mark | None
 
 
-DEFAULT_STREAMLIT_URL = "http://127.0.0.1:8501"
+def streamlit_url(environment: Mapping[str, str]) -> str | None:
+    """A Streamlit workspace running beside this one, or None (DEC-109).
 
-
-def streamlit_url(environment: Mapping[str, str]) -> str:
-    """Where the Streamlit workspace runs; only a loopback http address is linked."""
+    Every screen has moved, so the header links to Streamlit only when it is
+    explicitly configured (developers running both, ``web/README.md``); the
+    launcher's React mode does not start Streamlit. Only a loopback ``http``
+    address is ever linked; anything else means no link.
+    """
     value = environment.get("THREATFUSION_STREAMLIT_URL", "").strip().rstrip("/")
     scheme, separator, rest = value.partition("://")
     if scheme == "http" and separator and "/" not in rest and host_header_name(rest) in LOOPBACK_HOSTNAMES:
         return value
-    return DEFAULT_STREAMLIT_URL
+    return None
 
 
 def _origin_allowed(origin: str | None, environment: Mapping[str, str]) -> bool:
@@ -491,9 +500,22 @@ def create_app(
 
     @app.get("/api/analyze/{analysis_id}/connections")
     def analysis_connections(analysis_id: str, lang: Language = Query("en"), include_ips: bool = False,
-                             reviews_only: bool = True, resolved: ApiSettings = Depends(settings)) -> dict:
+                             reviews_only: bool = True, include_expected: bool = False,
+                             resolved: ApiSettings = Depends(settings)) -> dict:
         return analyze_module.connections(_analysis(analysis_id), lang, include_ips=include_ips,
-                                          reviews_only=reviews_only, public_mode=resolved.public_mode)
+                                          reviews_only=reviews_only, public_mode=resolved.public_mode,
+                                          include_expected=include_expected)
+
+    @app.put("/api/analyze/{analysis_id}/expected")
+    def analysis_expected(analysis_id: str, body: ExpectedRequest, lang: Language = Query("en"),
+                          resolved: ApiSettings = Depends(settings)) -> dict:
+        if resolved.public_mode:
+            raise HTTPException(404, "Expected-connection declarations are not available in this mode.")
+        try:
+            return {"rules": analyze_module.set_expected(_analysis(analysis_id), body.content)}
+        except ValueError:
+            raise HTTPException(422, analyze_module.translate(
+                "Invalid expected-connection file. No declarations applied.", lang)) from None
 
     @app.get("/api/analyze/{analysis_id}/connection-timeline")
     def analysis_connection_timeline(analysis_id: str, group: int = Query(ge=0), lang: Language = Query("en")) -> dict:

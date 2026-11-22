@@ -15,9 +15,11 @@ and downloads can be rendered; a new upload replaces it.
 
 History-only parts (saving aggregate history, previous analyst review,
 local suppressions) come from ``history`` and exist only when
-``history_enabled``, as in Streamlit. Not mirrored: the verdict and
-related-activity charts (their numbers are shown as tables) and the optional
-expected-connection JSON upload of Connection activity.
+``history_enabled``, as in Streamlit. The optional expected-connection JSON
+of Connection activity is parsed by ``parse_expected_connections`` and kept
+with the analysis in memory only (Streamlit: "local session only"). Not
+mirrored: the verdict and related-activity charts (their numbers are shown as
+tables).
 """
 from __future__ import annotations
 
@@ -467,8 +469,25 @@ def device_timeline(analysis: _Analysis, language: Language, group: int) -> dict
     return dns_timeline_payload(row, analysis.extra.get("device_timelines") or {}, language, analysis.id)
 
 
-def connections(analysis: _Analysis, language: Language, *, include_ips: bool, reviews_only: bool, public_mode: bool) -> dict:
-    """``ui_connections.render_connections`` (without the optional expected-connection upload)."""
+def set_expected(analysis: _Analysis, content: str | None) -> int:
+    """The optional expected-connection JSON for this analysis (None clears it); invalid input applies nothing."""
+    from ..expected_connections import MAX_RULE_BYTES, parse_expected_connections
+
+    if content is None:
+        analysis.extra.pop("expected_rules", None)
+        return 0
+    analysis.extra.pop("expected_rules", None)  # an invalid file applies nothing, as in Streamlit
+    data = content.encode()
+    if len(data) > MAX_RULE_BYTES:
+        raise ValueError("Expected-connection file exceeds 64 KiB")
+    rules = parse_expected_connections(data)
+    analysis.extra["expected_rules"] = rules
+    return len(rules)
+
+
+def connections(analysis: _Analysis, language: Language, *, include_ips: bool, reviews_only: bool, public_mode: bool,
+                include_expected: bool = False) -> dict:
+    """``ui_connections.render_connections``, including the optional expected-connection declarations."""
     from datetime import datetime, timezone
 
     from ..collector_reports import review_counts
@@ -483,8 +502,11 @@ def connections(analysis: _Analysis, language: Language, *, include_ips: bool, r
     if not result.connection_findings:
         return {"captions": captions, "missing": t("Upload a Zeek conn.log to inspect connection activity.")}
     include_ips = include_ips and not public_mode
-    rows = contextual_connection_rows(result, (), include_ips=include_ips, evaluated_at=datetime.now(timezone.utc))
-    visible = [row for row in rows if not reviews_only or row["Queue priority"] == "Review" or row["CTI match"]]
+    rules = () if public_mode else analysis.extra.get("expected_rules", ())
+    rows = contextual_connection_rows(result, rules, include_ips=include_ips, evaluated_at=datetime.now(timezone.utc))
+    show_expected = include_expected if rules else True
+    visible = [row for row in rows if (not reviews_only or row["Queue priority"] == "Review" or row["CTI match"])
+               and (show_expected or not row["Declared expected"] or row["CTI match"])]
     display = [dict(row) for row in visible[:MAX_ROWS]]
     for row in display:
         for key in ("Originator", "Responder"):
@@ -500,11 +522,18 @@ def connections(analysis: _Analysis, language: Language, *, include_ips: bool, r
         "captions": captions,
         "include_ips_label": None if public_mode else t("Show connection endpoint IPs in this view and export"),
         "reviews_only_label": t("Show only connection reviews"),
+        "expected": None if public_mode else {
+            "caption": t("Expected activity is your declaration, not verified software identity. Exact endpoints, traffic limits and expiry are required; CTI conflicts stay visible."),
+            "label": t("Optional expected-connection JSON (local session only)"),
+            "invalid": t("Invalid expected-connection file. No declarations applied."),
+            "rules": len(rules),
+            "include_label": t("Include declared expected activity") if rules else None,
+        },
         "summary": {"metrics": [{"label": t(label), "value": value} for label, value in summary.items()],
                     "captions": [t("Before filters: {count} retained TCP groups. CTI groups are included in the unexplained queue even without a behavior Review; counts overlap. DNS and attempt queues are separate.", count=len(rows)),
                                  t("Declarations change review context, not original priority. Reveal expected activity with the checkbox; exports retain all groups.")]},
         **_table(display, language),
-        "empty": t("No connection groups currently require review."),
+        "empty": t("No unexplained connection reviews in this view." if rules else "No connection groups currently require review."),
         "more": t("Showing the first 500 groups. The download contains all retained groups.") if len(visible) > MAX_ROWS else None,
         "investigation_title": t("Connection investigation"),
         "select_label": t("Select a connection group"),
@@ -546,7 +575,8 @@ def download(analysis: _Analysis, kind: str, *, include_ips: bool, public_mode: 
         report = json.loads(build_device_report(analysis.result, include_client_ips=include_ips))
         return json.dumps(report, indent=2).encode(), "threatfusion_device_triage.json", "application/json"
     if kind == "connections":
-        body = build_connection_report(analysis.result, include_ips=include_ips, expected_rules=(),
+        rules = () if public_mode else analysis.extra.get("expected_rules", ())
+        body = build_connection_report(analysis.result, include_ips=include_ips, expected_rules=rules,
                                        evaluated_at=datetime.now(timezone.utc))
         return body.encode() if isinstance(body, str) else body, "threatfusion_connections.json", "application/json"
     raise NoAnalysis(kind)

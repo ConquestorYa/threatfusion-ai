@@ -87,6 +87,12 @@ test.describe('in English', () => {
     console.expectClean()
   })
 
+  test('a Streamlit workspace configured beside this one is linked, loopback only', async ({ page }) => {
+    const link = page.getByRole('link', { name: 'Open in Streamlit' })
+    await expect(link).toHaveAttribute('href', 'http://127.0.0.1:8599')
+    await expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+  })
+
   test('Model evaluation shows the lexical holdout state in this mode', async ({ page }) => {
     await open(page, /^Model evaluation$/)
     await expect(page.getByRole('region', { name: 'Final holdout not evaluated' })).toBeVisible()

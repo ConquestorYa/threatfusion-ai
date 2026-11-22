@@ -16,9 +16,11 @@ import {
   fetchAnalyzeStatus,
   fetchDomainDetail,
   saveAnalysis,
+  saveExpected,
   suppressDomain,
   unsuppressDomain,
   uploadTelemetry,
+  type AnalysisConnections,
   type AnalysisOverview,
   type AnalystPolicy,
   type AnalyzeStatus,
@@ -427,12 +429,13 @@ function Connections({ id }: { id: string }) {
   const { lang, chrome } = usePreferences()
   const [includeIps, setIncludeIps] = useState(false)
   const [reviewsOnly, setReviewsOnly] = useState(true)
+  const [includeExpected, setIncludeExpected] = useState(false)
   const connections = useQuery({
-    queryKey: ['analysis-connections', id, lang, includeIps, reviewsOnly],
-    queryFn: () => fetchAnalysisConnections(id, lang, includeIps, reviewsOnly),
+    queryKey: ['analysis-connections', id, lang, includeIps, reviewsOnly, includeExpected],
+    queryFn: () => fetchAnalysisConnections(id, lang, includeIps, reviewsOnly, includeExpected),
     placeholderData: keepPreviousData,
   })
-  const revision = `${id}:${includeIps}:${reviewsOnly}`
+  const revision = `${id}:${includeIps}:${reviewsOnly}:${includeExpected}:${connections.data?.expected?.rules ?? 0}`
   const [group, setGroup] = useSelection(revision, (connections.data?.groups ?? []).map((g) => g.group))
   if (!connections.data) return <p className="text-xs text-muted-foreground">{chrome('loading')}</p>
   const data = connections.data
@@ -448,6 +451,7 @@ function Connections({ id }: { id: string }) {
       ) : (
         <>
           {data.include_ips_label && <Check label={data.include_ips_label} checked={includeIps} onChange={setIncludeIps} />}
+          {data.expected && <Expected id={id} expected={data.expected} />}
           {data.summary && <MetricStrip metrics={data.summary.metrics} />}
           {data.summary?.captions.map((caption) => (
             <p key={caption} className="text-xs text-muted-foreground">
@@ -455,6 +459,9 @@ function Connections({ id }: { id: string }) {
             </p>
           ))}
           <Check label={data.reviews_only_label ?? ''} checked={reviewsOnly} onChange={setReviewsOnly} />
+          {data.expected?.include_label && (
+            <Check label={data.expected.include_label} checked={includeExpected} onChange={setIncludeExpected} />
+          )}
           {data.rows && data.rows.length ? (
             <DataTable table={{ columns: data.columns ?? [], rows: data.rows }} label={`${chrome('connectionActivity')} · ${chrome('table')}`} />
           ) : (
@@ -492,6 +499,58 @@ function Connections({ id }: { id: string }) {
           <p className="text-xs text-muted-foreground">{data.download_caption}</p>
         </>
       )}
+    </div>
+  )
+}
+
+/**
+ * ui_connections' optional expected-connection JSON: read in the browser and
+ * sent to the local API only, kept with this analysis in memory.
+ */
+function Expected({ id, expected }: { id: string; expected: NonNullable<AnalysisConnections['expected']> }) {
+  const { lang, chrome } = usePreferences()
+  const queryClient = useQueryClient()
+  const inputId = useId()
+  const [name, setName] = useState<string | null>(null)
+  const save = useMutation({
+    mutationFn: (content: string | null) => saveExpected(id, lang, content),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['analysis-connections', id] }),
+  })
+  const choose = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    setName(file.name)
+    // Larger than the 64 KiB limit: apply nothing, as in Streamlit.
+    save.mutate(file.size > 65_536 ? ' '.repeat(65_537) : await file.text())
+  }
+  return (
+    <div className="space-y-1.5 rounded-sm border bg-card p-3">
+      <p className="text-xs text-muted-foreground">{expected.caption}</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <label
+          htmlFor={inputId}
+          className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-sm border px-3 text-[13px] font-medium hover:bg-accent focus-within:ring-2 focus-within:ring-ring"
+        >
+          <FileUp aria-hidden className="size-4" />
+          {expected.label}
+          <input id={inputId} type="file" accept=".json,application/json" className="sr-only" onChange={choose} />
+        </label>
+        <span className="font-mono text-xs text-muted-foreground">{name ?? chrome('noFile')}</span>
+        {expected.rules > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setName(null)
+              save.mutate(null)
+            }}
+          >
+            {chrome('clearFile')}
+          </Button>
+        )}
+      </div>
+      {save.isError && <Notice tone="warn">{expected.invalid}</Notice>}
     </div>
   )
 }

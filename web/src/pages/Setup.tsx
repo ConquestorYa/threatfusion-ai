@@ -81,6 +81,7 @@ export function Setup() {
       <Panel title={data.application.title}>
         <p className="text-xs text-muted-foreground">{data.application.caption}</p>
         <StopApplication application={data.application} />
+        <p className="font-mono text-xs text-muted-foreground">{data.application.streamlit}</p>
       </Panel>
       {data.sources && (
         <Panel title={data.sources.title}>

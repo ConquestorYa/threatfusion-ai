@@ -77,6 +77,25 @@ test.describe('in English', () => {
     await expect(page.getByRole('img', { name: /Connection starts/ })).toBeVisible()
   })
 
+  test('an expected-connection file is read locally; an invalid one applies nothing', async ({ page }) => {
+    const console = watchConsole(page)
+    await analyze(page, 'conn.log')
+    await page.getByRole('tab', { name: 'Connection activity' }).click()
+    await expect(page.getByText('Expected activity is your declaration, not verified software identity.', { exact: false })).toBeVisible()
+    const upload = page.waitForRequest((request) => request.url().includes('/expected') && request.method() === 'PUT')
+    await page.getByLabel('Optional expected-connection JSON (local session only)').setInputFiles({
+      name: 'expected.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from('{"schema_version": 1, "rules": [{"id": "x"}]}'),
+    })
+    expect((await upload).postDataJSON()).toEqual({ content: '{"schema_version": 1, "rules": [{"id": "x"}]}' })
+    await expect(page.getByRole('alert').filter({ hasText: 'Invalid expected-connection file. No declarations applied.' })).toBeVisible()
+    await expect(page.getByLabel('Include declared expected activity')).toHaveCount(0)
+    await expectNoHorizontalScroll(page)
+    // The 422 answer is the expected outcome here, not a page error.
+    expect(console.errors.filter((error) => !error.includes('422'))).toEqual([])
+  })
+
   test('the DNS CSV sample tells the same story, and filters work', async ({ page }) => {
     await analyze(page, 'dns_queries.csv')
     await page.getByRole('button', { name: /^Input quality/ }).click()

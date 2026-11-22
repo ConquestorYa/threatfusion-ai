@@ -43,7 +43,8 @@ test.describe('in English', () => {
     const application = page.getByRole('region', { name: 'Application' })
     await application.getByRole('button', { name: 'Stop local application' }).click()
     await expect(application.getByRole('status')).toContainText('This page is not running under the local launcher.')
-    await expect(application).not.toContainText('Streamlit')
+    await expect(application.getByRole('link')).toHaveCount(0)
+    await expect(application).toContainText('The previous Streamlit workspace opens with: threatfusion-ai --streamlit')
     console.expectClean()
   })
 

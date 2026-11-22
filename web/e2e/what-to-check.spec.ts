@@ -100,10 +100,9 @@ test('Turkish uses the shared dictionary', async ({ page }) => {
   await page.getByRole('radio', { name: 'EN' }).click()
 })
 
-test('the Streamlit link opens only the configured loopback address', async ({ page }) => {
-  const link = page.getByRole('link', { name: 'Open in Streamlit' })
-  await expect(link).toHaveAttribute('href', 'http://127.0.0.1:8599')
-  await expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+test('there is no Streamlit link unless one is configured beside this workspace', async ({ page }) => {
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Open in Streamlit' })).toHaveCount(0)
 })
 
 test('mark buttons show text on desktop and icon plus tooltip on narrow screens', async ({ page }, testInfo) => {

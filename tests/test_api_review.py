@@ -183,13 +183,13 @@ def test_real_collector_snapshot_produces_the_same_items(tmp_path):
 
 
 @pytest.mark.parametrize(("value", "expected"), [
-    (None, "http://127.0.0.1:8501"),
+    (None, None),  # not configured: no link (DEC-109)
     ("http://127.0.0.1:8502/", "http://127.0.0.1:8502"),
     ("http://localhost:8510", "http://localhost:8510"),
-    ("https://evil.example", "http://127.0.0.1:8501"),
-    ("http://192.168.1.5:8501", "http://127.0.0.1:8501"),
-    ("http://127.0.0.1:8501/path", "http://127.0.0.1:8501"),
-    ("javascript:alert(1)", "http://127.0.0.1:8501"),
+    ("https://evil.example", None),
+    ("http://192.168.1.5:8501", None),
+    ("http://127.0.0.1:8501/path", None),
+    ("javascript:alert(1)", None),
 ])
 def test_streamlit_link_is_loopback_only(value, expected):
     environment = {} if value is None else {"THREATFUSION_STREAMLIT_URL": value}

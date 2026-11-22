@@ -1348,3 +1348,23 @@ second unverified artifact).
 (`POST /api/app/stop`, same write guard as every other write); it sends the
 launcher the same `stop` request as Streamlit's button. Outside the launcher
 it reports that nothing is running under it.
+
+## DEC-109: Streamlit link only beside a running Streamlit; expected connections moved
+
+**Decision (2026-11-22):** with every screen moved, the header's "Open in
+Streamlit" link is shown only when `THREATFUSION_STREAMLIT_URL` is set to a
+loopback `http` address, i.e. when a Streamlit workspace really runs beside
+this one (`scripts/demo_web.sh`, the two-terminal setup in `web/README.md`).
+`/api/app` returns `streamlit_url: null` otherwise; an invalid value means no
+link (it used to fall back to `127.0.0.1:8501`, which the React-mode launcher
+no longer starts). Setup & CTI updates names the way back instead:
+`threatfusion-ai --streamlit`.
+
+The last Streamlit-only piece of a workflow, the optional expected-connection
+JSON of Analyze telemetry → Connection activity, moved too: the browser reads
+the file and sends its text as JSON (`PUT /api/analyze/{id}/expected`, 64 KiB
+cap, `parse_expected_connections`); the declarations stay with that analysis
+in process memory only (Streamlit: "local session only"), an invalid file
+applies nothing, and the connection report download uses them as Streamlit's
+does. Still shown differently, not missing: the verdict and related-activity
+charts are tables/bars (DEC-104).

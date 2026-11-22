@@ -5,7 +5,7 @@
 #
 #   scripts/demo_web.sh            # React http://127.0.0.1:8600, Streamlit http://127.0.0.1:8501
 #
-# Needs .venv (requirements.txt) and a built page (cd web && npm ci && npm run build).
+# Needs .venv (requirements.txt); the built page web/dist is committed (DEC-108).
 set -euo pipefail
 repo="$(cd "$(dirname "$0")/.." && pwd)"
 py="$repo/.venv/bin/python"
@@ -18,7 +18,9 @@ pids=()
 cleanup() { kill "${pids[@]}" 2>/dev/null || true; wait 2>/dev/null || true; rm -rf "$work"; }
 trap cleanup EXIT INT TERM
 
-"$py" "$repo/scripts/demo_review_snapshot.py" --managed "$root"
+# --behavior-model: a synthetic, untrained behavior model so Experimental ML and
+# Model evaluation appear (presentation asset, DEC-105).
+"$py" "$repo/scripts/demo_review_snapshot.py" --managed --behavior-model "$root"
 export THREATFUSION_LOCAL_INSTALL_DIR="$root" THREATFUSION_LOCAL_LOOPBACK=1
 export THREATFUSION_STREAMLIT_URL="http://127.0.0.1:$streamlit_port"
 
