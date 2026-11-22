@@ -39,10 +39,19 @@ ISO_TIME = re.compile(r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}")
 def turkish_output(tmp_path_factory):
     from scripts.demo_review_snapshot import main
 
+    from threatfusion import ml_behavior
+
     root = tmp_path_factory.mktemp("language") / "install"
-    assert main(["--managed", str(root)]) == 0
+    assert main(["--managed", "--behavior-model", str(root)]) == 0
     env = {"THREATFUSION_LOCAL_INSTALL_DIR": str(root), "THREATFUSION_LOCAL_LOOPBACK": "1"}
     client = TestClient(create_app(lambda: resolve_settings(env), environment={}), base_url=ORIGIN)
+    with pytest.MonkeyPatch.context() as patch:
+        # Documentation addresses are never scored; score them so the cards are checked too.
+        patch.setattr(ml_behavior, "scorable", lambda responder, port, protocol: bool(responder) and port != 53)
+        return _pages(client)
+
+
+def _pages(client):
     pages = {
         "i18n": client.get("/api/i18n", params={"lang": "tr"}).json(),
         "review": client.get("/api/review", params={"lang": "tr"}).json(),
@@ -50,7 +59,9 @@ def turkish_output(tmp_path_factory):
         "dns-timeline": client.get("/api/details/dns-timeline", params={"lang": "tr", "group": 1}).json(),
         "lookup-status": client.get("/api/lookup/status", params={"lang": "tr"}).json(),
         "setup": client.get("/api/setup", params={"lang": "tr"}).json(),
+        "behavior": client.get("/api/behavior", params={"lang": "tr"}).json(),
     }
+    assert pages["behavior"]["model"]["cards"], "the behavior cards must be part of this check"
     for group in pages["details"]["connections"]["groups"][:4]:
         pages[f"timeline-{group['group']}"] = client.get(
             "/api/details/connection-timeline", params={"lang": "tr", "group": group["group"]}).json()
@@ -67,7 +78,7 @@ def turkish_output(tmp_path_factory):
             pages[f"analyze {name} {domain}"] = client.get(f"/api/analyze/{body['id']}/domain",
                                                            params={"lang": "tr", "name": domain}).json()
     pages["analyze-status"] = client.get("/api/analyze/status", params={"lang": "tr"}).json()
-    for value in ("https://malicious.example.test/login", "http://203.0.113.7/x", "quiet.example.test"):
+    for value in ("https://malicious.example.test/login", "http://203.0.113.7/x", "quiet.example.test", "198.51.100.20"):
         pages[f"lookup {value}"] = client.post("/api/lookup", params={"lang": "tr"}, json={"value": value},
                                               headers=HEADERS).json()
     return pages

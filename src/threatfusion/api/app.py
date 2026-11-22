@@ -19,6 +19,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from ..request_guard import LOOPBACK_HOSTNAMES, host_header_name, is_allowed_host
 from . import analyze as analyze_module
+from . import behavior as behavior_module
 from . import details as details_module
 from . import lookup as lookup_module
 from . import setup as setup_module
@@ -182,6 +183,20 @@ def create_app(
             raise HTTPException(404, "This item is not in the current list. Refresh and retry.") from None
         except FileNotFoundError:
             raise HTTPException(404, "No collector snapshot yet.") from None
+        except (OSError, ValueError, TypeError, KeyError):
+            raise HTTPException(409, "Could not save. Check the folder permissions.") from None
+        return Response(status_code=204)
+
+    @app.get("/api/behavior")
+    def behavior(lang: Language = Query("en"), resolved: ApiSettings = Depends(settings)) -> dict:
+        return behavior_module.behavior_response(resolved, lang)
+
+    @app.put("/api/behavior/marks", status_code=204)
+    def behavior_mark(body: MarkRequest, resolved: ApiSettings = Depends(settings)) -> Response:
+        try:
+            behavior_module.set_mark(resolved, body.key, body.mark)
+        except behavior_module.UnknownCard:
+            raise HTTPException(404, "This item is not in the current list. Refresh and retry.") from None
         except (OSError, ValueError, TypeError, KeyError):
             raise HTTPException(409, "Could not save. Check the folder permissions.") from None
         return Response(status_code=204)

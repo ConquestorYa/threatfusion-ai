@@ -8,7 +8,7 @@ python="$repo/.venv/bin/python"
 [ -x "$python" ] || python="$(command -v python3)"
 root="$(mktemp -d)/install"
 trap 'rm -rf "$(dirname "$root")"' EXIT
-"$python" "$repo/scripts/demo_review_snapshot.py" --managed "$root" >/dev/null
+"$python" "$repo/scripts/demo_review_snapshot.py" --managed --behavior-model "$root" >/dev/null
 export THREATFUSION_LOCAL_INSTALL_DIR="$root"
 export THREATFUSION_LOCAL_LOOPBACK=1
 export THREATFUSION_STREAMLIT_URL="http://127.0.0.1:8599"

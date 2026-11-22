@@ -4,8 +4,8 @@ Mirrors ``ui_collector._render_details`` and the shared timeline, attempt and
 DNS renderers block by block, in the same order and with the same wording.
 Evidence, filters and validation come from the existing functions; this
 module only turns each Streamlit element into a typed block for the browser.
-The "Behavior score (ML)" column of the DNS table is not produced here: the
-experimental model stays in Streamlit (DEC-102) and its scoring also trains.
+The "Behavior score (ML)" column of the DNS table comes from
+``behavior.dns_scores`` (``ui_behavior.name_scores``), as in Streamlit.
 """
 from __future__ import annotations
 
@@ -94,10 +94,13 @@ def details_response(settings: ApiSettings, language: Language, *, local_ips: bo
     from ..collector_reports import review_counts
     from ..ui_collector import COLLECTOR_GUIDE
 
+    from .behavior import dns_scores
+
     loaded, state = _state(settings)
     if state:
         return state
     payload, local_view = loaded
+    behavior_scores = dns_scores(settings)
     status, counts = payload["collector"], payload["collector"]["counts"]
     t = lambda text, **values: translate(text, language, **values)  # noqa: E731
 
@@ -206,7 +209,7 @@ def details_response(settings: ApiSettings, language: Language, *, local_ips: bo
             "timeline_missing": None if groups or not rows else t("Restart the collector to generate connection timelines."),
         },
         "attempts": _attempts(view.get("attempts"), language),
-        "dns": _dns(view.get("dns"), language, dns_observations),
+        "dns": _dns(view.get("dns"), language, dns_observations, behavior_scores),
         "downloads": {
             "full": full,
             "snapshot": {"label": t("Download visible connection snapshot JSON") if coverage else t("Download collected connection JSON"),
@@ -242,8 +245,8 @@ def _attempts(block, language: Language):
             "empty": t("No TCP attempt pattern crossed these review gates. Check capture coverage before interpreting this result.")}
 
 
-def _dns(block, language: Language, observations: bool):
-    """``ui_collected_dns.render_collected_dns`` without the experimental ML column."""
+def _dns(block, language: Language, observations: bool, behavior_scores: dict | None = None):
+    """``ui_collected_dns.render_collected_dns``, with its experimental ML column when a model scored."""
     t = lambda text, **values: translate(text, language, **values)  # noqa: E731
     if block is None:
         return {"title": t("Collected DNS observations"), "missing": t("Restart the updated collector to include DNS logs.")}
@@ -271,6 +274,9 @@ def _dns(block, language: Language, observations: bool):
         row["Device"] = _device(row["Device"], language)
         row["Evidence"] = evidence(row["Evidence"], language)
         row["Coverage limits"] = _joined(row["Coverage limits"], language)
+        if behavior_scores:
+            score = behavior_scores.get(str(row.get("Target") or "").strip().rstrip(".").lower())
+            row["Behavior score (ML)"] = f"{score[0]} · {t(score[1])}" if score else "–"
     shown = rows[:MAX_ROWS]
     timelines = block["report"].get("timelines")
     has_groups = bool(shown) and all("Group" in row for row in shown)

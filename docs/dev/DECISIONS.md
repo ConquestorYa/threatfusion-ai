@@ -1249,3 +1249,30 @@ sample contains a non-documentation address or a non-`.test` name.
 **Not mirrored:** analysis history and analyst feedback (history-only), the
 verdict and related-activity charts (their values are shown as bars/tables),
 the optional expected-connection JSON in Connection activity.
+
+## DEC-105: Experimental ML in the React workspace
+
+**Decision (2026-11-22, user request to finish the migration):** the
+collector's "Experimental ML" tab becomes its own React screen ("Deneysel
+ML"), the Details DNS table gets its "Behavior score (ML)" column back and
+Quick lookup shows the "Behavior on this computer" card. The API
+(`src/threatfusion/api/behavior.py`) calls the Streamlit code paths
+(`ui_new_destinations.new_destinations`, `ui_behavior.learn`/`score_groups`/
+`name_scores`, `marked_sites`, `REASONS`, `ADVICE`) and shapes their values;
+no scoring, level or reason logic is copied.
+
+**Rules:** as in Streamlit, opening the screen (or Details / Quick lookup)
+keeps the on-device learning going and may train when due; this runs before
+the per-response language lock so a long training cannot block other
+requests. Card marks use a separate `PUT /api/behavior/marks` that accepts
+only keys of rows the model or the new-destination list currently has
+(`ml:` / `new:`), and writes the shared `review-labels.json`. The model's
+training time is shown as a short local time, not the raw ISO string.
+
+**Demo / tests:** `scripts/demo_review_snapshot.py --managed --behavior-model`
+writes a one-tree synthetic model (`synthetic-demo`, never trained, flags
+steady rhythms) whose evaluation block is the shipped recipe report; it is a
+presentation asset, not a measured model. The model never scores
+documentation addresses, so browser tests see the empty state; cards are
+tested with fixtures (Vitest) and with scoring enabled for those addresses in
+pytest only.

@@ -42,7 +42,7 @@ const CHROME = {
     details: 'Show why and what to do',
     hideDetails: 'Hide explanation',
     openInStreamlit: 'Open in Streamlit',
-    streamlitScreens: 'Experimental ML, Model evaluation and Analysis history are in the Streamlit workspace.',
+    streamlitScreens: 'Model evaluation and Analysis history are in the Streamlit workspace.',
     nav: 'Screens',
     table: 'table',
     showTable: 'Show table',
@@ -55,8 +55,6 @@ const CHROME = {
     setupManagedOnly: 'Setup & CTI updates is available in a managed installation (threatfusion-ai start), as in Streamlit.',
     keysStorage: 'Keys entered here are saved on this computer in a plaintext owner-only (0600) file inside the private installation directory. They are never shown again.',
     stopInStreamlit: 'Stopping the local application stays in Streamlit for now.',
-    behaviorInStreamlit: 'How this computer talked to it (experimental ML) is shown in Streamlit Quick lookup.',
-    mlInStreamlit: 'The experimental ML score column for DNS names is shown in Streamlit (Open in Streamlit → Collected connections).',
   },
   tr: {
     language: 'Dil',
@@ -78,7 +76,7 @@ const CHROME = {
     details: 'Nedenini ve ne yapılacağını göster',
     hideDetails: 'Açıklamayı gizle',
     openInStreamlit: "Streamlit'te aç",
-    streamlitScreens: "Deneysel ML, Model değerlendirme ve Analiz geçmişi Streamlit çalışma alanında.",
+    streamlitScreens: "Model değerlendirme ve Analiz geçmişi Streamlit çalışma alanında.",
     nav: 'Ekranlar',
     table: 'tablo',
     showTable: 'Tabloyu göster',
@@ -91,8 +89,6 @@ const CHROME = {
     setupManagedOnly: "Kurulum ve CTI güncellemeleri, Streamlit'teki gibi yönetilen bir kurulumda (threatfusion-ai start) kullanılabilir.",
     keysStorage: 'Buraya girilen anahtarlar bu bilgisayarda, özel kurulum klasöründe yalnızca sahibinin okuyabildiği (0600) düz metin bir dosyaya kaydedilir. Bir daha gösterilmez.',
     stopInStreamlit: "Yerel uygulamayı durdurmak şimdilik Streamlit'te.",
-    behaviorInStreamlit: "Bu bilgisayarın onunla nasıl konuştuğu (deneysel ML) Streamlit Hızlı sorgu ekranında gösterilir.",
-    mlInStreamlit: "DNS adları için deneysel ML puanı sütunu Streamlit'te gösterilir (Streamlit'te aç → Toplanan bağlantılar).",
   },
 } satisfies Record<Language, Record<string, string>>
 

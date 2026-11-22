@@ -47,6 +47,12 @@ test('every screen in Turkish has no English words and no raw ISO times', async 
   expect(details).not.toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/)
   expect(details).not.toMatch(/\d{2}:\d{2}:\d{2}\.\d+/)
 
+  await screen(page, 'Deneysel ML')
+  for (const guide of await page.getByRole('button', { name: 'Bu nedir?' }).all()) await guide.click()
+  const behavior = await visibleText(page)
+  found['Deneysel ML'] = englishWords(behavior)
+  expect(behavior).not.toMatch(/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/)
+
   await screen(page, 'Hızlı sorgu')
   await page.getByLabel('URL, domain veya IP').fill('https://malicious.example.test/login')
   await page.getByRole('button', { name: 'Kontrol et' }).click()
@@ -75,7 +81,7 @@ test('every screen in Turkish has no English words and no raw ISO times', async 
   found['Kurulum'] = englishWords(setup)
   expect(setup).not.toMatch(/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/)
 
-  expect(found).toEqual({ 'Bakılacaklar': [], 'Ayrıntılar': [], 'Hızlı sorgu': [], 'Telemetri': [], 'Kurulum': [] })
+  expect(found).toEqual({ 'Bakılacaklar': [], 'Ayrıntılar': [], 'Deneysel ML': [], 'Hızlı sorgu': [], 'Telemetri': [], 'Kurulum': [] })
 })
 
 test('bucket tables are closed by default; the chart is shown', async ({ page }) => {

@@ -225,6 +225,8 @@ export interface LookupResult {
   links_title: string
   links_caption: string
   links: { name: string; url: string }[]
+  /** "Behavior on this computer (experimental ML)"; null without a local behavior model. */
+  behavior: { title: string; cards: BehaviorCard[]; empty: string | null } | null
   evidence_title: string
   evidence_state: { tone: Tone; heading: string; copy: string }
   evidence: Table
@@ -437,3 +439,71 @@ export const fetchAnalysisConnections = (id: string, lang: Language, includeIps:
   request<AnalysisConnections>(`/api/analyze/${id}/connections?lang=${lang}&include_ips=${includeIps}&reviews_only=${reviewsOnly}`)
 export const fetchAnalysisTimeline = (id: string, kind: 'device' | 'connection', lang: Language, group: number) =>
   request<Timeline>(`/api/analyze/${id}/${kind}-timeline?lang=${lang}&group=${group}`)
+
+// ---- Experimental ML (mirrors ui_new_destinations + ui_behavior) ----
+
+export interface BehaviorCard {
+  key: string
+  kind: 'ml' | 'new'
+  title: string
+  mark: Mark | null
+  /** Mark shown on the card; a site marked suspicious elsewhere also shows here. */
+  shown_mark: Mark | null
+  device: string
+  destination: string
+  owner: string | null
+  others: string | null
+  score_label: string
+  score: string
+  level: string | null
+  why_label: string
+  why: string[]
+  rhythm: { caption: string; times: number[] } | null
+  advice_title: string
+  advice: string
+  command: string
+  links_caption: string
+  links: { name: string; url: string }[]
+}
+
+export interface BehaviorNotice {
+  kind: 'info' | 'success'
+  text: string
+}
+
+export interface BehaviorOk {
+  state: 'ok'
+  caption: string
+  new: {
+    state: 'no_data' | 'unreadable' | 'ok'
+    title: string
+    empty?: string
+    warning?: string
+    summary?: string | null
+    notice: BehaviorNotice | null
+    cards: BehaviorCard[]
+    captions: string[]
+    guide_title: string
+    guide: string
+  }
+  model: {
+    state: 'learning' | 'unreadable' | 'ok'
+    title: string
+    captions?: string[]
+    warning?: string
+    heading?: string
+    summary?: string
+    metrics?: (Metric & { help?: string })[]
+    cards?: BehaviorCard[]
+    below?: (Table & { title: string }) | null
+    guide_title?: string
+    guide?: string
+    model_caption?: string
+  }
+}
+
+export type BehaviorResponse = BehaviorOk | { state: 'not_configured' }
+
+export const fetchBehavior = (lang: Language) => request<BehaviorResponse>(`/api/behavior?lang=${lang}`)
+export const saveBehaviorMark = (key: string, mark: Mark | null) =>
+  request<void>('/api/behavior/marks', put({ key, mark }))
