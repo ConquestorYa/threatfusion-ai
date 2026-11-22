@@ -9,6 +9,7 @@ import gzip
 import importlib.util
 import json
 import os
+import re
 import signal
 import socket
 import subprocess
@@ -38,7 +39,8 @@ def check_web_ui(url: str, http, *, stop: bool) -> None:
     with http.open(url + "/", timeout=5) as response:
         page = response.read().decode()
     assert '<div id="root">' in page and "/assets/" in page, page[:200]
-    asset = page.split('src="', 1)[1].split('"', 1)[0]
+    # The app bundle, not the small theme script that runs first.
+    asset = re.search(r'src="(/assets/[^"]+\.js)"', page).group(1)
     with http.open(url + asset, timeout=5) as response:
         assert response.status == 200 and len(response.read()) > 10_000
     with http.open(url + "/api/app", timeout=5) as response:

@@ -112,7 +112,9 @@ test('the Turkish history page has no English words and no raw ISO times', async
   await page.goto('/')
   await analyzeAndSave(page)
   await open(page, /^Analiz geçmişi$/)
-  for (const fold of await page.getByRole('main').getByRole('button', { expanded: false }).all()) await fold.click()
+  // Open every fold; each click removes one from the collapsed set, so always take the first.
+  const collapsed = page.getByRole('main').getByRole('button', { expanded: false })
+  for (let guard = 0; guard < 20 && (await collapsed.count()) > 0; guard++) await collapsed.first().click()
   await page.waitForLoadState('networkidle')
   const text = await visibleText(page)
   expect(englishWords(text)).toEqual([])
