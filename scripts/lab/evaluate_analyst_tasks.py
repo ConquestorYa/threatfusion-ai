@@ -25,7 +25,8 @@ from threatfusion.reporting import build_connection_report
 from threatfusion.runtime_analysis import analyze_zeek_conn_log_with_diagnostics
 from threatfusion.telemetry_collector import ZeekCollector
 from threatfusion.ui_collector import read_snapshot
-from threatfusion.ui_review_guidance import connection_steps, review_counts
+from threatfusion.collector_reports import review_counts
+from threatfusion.ui_review_guidance import connection_steps
 
 REPO = Path(__file__).resolve().parents[2]
 SEEDS = {"development": 20261071, "reserved": 20261171}

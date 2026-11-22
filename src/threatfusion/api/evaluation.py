@@ -16,6 +16,9 @@ from .. import i18n
 from .lookup import in_language
 from .settings import ApiSettings
 
+# What the page is for (the former Streamlit page's guide; same text and translation key).
+EVALUATION_GUIDE = '**What it is for:** ThreatFusion also contains an experimental machine-learning model that scores how suspicious a URL or domain name looks. This page shows how that model performed on a separate test set it never saw during training, so you can judge how much to trust its score.\n\n**Why it may be empty:** That final test has not been run yet, so the model stays in development status. In CTI-only mode (the default installation) the model is switched off and this page does not affect your results; lookups and collection use CTI and behavior evidence only.'
+
 HOLDOUT_COMMAND = ("python scripts/evaluate_ml_final_holdout.py --artifact-dir data/models/lexical "
                    "--development-snapshot-dir data/snapshots/development "
                    "--holdout-snapshot-dir data/snapshots/holdout --json-output data/evaluation/final_holdout.json")
@@ -118,7 +121,6 @@ def _lexical(report_path: Path | None, language: str) -> dict:
     """``ui_evaluation._show_model_evaluation``."""
     from ..evaluation_dashboard import operating_point_rows, source_metric_rows, summarize_holdout_report
     from ..ml_evaluation_report import read_frozen_holdout_report
-    from ..ui_evaluation import EVALUATION_GUIDE
 
     tr = i18n.tr
     base = {"kind": "lexical", "guide_title": tr("What does this page do?"), "guide": tr(EVALUATION_GUIDE)}

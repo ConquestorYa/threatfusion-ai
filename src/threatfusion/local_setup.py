@@ -1,4 +1,4 @@
-"""Private first-run assets and loopback-only Streamlit lifecycle."""
+"""Private first-run assets and the loopback-only local application lifecycle."""
 
 from __future__ import annotations
 
@@ -139,25 +139,6 @@ def choose_local_port(requested: int | None = None) -> int:
     )
 
 
-def streamlit_command(source_dir: Path, port: int) -> list[str]:
-    return [
-        sys.executable,
-        "-m",
-        "streamlit",
-        "run",
-        str(source_dir / "streamlit_app.py"),
-        "--server.address=127.0.0.1",
-        f"--server.port={port}",
-        "--server.headless=true",
-        "--browser.gatherUsageStats=false",
-        "--server.enableCORS=true",
-        "--server.enableXsrfProtection=true",
-    ]
-
-
-INTERFACES = ("web", "streamlit")
-
-
 def web_page_dir(source_dir: Path) -> Path:
     """The pre-built React workspace shipped with the source (DEC-108)."""
     return source_dir / "web" / "dist"
@@ -176,9 +157,7 @@ def api_command(source_dir: Path, port: int) -> list[str]:
     ]
 
 
-def _healthy(interface: str, body: bytes) -> bool:
-    if interface == "streamlit":
-        return body == b"ok"
+def _healthy(body: bytes) -> bool:
     try:
         return json.loads(body) == {"status": "ok"}
     except ValueError:
@@ -193,16 +172,9 @@ def run_local_server(
     open_browser: bool = True,
     readiness_timeout: float = 60,
     install_dir: Path | None = None,
-    interface: str = "web",
 ) -> int:
-    if interface not in INTERFACES:
-        raise ValueError("unknown local interface")
-    if interface == "web" and not (web_page_dir(source_dir) / "index.html").is_file():
-        print(
-            "Yeni arayüz (web/dist) bu kaynakta yok; Streamlit arayüzü açılıyor.",
-            flush=True,
-        )
-        interface = "streamlit"
+    if not (web_page_dir(source_dir) / "index.html").is_file():
+        raise RuntimeError("the built web page (web/dist) is missing from this source")
     selected = choose_local_port(port)
     url = f"http://127.0.0.1:{selected}"
     stop = threading.Event()
@@ -225,16 +197,11 @@ def run_local_server(
                 target=automatic_refresh_loop, args=(install_dir, stop), daemon=True
             ).start()
         child_environment = dict(environment)
-        if interface == "web":
-            command = api_command(source_dir, selected)
-            health = url + "/api/health"
-            # The API runs as a module; the launcher clears PYTHONPATH, so name the source.
-            child_environment["PYTHONPATH"] = str(source_dir / "src")
-        else:
-            command = streamlit_command(source_dir, selected)
-            health = url + "/_stcore/health"
+        # The API runs as a module; the launcher clears PYTHONPATH, so name the source.
+        child_environment["PYTHONPATH"] = str(source_dir / "src")
+        health = url + "/api/health"
         process = subprocess.Popen(
-            command,
+            api_command(source_dir, selected),
             cwd=source_dir,
             env=child_environment,
             start_new_session=True,
@@ -248,7 +215,7 @@ def run_local_server(
                 raise RuntimeError("local application exited before it became ready")
             try:
                 with local_http.open(health, timeout=1) as response:
-                    ready = response.status == 200 and _healthy(interface, response.read())
+                    ready = response.status == 200 and _healthy(response.read())
             except (OSError, urllib.error.URLError):
                 pass
             if ready:

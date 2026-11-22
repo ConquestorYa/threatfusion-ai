@@ -165,7 +165,8 @@ jobs:
 
       - name: Start container with safe public default
         run: |
-          docker run -d --name threatfusion-ci -p 127.0.0.1:8501:8501 \
+          # The API binds loopback only; host networking puts it on the runner's 127.0.0.1.
+          docker run -d --name threatfusion-ci --network host \
             -e THREATFUSION_MODEL_SHA256=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
             threatfusion-ci
 
@@ -173,16 +174,19 @@ jobs:
         run: |
           docker exec threatfusion-ci sh -c 'test "$THREATFUSION_PUBLIC_MODE" = "1"'
           docker exec threatfusion-ci sh -c 'test -n "$THREATFUSION_MODEL_SHA256"'
-          docker exec threatfusion-ci sh -c 'test ! -w /app/streamlit_app.py'
+          docker exec threatfusion-ci sh -c 'test ! -w /app/web/dist/index.html'
           docker exec threatfusion-ci sh -c 'test ! -w /app/src/threatfusion'
           docker exec threatfusion-ci sh -c 'test -w /app/runtime'
           docker exec threatfusion-ci sh -c 'test -w /app/data'
-          docker exec threatfusion-ci python -c "import importlib.util; assert importlib.util.find_spec('pytest') is None; assert importlib.util.find_spec('ruff') is None"
+          docker exec threatfusion-ci python -c "import importlib.util; assert importlib.util.find_spec('pytest') is None; assert importlib.util.find_spec('ruff') is None; assert importlib.util.find_spec('streamlit') is None"
 
-      - name: Wait for Streamlit health endpoint
+      - name: Wait for the API and the page on loopback
         run: |
           for attempt in $(seq 1 30); do
-            if curl --fail --silent http://127.0.0.1:8501/_stcore/health; then
+            if curl --fail --silent http://127.0.0.1:8600/api/health; then
+              curl --fail --silent http://127.0.0.1:8600/ | grep -q '<div id="root">'
+              # Foreign Host headers are refused (DNS rebinding defence).
+              test "$(curl --silent -o /dev/null -w '%{http_code}' -H 'Host: evil.example' http://127.0.0.1:8600/api/health)" = 403
               exit 0
             fi
             sleep 2

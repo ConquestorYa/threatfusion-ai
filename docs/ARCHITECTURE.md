@@ -88,7 +88,7 @@ State directories are owner-only (0700, files 0600). The app binds to
 | Detection | `connections.py`, `connection_attempts.py`, `device_triage.py`, `dns_behavior.py`, `hybrid_assessment.py` |
 | Investigation views | `connection_timeline.py`, `dns_timeline.py`, `expected_connections.py` |
 | Upload analysis | `dns_ingest.py`, `network_telemetry.py`, `runtime_analysis.py` and format adapters |
-| Web app | `streamlit_app.py`, `ui_*.py`, `local_workspace.py`, `request_guard.py` |
+| Web app | `src/threatfusion/api/` (loopback FastAPI), `web/` (React; built page in `web/dist`), shared view logic in `ui_*.py`, `local_workspace.py`, `request_guard.py` |
 | Installer | `scripts/install_linux.sh`, `scripts/bootstrap_linux.py`, `local_setup.py` |
 | Experimental ML | `baseline.py`, `rhythm.py`, `ml_behavior.py`, `ml_local.py` (+ `models/`), `ui_new_destinations.py`, `ui_behavior.py`; lexical model `ml_*.py` ([evaluation history](evidence/ML_DATASET.md)) |
 

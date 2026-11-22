@@ -182,21 +182,6 @@ def test_real_collector_snapshot_produces_the_same_items(tmp_path):
     assert body["state"] == "ok" and [item["key"] for item in body["items"]] == expected
 
 
-@pytest.mark.parametrize(("value", "expected"), [
-    (None, None),  # not configured: no link (DEC-109)
-    ("http://127.0.0.1:8502/", "http://127.0.0.1:8502"),
-    ("http://localhost:8510", "http://localhost:8510"),
-    ("https://evil.example", None),
-    ("http://192.168.1.5:8501", None),
-    ("http://127.0.0.1:8501/path", None),
-    ("javascript:alert(1)", None),
-])
-def test_streamlit_link_is_loopback_only(value, expected):
-    environment = {} if value is None else {"THREATFUSION_STREAMLIT_URL": value}
-    client = TestClient(create_app(lambda: ApiSettings(False, None, None), environment=environment), base_url=ORIGIN)
-    assert client.get("/api/app").json()["streamlit_url"] == expected
-
-
 def test_demo_snapshot_is_valid_and_uses_documentation_ranges_only(tmp_path):
     import ipaddress
     import re

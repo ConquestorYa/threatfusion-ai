@@ -4,8 +4,6 @@ import json
 import socket
 
 import pytest
-from streamlit.testing.v1 import AppTest
-
 from threatfusion import cli
 from threatfusion.network_telemetry import parse_zeek_conn_log_with_diagnostics
 from threatfusion.reporting import build_analysis_report, build_connection_report
@@ -137,44 +135,3 @@ def test_cli_has_explicit_private_connection_export(tmp_path, monkeypatch):
         cli.main([str(path), "--include-connection-ips"])
 
 
-@pytest.mark.parametrize("public_mode", [True, False])
-def test_connection_ui_has_explicit_local_ip_toggle(public_mode):
-    app = AppTest.from_string(
-        "from threatfusion.runtime_analysis import analyze_zeek_conn_log_with_diagnostics\n"
-        "from threatfusion.ui_connections import render_connections\n"
-        f"result, _ = analyze_zeek_conn_log_with_diagnostics({log(row())!r}, [], None)\n"
-        f"render_connections(result, public_mode={public_mode!r})\n"
-    ).run(timeout=15)
-    assert not app.exception
-    assert app.dataframe[0].value.iloc[0]["Originator"] == "Host 001"
-    toggles = [c for c in app.checkbox if c.key == "connection_include_ips"]
-    assert bool(toggles) is not public_mode
-    if toggles:
-        toggles[0].check().run(timeout=15)
-        assert app.dataframe[0].value.iloc[0]["Originator"] == "192.0.2.1"
-        app.checkbox(key="connection_include_ips").uncheck()
-    app.session_state["language_selector"] = "🇹🇷 Türkçe"
-    app.run(timeout=15)
-    assert not app.exception
-    assert app.dataframe[0].value.iloc[0]["Başlatan"] == "Sistem 001"
-    assert "Uzun çift yönlü" in app.dataframe[0].value.iloc[0]["Kanıt"]
-
-
-def test_whole_dashboard_renders_auto_detected_connection_context(tmp_path, monkeypatch):
-    monkeypatch.setenv("THREATFUSION_CTI_ONLY", "1")
-    monkeypatch.setenv("THREATFUSION_PUBLIC_MODE", "0")
-    monkeypatch.setenv("THREATFUSION_DB_PATH", str(tmp_path / "cti.sqlite"))
-    monkeypatch.setenv("THREATFUSION_EVALUATION_REPORT", str(tmp_path / "missing.json"))
-    app = AppTest.from_string(
-        "import streamlit as st\n"
-        "from threatfusion.runtime_analysis import analyze_dns_upload_with_diagnostics\n"
-        f"result, _, _ = analyze_dns_upload_with_diagnostics({log(row()).encode()!r}, 'conn.log', [], None)\n"
-        "st.session_state['analysis_result'] = result\n"
-        "import streamlit_app\nstreamlit_app.main()\n"
-    ).run(timeout=15)
-    assert not app.exception
-    assert "Connection activity" in [tab.label for tab in app.tabs]
-    frames = [frame.value for frame in app.dataframe if "Originator" in frame.value.columns]
-    assert len(frames) == 1
-    assert frames[0].iloc[0]["Max duration (s)"] == 4000
-    assert frames[0].iloc[0]["Originator"] == "Host 001"

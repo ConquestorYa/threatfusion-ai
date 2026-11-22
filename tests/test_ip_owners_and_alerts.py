@@ -98,28 +98,6 @@ VIEW = {
 }
 
 
-def test_review_rows_show_the_owner_and_outside_links(tmp_path, monkeypatch):
-    from streamlit.testing.v1 import AppTest
-
-    db = _db(tmp_path, monkeypatch, [(ip_owners._key("198.51.100.0"), ip_owners._key("198.51.100.255"), 64496, "NL",
-                                      "Example Hosting")])
-    # Documentation ranges are not global, so allow them for this rendering test only.
-    script = (
-        "from pathlib import Path\n"
-        "from threatfusion import ip_owners\n"
-        "from threatfusion.ui_simple_review import render_review_list\n"
-        "from tests.test_ip_owners_and_alerts import VIEW\n"
-        "reader = ip_owners.IPOwnerReader(Path(%r))\n"
-        "lookup = lambda a: ip_owners.IPOwner(64496, 'Example Hosting', 'NL') if reader else None\n"
-        "render_review_list(VIEW, ip_owner=lookup)\n" % str(db)
-    )
-    app = AppTest.from_string(script).run(timeout=15)
-    assert not app.exception
-    assert any(c.value == "Example Hosting · NL" for c in app.caption)
-    labels = [b.proto.label for b in app.get("link_button")]
-    assert {"VirusTotal", "AbuseIPDB", "urlscan"} <= set(labels)
-
-
 def test_threat_alerts_only_for_threat_list_matches_and_never_show_ips():
     alerts = notifications.threat_alerts(VIEW)
     assert sorted(v or "" for v in alerts.values()) == ["", "bad.example.test", "listed.example.test"]

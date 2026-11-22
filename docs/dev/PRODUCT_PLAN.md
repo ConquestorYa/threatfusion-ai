@@ -56,7 +56,7 @@ linked documents rather than being copied into this plan.
 
 | Area | Implemented behavior | Evidence / remaining qualification |
 | --- | --- | --- |
-| Linux installation and daily use | One-command private Python/dependencies, terminal command, desktop entry, loopback UI (React workspace by default, Streamlit with `--streamlit`, DEC-108), stop/status/reopen and isolated demo | Clean Debian/Ubuntu CI; user manual walkthrough pending. [Install](../INSTALL_LINUX.md) |
+| Linux installation and daily use | One-command private Python/dependencies, terminal command, desktop entry, loopback React workspace served by the local API (DEC-108; Streamlit removed, DEC-111), stop/status/reopen and isolated demo | Clean Debian/Ubuntu CI; user manual walkthrough pending. [Install](../INSTALL_LINUX.md) |
 | CTI | ThreatFox/URLhaus/SGB adapters (PhishTank removed, DEC-089), normalization, lifecycle/freshness, indexed lookup, manual and opt-in scheduled refresh, own-key handling | Scheduling runs while the managed app runs; upstream availability/licensing are separate. [Sources](../DATA_SOURCES.md), [install](../INSTALL_LINUX.md) |
 | Passive lookup | URL/domain/IP evidence, IDNA and IPv6 prefix context; no destination visit or DNS resolution | Supporting workflow, not a malware-content sandbox. [Architecture](../ARCHITECTURE.md) |
 | Manual telemetry | Delimited tables/spreadsheets, Zeek DNS/connection logs, classic UDP DNS PCAP/PCAPNG, supported EVE, Pi-hole FTL, AdGuard and dnstop | Format-specific limits; adapters do not invent missing evidence. [Architecture](../ARCHITECTURE.md), repairs |
@@ -73,20 +73,16 @@ linked documents rather than being copied into this plan.
 
 ## Current checkpoint
 
-- **Interface migration completed in code (2026-11-22, user request,
-  DEC-101, DEC-105–DEC-109):** every Streamlit screen has a React counterpart
-  served by the loopback FastAPI from the same Python code paths: What to
-  check, Details (with the DNS ML column), Experimental ML, Quick lookup
-  (with the behavior card), Analyze telemetry (with history-only parts and
-  expected-connection declarations), Analysis history, Model evaluation and
-  Setup & CTI updates (with Stop). `threatfusion-ai` and the desktop entry
-  open the React workspace from the committed pre-built `web/dist` (no Node
-  needed); `threatfusion-ai --streamlit` keeps Streamlit, which stays the
-  supported fallback. The user approved the migration and its merge on
-  2026-11-22 (DEC-110), based on the agent's walk-through on a disposable
-  installation; the user's own hands-on use is still to come. This
-  interface work runs beside the queue below; it does not re-measure P2 or
-  count as acceptance.
+- **Interface migration completed; Streamlit removed (2026-11-22, user
+  request, DEC-101, DEC-105–DEC-111):** the React workspace, served by the
+  loopback FastAPI from the same Python code paths, is the only interface:
+  What to check, Details, Experimental ML, Quick lookup, Analyze telemetry,
+  Analysis history, Model evaluation and Setup & CTI updates (with Stop).
+  `threatfusion-ai` opens it from the committed pre-built `web/dist` (no Node
+  needed). The user approved the migration (DEC-110) and asked for Streamlit
+  to be removed once the new interface was verified (DEC-111). The user's own
+  hands-on use is still to come. This interface work runs beside the queue
+  below; it does not re-measure P2 or count as acceptance.
 - **P1 first increment (2026-10-07):** predeclared nine-case fault matrix on the
   real collector CLI found and fixed two defects — a CTI lock above the 5 s busy
   timeout stopped collection, and a deep copy of every indicator cost ~430 MiB /

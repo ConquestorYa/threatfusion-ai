@@ -4,23 +4,14 @@ from __future__ import annotations
 import json
 import os
 import stat
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 
-import pandas as pd
-import streamlit as st
-
-from .i18n import tr, translate_dataframe
-from .ui_connection_timeline import render_timeline
 from .connection_timeline import validate_timeline_report
 from .connection_attempts import validate_attempt_report
-from .ui_connection_attempts import render_attempts
 from .dns_collection import validate_dns_snapshot
-from .ui_collected_dns import render_collected_dns
 from .collector_health import validate_collector_health
-from .ui_review_guidance import render_review_summary
-from .ui_simple_review import ip_owner_lookup, render_review_list
-from .collector_reports import read_archive, validate_projection
+from .collector_reports import validate_projection
 
 MAX_SNAPSHOT_BYTES = 64 * 1024 * 1024
 
@@ -103,52 +94,6 @@ COLLECTOR_GUIDE = """**What it is for:** Quick lookup checks one address you alr
 **How to read it:** Start at the top of the table; each row says why it was raised. A raised row is a reason to check, not proof of an infection; normal software can look the same. Activity you know is normal can be declared as expected and hidden."""
 
 
-@st.fragment(run_every="10s")
-def render_collector(state_dir: Path | None, *, public_mode: bool, cti_db_path: Path | None = None):
-    if public_mode:
-        return
-    if state_dir is None:
-        with st.expander(tr("What does this page do?"), expanded=True):
-            st.markdown(tr(COLLECTOR_GUIDE))
-        st.info(tr("Configure a local collector to show automatically collected connections."))
-        st.code("threatfusion-ai collect --input-dir /path/to/zeek/logs", language="shell")
-        return
-    try:
-        payload = read_snapshot(state_dir)
-    except FileNotFoundError:
-        st.info(tr("No collector snapshot yet. Start the local collector."))
-        return
-    except (OSError, ValueError, TypeError, AttributeError, KeyError):
-        st.error(tr("Collector snapshot could not be read. Check private permissions and supported schema."))
-        return
-    status = payload["collector"]
-    counts = status["counts"]
-    if (datetime.now(timezone.utc) - datetime.fromisoformat(status["updated_at"])).total_seconds() > 60:
-        st.warning(tr("This snapshot is older than one minute. Check whether the collector is still running."))
-    if counts["rejected_files"] or status.get("capacity_coverage_loss") or status.get("input_coverage_loss"):
-        st.warning(tr("Some collected data is missing, so this list may be incomplete. Details shows why."))
-    try:
-        from .i18n import current_language
-        from .notifications import remember_language
-        remember_language(state_dir.parent, current_language())
-    except OSError:
-        pass  # Notifications then follow the system language.
-    summary, behavior, details = st.tabs([tr("What to check"), tr("Experimental ML"), tr("Details")])
-    # One revalidated local view per refresh, shared by the review list and Details.
-    local_view = _local_view(state_dir, payload)
-    with summary:
-        st.caption(tr("Last {hours} hours · threat lists + unusual behavior · updates every 10 s",
-                      hours=status.get("window_seconds", 86400) // 3600))
-        render_review_list(local_view or payload, labels_path=state_dir.parent / "review-labels.json",
-                           legacy_hidden_path=state_dir.parent / "review-hidden.json",
-                           ip_owner=ip_owner_lookup(cti_db_path))
-    with behavior:
-        from .ui_behavior import render_behavior_tab
-        render_behavior_tab(state_dir, cti_db_path=cti_db_path, ip_owner=ip_owner_lookup(cti_db_path))
-    with details:
-        _render_details(state_dir, payload, status, counts, cti_db_path, local_view=local_view)
-
-
 def _local_view(state_dir, payload):
     """Real IPs on this screen (the user's own machine); downloads keep aliases. None if unavailable."""
     from .collector_identity import local_identity_view
@@ -158,89 +103,3 @@ def _local_view(state_dir, payload):
         return None
 
 
-def _render_details(state_dir, payload, status, counts, cti_db_path=None, *, local_view=None):
-    with st.expander(tr("What does this page do?")):
-        st.markdown(tr(COLLECTOR_GUIDE))
-    st.caption(tr("Completed Zeek logs are collected automatically. This view refreshes every 10 seconds; active files wait for rotation."))
-    st.caption(tr("Collector snapshot: {time}", time=status["updated_at"]))
-    columns = st.columns(4)
-    columns[0].metric(tr("Retained connections"), counts["retained_records"])
-    columns[1].metric(tr("Connection reviews"), counts["review_groups"])
-    columns[2].metric(tr("Rejected files"), counts["rejected_files"])
-    columns[3].metric(tr("Attempt review patterns"), counts.get("attempt_review_groups", 0))
-    if status.get("capacity_coverage_loss"):
-        st.warning(tr("The collector reached its record limit. Coverage is incomplete and expected-activity filtering is disabled temporarily."))
-    if counts["rejected_files"]:
-        st.warning(tr("Some logs were rejected. Check source format, completion and limits before trusting coverage."))
-    if status.get("input_coverage_loss"):
-        st.warning(tr("Input coverage is incomplete. Rejected, quarantined or pending records prevent expected-activity filtering."))
-    if status.get("preparation", {}).get("bundles"):
-        prepared = status["preparation"]
-        st.caption(tr("Prepared source rows: {total}; eligible: {accepted}; quarantined DNS rows: {quarantined}; pending files: {pending}.",
-                      total=prepared["source_rows"], accepted=prepared["accepted_rows"], quarantined=prepared["quarantined_rows"], pending=prepared["pending_files"]))
-    if "scan" in status:
-        scan = status["scan"]
-        st.caption(tr("Last scan: {seconds} s; changed files checked: {checked}; candidates: {candidates}.",
-                      seconds=scan["analysis_elapsed_seconds"], checked=scan["attempted_files"], candidates=scan["candidate_files"]))
-        if scan["remaining_candidates"]:
-            st.warning(tr("{count} candidate files await checking because the scan budget was reached. They may be open or unchanged; this is not a count of ready logs.", count=scan["remaining_candidates"]))
-        labels = {"format_or_limits": "Format or safety limits", "access": "File access",
-                  "archive": "Invalid archive", "encoding": "Text encoding"}
-        details = [f"{tr(labels[name])}: {count}" for name, count in scan["rejections"].items() if count]
-        if details:
-            st.caption(tr("Rejected input types: {types}", types=", ".join(details)))
-    if status.get("cti_reload_deferred"):
-        st.warning(tr("The CTI cache was busy during this scan. Results use the previously loaded indicators; recent CTI changes appear on a later scan."))
-    if not status["cti_indicators"]:
-        st.info(tr("Collector CTI is empty or disabled. These are behavior observations only."))
-    coverage = payload.get("connection_coverage")
-    if coverage:
-        st.warning(tr("Connection snapshot shows {shown} of {total} retained groups. Omitted: {omitted}; omitted reviews: {reviews}; omitted CTI groups: {cti}. The full gzip report retains every group.",
-                      shown=coverage["snapshot_groups"], total=coverage["total_groups"], omitted=coverage["omitted_groups"],
-                      reviews=coverage["omitted_review_groups"], cti=coverage["omitted_cti_groups"]))
-    render_review_summary(payload["findings"], coverage)
-    view = payload
-    if st.checkbox(tr("Show observed endpoint IPs locally; downloads keep aliases"), value=True, key="collector_local_ips"):
-        if local_view is not None:
-            view = local_view
-        else:
-            st.warning(tr("Private identity mapping is unavailable or changed. Restart the updated collector; aliases remain visible."))
-    reviews = st.checkbox(tr("Show only connection reviews"), value=True, key="collector_reviews_only")
-    expected = st.checkbox(tr("Include declared expected activity"), value=False, key="collector_show_expected")
-    rows = [dict(row) for row in view["findings"] if (not reviews or row["Queue priority"] == "Review" or row["CTI match"])
-            and (expected or not row["Declared expected"] or row["CTI match"])]
-    display = [dict(row) for row in rows[:500]]
-    for row in display:
-        for key in ("Originator", "Responder"):
-            if str(row[key]).startswith("Host "):
-                row[key] = tr("Host {number}", number=str(row[key])[5:])
-        for key in ("Evidence", "Coverage limits", "Analyst context", "Context reason"):
-            row[key] = "; ".join(tr(value) for value in str(row[key]).split("; "))
-    if rows:
-        st.dataframe(translate_dataframe(pd.DataFrame(display)), hide_index=True, width="stretch")
-    else:
-        st.info(tr("No unexplained connection reviews in this view."))
-    if len(rows) > 500:
-        st.caption(tr("Showing the first 500 filtered snapshot groups. Use the full gzip report for all retained groups.") if coverage
-                   else tr("Showing the first 500 groups. The download contains all retained groups."))
-    revision = status.get("selection_revision", status["updated_at"])
-    render_timeline(rows[:500], payload.get("timelines", {}), key="collector", revision=revision)
-    render_attempts(view.get("attempts"))
-    from .ui_behavior import name_scores, scored
-    render_collected_dns(view.get("dns"), revision=revision, behavior_scores=name_scores(scored(state_dir, cti_db_path)))
-    if coverage:
-        reference = dict(payload["full_report"])
-        failure_message = tr("Full report changed or is unavailable. Refresh this page and retry; no unverified archive is served.")
-        def download_full():
-            try:
-                return read_archive(state_dir, reference)
-            except (OSError, ValueError, TypeError):
-                raise RuntimeError(failure_message) from None
-        st.caption(tr("Full retained report generated at: {time}. Unchanged evidence reuses its verified archive.", time=reference["generated_at"]))
-        st.download_button(tr("Download full retained connection JSON.gz"), data=download_full,
-                           file_name="threatfusion_collected_connections.full.json.gz", mime="application/gzip",
-                           key="collector_full_" + reference["sha256"], on_click="ignore")
-    st.download_button(tr("Download visible connection snapshot JSON") if coverage else tr("Download collected connection JSON"),
-                       data=json.dumps(payload, indent=2), file_name="threatfusion_collected_connections.snapshot.json" if coverage else "threatfusion_collected_connections.json",
-                       mime="application/json")
-    st.caption(tr("Collector history is bounded. Aliases are report-local and exports remain sensitive telemetry."))

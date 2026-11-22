@@ -73,21 +73,6 @@ def test_behavior_report_in_turkish(tmp_path):
     assert report["declared"]["columns"] == ["Test", "Sonuç", "Sınır", "Geçti"]
 
 
-def test_behavior_parity_with_streamlit(tmp_path):
-    from streamlit.testing.v1 import AppTest
-
-    root, client = _managed(tmp_path, model=True)
-    script = ("from pathlib import Path\nfrom threatfusion.ui_behavior import render_behavior_evaluation\n"
-              f"render_behavior_evaluation(Path({str(root)!r}))\n")
-    app = AppTest.from_string(script).run(timeout=30)
-    assert not app.exception
-    report = client.get("/api/evaluation").json()["report"]
-    assert [str(metric.value) for metric in app.metric] == [str(m["value"]) for m in report["metrics"]]
-    declared = app.dataframe[0].value
-    assert declared["Result"].tolist() == [row[1] for row in report["declared"]["rows"]]
-    assert [value == "✅" for value in declared["Passed"]] == [row[3] for row in report["declared"]["rows"]]
-
-
 def test_lexical_report_not_evaluated(tmp_path):
     client = _lexical(tmp_path / "missing.json")
     assert client.get("/api/app").json()["evaluation_available"] is True
@@ -104,21 +89,14 @@ def test_lexical_report_unreadable(tmp_path):
     assert report["state"] == "unreadable" and report["error"] == "The final holdout report could not be loaded."
 
 
-def test_lexical_report_matches_streamlit(holdout_report):
-    from streamlit.testing.v1 import AppTest
 
+
+def test_lexical_report_values_and_formatting(holdout_report):
     report = _lexical(holdout_report).get("/api/evaluation").json()["report"]
     assert report["state"] == "ok" and report["model"] == "Model: model-a"
     assert [m["value"] for m in report["metrics"]] == [140, 20, 120, 20, 100]
     assert report["chart"]["groups"][0] == {"label": "High", "values": [0.4, 0.05]}
-    script = ("from pathlib import Path\nfrom threatfusion.ui_evaluation import _show_model_evaluation\n"
-              f"_show_model_evaluation(Path({str(holdout_report)!r}))\n")
-    app = AppTest.from_string(script).run(timeout=30)
-    assert not app.exception
-    operating = app.dataframe[0].value
-    assert list(operating.columns) == report["operating"]["columns"]
-    assert [[str(v) for v in row] for row in operating.values.tolist()] == \
-        [[str(v) for v in row] for row in report["operating"]["rows"]]
-    sources = app.dataframe[1].value
-    assert [[str(v) for v in row] for row in sources.values.tolist()] == \
-        [[str(v) for v in row] for row in report["sources"]["rows"]]
+    operating = dict(zip(report["operating"]["columns"], report["operating"]["rows"][0]))
+    assert operating["Operating point"] == "High" and operating["Threshold"] == "0.800000"
+    assert operating["Recall"] == "40.00%" and operating["False-positive rate"] == "5.00%"
+    assert report["sources"]["rows"] and report["protocol"][0].startswith("Protocol: fresh-collection disjoint holdout")

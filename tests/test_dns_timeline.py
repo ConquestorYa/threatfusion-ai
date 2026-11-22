@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-import copy
 import json
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from streamlit.testing.v1 import AppTest
-
 from threatfusion.dns import DNSEvent
 from threatfusion.dns_timeline import build_dns_timelines, validate_dns_timelines
 from threatfusion.reporting import build_device_report, build_analysis_report
@@ -115,73 +112,3 @@ def test_corrupt_dns_timelines_fail_validation(corrupt):
         validate_dns_timelines(report["timelines"], report["findings"])
 
 
-def test_device_target_ui_is_bilingual_and_resets_only_on_mapping_revision():
-    report = json.loads(
-        build_device_report(
-            analyze_dns_events(
-                events() + [DNSEvent("normal.test", NOW, "192.0.2.12")], (), None
-            )
-        )
-    )
-    program = (
-        "import streamlit as st\nfrom threatfusion.ui_dns_timeline import render_dns_timeline\n"
-        "revision=st.text_input('Mapping',value='first')\n"
-        f"render_dns_timeline({report['findings']!r},{report['timelines']!r},key='test',revision=revision)\n"
-    )
-    app = AppTest.from_string(program).run(timeout=15)
-    assert (
-        not app.exception and app.selectbox(key="test_dns_device").value == "Device 001"
-    )
-    app.selectbox(key="test_dns_device").select("Device 002").run(timeout=15)
-    assert app.selectbox(key="test_dns_device").value == "Device 002"
-    app.run(timeout=15)
-    assert app.selectbox(key="test_dns_device").value == "Device 002"
-    app.text_input[0].set_value("second").run(timeout=15)
-    assert app.selectbox(key="test_dns_device").value == "Device 001"
-    app.session_state["language_selector"] = "🇹🇷 Türkçe"
-    app.run(timeout=15)
-    assert not app.exception and "DNS sorguları" in app.dataframe[0].value
-
-
-def test_empty_or_old_device_reports_do_not_offer_fake_timelines():
-    from threatfusion.ui_dns_timeline import render_dns_timeline
-
-    # Run the shared UI through Streamlit's runner, including legacy snapshots.
-    assert callable(render_dns_timeline)
-    report = json.loads(build_device_report(analyze_dns_events([], (), None)))
-    assert report["timelines"]["groups"] == []
-    old_rows = copy.deepcopy(
-        json.loads(build_device_report(analyze_dns_events(events(), (), None)))[
-            "findings"
-        ]
-    )
-    old_rows[0].pop("Group")
-    app = AppTest.from_string(
-        "from threatfusion.ui_dns_timeline import render_dns_timeline\n"
-        f"render_dns_timeline({old_rows!r},None,key='test',revision='old')\n"
-    ).run(timeout=15)
-    assert not app.exception and not app.selectbox
-
-
-def test_switching_device_with_multiple_domains_clears_old_target_safely():
-    rows = [
-        DNSEvent(name, NOW, client)
-        for client in ("192.0.2.11", "192.0.2.12")
-        for name in ("a.test", "b.test", "c.test", "d.test")
-    ]
-    report = json.loads(build_device_report(analyze_dns_events(rows, (), None)))
-    app = AppTest.from_string(
-        "from threatfusion.ui_dns_timeline import render_dns_timeline\n"
-        f"render_dns_timeline({report['findings']!r},{report['timelines']!r},key='test',revision='same')\n"
-    ).run(timeout=15)
-    assert not app.exception
-    app.selectbox(key="test_dns_device").select("Device 002").run(timeout=15)
-    app.run(timeout=15)
-    assert not app.exception
-    selected = app.selectbox(key="test_dns_target").value
-    assert report["findings"][selected - 1]["Device"] == "Device 002"
-    app.selectbox(key="test_dns_device").select("Device 001").run(timeout=15)
-    app.run(timeout=15)
-    assert not app.exception
-    selected = app.selectbox(key="test_dns_target").value
-    assert report["findings"][selected - 1]["Device"] == "Device 001"

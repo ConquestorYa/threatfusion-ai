@@ -56,7 +56,7 @@ Streamlit web uygulaması. CTI listeleri yerelde önbelleğe alınır; şüpheli
 hedeflere asla bağlanılmaz ve çözümlenmez, hiçbir veri bilgisayardan çıkmaz.
 Ayrıntılar: [Mimari](ARCHITECTURE.tr.md).
 
-Teknolojiler: Python 3.12, Streamlit, SQLite, pandas, scikit-learn. Yalnızca
+Teknolojiler: Python 3.12, FastAPI, React, SQLite, pandas, scikit-learn. Yalnızca
 Linux.
 
 ## Şimdiye kadarki sonuçlar

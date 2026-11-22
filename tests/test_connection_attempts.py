@@ -6,8 +6,6 @@ from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from streamlit.testing.v1 import AppTest
-
 from scripts.lab.evaluate_attempt_controls import CONTRACT, controls
 from scripts.lab.evaluate_connection_controls import zeek_text
 from threatfusion.connection_attempts import (
@@ -169,60 +167,3 @@ def test_private_snapshot_rejects_invalid_or_misleading_attempt_blocks(change):
         validate_attempt_report(modified)
 
 
-@pytest.mark.parametrize("public_mode", [False, True])
-def test_upload_ui_shows_scans_even_when_original_review_filter_has_no_rows(
-    public_mode,
-):
-    case = controls(20261008)[0]
-    app = AppTest.from_string(
-        "from threatfusion.runtime_analysis import analyze_zeek_conn_log_with_diagnostics\n"
-        "from threatfusion.ui_connections import render_connections\n"
-        f"result,_=analyze_zeek_conn_log_with_diagnostics({zeek_text(case['records'])!r},[],None)\n"
-        f"render_connections(result,public_mode={public_mode!r})\n"
-    ).run(timeout=15)
-    assert not app.exception
-    assert app.dataframe[0].value.iloc[0]["Distinct ports"] == 24
-    assert app.dataframe[0].value.iloc[0]["Originator"] == "Host 001"
-    app.session_state["language_selector"] = "🇹🇷 Türkçe"
-    app.run(timeout=15)
-    assert not app.exception
-    assert app.dataframe[0].value.iloc[0]["Farklı portlar"] == 24
-    assert (
-        app.dataframe[0].value.iloc[0]["Örüntü"]
-        == "Birden fazla porta başarısız denemeler"
-    )
-
-
-def test_collector_restart_snapshot_and_bilingual_ui_match_offline_attempts(tmp_path):
-    from threatfusion.telemetry_collector import ZeekCollector
-    from threatfusion.ui_collector import read_snapshot
-
-    source = tmp_path / "logs"
-    source.mkdir()
-    case = controls(20261008)[0]
-    (source / "conn.log").write_text(zeek_text(case["records"]) + "#close\tfixture\n")
-    state = tmp_path / "private"
-    with ZeekCollector(source, state) as collector:
-        status = collector.tick(now=NOW)
-    assert (
-        status["counts"]["attempt_review_groups"] == 1
-        and status["counts"]["review_groups"] == 0
-    )
-    before = read_snapshot(state)
-    assert (
-        before["attempts"]
-        == json.loads(build_connection_report(result_for("vertical_rejections")))[
-            "attempts"
-        ]
-    )
-    with ZeekCollector(source, state) as collector:
-        assert collector.tick(now=NOW)["counts"]["new_records"] == 0
-    assert read_snapshot(state)["attempts"] == before["attempts"]
-    app = AppTest.from_string(
-        "from pathlib import Path\nfrom threatfusion.ui_collector import render_collector\n"
-        f"render_collector(Path({str(state)!r}),public_mode=False)\n"
-    ).run(timeout=15)
-    assert not app.exception and app.dataframe[0].value.iloc[0]["Distinct ports"] == 24
-    app.session_state["language_selector"] = "🇹🇷 Türkçe"
-    app.run(timeout=15)
-    assert not app.exception and app.dataframe[0].value.iloc[0]["Farklı portlar"] == 24

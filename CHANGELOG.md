@@ -53,8 +53,19 @@ framing is retired. No release date or tag is set.
   behavior model) and `--history-model` (synthetic demo domain artifact) for
   browser tests and the demo; neither is a measured model.
 
+### Removed
+
+- **Streamlit** (DEC-111): `streamlit_app.py`, its theme, charts and
+  rendering-only modules, `.streamlit/` and `static/`. The React workspace is
+  the only interface. `streamlit`, `altair` and `plotly` left the dependency
+  list (runtime lock 56 → 32 packages, no version changes); `uvicorn` is now a
+  direct dependency. `threatfusion-ai --streamlit` opens the React workspace
+  with a notice. Tests that rendered Streamlit were removed.
+
 ### Changed
 
+- The Docker image runs the loopback API (`docker run --network host`,
+  127.0.0.1:8600) instead of Streamlit.
 - `threatfusion-ai` and the desktop entry open the React workspace: the
   launcher starts the loopback API, which serves the committed pre-built page
   `web/dist` (no Node at install or run time; CI fails when it differs from

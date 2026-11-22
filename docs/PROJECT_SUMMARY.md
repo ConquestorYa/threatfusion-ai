@@ -47,11 +47,11 @@ including the failures, is in [ML evaluation](evidence/ML_DATASET.md).
 ## Architecture in brief
 
 Zeek logs → collector (checkpointed, deduplicated, bounded evidence window) →
-aliased JSON snapshot → Streamlit web app bound to `127.0.0.1`. CTI lists are
+aliased JSON snapshot → React workspace served by a local FastAPI on `127.0.0.1`. CTI lists are
 cached locally; suspicious destinations are never visited or resolved, and no
 data leaves the computer. Details: [Architecture](ARCHITECTURE.md).
 
-Stack: Python 3.12, Streamlit, SQLite, pandas, scikit-learn. Linux only.
+Stack: Python 3.12, FastAPI, React, SQLite, pandas, scikit-learn. Linux only.
 
 ## Results so far
 

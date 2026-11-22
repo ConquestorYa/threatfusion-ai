@@ -140,8 +140,7 @@ def setup_state(settings: ApiSettings, language: str) -> dict:
                 "Reopen from the applications menu or run threatfusion-ai. Closing the browser tab does not stop the local server."),
                 "stop": tr("Stop local application"),
                 "stopping": tr("The local application is stopping. You can close this tab."),
-                "not_running": tr("This page is not running under the local launcher. Stop it in the terminal that started it."),
-                "streamlit": tr("The previous Streamlit workspace opens with: threatfusion-ai --streamlit")},
+                "not_running": tr("This page is not running under the local launcher. Stop it in the terminal that started it.")},
         }
         if mode == "demo":
             result["demo_note"] = tr("Demo data is synthetic. Switch to real CTI to configure sources and updates.")

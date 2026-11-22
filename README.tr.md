@@ -97,20 +97,17 @@ listesi. Gerçek trafik ya da gerçek gösterge yoktur.
 
 ### Yeni arayüz (React)
 
-Çalışma alanı artık **React + FastAPI**: Streamlit'teki bütün ekranlar
-taşındı (Bakılacaklar, Ayrıntılar, Deneysel ML, Hızlı sorgu, Telemetriyi
-analiz et, Analiz geçmişi, Model değerlendirmesi, Kurulum ve CTI
-güncellemeleri). Aynı Python kodunu kullandıkları için iki arayüz aynı
-kanıtı gösterir ve aynı işaretleri paylaşır. İkisi de yalnızca 127.0.0.1'de
-dinler.
+Çalışma alanı **React + FastAPI**: Bakılacaklar, Ayrıntılar, Deneysel ML,
+Hızlı sorgu, Telemetriyi analiz et, Analiz geçmişi, Model değerlendirmesi ve
+Kurulum ve CTI güncellemeleri. Önceki Streamlit arayüzünün yerini aldı;
+Streamlit 2026-11-22'de kaldırıldı (DEC-111). Yalnızca 127.0.0.1'de dinler.
 
 `threatfusion-ai` ve masaüstü kısayolu React çalışma alanını açar; sayfa
-kaynak kodla birlikte önceden derlenmiş gelir, Node gerekmez. Önceki Streamlit
-arayüzü hâlâ kullanılabilir: `threatfusion-ai --streamlit`. İkisini kaynak
-koddan sentetik veriyle yan yana denemek için:
+kaynak kodla birlikte önceden derlenmiş gelir, Node gerekmez. Kaynak koddan
+sentetik veriyle denemek için:
 
 ```bash
-scripts/demo_web.sh   # React: http://127.0.0.1:8600 · Streamlit: http://127.0.0.1:8501
+scripts/demo_web.sh   # http://127.0.0.1:8600
 ```
 
 Kendi toplanan verinle çalıştırma ve geliştirme: [web/README.md](web/README.md) (İngilizce).
@@ -250,7 +247,7 @@ yerel uygulama. Bu araçlardan daha faydalı olup olmadığı ölçülmedi.
 
 ## Geliştirme
 
-Python 3.12, FastAPI, Streamlit, SQLite, pandas, Altair, Plotly ve
+Python 3.12, FastAPI, React, SQLite, pandas ve
 scikit-learn; yeni arayüz React 19, TypeScript, Vite ve Tailwind CSS kullanır
 ([web/README.md](web/README.md)). CI; kod denetimi, testler, React sayfasının
 tarayıcı testleri, deponun gizlilik denetimi, konteyner kontrolü ve temiz

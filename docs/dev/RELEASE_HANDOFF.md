@@ -2,6 +2,32 @@
 
 Newest section first. Status date: 2026-11-22.
 
+## Streamlit removed; React is the only interface (2026-11-22)
+
+Branch `feat/remove-streamlit` (on top of PR #191), DEC-111.
+
+- Removed: `streamlit_app.py`, `.streamlit/`, `static/`, `brand_assets.py`
+  and 12 rendering-only `ui_*` modules; `streamlit`, `altair`, `plotly`
+  dependencies (runtime lock 56 → 32 packages, versions unchanged, `uvicorn`
+  now direct). Kept modules lost only their Streamlit calls; caches are
+  `memo.cached`, the language is a `ContextVar`.
+- Launcher: API only; missing `web/dist` is an error; legacy `--streamlit`
+  prints a notice and opens React. Docker: loopback API with
+  `--network host`; CI checks the page, health and foreign-Host refusal.
+- Verification without Streamlit installed: ruff clean; pytest 1414 passed
+  (97 Streamlit render/parity tests removed, i18n tests rewritten, API
+  assertions of the removed lexical parity test restored); web lint, Vitest
+  28, build, Playwright 112 with `E2E_PYTHON` pointing at a Streamlit-free
+  environment; a real installation from the new lock (32 packages, no
+  Streamlit) launched with `--streamlit` (notice, React opened), served every
+  screen at 1280 and 375 px with no horizontal scroll or console errors,
+  answered lookup, three uploads, Details and ML, and stopped cleanly from
+  the Setup button. Fixed on the way: the Setup page stops polling once the
+  application is stopping.
+- Not run locally: the Docker image and the Docker installer job (CI).
+- `scripts/lab/wallclock_soak.py` is kept as the historical P1 method; it does
+  not run on this source.
+
 ## React migration completed; launcher opens React (2026-11-22)
 
 Branch `feat/react-workspace-2`, one commit per screen, PR #191; the user

@@ -181,10 +181,8 @@ def test_default_port_falls_back_and_command_is_loopback_only(monkeypatch):
     monkeypatch.setattr(socket, "socket", lambda *args: Listener())
     assert local_setup.choose_local_port() == 8502
     assert binds == [("127.0.0.1", 8501), ("127.0.0.1", 8502)]
-    command = local_setup.streamlit_command(Path("source"), 8502)
-    assert "--server.address=127.0.0.1" in command
-    assert "--server.enableXsrfProtection=true" in command
-    assert "--browser.gatherUsageStats=false" in command
+    command = local_setup.api_command(Path("source"), 8502)
+    assert command[1:5] == ["-m", "threatfusion.api", "--port", "8502"] and "--host" not in command
 
 
 @pytest.mark.parametrize("healthy", [True, False])
@@ -221,8 +219,10 @@ def test_browser_waits_for_health_and_child_is_stopped(tmp_path, monkeypatch, he
     class HTTP:
         def open(self, *args, **kwargs):
             calls.append("health")
-            return Response(b"ok" if healthy else b"failed")
+            return Response(b'{"status":"ok"}' if healthy else b"failed")
 
+    (tmp_path / "web" / "dist").mkdir(parents=True)
+    (tmp_path / "web" / "dist" / "index.html").write_text("<div id=\"root\"></div>")
     monkeypatch.setattr(local_setup, "choose_local_port", lambda port: 18501)
     monkeypatch.setattr(local_setup.threading, "Event", Event)
     monkeypatch.setattr(

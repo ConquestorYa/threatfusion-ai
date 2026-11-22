@@ -97,19 +97,17 @@ shown.
 
 ### New interface (React)
 
-The workspace is now **React + FastAPI**: every Streamlit screen has moved
-(What to check, Details, Experimental ML, Quick lookup, Analyze telemetry,
-Analysis history, Model evaluation, Setup & CTI updates), built on the same
-Python code, so both interfaces show the same evidence and share the same
-marks. Both listen on 127.0.0.1 only.
+The workspace is **React + FastAPI**: What to check, Details, Experimental
+ML, Quick lookup, Analyze telemetry, Analysis history, Model evaluation and
+Setup & CTI updates. It replaced the earlier Streamlit interface, which was
+removed on 2026-11-22 (DEC-111). It listens on 127.0.0.1 only.
 
 `threatfusion-ai` and the desktop entry open the React workspace; the page
-ships pre-built with the source, so no Node is needed. The previous Streamlit
-interface stays available: `threatfusion-ai --streamlit`. To try both side by
-side from a source checkout with synthetic data:
+ships pre-built with the source, so no Node is needed. To try it from a source
+checkout with synthetic data:
 
 ```bash
-scripts/demo_web.sh   # React: http://127.0.0.1:8600 · Streamlit: http://127.0.0.1:8501
+scripts/demo_web.sh   # http://127.0.0.1:8600
 ```
 
 Running it on your own collected data, and development: [web/README.md](web/README.md).
@@ -242,7 +240,7 @@ is more useful than these tools has not been measured.
 
 ## Development
 
-Python 3.12, FastAPI, Streamlit, SQLite, pandas, Altair, Plotly and
+Python 3.12, FastAPI, React, SQLite, pandas and
 scikit-learn; the new interface uses React 19, TypeScript, Vite and Tailwind CSS
 ([web/README.md](web/README.md)). CI runs lint, tests, browser tests of the
 React page, a privacy audit of the repository, a container check and first-run

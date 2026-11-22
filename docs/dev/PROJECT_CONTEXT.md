@@ -6,14 +6,13 @@ history; earlier “Next” notes are superseded by that plan's current queue.
 
 ## Current checkpoint (2026-11-22)
 
-The React + FastAPI migration (DEC-101) covers every Streamlit screen: What
-to check, Details, Experimental ML, Quick lookup, Analyze telemetry, Analysis
-history, Model evaluation and Setup & CTI updates (DEC-105–DEC-109). The
-API calls the Streamlit code paths; Streamlit files are unchanged and still
-supported. `threatfusion-ai` now opens the React workspace from the committed
-pre-built page (`web/dist`, no Node needed); `threatfusion-ai --streamlit`
-opens Streamlit (DEC-108). The user approved the migration and merge on
-2026-11-22 (DEC-110, PR #191), based on the agent's walk-through.
+The React + FastAPI workspace is the only interface (DEC-101, DEC-105–DEC-111):
+What to check, Details, Experimental ML, Quick lookup, Analyze telemetry,
+Analysis history, Model evaluation and Setup & CTI updates. Streamlit was
+removed at the user's request after the migration was approved (DEC-110,
+DEC-111); the API reuses the former Streamlit view logic in `ui_*` modules,
+now free of Streamlit. `threatfusion-ai` serves the committed pre-built page
+(`web/dist`, no Node needed). The user's own hands-on use is still to come.
 
 ### Previous checkpoint (2026-11-15)
 

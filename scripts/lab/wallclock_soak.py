@@ -6,6 +6,11 @@ rotated in real time; no packets, destinations or feeds are contacted. The CTI
 cache is a private SQLite backup copy of the developer's existing cache, read
 through a read-only connection and never modified. Results are engineering
 evidence for one host/workload, not detection efficacy or enterprise sizing.
+
+Historical method (P1, 2026-10): it measured the Streamlit web app, which was
+removed on 2026-11-22 (DEC-111). Kept unchanged as the record of that
+method; it no longer runs on this source. A new soak of the React workspace
+needs a newly declared method (lab-experiment protocol).
 """
 from __future__ import annotations
 

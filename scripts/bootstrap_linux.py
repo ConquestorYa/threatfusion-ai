@@ -143,7 +143,7 @@ def prepare_environment(root: Path, source: Path, uv: Path) -> Path:
             str(python),
             "-c",
             "import sys; assert sys.version_info[:3]==(3,12,14); "
-            "import streamlit,sklearn,pandas,pyarrow,openpyxl,xlrd,dpkt,plotly",
+            "import fastapi,uvicorn,sklearn,pandas,openpyxl,xlrd,dpkt",
         ],
         check=True,
     )
@@ -191,11 +191,8 @@ def main() -> int:
     parser.add_argument("--no-browser", action="store_true")
     parser.add_argument("--refresh-cti", action="store_true")
     parser.add_argument("--launch-only", action="store_true")
-    parser.add_argument(
-        "--streamlit",
-        action="store_true",
-        help="Open the previous Streamlit workspace instead of the React workspace",
-    )
+    # Older desktop entries may still pass --streamlit; that interface was removed (DEC-111).
+    parser.add_argument("--streamlit", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument(
         "--no-integrations",
         action="store_true",
@@ -237,7 +234,7 @@ def main() -> int:
                     if args.source_dir
                     else obtain_source(root, args.source_sha or "")
                 )
-                if not (source / "streamlit_app.py").is_file():
+                if not (source / "web/dist/index.html").is_file():
                     raise ValueError("application source is missing")
                 python = prepare_environment(root, source, args.uv)
             sys.path.insert(0, str(source / "src"))
@@ -314,7 +311,7 @@ def main() -> int:
             if args.port is not None:
                 command.extend(["--port", str(args.port)])
             if args.streamlit:
-                command.extend(["--interface", "streamlit"])
+                print("Streamlit arayüzü kaldırıldı; yeni arayüz açılıyor.", flush=True)
             for enabled, flag in (
                 (args.prepare_only, "--prepare-only"),
                 (args.no_browser, "--no-browser"),

@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import argparse
-import asyncio
 import hashlib
 import gzip
-import importlib.util
 import json
 import os
 import re
@@ -25,9 +23,7 @@ def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _healthy(interface: str, body: bytes) -> bool:
-    if interface == "streamlit":
-        return body == b"ok"
+def _healthy(body: bytes) -> bool:
     try:
         return json.loads(body) == {"status": "ok"}
     except ValueError:
@@ -56,11 +52,8 @@ def check_web_ui(url: str, http, *, stop: bool) -> None:
             assert json.loads(response.read()) == {"stopping": True}
 
 
-def check_running(root: Path, mode: str, port: int, *, auto_port: bool = False, interface: str = "web") -> None:
-    source = Path(json.loads((root / "installation.json").read_text())["source"])
+def check_running(root: Path, mode: str, port: int, *, auto_port: bool = False) -> None:
     command = [str(root / "start"), "--mode", mode, "--no-browser"]
-    if interface == "streamlit":
-        command.append("--streamlit")
     if not auto_port:
         command += ["--port", str(port)]
     with tempfile.TemporaryFile(mode="w+") as log:
@@ -75,10 +68,9 @@ def check_running(root: Path, mode: str, port: int, *, auto_port: bool = False, 
                 if process.poll() is not None:
                     log.seek(0)
                     raise RuntimeError(log.read())
-                health = "/_stcore/health" if interface == "streamlit" else "/api/health"
                 try:
-                    with http.open(url + health, timeout=1) as response:
-                        if _healthy(interface, response.read()):
+                    with http.open(url + "/api/health", timeout=1) as response:
+                        if _healthy(response.read()):
                             break
                 except (OSError, urllib.error.URLError):
                     pass
@@ -86,15 +78,7 @@ def check_running(root: Path, mode: str, port: int, *, auto_port: bool = False, 
                     raise RuntimeError("local health endpoint timed out")
                 time.sleep(0.2)
             # Health alone does not execute the application. Render its real UI.
-            if interface == "streamlit":
-                spec = importlib.util.spec_from_file_location(
-                    "session_check", source / "scripts/check_public_demo_session.py"
-                )
-                module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(module)
-                asyncio.run(module.check_session(url))
-            else:
-                check_web_ui(url, http, stop=False)
+            check_web_ui(url, http, stop=False)
             listeners = [
                 line.split()[1]
                 for line in Path("/proc/net/tcp").read_text().splitlines()[1:]
@@ -114,10 +98,8 @@ def check_running(root: Path, mode: str, port: int, *, auto_port: bool = False, 
             assert json.loads(status.stdout) == {"running": True, "url": url}
             if mode == "demo":
                 process.send_signal(signal.SIGINT)
-            elif interface == "web":
-                check_web_ui(url, http, stop=True)
             else:
-                subprocess.run([str(root / "start"), "stop"], check=True)
+                check_web_ui(url, http, stop=True)
             assert process.wait(timeout=25) == 0
             time.sleep(0.3)
             with socket.socket() as client:
@@ -130,7 +112,7 @@ def check_running(root: Path, mode: str, port: int, *, auto_port: bool = False, 
             if process.poll() is None:
                 os.killpg(process.pid, signal.SIGTERM)
                 process.wait(timeout=30)
-    print(f"{mode} ({interface}): real UI, loopback binding, duplicate lock and shutdown passed")
+    print(f"{mode}: real UI, loopback binding, duplicate lock and shutdown passed")
 
 
 def main() -> None:
@@ -181,8 +163,9 @@ def main() -> None:
         [IOCRecord("fixture.example", IOCType.DOMAIN, "Installer Test")],
     )
     check_running(root, "cti-only", 18511)
-    # The previous Streamlit workspace stays available with --streamlit.
-    check_running(root, "cti-only", 18512, interface="streamlit")
+    # Older desktop entries may still pass --streamlit: it opens the React workspace.
+    legacy = subprocess.run([str(root / "start"), "--streamlit", "--prepare-only"], capture_output=True, text=True)
+    assert legacy.returncode == 0 and "Streamlit arayüzü kaldırıldı" in legacy.stdout, legacy.stdout + legacy.stderr
     # Exercise the installed launcher, not just the module entry point.
     with tempfile.TemporaryDirectory() as temporary:
         source_logs = Path(temporary)

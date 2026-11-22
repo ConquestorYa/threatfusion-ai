@@ -1,17 +1,17 @@
-"""Small, deterministic UI translation layer for English and Turkish."""
+"""Small, deterministic UI translation layer for English and Turkish.
+
+The language of the text being built is a context variable: the API sets it
+for one response (``use_language``), so concurrent requests in different
+languages never see each other's choice.
+"""
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 
-import pandas as pd
-import streamlit as st
-
-LANGUAGE_OPTIONS = ("🇹🇷 Türkçe", "🇬🇧 English")
-_LANGUAGE_BY_OPTION = {
-    "🇹🇷 Türkçe": "tr",
-    "🇬🇧 English": "en",
-}
+_LANGUAGE: ContextVar[str] = ContextVar("threatfusion_language", default="en")
 
 _TR: dict[str, str] = {
     "IPv6 network context": "IPv6 ağ eşleşmesi bağlamı",
@@ -416,7 +416,6 @@ _TR: dict[str, str] = {
     "Stop local application": "Yerel uygulamayı kapat",
     "The local application is stopping. You can close this tab.": "Yerel uygulama kapanıyor. Bu sekmeyi kapatabilirsin.",
     "This page is not running under the local launcher. Stop it in the terminal that started it.": "Bu sayfa yerel başlatıcıyla çalışmıyor. Onu başlatan terminalden durdur.",
-    "The previous Streamlit workspace opens with: threatfusion-ai --streamlit": "Önceki Streamlit çalışma alanı şu komutla açılır: threatfusion-ai --streamlit",
     "No refresh yet. Use Update CTI now to download source data.": "Henüz güncelleme yok. Kaynak verilerini indirmek için CTI verilerini şimdi güncelle düğmesini kullan.",
     "Last attempt: {time}": "Son deneme: {time}",
     "IP owners": "IP sahipleri",
@@ -1145,18 +1144,18 @@ _VALUE_TR = {
 
 
 def current_language() -> str:
-    """Return the current UI language without changing application state."""
+    """The language of the text being built ("en" unless ``use_language`` set it)."""
+    return _LANGUAGE.get()
+
+
+@contextmanager
+def use_language(language: str) -> Iterator[None]:
+    """Build text in ``language`` ("en" or "tr") for the duration of the block."""
+    token = _LANGUAGE.set("tr" if language == "tr" else "en")
     try:
-        selected = st.session_state.get("language_selector")
-    except Exception:
-        return "en"
-    if isinstance(selected, str):
-        return _LANGUAGE_BY_OPTION.get(selected, "en")
-    return "en"
-
-
-def language_option_for(code: str) -> str:
-    return "🇹🇷 Türkçe" if code == "tr" else "🇬🇧 English"
+        yield
+    finally:
+        _LANGUAGE.reset(token)
 
 
 def tr(text: str, **values: object) -> str:
@@ -1165,23 +1164,3 @@ def tr(text: str, **values: object) -> str:
     if values:
         return translated.format(**values)
     return translated
-
-
-def translate_dataframe(frame: pd.DataFrame) -> pd.DataFrame:
-    """Translate presentation-only dataframe labels and common categorical values."""
-    if current_language() != "tr":
-        return frame
-    translated = frame.copy()
-    translated = translated.rename(columns=_COLUMN_TR)
-    for column in translated.columns:
-        translated[column] = translated[column].map(
-            lambda value: (
-                _VALUE_TR.get(value, value) if isinstance(value, str) else value
-            )
-        )
-    return translated
-
-
-def translated_options(values: list[str] | tuple[str, ...]) -> Mapping[str, str]:
-    """Return display labels while preserving stable internal option values."""
-    return {value: tr(value) for value in values}

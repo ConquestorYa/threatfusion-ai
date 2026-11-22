@@ -16,7 +16,6 @@ const OK = {
     stop: 'Stop local application',
     stopping: 'The local application is stopping. You can close this tab.',
     not_running: 'This page is not running under the local launcher.',
-    streamlit: 'The previous Streamlit workspace opens with: threatfusion-ai --streamlit',
   },
   keys: {
     title: 'API keys', caption: 'SGB works without a key.', saved: 'Saved keys: None', missing: 'Get one at [auth.abuse.ch](https://auth.abuse.ch/).',
@@ -46,7 +45,7 @@ beforeEach(() => {
       if (url.startsWith('/api/setup/refresh')) return Response.json({ started: true })
       if (url.startsWith('/api/setup/')) return new Response(null, { status: 204 })
       if (url.startsWith('/api/setup')) return Response.json(state)
-      return Response.json({ streamlit_url: 'http://127.0.0.1:8501', setup_available: true, first_setup: false })
+      return Response.json({ setup_available: true, first_setup: false })
     }),
   )
 })

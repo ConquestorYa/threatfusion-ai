@@ -3,12 +3,9 @@ from __future__ import annotations
 import json
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
-from types import SimpleNamespace
 
 import pytest
-from streamlit.testing.v1 import AppTest
-
-from threatfusion import cli, ui_connections
+from threatfusion import cli
 from threatfusion.expected_connections import MAX_RULE_BYTES, connection_contexts, parse_expected_connections
 from threatfusion.models import IOCRecord, IOCType
 from threatfusion.reporting import build_analysis_report, build_connection_report
@@ -161,46 +158,6 @@ def test_cli_context_is_explicit_private_and_invalid_files_write_nothing(tmp_pat
         cli.main([str(source), "--expected-connections", str(declarations)])
 
 
-@pytest.mark.parametrize("public_mode", [False, True])
-def test_ui_expected_filter_cti_visibility_and_public_boundary(monkeypatch, public_mode):
-    now = datetime.now(timezone.utc)
-    payload = config(rule(now))
-    uploader_calls = []
-    def upload(*args, **kwargs):
-        uploader_calls.append(kwargs["key"])
-        return SimpleNamespace(size=len(payload), getvalue=lambda: payload)
-    monkeypatch.setattr(ui_connections.st, "file_uploader", upload)
-    text = telemetry(now)
-    app = AppTest.from_string(
-        "from threatfusion.runtime_analysis import analyze_zeek_conn_log_with_diagnostics\n"
-        "from threatfusion.ui_connections import render_connections\n"
-        f"result, _ = analyze_zeek_conn_log_with_diagnostics({text!r}, [], None)\n"
-        f"render_connections(result, public_mode={public_mode!r})\n"
-    ).run(timeout=15)
-    assert not app.exception
-    assert bool(uploader_calls) is not public_mode
-    if public_mode:
-        assert len([frame for frame in app.dataframe if "Originator" in frame.value.columns]) == 1
-        assert app.dataframe[-1].value["Connection starts"].sum() == app.dataframe[0].value["Connections"].sum()
-        assert "192.0.2.1" not in str([frame.value for frame in app.dataframe])
-        return
-    assert len(app.dataframe) == 0
-    app.checkbox(key="connection_show_expected").check().run(timeout=15)
-    assert app.dataframe[0].value.iloc[0]["Analyst context"] == "Declared expected"
-    app.session_state["language_selector"] = "🇹🇷 Türkçe"
-    app.run(timeout=15)
-    assert app.dataframe[0].value.iloc[0]["Analist bağlamı"] == "Beklentiye uyuyor"
-    cti_app = AppTest.from_string(
-        "from threatfusion.models import IOCRecord, IOCType\n"
-        "from threatfusion.runtime_analysis import analyze_zeek_conn_log_with_diagnostics\n"
-        "from threatfusion.ui_connections import render_connections\n"
-        f"result, _ = analyze_zeek_conn_log_with_diagnostics({text!r}, [IOCRecord('198.51.100.1', IOCType.IPV4, 'synthetic')], None)\n"
-        "render_connections(result, public_mode=False)\n"
-    ).run(timeout=15)
-    assert not cti_app.exception
-    assert cti_app.dataframe[0].value.iloc[0]["Analyst context"] == "CTI conflict"
-
-
 def test_context_workload_records_masquerade_limitation_and_immutable_inputs(tmp_path):
     from scripts.lab.evaluate_expected_controls import evaluate
     output = tmp_path / "context-controls"
@@ -217,19 +174,3 @@ def test_context_workload_records_masquerade_limitation_and_immutable_inputs(tmp
     assert (output / "summary.json").read_bytes() == original
 
 
-@pytest.mark.parametrize("oversized", [False, True])
-def test_invalid_ui_upload_keeps_original_reviews_visible(monkeypatch, oversized):
-    payload = b'{"private-note": "never echo this topology"}'
-    monkeypatch.setattr(ui_connections.st, "file_uploader", lambda *a, **kw: SimpleNamespace(
-        size=MAX_RULE_BYTES + 1 if oversized else len(payload), getvalue=lambda: payload,
-    ))
-    app = AppTest.from_string(
-        "from threatfusion.runtime_analysis import analyze_zeek_conn_log_with_diagnostics\n"
-        "from threatfusion.ui_connections import render_connections\n"
-        f"result, _ = analyze_zeek_conn_log_with_diagnostics({telemetry()!r}, [], None)\n"
-        "render_connections(result, public_mode=False)\n"
-    ).run(timeout=15)
-    assert not app.exception and app.error
-    assert "never echo" not in app.error[0].value
-    assert app.dataframe[0].value.iloc[0]["Queue priority"] == "Review"
-    assert not app.dataframe[0].value.iloc[0]["Declared expected"]

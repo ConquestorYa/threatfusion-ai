@@ -3,11 +3,9 @@ from __future__ import annotations
 import gzip
 import json
 import sqlite3
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
 import pytest
-from streamlit.testing.v1 import AppTest
-
 from scripts.lab.evaluate_dns_collector import FIELDS, NOW, cases, log
 from threatfusion import telemetry_collector as module
 from threatfusion.dns_zeek import parse_zeek_dns_log, parse_zeek_dns_transactions
@@ -320,39 +318,6 @@ def test_corrupt_collector_dns_blocks_are_rejected(paths, corrupt):
     (state / "connections.json").write_text(json.dumps(payload))
     with pytest.raises(ValueError):
         read_snapshot(state)
-
-
-def test_collector_dns_ui_bilingual_filters_and_public_boundary(paths):
-    source, state = paths
-    rows = cases(1)[0]["rows"]
-    offset = int(datetime.now(timezone.utc).timestamp() - NOW.timestamp())
-    for row in rows:
-        row[0] += offset
-    (source / "dns.log").write_text(log(rows))
-    with module.ZeekCollector(source, state) as collector:
-        collector.tick(now=datetime.now(timezone.utc))
-    program = "from pathlib import Path\nfrom threatfusion.ui_collector import render_collector\n"
-    app = AppTest.from_string(
-        program + f"render_collector(Path({str(state)!r}), public_mode=False)\n"
-    ).run(timeout=20)
-    assert not app.exception
-    assert app.dataframe[0].value.iloc[0]["Target"] == "updates.test"
-    # Real addresses on the user's own screen by default; unticked shows aliases.
-    assert app.dataframe[0].value.iloc[0]["Device"] == "192.0.2.11"
-    app.checkbox(key="collector_local_ips").set_value(False).run(timeout=20)
-    assert app.dataframe[0].value.iloc[0]["Device"] == "Device 001"
-    app.session_state["language_selector"] = "🇹🇷 Türkçe"
-    app.run(timeout=20)
-    assert not app.exception
-    assert any(
-        metric.label == "Analiz edilen DNS işlemleri" and metric.value == "20"
-        for metric in app.metric
-    )
-    assert app.dataframe[0].value.iloc[0]["Cihaz"] == "Cihaz 001"
-    public = AppTest.from_string(
-        program + f"render_collector(Path({str(state)!r}), public_mode=True)\n"
-    ).run(timeout=20)
-    assert not public.exception and not public.metric and not public.dataframe
 
 
 def test_old_snapshot_without_dns_stays_readable(paths):

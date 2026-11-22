@@ -21,11 +21,14 @@ import { cn } from 'cn'
 
 export function Setup() {
   const { lang, t, chrome } = usePreferences()
+  const [stopped, setStopped] = useState(false)
   const setup = useQuery({
     queryKey: ['setup', lang],
     queryFn: () => fetchSetup(lang),
-    // Streamlit polls a running update every 2 s and the status every 10 s.
-    refetchInterval: (query) => (query.state.data?.state === 'ok' && query.state.data.cti?.running ? 2_000 : 10_000),
+    // A running update is polled every 2 s and the status every 10 s.
+    // Once the application is stopping there is nothing left to poll.
+    refetchInterval: (query) =>
+      stopped ? false : query.state.data?.state === 'ok' && query.state.data.cti?.running ? 2_000 : 10_000,
   })
   const heading = <h1 className="text-lg font-semibold tracking-tight">{t('Setup & CTI updates')}</h1>
 
@@ -80,8 +83,7 @@ export function Setup() {
       </div>
       <Panel title={data.application.title}>
         <p className="text-xs text-muted-foreground">{data.application.caption}</p>
-        <StopApplication application={data.application} />
-        <CommandHint text={data.application.streamlit} />
+        <StopApplication application={data.application} onStopping={() => setStopped(true)} />
       </Panel>
       {data.sources && (
         <Panel title={data.sources.title}>
@@ -102,25 +104,12 @@ function Panel({ title, children, className }: { title: string; children: ReactN
   )
 }
 
-/** Sentence in the UI font, the command itself (after the colon) in the data font. */
-function CommandHint({ text }: { text: string }) {
-  const [sentence, command] = text.split(/:\s+(?=threatfusion-ai)/)
-  return (
-    <p className="text-xs text-muted-foreground">
-      {command ? (
-        <>
-          {sentence}: <code className="rounded-sm bg-muted px-1 font-mono text-foreground">{command}</code>
-        </>
-      ) : (
-        text
-      )}
-    </p>
-  )
-}
-
 /** "Stop local application": asks the launcher to stop (ui_local_settings). */
-function StopApplication({ application }: { application: SetupOk['application'] }) {
-  const stop = useMutation({ mutationFn: stopApplication })
+function StopApplication({ application, onStopping }: { application: SetupOk['application']; onStopping: () => void }) {
+  const stop = useMutation({
+    mutationFn: stopApplication,
+    onSuccess: (result) => result.stopping && onStopping(),
+  })
   return (
     <div className="space-y-2">
       <Button variant="outline" size="sm" disabled={stop.isPending || stop.data?.stopping} onClick={() => stop.mutate()}>

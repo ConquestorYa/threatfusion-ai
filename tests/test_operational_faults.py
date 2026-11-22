@@ -133,24 +133,6 @@ def test_fault_method_declares_every_case_and_fixture_parses(tmp_path):
     assert (tmp_path / "cache.sqlite").stat().st_mode & 0o777 == 0o600
 
 
-def test_dashboard_warns_when_cti_reload_was_deferred(tmp_path):
-    from datetime import datetime, timezone
-    from streamlit.testing.v1 import AppTest
-    source, state, _ = setup(tmp_path)
-    with module.ZeekCollector(source, state) as collector:
-        collector.tick(now=datetime.now(timezone.utc), cti_reload_deferred=True,
-                       indicators=[IOCRecord("198.51.100.77", IOCType.IPV4, "Synthetic")])
-    app = AppTest.from_string(
-        "from pathlib import Path\nfrom threatfusion.ui_collector import render_collector\n"
-        f"render_collector(Path({str(state)!r}), public_mode=False)\n"
-    ).run(timeout=15)
-    assert not app.exception
-    assert any("CTI cache was busy" in warning.value for warning in app.warning)
-    app.session_state["language_selector"] = "🇹🇷 Türkçe"
-    app.run(timeout=20)
-    assert any("CTI önbelleği meşguldü" in warning.value for warning in app.warning)
-
-
 def test_unchanged_indicators_are_not_deep_copied_and_changed_content_recomputes(tmp_path):
     source, state, _ = setup(tmp_path)
     first = [IOCRecord("198.51.100.77", IOCType.IPV4, "Synthetic", tags=["a"])]
