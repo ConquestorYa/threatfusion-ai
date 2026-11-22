@@ -1,6 +1,43 @@
 # Release handoff
 
-Newest section first. Status date: 2026-11-15.
+Newest section first. Status date: 2026-11-22.
+
+## React migration completed; launcher opens React (2026-11-22)
+
+Branch `feat/react-workspace-2`, one commit per screen, PR to `main` (not
+merged). Streamlit files are unchanged and Streamlit stays supported.
+
+- Experimental ML (DEC-105): `api/behavior.py` calls `ui_new_destinations`
+  and `ui_behavior` (learning, scoring, levels, reasons, marks); Details gets
+  the DNS "Behavior score (ML)" column, Quick lookup the behavior card. Card
+  marks: `PUT /api/behavior/marks`, only keys of current rows. Learning and
+  training run outside the language lock.
+- Model evaluation (DEC-106): same visibility as Streamlit (hidden in
+  CTI-only mode without `ml/behavior-model.json`); behavior report or lexical
+  holdout report; numbers equal Streamlit's (AppTest parity tests).
+- Analysis history (DEC-107): only with `history_enabled`; runs, metadata,
+  comparison, filters, single and bulk review, delete/retention with
+  `confirm: true`; Analyze gets Save to history, previous review and local
+  suppressions. Second e2e server `web/e2e/serve-history.sh` (port 8612).
+- Launcher (DEC-108): `run_local_server(interface="web")` starts
+  `python -m threatfusion.api --static-dir <source>/web/dist` (PYTHONPATH set
+  to the source), health `/api/health`; `--streamlit` keeps the old path; a
+  source without `web/dist` falls back to Streamlit. `web/dist` is committed;
+  the CI web job fails when a fresh build differs. Setup's Stop button sends
+  the launcher's existing `stop` control request. `check_linux_installation.py`
+  now checks the React page in both modes, the stop endpoint, and Streamlit
+  via `--streamlit`.
+- Expected-connection JSON in Connection activity and the conditional
+  Streamlit link (DEC-109).
+- Verification on this machine: ruff clean; pytest 1538 passed (real
+  launcher test: page served, stopped from the Setup endpoint); web lint
+  clean, Vitest 28, build, Playwright 114 (desktop + 375 px, both servers).
+  The Docker installer job (`linux-first-run`) only runs in CI.
+- Limits: the demo/test behavior model is synthetic and never scores
+  documentation addresses, so browser tests see the empty ML state (cards are
+  covered by Vitest and by pytest with scoring enabled). The user's manual
+  check of the new screens and of the launcher on a real installation is
+  pending; nothing here measures detection or usefulness.
 
 ## Analyze telemetry in the React workspace; demo samples (2026-11-15)
 

@@ -97,19 +97,19 @@ listesi. Gerçek trafik ya da gerçek gösterge yoktur.
 
 ### Yeni arayüz (React)
 
-Uygulama, ekran ekran Streamlit'ten **React + FastAPI** arayüzüne taşınıyor.
-Şimdiye kadar taşınanlar: **Bakılacaklar**, **Ayrıntılar**, **Hızlı sorgu**,
-**Telemetriyi analiz et** ve **Kurulum ve CTI güncellemeleri**. Deneysel ML,
-Model değerlendirme ve Analiz geçmişi henüz Streamlit'te (üst menüdeki
-**Streamlit'te aç** bağlantısı oraya götürür). İkisi aynı toplayıcı verisini
-okur, aynı işaretleri paylaşır ve ikisi de yalnızca 127.0.0.1'de dinler.
+Çalışma alanı artık **React + FastAPI**: Streamlit'teki bütün ekranlar
+taşındı (Bakılacaklar, Ayrıntılar, Deneysel ML, Hızlı sorgu, Telemetriyi
+analiz et, Analiz geçmişi, Model değerlendirmesi, Kurulum ve CTI
+güncellemeleri). Aynı Python kodunu kullandıkları için iki arayüz aynı
+kanıtı gösterir ve aynı işaretleri paylaşır. İkisi de yalnızca 127.0.0.1'de
+dinler.
 
-Kurulum henüz React sayfasını içermiyor: `threatfusion-ai` hâlâ Streamlit
-arayüzünü açar. Yeni arayüzü kaynak koddan denemek için sayfayı derle ve demoyu
-çalıştır (sentetik veri):
+`threatfusion-ai` ve masaüstü kısayolu React çalışma alanını açar; sayfa
+kaynak kodla birlikte önceden derlenmiş gelir, Node gerekmez. Önceki Streamlit
+arayüzü hâlâ kullanılabilir: `threatfusion-ai --streamlit`. İkisini kaynak
+koddan sentetik veriyle yan yana denemek için:
 
 ```bash
-(cd web && npm ci && npm run build)
 scripts/demo_web.sh   # React: http://127.0.0.1:8600 · Streamlit: http://127.0.0.1:8501
 ```
 

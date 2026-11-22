@@ -4,15 +4,23 @@ For the current target product and active work order, start with
 [PRODUCT_PLAN.md](PRODUCT_PLAN.md). This file also preserves dated development
 history; earlier “Next” notes are superseded by that plan's current queue.
 
-## Current checkpoint (2026-11-15)
+## Current checkpoint (2026-11-22)
+
+The React + FastAPI migration (DEC-101) covers every Streamlit screen: What
+to check, Details, Experimental ML, Quick lookup, Analyze telemetry, Analysis
+history, Model evaluation and Setup & CTI updates (DEC-105–DEC-109). The
+API calls the Streamlit code paths; Streamlit files are unchanged and still
+supported. `threatfusion-ai` now opens the React workspace from the committed
+pre-built page (`web/dist`, no Node needed); `threatfusion-ai --streamlit`
+opens Streamlit (DEC-108). Branch `feat/react-workspace-2`, PR to main not
+merged; the user's manual check of the new screens and launcher is pending.
+
+### Previous checkpoint (2026-11-15)
 
 User request: replace the Streamlit workspace with FastAPI + React (Vite,
 TypeScript, Tailwind, shadcn/ui), Streamlit untouched, on a separate branch,
 first screen "What to check", servers on 127.0.0.1 only (DEC-101). Branch
-`feat/react-workspace` has the loopback API (`python -m threatfusion.api`,
-port 8600) and the React page (`web/`, Vite dev server 127.0.0.1:5173). The
-list, wording and marks are shared with the Streamlit tab. Not merged; the
-user's manual check of the new page is pending.
+`feat/react-workspace` had the loopback API and the React page; later merged.
 
 ### Previous checkpoint (2026-10-20)
 

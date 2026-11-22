@@ -1,6 +1,6 @@
 # Product plan and AI continuation guide
 
-Updated: 2026-11-15. Product identity: DEC-090. The latest runtime candidate
+Updated: 2026-11-22. Product identity: DEC-090. The latest runtime candidate
 and verification are recorded in the newest [handoff](RELEASE_HANDOFF.md) section.
 This is the **current product direction and ordered work queue**, not a record
 of future features already delivered. Start here when continuing in a new chat.
@@ -56,7 +56,7 @@ linked documents rather than being copied into this plan.
 
 | Area | Implemented behavior | Evidence / remaining qualification |
 | --- | --- | --- |
-| Linux installation and daily use | One-command private Python/dependencies, terminal command, desktop entry, loopback UI, stop/status/reopen and isolated demo | Clean Debian/Ubuntu CI; user manual walkthrough pending. [Install](../INSTALL_LINUX.md) |
+| Linux installation and daily use | One-command private Python/dependencies, terminal command, desktop entry, loopback UI (React workspace by default, Streamlit with `--streamlit`, DEC-108), stop/status/reopen and isolated demo | Clean Debian/Ubuntu CI; user manual walkthrough pending. [Install](../INSTALL_LINUX.md) |
 | CTI | ThreatFox/URLhaus/SGB adapters (PhishTank removed, DEC-089), normalization, lifecycle/freshness, indexed lookup, manual and opt-in scheduled refresh, own-key handling | Scheduling runs while the managed app runs; upstream availability/licensing are separate. [Sources](../DATA_SOURCES.md), [install](../INSTALL_LINUX.md) |
 | Passive lookup | URL/domain/IP evidence, IDNA and IPv6 prefix context; no destination visit or DNS resolution | Supporting workflow, not a malware-content sandbox. [Architecture](../ARCHITECTURE.md) |
 | Manual telemetry | Delimited tables/spreadsheets, Zeek DNS/connection logs, classic UDP DNS PCAP/PCAPNG, supported EVE, Pi-hole FTL, AdGuard and dnstop | Format-specific limits; adapters do not invent missing evidence. [Architecture](../ARCHITECTURE.md), repairs |
@@ -73,17 +73,18 @@ linked documents rather than being copied into this plan.
 
 ## Current checkpoint
 
-- **Interface migration started (2026-11-15, user request, DEC-101):** on
-  branch `feat/react-workspace` a FastAPI backend and a React page
-  (`web/`) show **What to check** from the same code paths as the Streamlit
-  tab, on `127.0.0.1` only. Streamlit is unchanged and remains the supported
-  UI. Design direction A "Konsol", dark by default (DEC-102). Scope set by
-  the user for Monday 2026-11-16: What to check (done), Details + timelines (done),
-  Quick lookup (done), Setup & CTI (done; keys are always saved,
-  stopping the app stays in Streamlit, DEC-103), and on the user's request
-  Analyze telemetry (DEC-104); Experimental ML, Model
-  evaluation and history stay in Streamlit behind an "Open in Streamlit"
-  link. Launcher switch and Node/packaging decision come later. This
+- **Interface migration completed in code (2026-11-22, user request,
+  DEC-101, DEC-105–DEC-109):** every Streamlit screen has a React counterpart
+  served by the loopback FastAPI from the same Python code paths: What to
+  check, Details (with the DNS ML column), Experimental ML, Quick lookup
+  (with the behavior card), Analyze telemetry (with history-only parts and
+  expected-connection declarations), Analysis history, Model evaluation and
+  Setup & CTI updates (with Stop). `threatfusion-ai` and the desktop entry
+  open the React workspace from the committed pre-built `web/dist` (no Node
+  needed); `threatfusion-ai --streamlit` keeps Streamlit, which stays the
+  supported fallback until the user accepts the new interface. Branch
+  `feat/react-workspace-2`, PR not merged. The user's manual check of the
+  screens and of the launcher on a real installation is **pending**. This
   interface work runs beside the queue below; it does not re-measure P2 or
   count as acceptance.
 - **P1 first increment (2026-10-07):** predeclared nine-case fault matrix on the
