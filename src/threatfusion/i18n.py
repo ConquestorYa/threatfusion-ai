@@ -271,6 +271,8 @@ _TR: dict[str, str] = {
     "Normal computer-days": "Normal bilgisayar-gün",
     "False flags per day": "Günlük yanlış alarm",
     "What the model looks at most": "Modelin en çok baktığı şeyler",
+    "Feature": "Özellik",
+    "Importance": "Önem",
     "Limits": "Sınırlar",
     "- The malware recordings are lab infections from 2011–2024; new malware can behave differently.\n- Some connections in those recordings are ordinary background traffic, so the labels are approximate.\n- This computer's first days are taken as normal: if it was already infected then, the model learns that as normal. Threat-list checks are not affected.\n- The recipe's normal-traffic test covers a few days of one laptop; your network may differ.\n- A group needs at least 4 connections to the same destination within a day; single or rare connections are not scored.": "- Zararlı yazılım kayıtları 2011–2024 arası laboratuvarda bulaştırılmış bilgisayarlardan; yeni zararlılar farklı davranabilir.\n- Bu kayıtlardaki bazı bağlantılar sıradan arka plan trafiği; etiketler yaklaşık.\n- Bu bilgisayarın ilk günleri normal kabul edilir: o sırada zaten bulaşmışsa model bunu normal öğrenir. Tehdit listesi kontrolleri etkilenmez.\n- Tarifin normal trafik testi tek bir dizüstü bilgisayarın birkaç gününü kapsıyor; senin ağın farklı olabilir.\n- Bir grubun puanlanması için aynı hedefe bir gün içinde en az 4 bağlantı gerekir; tek ya da seyrek bağlantılar puanlanmaz.",
     "Nothing to check. Everything collected is under Details.": "Bakılacak bir şey yok. Toplanan her şey Ayrıntılar'da.",

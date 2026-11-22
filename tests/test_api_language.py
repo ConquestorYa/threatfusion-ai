@@ -60,6 +60,7 @@ def _pages(client):
         "lookup-status": client.get("/api/lookup/status", params={"lang": "tr"}).json(),
         "setup": client.get("/api/setup", params={"lang": "tr"}).json(),
         "behavior": client.get("/api/behavior", params={"lang": "tr"}).json(),
+        "evaluation": client.get("/api/evaluation", params={"lang": "tr"}).json(),
     }
     assert pages["behavior"]["model"]["cards"], "the behavior cards must be part of this check"
     for group in pages["details"]["connections"]["groups"][:4]:

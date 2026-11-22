@@ -79,8 +79,14 @@ export const saveMark = (key: string, mark: Mark | null) =>
     body: JSON.stringify({ key, mark }),
   })
 
-export const fetchAppInfo = () =>
-  request<{ streamlit_url: string; setup_available: boolean; first_setup: boolean }>('/api/app')
+export interface AppInfo {
+  streamlit_url: string
+  setup_available: boolean
+  first_setup: boolean
+  /** Same rule as Streamlit: hidden in CTI-only mode without the on-device behavior model. */
+  evaluation_available: boolean
+}
+export const fetchAppInfo = () => request<AppInfo>('/api/app')
 
 // ---- Details tab (mirrors ui_collector._render_details) ----
 
@@ -507,3 +513,56 @@ export type BehaviorResponse = BehaviorOk | { state: 'not_configured' }
 export const fetchBehavior = (lang: Language) => request<BehaviorResponse>(`/api/behavior?lang=${lang}`)
 export const saveBehaviorMark = (key: string, mark: Mark | null) =>
   request<void>('/api/behavior/marks', put({ key, mark }))
+
+// ---- Model evaluation (mirrors ui_behavior.render_behavior_evaluation / ui_evaluation) ----
+
+export type BehaviorEvaluation =
+  | { kind: 'behavior'; state: 'unreadable'; warning: string }
+  | {
+      kind: 'behavior'
+      state: 'ok'
+      title: string
+      caption: string
+      metrics: Metric[]
+      verdict: { kind: 'success' | 'warning'; text: string } | null
+      declared: (Table & { title: string }) | null
+      data: Table
+      importance: (Table & { title: string; bars: { label: string; value: number }[] }) | null
+      limits_title: string
+      limits: string
+      guide_title: string
+      guide: string
+    }
+
+interface LexicalBase {
+  kind: 'lexical'
+  guide_title: string
+  guide: string
+  guide_open: boolean
+}
+export type LexicalEvaluation = LexicalBase &
+  (
+    | { state: 'not_evaluated'; title: string; text: string; caption: string; command_title: string; command: string }
+    | { state: 'unreadable'; error: string; caption: string }
+    | {
+        state: 'ok'
+        loaded: string
+        model: string
+        artifact: string
+        scope: string
+        dates: string
+        metrics: Metric[]
+        operating_title: string
+        operating: Table
+        chart: { title: string; series: string[]; groups: { label: string; values: number[] }[] }
+        sources: (Table & { title: string; caption: string }) | null
+        ppv: string
+        protocol: string[]
+      }
+  )
+
+export type EvaluationResponse =
+  | { state: 'hidden' }
+  | { state: 'ok'; subtitle: string; report: BehaviorEvaluation | LexicalEvaluation }
+
+export const fetchEvaluation = (lang: Language) => request<EvaluationResponse>(`/api/evaluation?lang=${lang}`)

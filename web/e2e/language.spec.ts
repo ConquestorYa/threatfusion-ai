@@ -76,12 +76,18 @@ test('every screen in Turkish has no English words and no raw ISO times', async 
   found['Telemetri'] = englishWords(analyze)
   expect(analyze).not.toMatch(/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/)
 
+  await screen(page, 'Model değerlendirmesi')
+  for (const fold of await page.getByRole('button', { name: /^(Tabloyu göster|Bu nedir\?)$/ }).all()) await fold.click()
+  const evaluation = await visibleText(page)
+  found['Model değerlendirmesi'] = englishWords(evaluation)
+  expect(evaluation).not.toMatch(/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/)
+
   await screen(page, 'Kurulum ve CTI güncellemeleri')
   const setup = await visibleText(page)
   found['Kurulum'] = englishWords(setup)
   expect(setup).not.toMatch(/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/)
 
-  expect(found).toEqual({ 'Bakılacaklar': [], 'Ayrıntılar': [], 'Deneysel ML': [], 'Hızlı sorgu': [], 'Telemetri': [], 'Kurulum': [] })
+  expect(found).toEqual({ 'Bakılacaklar': [], 'Ayrıntılar': [], 'Deneysel ML': [], 'Hızlı sorgu': [], 'Telemetri': [], 'Model değerlendirmesi': [], 'Kurulum': [] })
 })
 
 test('bucket tables are closed by default; the chart is shown', async ({ page }) => {

@@ -21,6 +21,7 @@ from ..request_guard import LOOPBACK_HOSTNAMES, host_header_name, is_allowed_hos
 from . import analyze as analyze_module
 from . import behavior as behavior_module
 from . import details as details_module
+from . import evaluation as evaluation_module
 from . import lookup as lookup_module
 from . import setup as setup_module
 from .i18n import Language, ui_strings
@@ -165,7 +166,7 @@ def create_app(
         # Same screen rules as Streamlit: Setup only for a managed installation,
         # and it opens first until real CTI has been downloaded once.
         return {"streamlit_url": streamlit_url(environment), "setup_available": root is not None,
-                "first_setup": first}
+                "first_setup": first, "evaluation_available": evaluation_module.available(resolved)}
 
     @app.get("/api/i18n")
     def strings(lang: Literal["en", "tr"] = "en") -> dict:
@@ -200,6 +201,10 @@ def create_app(
         except (OSError, ValueError, TypeError, KeyError):
             raise HTTPException(409, "Could not save. Check the folder permissions.") from None
         return Response(status_code=204)
+
+    @app.get("/api/evaluation")
+    def evaluation(lang: Language = Query("en"), resolved: ApiSettings = Depends(settings)) -> dict:
+        return evaluation_module.evaluation_response(resolved, lang)
 
     @app.get("/api/details")
     def details(lang: Language = Query("en"), local_ips: bool = True, reviews_only: bool = True,

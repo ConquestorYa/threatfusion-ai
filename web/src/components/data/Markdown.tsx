@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 // The collector guide is trusted, fixed text from the Python package with a
-// small Markdown subset: paragraphs, "1." lists, **bold**, `code` and
+// small Markdown subset: paragraphs, "1." and "-" lists, **bold**, `code` and
 // [text](https://…) links. Render it as React elements (never as HTML); only
 // https links are made clickable and they open in a new tab without referrer.
 
@@ -29,22 +29,31 @@ function inline(text: string): ReactNode[] {
 export function Markdown({ text }: { text: string }) {
   const blocks: ReactNode[] = []
   let list: string[] = []
+  let ordered = true
   const flush = () => {
     if (list.length) {
+      const items = list.map((item, index) => <li key={index}>{inline(item)}</li>)
       blocks.push(
-        <ol key={`l${blocks.length}`} className="list-decimal space-y-1 pl-5">
-          {list.map((item, index) => (
-            <li key={index}>{inline(item)}</li>
-          ))}
-        </ol>,
+        ordered ? (
+          <ol key={`l${blocks.length}`} className="list-decimal space-y-1 pl-5">
+            {items}
+          </ol>
+        ) : (
+          <ul key={`l${blocks.length}`} className="list-disc space-y-1 pl-5">
+            {items}
+          </ul>
+        ),
       )
       list = []
     }
   }
   for (const line of text.split('\n')) {
-    const item = line.match(/^\d+\.\s+(.*)$/)
+    const item = line.match(/^(\d+\.|-)\s+(.*)$/)
     if (item) {
-      list.push(item[1])
+      const isOrdered = item[1] !== '-'
+      if (list.length && isOrdered !== ordered) flush()
+      ordered = isOrdered
+      list.push(item[2])
       continue
     }
     flush()

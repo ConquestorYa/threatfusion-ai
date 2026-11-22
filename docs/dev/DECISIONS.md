@@ -1276,3 +1276,19 @@ presentation asset, not a measured model. The model never scores
 documentation addresses, so browser tests see the empty state; cards are
 tested with fixtures (Vitest) and with scoring enabled for those addresses in
 pytest only.
+
+## DEC-106: Model evaluation in the React workspace
+
+**Decision (2026-11-22):** "Model evaluation" moves with Streamlit's
+visibility rule unchanged: hidden in CTI-only mode unless the on-device
+behavior model file exists (`/api/app` → `evaluation_available`). In CTI-only
+mode with that model it shows `ui_behavior.render_behavior_evaluation`'s
+values; otherwise the frozen lexical holdout report of
+`ui_evaluation._show_model_evaluation` (`read_frozen_holdout_report` and the
+`evaluation_dashboard` rows, same percentage formatting). Nothing is trained
+or scored by this page.
+
+**Presentation differences:** the declared-test "Passed" column is a Yes/No
+value instead of ✅/❌ (design rule: no emoji icons); the feature-importance
+and operating-point charts are plain bar charts with the numbers printed and
+the importance table one click away; the training time is a short local time.
