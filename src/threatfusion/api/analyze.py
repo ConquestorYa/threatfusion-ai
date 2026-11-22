@@ -13,10 +13,13 @@ nothing is written to disk or sent anywhere. Like Streamlit's session state,
 the last result is kept in this process's memory (one at a time) so the tabs
 and downloads can be rendered; a new upload replaces it.
 
-Not mirrored: analysis history (disabled in CTI-only mode, not migrated),
-analyst feedback/suppression (history-only), the verdict and related-activity
-charts (their numbers are shown as tables), and the optional expected-
-connection JSON upload of Connection activity.
+History-only parts (saving aggregate history, previous analyst review,
+local suppressions) come from ``history`` and exist only when
+``history_enabled``, as in Streamlit. The optional expected-connection JSON
+of Connection activity is parsed by ``parse_expected_connections`` and kept
+with the analysis in memory only (Streamlit: "local session only"). Not
+mirrored: the verdict and related-activity charts (their numbers are shown as
+tables).
 """
 from __future__ import annotations
 
@@ -198,10 +201,14 @@ def analyze(settings: ApiSettings, language: Language, telemetry_format: str, na
             detection = None
     except ValueError as error:
         raise UploadRejected(422, t("DNS telemetry could not be analyzed: {error}", error=t(str(error)))) from None
+    from .history import capture_audit
+
     analysis = _Analysis(secrets.token_hex(16), result, diagnostics, detection, artifact, telemetry_format, base)
+    if settings.history_enabled:
+        analysis.extra["audit"] = capture_audit(settings, artifact)
     with _LOCK:
         _CURRENT["last"] = analysis  # replaces the previous result, like a new Streamlit upload
-    return overview(analysis, language)
+    return overview(analysis, language, settings)
 
 
 def _translated_rows(rows: list[dict], language: Language) -> list[dict]:
@@ -218,7 +225,8 @@ def _translated_rows(rows: list[dict], language: Language) -> list[dict]:
     return out
 
 
-def overview(analysis: _Analysis, language: Language) -> dict:
+def overview(analysis: _Analysis, language: Language, settings: ApiSettings | None = None, *,
+             include_suppressed: bool = False) -> dict:
     from ..dashboard import (
         assessment_rows,
         cluster_rows,
@@ -248,12 +256,20 @@ def overview(analysis: _Analysis, language: Language) -> dict:
                          queries=diagnostics.packet_dns_queries, paired=diagnostics.packet_paired_queries,
                          orphan=diagnostics.packet_response_only))
 
+    from .history import policy
+
+    history = settings is not None and settings.history_enabled
+    if history and "audit" in analysis.extra and analysis.extra["audit"] is None:
+        quality.append(t("Analysis completed, but reproducibility metadata could not be captured. Re-run the analysis before saving history."))
+    _feedback, suppressions = policy(settings, [a.domain for a in result.assessments]) if history else ({}, {})
     summary = summarize_runtime_result(result)
+    all_priority = priority_assessment_rows(result)
+    suppressed = sum(row["Domain"] in suppressions for row in all_priority)
     priority = [{"domain": row["Domain"], "verdict": row["Verdict"], "verdict_label": t(row["Verdict"]),
                  "events": row.get("DNS events", 0),
                  "sources": str(row.get("Known CTI sources") or t("No cached CTI match")),
                  "evidence": evidence(row.get("Evidence"), language) if row.get("Evidence") else t("No strong signal summary")}
-                for row in priority_assessment_rows(result)]
+                for row in all_priority if include_suppressed or row["Domain"] not in suppressions]
     rows = assessment_rows(result)
     corroboration, matches = ioc_corroboration_rows(result), match_rows(result)
     try:
@@ -286,7 +302,9 @@ def overview(analysis: _Analysis, language: Language) -> dict:
         "priority": priority[:5],
         "priority_more": t("{count} additional priority finding(s) are available in Domain findings.", count=len(priority) - 5)
         if len(priority) > 5 else None,
-        "priority_empty": t("No Known Threat, High Risk, or Review findings."),
+        "priority_empty": t("All current priority findings are locally suppressed. Enable the checkbox above to include them.")
+        if all_priority and suppressed and not priority else t("No Known Threat, High Risk, or Review findings."),
+        "suppressed_label": t("Include {count} locally suppressed finding(s)", count=suppressed) if suppressed else None,
         "distribution_title": t("Verdict distribution"),
         "overview_title": t("Analysis overview"),
         "metrics": [
@@ -326,12 +344,13 @@ def overview(analysis: _Analysis, language: Language) -> dict:
             "include_ips_label": t("Include literal IP targets in aggregate exports"),
             "json": t("Download JSON report"), "csv": t("Download CSV findings"),
             "caption": t("Exports contain aggregate/per-domain findings only. Raw DNS rows, client IP values, and response IP values are not included."),
+            "save": t("Save aggregate analysis history") if history else None,
         },
     }
 
 
-def domain_detail(analysis: _Analysis, language: Language, domain: str) -> dict:
-    """``ui_investigation._show_domain_detail`` without the history-only analyst policy."""
+def domain_detail(analysis: _Analysis, language: Language, domain: str, settings: ApiSettings | None = None) -> dict:
+    """``ui_investigation._show_domain_detail``; the analyst policy only when history is enabled."""
     from ..dashboard import assessment_detail, domain_match_rows
 
     t = lambda text, **values: translate(text, language, **values)  # noqa: E731
@@ -359,8 +378,11 @@ def domain_detail(analysis: _Analysis, language: Language, domain: str) -> dict:
             "all_title": t("Show all IOC evidence ({count})", count=len(evidence_rows)),
             "all": _table(_translated_rows(evidence_rows, language), language),
         }
+    from .history import domain_policy
+
     codes = ", ".join(f"{code}:{count}" for code, count in detail["response_code_counts"])
     return {
+        "policy": domain_policy(settings, detail["domain"], language) if settings is not None else None,
         "title": t("Domain investigation"),
         "domain": detail["domain"],
         "verdict": detail["verdict"],
@@ -447,8 +469,25 @@ def device_timeline(analysis: _Analysis, language: Language, group: int) -> dict
     return dns_timeline_payload(row, analysis.extra.get("device_timelines") or {}, language, analysis.id)
 
 
-def connections(analysis: _Analysis, language: Language, *, include_ips: bool, reviews_only: bool, public_mode: bool) -> dict:
-    """``ui_connections.render_connections`` (without the optional expected-connection upload)."""
+def set_expected(analysis: _Analysis, content: str | None) -> int:
+    """The optional expected-connection JSON for this analysis (None clears it); invalid input applies nothing."""
+    from ..expected_connections import MAX_RULE_BYTES, parse_expected_connections
+
+    if content is None:
+        analysis.extra.pop("expected_rules", None)
+        return 0
+    analysis.extra.pop("expected_rules", None)  # an invalid file applies nothing, as in Streamlit
+    data = content.encode()
+    if len(data) > MAX_RULE_BYTES:
+        raise ValueError("Expected-connection file exceeds 64 KiB")
+    rules = parse_expected_connections(data)
+    analysis.extra["expected_rules"] = rules
+    return len(rules)
+
+
+def connections(analysis: _Analysis, language: Language, *, include_ips: bool, reviews_only: bool, public_mode: bool,
+                include_expected: bool = False) -> dict:
+    """``ui_connections.render_connections``, including the optional expected-connection declarations."""
     from datetime import datetime, timezone
 
     from ..collector_reports import review_counts
@@ -463,8 +502,11 @@ def connections(analysis: _Analysis, language: Language, *, include_ips: bool, r
     if not result.connection_findings:
         return {"captions": captions, "missing": t("Upload a Zeek conn.log to inspect connection activity.")}
     include_ips = include_ips and not public_mode
-    rows = contextual_connection_rows(result, (), include_ips=include_ips, evaluated_at=datetime.now(timezone.utc))
-    visible = [row for row in rows if not reviews_only or row["Queue priority"] == "Review" or row["CTI match"]]
+    rules = () if public_mode else analysis.extra.get("expected_rules", ())
+    rows = contextual_connection_rows(result, rules, include_ips=include_ips, evaluated_at=datetime.now(timezone.utc))
+    show_expected = include_expected if rules else True
+    visible = [row for row in rows if (not reviews_only or row["Queue priority"] == "Review" or row["CTI match"])
+               and (show_expected or not row["Declared expected"] or row["CTI match"])]
     display = [dict(row) for row in visible[:MAX_ROWS]]
     for row in display:
         for key in ("Originator", "Responder"):
@@ -480,11 +522,18 @@ def connections(analysis: _Analysis, language: Language, *, include_ips: bool, r
         "captions": captions,
         "include_ips_label": None if public_mode else t("Show connection endpoint IPs in this view and export"),
         "reviews_only_label": t("Show only connection reviews"),
+        "expected": None if public_mode else {
+            "caption": t("Expected activity is your declaration, not verified software identity. Exact endpoints, traffic limits and expiry are required; CTI conflicts stay visible."),
+            "label": t("Optional expected-connection JSON (local session only)"),
+            "invalid": t("Invalid expected-connection file. No declarations applied."),
+            "rules": len(rules),
+            "include_label": t("Include declared expected activity") if rules else None,
+        },
         "summary": {"metrics": [{"label": t(label), "value": value} for label, value in summary.items()],
                     "captions": [t("Before filters: {count} retained TCP groups. CTI groups are included in the unexplained queue even without a behavior Review; counts overlap. DNS and attempt queues are separate.", count=len(rows)),
                                  t("Declarations change review context, not original priority. Reveal expected activity with the checkbox; exports retain all groups.")]},
         **_table(display, language),
-        "empty": t("No connection groups currently require review."),
+        "empty": t("No unexplained connection reviews in this view." if rules else "No connection groups currently require review."),
         "more": t("Showing the first 500 groups. The download contains all retained groups.") if len(visible) > MAX_ROWS else None,
         "investigation_title": t("Connection investigation"),
         "select_label": t("Select a connection group"),
@@ -526,7 +575,8 @@ def download(analysis: _Analysis, kind: str, *, include_ips: bool, public_mode: 
         report = json.loads(build_device_report(analysis.result, include_client_ips=include_ips))
         return json.dumps(report, indent=2).encode(), "threatfusion_device_triage.json", "application/json"
     if kind == "connections":
-        body = build_connection_report(analysis.result, include_ips=include_ips, expected_rules=(),
+        rules = () if public_mode else analysis.extra.get("expected_rules", ())
+        body = build_connection_report(analysis.result, include_ips=include_ips, expected_rules=rules,
                                        evaluated_at=datetime.now(timezone.utc))
         return body.encode() if isinstance(body, str) else body, "threatfusion_connections.json", "application/json"
     raise NoAnalysis(kind)

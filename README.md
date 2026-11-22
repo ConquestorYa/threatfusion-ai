@@ -97,19 +97,18 @@ shown.
 
 ### New interface (React)
 
-The app is moving from Streamlit to a **React + FastAPI** workspace, screen by
-screen. Moved so far: **What to check**, **Details**, **Quick lookup**,
-**Analyze telemetry** and **Setup & CTI updates**. Experimental ML, Model
-evaluation and Analysis history are still in Streamlit (the header link
-**Open in Streamlit** goes there). Both read the same collector data and share
-the same marks, and both listen on 127.0.0.1 only.
+The workspace is now **React + FastAPI**: every Streamlit screen has moved
+(What to check, Details, Experimental ML, Quick lookup, Analyze telemetry,
+Analysis history, Model evaluation, Setup & CTI updates), built on the same
+Python code, so both interfaces show the same evidence and share the same
+marks. Both listen on 127.0.0.1 only.
 
-The installer does not ship the React page yet: `threatfusion-ai` still opens
-the Streamlit interface. To try the new one from a source checkout, build the
-page and run the demo (synthetic data):
+`threatfusion-ai` and the desktop entry open the React workspace; the page
+ships pre-built with the source, so no Node is needed. The previous Streamlit
+interface stays available: `threatfusion-ai --streamlit`. To try both side by
+side from a source checkout with synthetic data:
 
 ```bash
-(cd web && npm ci && npm run build)
 scripts/demo_web.sh   # React: http://127.0.0.1:8600 · Streamlit: http://127.0.0.1:8501
 ```
 

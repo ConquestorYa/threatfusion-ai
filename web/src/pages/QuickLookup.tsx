@@ -2,15 +2,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertOctagon, AlertTriangle, CalendarClock, Check, ChevronDown, ExternalLink, Info, Search } from 'lucide-react'
 import { useId, useState, type FormEvent } from 'react'
 
+import { BehaviorCard } from '@/components/data/BehaviorCard'
 import { MetricStrip, Notice as NoticeBox } from '@/components/data/Blocks'
 import { DataTable } from '@/components/data/DataTable'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   checkDomainAge,
+  saveBehaviorMark,
   fetchLookupStatus,
   runLookup,
   type LookupResult,
+  type Mark,
   type Notice,
   type SignalNode,
   type Tone,
@@ -228,9 +231,10 @@ function Result({ data }: { data: LookupResult }) {
               </Button>
             ))}
           </div>
-          <p className="text-xs text-muted-foreground">{chrome('behaviorInStreamlit')}</p>
         </>
       )}
+
+      {data.behavior && <LookupBehavior behavior={data.behavior} />}
 
       <SectionTitle>{data.evidence_title}</SectionTitle>
       <div className="relative overflow-hidden rounded-sm border bg-card px-3 py-2 pl-4">
@@ -344,6 +348,25 @@ function Registry({ registry }: { registry: NonNullable<LookupResult['registry']
           </p>
         </div>
       )}
+    </>
+  )
+}
+
+function LookupBehavior({ behavior }: { behavior: NonNullable<LookupResult['behavior']> }) {
+  const { t } = usePreferences()
+  const queryClient = useQueryClient()
+  const mark = useMutation({
+    mutationFn: ({ key, value }: { key: string; value: Mark | null }) => saveBehaviorMark(key, value),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['lookup'] }),
+  })
+  return (
+    <>
+      <SectionTitle>{behavior.title}</SectionTitle>
+      {behavior.empty && <p className="text-xs text-muted-foreground">{behavior.empty}</p>}
+      {behavior.cards.map((card) => (
+        <BehaviorCard key={card.key} card={card} busy={mark.isPending} onMark={(key, value) => mark.mutate({ key, value })} />
+      ))}
+      {mark.isError && <NoticeBox tone="warn">{t('Could not save. Check the folder permissions.')}</NoticeBox>}
     </>
   )
 }

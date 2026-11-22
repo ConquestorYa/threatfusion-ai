@@ -1249,3 +1249,133 @@ sample contains a non-documentation address or a non-`.test` name.
 **Not mirrored:** analysis history and analyst feedback (history-only), the
 verdict and related-activity charts (their values are shown as bars/tables),
 the optional expected-connection JSON in Connection activity.
+
+## DEC-105: Experimental ML in the React workspace
+
+**Decision (2026-11-22, user request to finish the migration):** the
+collector's "Experimental ML" tab becomes its own React screen ("Deneysel
+ML"), the Details DNS table gets its "Behavior score (ML)" column back and
+Quick lookup shows the "Behavior on this computer" card. The API
+(`src/threatfusion/api/behavior.py`) calls the Streamlit code paths
+(`ui_new_destinations.new_destinations`, `ui_behavior.learn`/`score_groups`/
+`name_scores`, `marked_sites`, `REASONS`, `ADVICE`) and shapes their values;
+no scoring, level or reason logic is copied.
+
+**Rules:** as in Streamlit, opening the screen (or Details / Quick lookup)
+keeps the on-device learning going and may train when due; this runs before
+the per-response language lock so a long training cannot block other
+requests. Card marks use a separate `PUT /api/behavior/marks` that accepts
+only keys of rows the model or the new-destination list currently has
+(`ml:` / `new:`), and writes the shared `review-labels.json`. The model's
+training time is shown as a short local time, not the raw ISO string.
+
+**Demo / tests:** `scripts/demo_review_snapshot.py --managed --behavior-model`
+writes a one-tree synthetic model (`synthetic-demo`, never trained, flags
+steady rhythms) whose evaluation block is the shipped recipe report; it is a
+presentation asset, not a measured model. The model never scores
+documentation addresses, so browser tests see the empty state; cards are
+tested with fixtures (Vitest) and with scoring enabled for those addresses in
+pytest only.
+
+## DEC-106: Model evaluation in the React workspace
+
+**Decision (2026-11-22):** "Model evaluation" moves with Streamlit's
+visibility rule unchanged: hidden in CTI-only mode unless the on-device
+behavior model file exists (`/api/app` → `evaluation_available`). In CTI-only
+mode with that model it shows `ui_behavior.render_behavior_evaluation`'s
+values; otherwise the frozen lexical holdout report of
+`ui_evaluation._show_model_evaluation` (`read_frozen_holdout_report` and the
+`evaluation_dashboard` rows, same percentage formatting). Nothing is trained
+or scored by this page.
+
+**Presentation differences:** the declared-test "Passed" column is a Yes/No
+value instead of ✅/❌ (design rule: no emoji icons); the feature-importance
+and operating-point charts are plain bar charts with the numbers printed and
+the importance table one click away; the training time is a short local time.
+
+## DEC-107: Analysis history in the React workspace
+
+**Decision (2026-11-22):** "Analysis history" moves with Streamlit's rule
+unchanged: it exists only when `AppConfig.history_enabled` (a trusted model,
+not CTI-only, not public; the managed installation keeps it off). The page
+mirrors `ui_history._show_history` (runs, all statistics, reproducibility
+metadata, comparison with the previous run, findings with the same three
+filters, single and bulk analyst review, deletion and retention), and
+Analyze telemetry gets the history-only parts it had in Streamlit: "Save
+aggregate analysis history" (audit metadata captured at analysis time, as
+Streamlit does), previous analyst review, local suppression with
+"Include N locally suppressed finding(s)". All reads and writes go through
+`persistence`; rows through `dashboard` (`src/threatfusion/api/history.py`).
+
+**Rules:** writes follow the existing guard (loopback Origin, same-origin,
+JSON). Deletion, retention and bulk review require `confirm: true` in the
+body (Streamlit's confirmation checkboxes); feedback is accepted only for a
+domain of the selected run and a known label. Only aggregate findings are
+stored, as before.
+
+**Tests:** a second browser-test server (`web/e2e/serve-history.sh`, port
+8612) runs the developer configuration with the synthetic demo domain
+artifact (`demo_review_snapshot.py --history-model`, `demo_only_synthetic`,
+not a measured model) so the page can be exercised end to end.
+
+## DEC-108: The launcher opens the React workspace; the built page ships with the source
+
+**Decision (2026-11-22, user: "simplest safe way"):** `threatfusion-ai` and
+the desktop entry now start the React workspace: the launcher runs
+`python -m threatfusion.api --port <port> --static-dir <source>/web/dist` on
+127.0.0.1 (same port choice, readiness wait on `/api/health`, owner-only
+control socket, automatic CTI refresh loop and clean shutdown as before) and
+FastAPI serves the page from the same origin. `threatfusion-ai --streamlit`
+(and the desktop entry's "ThreatFusion AI (Streamlit)" action) opens the
+previous Streamlit workspace exactly as before; Streamlit stays a supported
+interface until the user accepts the new one (DEC-101).
+
+**Packaging:** the pre-built page `web/dist` (about 1.3 MB: HTML, JS, CSS,
+self-hosted fonts) is committed. Installations download the source archive
+of a commit, so the page arrives with it and **neither the installer nor the
+running app needs Node**, a CDN or a second download. The Vite build is
+deterministic for the locked dependencies; the CI web job rebuilds and fails
+when `web/dist` differs from the committed files, and
+`tests/test_launcher_web.py` checks that the page is tracked, self-contained
+(no external URLs in `index.html`, no source maps) and that the real launcher
+serves it and stops from the Setup button. A source without `web/dist` falls
+back to Streamlit with a message. Considered and rejected: building with Node
+during installation (new toolchain and supply-chain surface on every user
+machine) and a separate release download (no release channel exists; a
+second unverified artifact).
+
+**Stop:** Setup & CTI updates gets "Stop local application"
+(`POST /api/app/stop`, same write guard as every other write); it sends the
+launcher the same `stop` request as Streamlit's button. Outside the launcher
+it reports that nothing is running under it.
+
+## DEC-109: Streamlit link only beside a running Streamlit; expected connections moved
+
+**Decision (2026-11-22):** with every screen moved, the header's "Open in
+Streamlit" link is shown only when `THREATFUSION_STREAMLIT_URL` is set to a
+loopback `http` address, i.e. when a Streamlit workspace really runs beside
+this one (`scripts/demo_web.sh`, the two-terminal setup in `web/README.md`).
+`/api/app` returns `streamlit_url: null` otherwise; an invalid value means no
+link (it used to fall back to `127.0.0.1:8501`, which the React-mode launcher
+no longer starts). Setup & CTI updates names the way back instead:
+`threatfusion-ai --streamlit`.
+
+The last Streamlit-only piece of a workflow, the optional expected-connection
+JSON of Analyze telemetry → Connection activity, moved too: the browser reads
+the file and sends its text as JSON (`PUT /api/analyze/{id}/expected`, 64 KiB
+cap, `parse_expected_connections`); the declarations stay with that analysis
+in process memory only (Streamlit: "local session only"), an invalid file
+applies nothing, and the connection report download uses them as Streamlit's
+does. Still shown differently, not missing: the verdict and related-activity
+charts are tables/bars (DEC-104).
+
+## DEC-110: User approves the React workspace migration
+
+**Decision (2026-11-22, user):** after the agent's browser walk-through on a
+disposable installation (RELEASE_HANDOFF, 2026-11-22) and green CI on PR #191,
+the user approved the migration ("onaylıyorum") and asked for it to be
+merged. The React workspace is the default interface. This approval is based
+on the agent's walk-through, not on the user's own hands-on test of each
+screen; it is not P2 evidence and does not measure detection or usefulness.
+Removing Streamlit is a separate change: the API still reuses `ui_*` modules
+that import Streamlit, so dropping it means moving that logic first.

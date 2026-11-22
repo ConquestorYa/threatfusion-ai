@@ -79,7 +79,12 @@ threatfusion-ai
 
 The shortcut opens a terminal supervising the local app and then your browser.
 It does not reinstall dependencies or need internet to use the existing cache.
-The selected operating mode is remembered. Supported management commands:
+The selected operating mode is remembered. Since 2026-11-22 it opens the new
+React workspace (served by the local API from the pre-built page in the
+source; no Node needed, DEC-108). The previous Streamlit workspace is still
+supported: `threatfusion-ai --streamlit`, or right-click the menu entry and
+choose **ThreatFusion AI (Streamlit)** (the entry gains that action on the
+next installation run). Supported management commands:
 
 ```bash
 threatfusion-ai status    # running state and localhost URL
@@ -87,8 +92,8 @@ threatfusion-ai refresh   # real CTI using saved keys/public sources
 threatfusion-ai stop      # stop this installation's server and scheduler
 ```
 
-You can also use **Stop local application** in the web panel, Ctrl+C, or close
-the supervising terminal. Ctrl+C/SIGTERM/SIGHUP clean up child processes. A
+You can also use **Stop local application** under Setup & CTI updates (both
+interfaces), Ctrl+C, or close the supervising terminal. Ctrl+C/SIGTERM/SIGHUP clean up child processes. A
 private Unix socket controls only this installation; stale PID files are not
 used to kill processes. Duplicate launches are refused without affecting an
 existing server or a port occupied by another application.
@@ -151,12 +156,14 @@ Append options to the README command after its final `--`:
 --install-dir "/absolute/path"  # dedicated user-owned installation
 --mode demo                    # explicitly request synthetic first use
 --port 18501                   # fixed unprivileged loopback port; fail if busy
+--streamlit                    # open the previous Streamlit workspace instead
 --ref <full-commit-sha>         # fixed source revision
 ```
 
 `--refresh-cti` with `--mode cti-only` requests a launch-time refresh using saved
 keys/public sources. The normal interactive panel is recommended. Launcher
-flags also include `--mode`, `--port`, `--prepare-only` and `--no-browser`.
+flags also include `--mode`, `--port`, `--prepare-only`, `--no-browser` and
+`--streamlit`.
 Installation-only flags `--ref`, `--source-dir` and `--no-integrations` are not
 normal launcher options. `--source-dir` is for developers/CI only.
 

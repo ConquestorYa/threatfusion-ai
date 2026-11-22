@@ -47,7 +47,7 @@ export function AppShell({
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-1.5 py-2">
-            {app.data && (
+            {app.data?.streamlit_url && (
               <a
                 href={app.data.streamlit_url}
                 target="_blank"

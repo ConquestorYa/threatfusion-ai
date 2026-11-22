@@ -13,6 +13,16 @@ to check" and a known-threat Quick lookup appear.
 marker, ``workspace.json`` in CTI-only mode, ``runtime/cti/threatfusion.sqlite``,
 ``collector/`` and one finished synthetic refresh record), so Setup & CTI can
 be exercised with ``THREATFUSION_LOCAL_INSTALL_DIR`` and no network access.
+``--behavior-model`` (with ``--managed``) adds a one-tree synthetic behavior
+model (``synthetic-demo``, never trained: it flags steady rhythms) so the
+Experimental ML and Model evaluation screens can be exercised. Its evaluation
+block is the shipped recipe report (``behavior-local-evaluation.json``), not
+a measurement of this synthetic model.
+``--history-model`` (without ``--managed``) adds the synthetic demo domain
+artifact (``demo-synthetic``, ``demo_only_synthetic``) at ``models/demo-synthetic``
+so Analysis history can be exercised in the developer configuration
+(``THREATFUSION_CTI_ONLY=0``, ``THREATFUSION_MODEL_DIR``); it is not a
+measured model either.
     THREATFUSION_COLLECTOR_STATE_DIR=/tmp/tf-demo/collector THREATFUSION_DB_PATH=/tmp/tf-demo/cti.sqlite \
       .venv/bin/python -m threatfusion.api
 """
@@ -57,6 +67,22 @@ def write_logs(source: Path, now: datetime) -> None:
         (source / f"dns.{number}.log").write_text(log(moved, closed=True))
 
 
+def write_behavior_model(root: Path) -> None:
+    """A presentation asset: one split on the steady-rhythm feature, threshold 0.8."""
+    from threatfusion import ml_behavior, ml_local
+
+    evaluation = json.loads(ml_local.RECIPE_EVALUATION.read_text())
+    evaluation["importance"] = [["interval_regular_share", 1.0]]
+    feature = ml_behavior.FEATURES.index("interval_regular_share")
+    tree = {"left": [1, -1, -1], "right": [2, -1, -1], "feature": [feature, 0, 0],
+            "threshold": [0.5, -2.0, -2.0], "value": [0.5, 0.1, 0.95]}
+    payload = {"kind": ml_behavior.MODEL_KIND, "schema_version": ml_behavior.SCHEMA_VERSION,
+               "features": list(ml_behavior.FEATURES), "model_id": "synthetic-demo",
+               "trained_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+               "threshold": 0.8, "evaluation": evaluation, "trees": [tree]}
+    ml_local.save_model(payload, root / ml_local.MODEL_FILE)
+
+
 def _private(path: Path, text: str) -> None:
     descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(descriptor, "w") as handle:
@@ -67,7 +93,18 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("root", type=Path, help="new private directory (created)")
     parser.add_argument("--managed", action="store_true", help="managed-installation layout")
+    parser.add_argument("--behavior-model", action="store_true",
+                        help="with --managed: add a synthetic (untrained) behavior model")
+    parser.add_argument("--history-model", action="store_true",
+                        help="without --managed: add the synthetic demo domain artifact for Analysis history")
     args = parser.parse_args(argv)
+    parser_error = None
+    if args.behavior_model and not args.managed:
+        parser_error = "--behavior-model requires --managed"
+    if args.history_model and args.managed:
+        parser_error = "--history-model is for the developer layout (no --managed)"
+    if parser_error:
+        parser.error(parser_error)
     root = args.root.resolve()
     root.mkdir(mode=0o700, parents=True, exist_ok=False)
     cti = root / ("runtime/cti/threatfusion.sqlite" if args.managed else "cti.sqlite")
@@ -92,6 +129,17 @@ def main(argv: list[str] | None = None) -> int:
             "attempted_at": now.isoformat(), "running": False, "finished_at": now.isoformat(),
             "outcomes": [{"source": "SGB", "status": "fresh", "record_count": 0}],
             "skipped": ["ThreatFox", "URLhaus"]}))
+        if args.behavior_model:
+            write_behavior_model(root)
+    if args.history_model:
+        from dataclasses import replace
+
+        from threatfusion.demo_runtime import build_public_demo_model_samples
+        from threatfusion.ml_artifact import train_selected_model_artifact, write_ml_artifact
+
+        artifact = train_selected_model_artifact(build_public_demo_model_samples())
+        artifact = replace(artifact, metadata=replace(artifact.metadata, evaluation_status="demo_only_synthetic"))
+        write_ml_artifact(artifact, root / "models" / "demo-synthetic")
     print(f"state: {root / 'collector'}  review groups: {counts['review_groups']}  dns: {counts['dns_review_groups']}")
     return 0
 

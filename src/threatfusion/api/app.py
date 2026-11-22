@@ -19,7 +19,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from ..request_guard import LOOPBACK_HOSTNAMES, host_header_name, is_allowed_host
 from . import analyze as analyze_module
+from . import behavior as behavior_module
 from . import details as details_module
+from . import evaluation as evaluation_module
+from . import history as history_module
 from . import lookup as lookup_module
 from . import setup as setup_module
 from .i18n import Language, ui_strings
@@ -76,6 +79,59 @@ class RefreshRequest(BaseModel):
     force: bool = False
 
 
+FeedbackLabel = Literal["Confirmed Threat", "Benign", "Uncertain"]
+
+
+class FeedbackRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    domain: str = Field(min_length=1, max_length=1024)
+    label: FeedbackLabel
+    note: str = Field(default="", max_length=500)
+
+
+class BulkFeedbackRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    domains: list[str] = Field(min_length=1, max_length=10_000)
+    label: FeedbackLabel
+    note: str = Field(default="", max_length=500)
+    confirm: Literal[True]
+
+
+class ConfirmRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    confirm: Literal[True]
+
+
+class RetentionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    keep_latest: int = Field(ge=1, le=1000)
+    confirm: Literal[True]
+
+
+class SuppressionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    domain: str = Field(min_length=1, max_length=1024)
+    reason: str = Field(max_length=300)
+    expiry_days: int = Field(default=0, ge=0, le=3650)
+
+
+class ExpectedRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    content: str | None = Field(default=None, max_length=65_536)  # expected_connections.MAX_RULE_BYTES
+
+
+class DomainRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    domain: str = Field(min_length=1, max_length=1024)
+
+
 class MarkRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -83,16 +139,19 @@ class MarkRequest(BaseModel):
     mark: Mark | None
 
 
-DEFAULT_STREAMLIT_URL = "http://127.0.0.1:8501"
+def streamlit_url(environment: Mapping[str, str]) -> str | None:
+    """A Streamlit workspace running beside this one, or None (DEC-109).
 
-
-def streamlit_url(environment: Mapping[str, str]) -> str:
-    """Where the Streamlit workspace runs; only a loopback http address is linked."""
+    Every screen has moved, so the header links to Streamlit only when it is
+    explicitly configured (developers running both, ``web/README.md``); the
+    launcher's React mode does not start Streamlit. Only a loopback ``http``
+    address is ever linked; anything else means no link.
+    """
     value = environment.get("THREATFUSION_STREAMLIT_URL", "").strip().rstrip("/")
     scheme, separator, rest = value.partition("://")
     if scheme == "http" and separator and "/" not in rest and host_header_name(rest) in LOOPBACK_HOSTNAMES:
         return value
-    return DEFAULT_STREAMLIT_URL
+    return None
 
 
 def _origin_allowed(origin: str | None, environment: Mapping[str, str]) -> bool:
@@ -164,7 +223,8 @@ def create_app(
         # Same screen rules as Streamlit: Setup only for a managed installation,
         # and it opens first until real CTI has been downloaded once.
         return {"streamlit_url": streamlit_url(environment), "setup_available": root is not None,
-                "first_setup": first}
+                "first_setup": first, "evaluation_available": evaluation_module.available(resolved),
+                "history_available": resolved.history_enabled}
 
     @app.get("/api/i18n")
     def strings(lang: Literal["en", "tr"] = "en") -> dict:
@@ -185,6 +245,24 @@ def create_app(
         except (OSError, ValueError, TypeError, KeyError):
             raise HTTPException(409, "Could not save. Check the folder permissions.") from None
         return Response(status_code=204)
+
+    @app.get("/api/behavior")
+    def behavior(lang: Language = Query("en"), resolved: ApiSettings = Depends(settings)) -> dict:
+        return behavior_module.behavior_response(resolved, lang)
+
+    @app.put("/api/behavior/marks", status_code=204)
+    def behavior_mark(body: MarkRequest, resolved: ApiSettings = Depends(settings)) -> Response:
+        try:
+            behavior_module.set_mark(resolved, body.key, body.mark)
+        except behavior_module.UnknownCard:
+            raise HTTPException(404, "This item is not in the current list. Refresh and retry.") from None
+        except (OSError, ValueError, TypeError, KeyError):
+            raise HTTPException(409, "Could not save. Check the folder permissions.") from None
+        return Response(status_code=204)
+
+    @app.get("/api/evaluation")
+    def evaluation(lang: Language = Query("en"), resolved: ApiSettings = Depends(settings)) -> dict:
+        return evaluation_module.evaluation_response(resolved, lang)
 
     @app.get("/api/details")
     def details(lang: Language = Query("en"), local_ips: bool = True, reviews_only: bool = True,
@@ -305,6 +383,15 @@ def create_app(
         except (OSError, ValueError, TypeError):
             raise HTTPException(409, "Local settings could not be read. Check private file permissions.") from None
 
+    @app.post("/api/app/stop")
+    def stop_application(_body: EmptyRequest, resolved: ApiSettings = Depends(settings)) -> dict:
+        try:
+            return {"stopping": setup_module.stop_application(resolved)}
+        except setup_module.NotManaged:
+            raise HTTPException(404, "Setup is available in a managed installation in real CTI mode.") from None
+        except (OSError, ValueError, TypeError):
+            raise HTTPException(409, "Local settings could not be read. Check private file permissions.") from None
+
     @app.get("/api/analyze/status")
     def analyze_status(lang: Language = Query("en"), resolved: ApiSettings = Depends(settings)) -> dict:
         return analyze_module.status(resolved, lang)
@@ -334,15 +421,69 @@ def create_app(
             raise HTTPException(404, "This analysis is no longer available. Upload the file again.") from None
 
     @app.get("/api/analyze/{analysis_id}")
-    def analysis_overview(analysis_id: str, lang: Language = Query("en")) -> dict:
-        return analyze_module.overview(_analysis(analysis_id), lang)
+    def analysis_overview(analysis_id: str, lang: Language = Query("en"), include_suppressed: bool = False,
+                          resolved: ApiSettings = Depends(settings)) -> dict:
+        return analyze_module.overview(_analysis(analysis_id), lang, resolved, include_suppressed=include_suppressed)
 
     @app.get("/api/analyze/{analysis_id}/domain")
-    def analysis_domain(analysis_id: str, name: str = Query(max_length=1024), lang: Language = Query("en")) -> dict:
+    def analysis_domain(analysis_id: str, name: str = Query(max_length=1024), lang: Language = Query("en"),
+                        resolved: ApiSettings = Depends(settings)) -> dict:
         try:
-            return analyze_module.domain_detail(_analysis(analysis_id), lang, name)
+            return analyze_module.domain_detail(_analysis(analysis_id), lang, name, resolved)
         except analyze_module.NoAnalysis:
             raise HTTPException(404, "This domain is not in the analysis.") from None
+
+    def _history(action):
+        try:
+            return action()
+        except history_module.HistoryDisabled:
+            raise HTTPException(404, "Analysis history is disabled in this mode.") from None
+        except history_module.UnknownRun:
+            raise HTTPException(404, "The selected saved run no longer exists.") from None
+        except (TypeError, ValueError) as error:
+            raise HTTPException(422, str(error)) from None
+        except OSError:
+            raise HTTPException(409, "Local settings could not be read. Check private file permissions.") from None
+
+    @app.post("/api/analyze/{analysis_id}/save")
+    def analysis_save(analysis_id: str, _body: EmptyRequest, lang: Language = Query("en"),
+                      resolved: ApiSettings = Depends(settings)) -> dict:
+        analysis = _analysis(analysis_id)
+        return {"message": _history(lambda: history_module.save_analysis(resolved, analysis, lang))}
+
+    @app.put("/api/analyze/suppression", status_code=204)
+    def analysis_suppress(body: SuppressionRequest, resolved: ApiSettings = Depends(settings)) -> Response:
+        _history(lambda: history_module.suppress(resolved, body.domain, body.reason, body.expiry_days))
+        return Response(status_code=204)
+
+    @app.post("/api/analyze/suppression/remove", status_code=204)
+    def analysis_unsuppress(body: DomainRequest, resolved: ApiSettings = Depends(settings)) -> Response:
+        _history(lambda: history_module.unsuppress(resolved, body.domain))
+        return Response(status_code=204)
+
+    @app.get("/api/history")
+    def history(lang: Language = Query("en"), run: int | None = Query(None, ge=1),
+                resolved: ApiSettings = Depends(settings)) -> dict:
+        return history_module.history_response(resolved, lang, run)
+
+    @app.put("/api/history/{run_id}/feedback", status_code=204)
+    def history_feedback(run_id: int, body: FeedbackRequest, resolved: ApiSettings = Depends(settings)) -> Response:
+        _history(lambda: history_module.save_feedback(resolved, run_id, body.domain, body.label, body.note))
+        return Response(status_code=204)
+
+    @app.put("/api/history/{run_id}/feedback/bulk")
+    def history_bulk_feedback(run_id: int, body: BulkFeedbackRequest, resolved: ApiSettings = Depends(settings)) -> dict:
+        return {"count": _history(lambda: history_module.save_bulk_feedback(resolved, run_id, body.domains,
+                                                                             body.label, body.note))}
+
+    @app.post("/api/history/{run_id}/delete")
+    def history_delete(run_id: int, _body: ConfirmRequest, resolved: ApiSettings = Depends(settings)) -> dict:
+        return {"deleted": _history(lambda: history_module.delete_run(resolved, run_id))}
+
+    @app.post("/api/history/retention")
+    def history_retention(body: RetentionRequest, lang: Language = Query("en"),
+                          resolved: ApiSettings = Depends(settings)) -> dict:
+        return {"message": _history(lambda: history_module.apply_retention(resolved, body.keep_latest, lang))}
 
     @app.get("/api/analyze/{analysis_id}/devices")
     def analysis_devices(analysis_id: str, lang: Language = Query("en"), include_ips: bool = False,
@@ -359,9 +500,22 @@ def create_app(
 
     @app.get("/api/analyze/{analysis_id}/connections")
     def analysis_connections(analysis_id: str, lang: Language = Query("en"), include_ips: bool = False,
-                             reviews_only: bool = True, resolved: ApiSettings = Depends(settings)) -> dict:
+                             reviews_only: bool = True, include_expected: bool = False,
+                             resolved: ApiSettings = Depends(settings)) -> dict:
         return analyze_module.connections(_analysis(analysis_id), lang, include_ips=include_ips,
-                                          reviews_only=reviews_only, public_mode=resolved.public_mode)
+                                          reviews_only=reviews_only, public_mode=resolved.public_mode,
+                                          include_expected=include_expected)
+
+    @app.put("/api/analyze/{analysis_id}/expected")
+    def analysis_expected(analysis_id: str, body: ExpectedRequest, lang: Language = Query("en"),
+                          resolved: ApiSettings = Depends(settings)) -> dict:
+        if resolved.public_mode:
+            raise HTTPException(404, "Expected-connection declarations are not available in this mode.")
+        try:
+            return {"rules": analyze_module.set_expected(_analysis(analysis_id), body.content)}
+        except ValueError:
+            raise HTTPException(422, analyze_module.translate(
+                "Invalid expected-connection file. No declarations applied.", lang)) from None
 
     @app.get("/api/analyze/{analysis_id}/connection-timeline")
     def analysis_connection_timeline(analysis_id: str, group: int = Query(ge=0), lang: Language = Query("en")) -> dict:

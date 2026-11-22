@@ -155,6 +155,36 @@ def streamlit_command(source_dir: Path, port: int) -> list[str]:
     ]
 
 
+INTERFACES = ("web", "streamlit")
+
+
+def web_page_dir(source_dir: Path) -> Path:
+    """The pre-built React workspace shipped with the source (DEC-108)."""
+    return source_dir / "web" / "dist"
+
+
+def api_command(source_dir: Path, port: int) -> list[str]:
+    """The loopback API serving the pre-built page from the same origin (no host option exists)."""
+    return [
+        sys.executable,
+        "-m",
+        "threatfusion.api",
+        "--port",
+        str(port),
+        "--static-dir",
+        str(web_page_dir(source_dir)),
+    ]
+
+
+def _healthy(interface: str, body: bytes) -> bool:
+    if interface == "streamlit":
+        return body == b"ok"
+    try:
+        return json.loads(body) == {"status": "ok"}
+    except ValueError:
+        return False
+
+
 def run_local_server(
     source_dir: Path,
     environment: Mapping[str, str],
@@ -163,7 +193,16 @@ def run_local_server(
     open_browser: bool = True,
     readiness_timeout: float = 60,
     install_dir: Path | None = None,
+    interface: str = "web",
 ) -> int:
+    if interface not in INTERFACES:
+        raise ValueError("unknown local interface")
+    if interface == "web" and not (web_page_dir(source_dir) / "index.html").is_file():
+        print(
+            "Yeni arayüz (web/dist) bu kaynakta yok; Streamlit arayüzü açılıyor.",
+            flush=True,
+        )
+        interface = "streamlit"
     selected = choose_local_port(port)
     url = f"http://127.0.0.1:{selected}"
     stop = threading.Event()
@@ -185,10 +224,19 @@ def run_local_server(
             threading.Thread(
                 target=automatic_refresh_loop, args=(install_dir, stop), daemon=True
             ).start()
+        child_environment = dict(environment)
+        if interface == "web":
+            command = api_command(source_dir, selected)
+            health = url + "/api/health"
+            # The API runs as a module; the launcher clears PYTHONPATH, so name the source.
+            child_environment["PYTHONPATH"] = str(source_dir / "src")
+        else:
+            command = streamlit_command(source_dir, selected)
+            health = url + "/_stcore/health"
         process = subprocess.Popen(
-            streamlit_command(source_dir, selected),
+            command,
             cwd=source_dir,
-            env=dict(environment),
+            env=child_environment,
             start_new_session=True,
         )
         deadline = time.monotonic() + readiness_timeout
@@ -197,10 +245,10 @@ def run_local_server(
         ready = False
         while not stop.wait(0.2):
             if process.poll() is not None:
-                raise RuntimeError("Streamlit exited before it became ready")
+                raise RuntimeError("local application exited before it became ready")
             try:
-                with local_http.open(url + "/_stcore/health", timeout=1) as response:
-                    ready = response.status == 200 and response.read() == b"ok"
+                with local_http.open(health, timeout=1) as response:
+                    ready = response.status == 200 and _healthy(interface, response.read())
             except (OSError, urllib.error.URLError):
                 pass
             if ready:

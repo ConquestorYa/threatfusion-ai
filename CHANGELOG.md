@@ -20,7 +20,7 @@ framing is retired. No release date or tag is set.
 - React workspace design direction A (DEC-102): dark by default without a
   light flash, IBM Plex type, dense aligned table, text mark buttons on
   desktop and icon buttons with tooltips on narrow screens, an "Open in
-  Streamlit" link for screens that stay there, Playwright browser tests in CI
+  Streamlit" link (now only beside a running Streamlit, DEC-109), Playwright browser tests in CI
   and `scripts/demo_review_snapshot.py` for a synthetic collector state.
 - React workspace: the collector Details tab with connection and DNS
   timelines, the same tables, guidance and downloads as Streamlit (except the
@@ -40,8 +40,30 @@ framing is retired. No release date or tag is set.
   exports as Streamlit; raw-byte uploads capped at 100 MB, type- and
   encoding-checked, analysed in memory only (DEC-104). Synthetic demo
   samples in `data/samples/demo/`.
+- React workspace, migration completed (2026-11-22): **Experimental ML**
+  ("New for this computer" and the on-device behavior model with cards,
+  rhythm chart, marks and test figures; DEC-105), the Details DNS "Behavior
+  score (ML)" column and the Quick lookup behavior card; **Model evaluation**
+  with Streamlit's visibility rule (DEC-106); **Analysis history** with saved
+  runs, comparison and single/bulk analyst review, plus Save to history,
+  previous review and local suppressions in Analyze telemetry (history mode
+  only; DEC-107); the optional expected-connection JSON in Connection
+  activity (DEC-109); **Stop local application** in Setup & CTI updates.
+- `scripts/demo_review_snapshot.py --behavior-model` (synthetic, untrained
+  behavior model) and `--history-model` (synthetic demo domain artifact) for
+  browser tests and the demo; neither is a measured model.
 
 ### Changed
+
+- `threatfusion-ai` and the desktop entry open the React workspace: the
+  launcher starts the loopback API, which serves the committed pre-built page
+  `web/dist` (no Node at install or run time; CI fails when it differs from
+  a fresh build). `threatfusion-ai --streamlit` and the desktop action
+  "ThreatFusion AI (Streamlit)" open the Streamlit workspace, which stays
+  supported (DEC-108).
+- The header's "Open in Streamlit" link appears only when
+  `THREATFUSION_STREAMLIT_URL` names a Streamlit running beside the React
+  workspace; `/api/app` returns `streamlit_url: null` otherwise (DEC-109).
 
 - Dependencies: `fastapi` 0.162.0 (with `pydantic` 2.14.2 and five small
   dependencies) in the runtime lock; `httpx2` 2.16.0 for API tests.

@@ -192,6 +192,11 @@ def main() -> int:
     parser.add_argument("--refresh-cti", action="store_true")
     parser.add_argument("--launch-only", action="store_true")
     parser.add_argument(
+        "--streamlit",
+        action="store_true",
+        help="Open the previous Streamlit workspace instead of the React workspace",
+    )
+    parser.add_argument(
         "--no-integrations",
         action="store_true",
         help="Do not register desktop or shell shortcuts",
@@ -308,6 +313,8 @@ def main() -> int:
             ]
             if args.port is not None:
                 command.extend(["--port", str(args.port)])
+            if args.streamlit:
+                command.extend(["--interface", "streamlit"])
             for enabled, flag in (
                 (args.prepare_only, "--prepare-only"),
                 (args.no_browser, "--no-browser"),

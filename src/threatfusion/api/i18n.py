@@ -59,6 +59,12 @@ UI_STRINGS = (
     "Yes",
     "No",
     "Behavior score (ML)",
+    # Experimental ML
+    "Experimental ML",
+    # Model evaluation
+    "Model evaluation",
+    # Analysis history
+    "Analysis history",
     # Quick lookup
     "Quick lookup",
     "Check one URL, domain or IP against your local threat intelligence without visiting it.",

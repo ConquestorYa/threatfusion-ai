@@ -5,8 +5,9 @@ which reads the Streamlit session language. ``in_language`` swaps
 ``threatfusion.i18n.current_language`` for the duration of one response
 (under a lock), so the same helpers produce the same wording in either
 language without being copied. The analysis is ``analyze_quick_lookup_from_cache``.
-Not mirrored on purpose: the experimental "Behavior on this computer" card
-(its scoring also trains; it stays in Streamlit).
+The experimental "Behavior on this computer" card comes from
+``behavior.lookup_behavior`` (``ui_behavior.render_lookup_behavior``); its
+scoring (which may train) runs before the language lock is taken.
 """
 from __future__ import annotations
 
@@ -181,8 +182,10 @@ def lookup(settings: ApiSettings, language: str, value: str) -> dict:
     from ..quick_lookup import analyze_quick_lookup_from_cache
     from ..ui_quick_lookup import _match_type_label, _presentation_for, _reason_text
     from ..ui_simple_review import lookup_links
+    from .behavior import lookup_behavior, scored_rows
     from .review import _owner_lookup
 
+    behavior_rows = None if settings.public_mode else scored_rows(settings)
     with in_language(language):
         tr = i18n.tr
         artifact = _artifact(settings)
@@ -230,8 +233,9 @@ def lookup(settings: ApiSettings, language: str, value: str) -> dict:
                             "result": _age_block(cached) if cached is not None else None}
             name = None if result.normalized_ip else result.normalized_domain
             links = lookup_links(name, result.normalized_ip)
+            behavior = lookup_behavior(settings, behavior_rows, name, result.normalized_ip)
         else:
-            links = []
+            links, behavior = [], None
 
         if result.evidence:
             if result.verdict.value == "known_threat":
@@ -269,6 +273,7 @@ def lookup(settings: ApiSettings, language: str, value: str) -> dict:
             "links_title": tr("Look up elsewhere"),
             "links_caption": tr("Look up on outside sites (opens in a new tab; the name or IP is sent to that site):"),
             "links": [{"name": name, "url": url} for name, url in links],
+            "behavior": behavior,
             "evidence_title": tr("Threat intelligence evidence"),
             "evidence_state": state,
             "evidence": {"columns": [i18n._COLUMN_TR.get(c, c) if language == "tr" else c for c in columns],

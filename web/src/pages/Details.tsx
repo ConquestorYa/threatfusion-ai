@@ -201,7 +201,6 @@ function Dns({
             <Notice tone="info">{dns.empty}</Notice>
           )}
           {dns.more && <p className="text-xs text-muted-foreground">{dns.more}</p>}
-          <p className="text-xs text-muted-foreground">{chrome('mlInStreamlit')}</p>
           {investigation && (
             <div className="space-y-2.5 pt-2">
               <h3 className="text-[13px] font-semibold">{investigation.title}</h3>

@@ -21,6 +21,10 @@ class ApiSettings:
     model_dir: Path | None = None
     model_sha256: str | None = None
     local_root: Path | None = None
+    # Model evaluation / Analysis history: the same AppConfig values as Streamlit.
+    evaluation_report_path: Path | None = None
+    history_enabled: bool = False
+    cti_stale_hours_by_source: tuple = ()
 
 
 @lru_cache(maxsize=4)
@@ -47,10 +51,19 @@ def resolve_settings(environment: Mapping[str, str] | None = None) -> ApiSetting
         available = mode == "cti-only"  # the synthetic demo has no collector
         return ApiSettings(available, root / "collector" if available else None, config.db_path,
                            public_mode=config.public_mode, cti_only=config.cti_only, model_dir=config.model_dir,
-                           model_sha256=config.model_sha256, local_root=root)
+                           model_sha256=config.model_sha256, local_root=root,
+                           evaluation_report_path=config.evaluation_report_path,
+                           history_enabled=config.history_enabled,
+                           cti_stale_hours_by_source=tuple(config.cti_stale_hours_by_source))
     config = load_app_config(dict(environment))
     if config.public_mode:
         return ApiSettings(False, None, config.db_path, public_mode=True, cti_only=config.cti_only,
-                           model_dir=config.model_dir, model_sha256=config.model_sha256)
+                           model_dir=config.model_dir, model_sha256=config.model_sha256,
+                           evaluation_report_path=config.evaluation_report_path,
+                           history_enabled=config.history_enabled,
+                           cti_stale_hours_by_source=tuple(config.cti_stale_hours_by_source))
     return ApiSettings(True, config.collector_state_dir, config.db_path, public_mode=False,
-                       cti_only=config.cti_only, model_dir=config.model_dir, model_sha256=config.model_sha256)
+                       cti_only=config.cti_only, model_dir=config.model_dir, model_sha256=config.model_sha256,
+                       evaluation_report_path=config.evaluation_report_path,
+                       history_enabled=config.history_enabled,
+                       cti_stale_hours_by_source=tuple(config.cti_stale_hours_by_source))

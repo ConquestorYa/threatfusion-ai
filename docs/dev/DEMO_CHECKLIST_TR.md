@@ -138,20 +138,23 @@ Hepsi koyu tema ve Türkçe, yalnızca sentetik veriyle.
 **Son**
 - [ ] EN düğmesi → her şey İngilizce; yenile → EN hatırlanır. TR'ye dön.
 - [ ] Tema düğmesi → açık tema; yenile → hatırlanır; koyuya dön.
-- [ ] "Streamlit'te aç" → taşınmayan ekranlar: Deneysel ML, Model
-      değerlendirme, Analiz geçmişi; uygulamayı durdurma da orada.
+- [ ] **Deneysel ML** ve **Model değerlendirmesi** ekranları (demo sentetik,
+      eğitilmemiş bir davranış modeli taşır; belge adreslerini puanlamaz, bu
+      yüzden "olağandışı bir şey yok" görünür). "Streamlit'te aç" yalnızca
+      demo Streamlit'i yanında çalıştırdığı için görünür.
 
 ## 5. Söylenmesi gereken sınırlar
 
-- Taşınan: Bakılacaklar, Ayrıntılar (+ zaman çizelgeleri), Hızlı sorgu,
-  Telemetri analizi, Kurulum ve CTI. Mantık yeniden yazılmadı; Streamlit'in fonksiyonları kullanılıyor ve
-  bilinçli farklar dışında ekranlar Streamlit'le aynı.
-- Bilinçli farklar: deneysel ML puanı ve "bu bilgisayardaki davranış" kartı
-  Streamlit'te; analizde geçmişe kaydetme ve iki grafik (sonuç dağılımı ve
-  ilişkili etkinlik; değerleri tablo/çubuk olarak var) yok; React'te girilen API anahtarları her zaman 0600 dosyaya
-  kaydedilir (DEC-103); uygulamayı durdurma Streamlit'te.
-- `threatfusion-ai start` henüz React'i açmıyor; kurulum Node gerektirip
-  gerektirmeyeceği kararı sonraya kaldı.
+- Taşınan: bütün ekranlar (Bakılacaklar, Ayrıntılar, Deneysel ML, Hızlı
+  sorgu, Telemetri analizi, Analiz geçmişi — yalnızca geçmiş modunda —, Model
+  değerlendirmesi, Kurulum ve CTI). Mantık yeniden yazılmadı; Streamlit'in
+  fonksiyonları kullanılıyor ve bilinçli farklar dışında ekranlar
+  Streamlit'le aynı.
+- Bilinçli farklar: iki grafik (sonuç dağılımı ve ilişkili etkinlik)
+  değerleriyle tablo/çubuk olarak; React'te girilen API anahtarları her zaman
+  0600 dosyaya kaydedilir (DEC-103).
+- `threatfusion-ai` artık React'i açar (önceden derlenmiş sayfa, Node
+  gerekmez, DEC-108); `threatfusion-ai --streamlit` Streamlit'i açar.
 - Bu bir arayüz değişikliği; P2 ölçümü ya da kullanıcı kabulü değildir.
   Gerçek trafikle yeniden ölçüm yapılmadı.
 

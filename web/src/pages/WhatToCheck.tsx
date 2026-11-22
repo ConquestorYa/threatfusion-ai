@@ -2,10 +2,10 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { AlertTriangle, Check, ChevronDown, ExternalLink, HelpCircle, Info, RefreshCw } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
+import { MarkBadge, MarkButtons } from '@/components/data/MarkButtons'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { fetchReview, saveMark, type Mark, type ReviewItem } from '@/lib/api'
 import { usePreferences } from '@/lib/preferences'
 import { cn } from 'cn'
@@ -23,18 +23,6 @@ const FILTERS = {
   'Name lookups': (item: ReviewItem) => item.kind === 'dns',
 } as const
 type Filter = keyof typeof FILTERS
-
-// Streamlit button labels without their emoji; the icon carries the shape.
-// Streamlit labels start with a symbol ("✓ I know this", "⚪ Not sure"); the
-// icon carries that meaning here. Strip only those symbols: \W would also
-// strip Turkish letters such as "Ş".
-const plain = (text: string) => text.replace(/^(?:[\u2713?\u26A0\u26AA\u{1F7E3}]\uFE0F?\s*)+/u, '')
-
-const MARKS: { mark: Mark; text: string; plain: string; Icon: typeof Check }[] = [
-  { mark: 'known', text: '✓ I know this', plain: 'I know this', Icon: Check },
-  { mark: 'unsure', text: '? Not sure', plain: 'Not sure', Icon: HelpCircle },
-  { mark: 'suspicious', text: '⚠ Suspicious', plain: 'Suspicious', Icon: AlertTriangle },
-]
 
 // Desktop table columns (≥1024 px); narrower screens stack each row.
 const COLUMNS =
@@ -256,16 +244,7 @@ function ReviewRow({
           <span aria-hidden className={cn('absolute inset-y-0 left-0 w-1 lg:static lg:h-full lg:min-h-8', rail)} />
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <span className="font-semibold break-all">{item.title}</span>
-            {item.mark && item.mark !== 'known' && (
-              <span
-                className={cn(
-                  'rounded-sm border px-1.5 text-[11px] leading-4 font-medium',
-                  item.mark === 'suspicious' ? 'border-suspect text-suspect' : 'border-border text-muted-foreground',
-                )}
-              >
-                {plain(t(item.mark === 'suspicious' ? '🟣 Suspicious' : '⚪ Not sure'))}
-              </span>
-            )}
+            <MarkBadge mark={item.mark} />
           </div>
           <p className="min-w-0 text-[13px]">
             <span className={cn('font-medium', item.threat && 'text-threat')}>{item.label}</span>
@@ -291,35 +270,7 @@ function ReviewRow({
             {end && <span className="lg:block"> – {end}</span>}
           </p>
           <div className="flex items-center gap-1">
-            <div role="group" aria-label={chrome('mark')} className="inline-flex overflow-hidden rounded-sm border">
-              {MARKS.map(({ mark, text, plain: plainText, Icon }) => {
-                const selected = item.mark === mark
-                const label = plain(t(text)) || plainText
-                return (
-                  <Tooltip key={mark}>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        aria-pressed={selected}
-                        aria-label={label}
-                        disabled={busy}
-                        onClick={() => onMark(item.key, selected ? null : mark)}
-                        className={cn(
-                          'inline-flex h-11 min-w-11 items-center justify-center gap-1.5 px-2 text-xs lg:px-1.5 text-muted-foreground not-first:border-l hover:bg-accent hover:text-foreground focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50 lg:h-7',
-                          selected && 'bg-selected text-selected-foreground hover:bg-selected hover:text-selected-foreground',
-                        )}
-                      >
-                        <Icon aria-hidden className="size-3.5" />
-                        <span className="hidden whitespace-nowrap lg:inline">{label}</span>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent className="lg:hidden">
-                      {selected ? `${label} · ${t('Click again to remove the mark')}` : label}
-                    </TooltipContent>
-                  </Tooltip>
-                )
-              })}
-            </div>
+            <MarkButtons mark={item.mark} busy={busy} onMark={(mark) => onMark(item.key, mark)} />
             <CollapsibleTrigger asChild>
               <Button
                 variant="ghost"
