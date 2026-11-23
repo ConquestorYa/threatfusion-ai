@@ -1,265 +1,148 @@
-<div align="center">
-
-<img src="docs/assets/logo-mono.svg" alt="ThreatFusion AI logo" width="96">
-
 # ThreatFusion AI
 
-### Zeek kullanıcıları için yerel ağ inceleme aracı
+[English](README.md) · **Türkçe**
 
-<p>
-  <a href="README.md"><strong>English</strong></a>
-  &nbsp;•&nbsp;
-  <strong>Türkçe</strong>
-</p>
+Zeek ağ kayıtlarını okuyup "bu cihaz kiminle konuştu, hangisine bakmam lazım?"
+sorusuna cevap vermeye çalışan, kendi bilgisayarımda çalışan küçük bir inceleme
+aracı. Siber güvenlik önlisans öğrencisiyim; bu proje SOC tarafını öğrenmek için
+yaptığım çalışma notlarım ve denemelerim.
 
-<p>
-  <img alt="Durum: erken prototip" src="https://img.shields.io/badge/Durum-Erken%20prototip-orange">
-  <img alt="CI" src="https://github.com/ConquestorYa/threatfusion-ai/actions/workflows/ci.yml/badge.svg">
-  <img alt="Python 3.12" src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white">
-  <img alt="Zeek" src="https://img.shields.io/badge/Girdi-Zeek%20kay%C4%B1tlar%C4%B1-2b6cb0">
-  <img alt="Yerel" src="https://img.shields.io/badge/Veri-yerelde%20kal%C4%B1r-2ea44f">
-  <img alt="Lisans: MIT" src="https://img.shields.io/badge/Lisans-MIT-success">
-</p>
+> **Durum:** erken prototip. Kurulum, CTI güncelleme, Zeek'ten sürekli kayıt
+> toplama ve inceleme listesi çalışıyor. Gerçek zararlı yazılımı ne kadar
+> yakaladığını **henüz ölçmedim.** SIEM, IDS ya da antivirüs değil.
 
-</div>
+## Neden yaptım
 
-ThreatFusion, **Zeek** ağ kayıtlarını okur; her hedefi **tehdit istihbaratı
-(CTI) listeleriyle** karşılaştırır ve **zararlı yazılımın "eve haber
-vermesine" benzeyen** bağlantıları işaretler. Her işaretin nedenini de söyler.
-Kendi Linux bilgisayarında çalışır; trafiğin bilgisayarından dışarı çıkmaz.
+SOC L1 olarak çalışmak istiyorum. Ders anlatımında "beaconing", "IOC
+eşleştirme", "false positive" gibi kavramları okuyordum ama elimde bunları
+görebileceğim bir şey yoktu. Kendi ağımdaki trafiği Zeek ile kaydedip bu
+kavramları gerçek veride görmek istedim.
 
-> **Durum: erken prototip.** İş akışının tamamı çalışıyor: kurulum, CTI
-> güncellemeleri, sürekli Zeek toplama, sade bir inceleme listesi ve inceleme
-> ekranları. Gerçek trafikle yapılan 24 saatlik test çok fazla işaret
-> üretti; bu kusurlar düzeltildi. Gerçek zararlı yazılımı ne kadar yakaladığı **henüz
-> ölçülmedi.** SIEM, EDR, IDS ya da virüs tarayıcı değildir.
+Bir de Siber Güvenlik Başkanlığı'nın (SGB) zararlı adres listesini ThreatFox ve URLhaus ile
+aynı yerde kullanan basit bir araç bulamadım, onu denemek istedim.
 
-**Tespit nasıl çalışır:** İnceleme listesini CTI eşleşmeleri ile basit ve
-açıklanabilir davranış kuralları belirler. Makine öğrenmesi deneyseldir: ayrı
-bir sekmesi vardır, inceleme listesini hiçbir zaman değiştirmez ve CTI'ın
-önüne geçmez. Tek sayfalık genel bakış: [proje özeti](docs/PROJECT_SUMMARY.tr.md).
+## Nasıl çalışıyor
 
-## Ne yapar
+1. **Zeek** ağ trafiğini dinleyip `conn.log` ve `dns.log` dosyaları yazıyor.
+2. Bir **toplayıcı (collector)** biten log dosyalarını alıp son 24 saati
+   SQLite'ta tutuyor.
+3. Her hedef (alan adı / IP) **CTI listeleriyle** karşılaştırılıyor:
+   SGB, ThreatFox, URLhaus.
+4. Her `cihaz → hedef` grubu birkaç basit **davranış kuralından** geçiyor.
+5. Arayüzde **Bakılacaklar** listesi çıkıyor. Her satırda neden listelendiği
+   yazıyor; ben de *Tanıyorum / Emin değilim / Şüpheli* diye işaretliyorum.
 
-Tek bir soruyu cevaplar: **Hangi cihaz hangi hedefle konuştu ve bunlardan
-hangilerine daha yakından bakmak gerekir?**
+Kurallar (eşikler kodda sabit, `src/threatfusion/connections.py` ve
+`connection_attempts.py`):
 
-1. **Toplar.** Küçük bir toplayıcı (collector), tamamlanmış her Zeek `conn.log`
-   ve `dns.log` dosyasını alır ve son 24 saati saklar.
-2. **Kontrol eder.** Her hedef SGB, ThreatFox ve URLhaus listeleriyle
-   karşılaştırılır; her cihaz → hedef grubu şüpheli davranış açısından incelenir.
-3. **Açıklar.** **Bakılacaklar** listesi yalnızca bakmaya değer olanları
-   gösterir; tehdit listesi eşleşmeleri en üsttedir. Her madde nedenini, cihazı,
-   hedefin ağ sahibini ve tek tıkla işaretleri içerir: *Tanıyorum*, *Emin
-   değilim*, *Şüpheli*.
-
-| Kontrol | Bir grubu şu durumda işaretler | Tipik neden |
+| Kural | Ne zaman işaretliyor | Neden bakıyorum |
 | --- | --- | --- |
-| CTI eşleşmesi | Hedef (alan adı ya da IP) bir CTI listesinde | Bilinen zararlı sunucu |
-| Uzun oturum | Tek bir iki yönlü TCP oturumu en az 1 saat sürüyor | Açık tutulan bir kontrol kanalı ya da sohbet/bildirim uygulaması |
-| Düzenli tekrar | 30+ dakikada, çok düzenli aralıklarla 20+ bağlantı | Zararlı yazılımın düzenli "haber vermesi" ya da bir güncelleyici |
-| Başarısız denemeler | 5 dakika içinde 20+ farklı port/sunucuya ya da 30+ kez tekrarlanan cevapsız/reddedilen deneme | Tarama ya da ulaşılamayan bir sunucuyu deneyip duran bir program |
+| CTI eşleşmesi | Hedef bir listede var | Bilinen zararlı sunucu olabilir |
+| Uzun oturum | Tek TCP oturumu ≥ 1 saat | Açık tutulan C2 kanalı olabilir (ama sohbet uygulamaları da böyle) |
+| Düzenli tekrar | 30+ dakikada 20+ bağlantı, aralıklar çok düzenli (skor ≥ 0.85) | Zararlının "eve haber vermesi" (beaconing). Güncelleyiciler de yapıyor |
+| Başarısız denemeler | 5 dakikada 20+ farklı port/host ya da 30+ tekrar eden hata | Tarama olabilir ya da ulaşamadığı sunucuyu deneyen bir program |
 
-DNS sorguları için ayrı kontroller vardır (CTI eşleşmesi, düzenli sorgular,
-olağandışı hacim). Popüler siteler ve yerel adlar, bir CTI listesi eşleşmedikçe
-listeye girmez. Normal yazılımlar yine de bu kurallara uyabilir; her madde
-kanıtını gösterir, böylece hızlı karar verebilirsin.
-Ayrıntılar: [kullanım kılavuzu](docs/USER_GUIDE.tr.md#neler-işaretlenir).
+Düzenlilik skoru RITA'nın beacon skorundan esinlenen bir formül: bağlantılar
+arası sürelerin ve boyutların ne kadar düzenli olduğuna bakıyor (`rhythm.py`).
 
-## Ekran görüntüleri
+Ayrıca **Hızlı sorgu** (tek bir URL/alan adı/IP'yi siteye gitmeden CTI'da arama)
+ve **Telemetri analizi** (tek bir log dosyası yükleyip bakma) var.
 
-Görüntüler yeni **React arayüzünden** alındı (koyu tema, Türkçe). Yerleşik
-demodan gelir: **yalnızca sentetik veri**, belgeler için ayrılmış adresler
-(`192.0.2.x`, `198.51.100.x`, `203.0.113.x`), `.test` adları ve sentetik bir CTI
-listesi. Gerçek trafik ya da gerçek gösterge yoktur.
+## Denediklerim ve sonuçları
 
-<p align="center">
-  <img src="docs/screenshots/tr/collected-connections.png" alt="Bakılacaklar: bir tehdit listesi eşleşmesi, düzenli tekrar, uzun bağlantı, düzenli sorgu ve başarısız denemeler; nedenleri ve işaretleriyle, düzenli tekrar satırı açık" width="100%">
-</p>
-<p align="center"><em>Bakılacaklar: önce tehdit listesi eşleşmeleri, sonra davranış. Her satır neden listede olduğunu söyler; açılan satır ne yapılacağını söyler ve dış sorgu düğmelerini gösterir.</em></p>
+- **Kendi laptopumda 24 saat gerçek trafik:** 59 grup listelendi, hepsi zararsızdı.
+  Sadece 3 tanesine ekrana bakarak karar verebildim. Yani kurallar çok fazla
+  false positive üretiyordu. Bağlantılara alan adlarını ekledim, popüler
+  siteleri ve yerel adları ayırdım, listeyi sadeleştirdim.
+  ([kayıt](docs/evidence/REAL_TRAFFIC_EVALUATION.md))
+- **Kampüs Wi-Fi'ında toplama:** diğer cihazların yerel keşif trafiği (mDNS,
+  SSDP, NetBIOS vb.) pencereyi doldurdu, toplayıcı sağlıksız göründü. Bu
+  trafiği hem toplayıcıda hem Zeek'in yakalama filtresinde dışarıda bıraktım.
+- **IoT-23 veri setinden 4 kayıt:** iki temiz kayıtta hiç işaret çıkmadı; iki
+  zararlı kayıttan birinde 1 işaret çıktı, diğerinde hiç çıkmadı.
+  ([kayıt](docs/evidence/NETWORK_EVALUATION.md))
 
-<p align="center">
-  <img src="docs/screenshots/tr/connection-investigation.png" alt="Ayrıntılar: toplayıcı sayaçları, bağlantı inceleme grupları, inceleme rehberi ve zamana göre bağlantı başlangıçları" width="100%">
-</p>
-<p align="center"><em>Ayrıntılar: toplanan bağlantı grupları ve bunlardan birinin incelemesi (aynı sunucuya 5 dakikada bir bağlanan bir cihaz).</em></p>
+Kısacası: araç çalışıyor ama iyi tespit ettiğini gösteremiyorum. Bunu
+ölçmek bir sonraki adım.
 
-<p align="center">
-  <img src="docs/screenshots/tr/analyze-telemetry.png" alt="Telemetriyi analiz et: yüklenen bir Zeek dns.log dosyasında bir bilinen tehdit, öncelikli bulgular ve sonuç dağılımı" width="100%">
-</p>
-<p align="center"><em>Telemetriyi analiz et: tek seferlik analiz için bir dosya yükle (burada örnek Zeek dns.log).</em></p>
+## Ne öğrendim
 
-<table>
-<tr>
-<td width="50%"><img src="docs/screenshots/tr/quick-lookup.png" alt="Listedeki sentetik bir alan adının hızlı sorgusu: bilinen tehdit"><br><em>Hızlı sorgu: tek bir URL, alan adı ya da IP'yi ziyaret etmeden kontrol et.</em></td>
-<td width="50%"><img src="docs/screenshots/tr/setup.png" alt="Kurulum ve CTI güncellemeleri sayfası"><br><em>Kurulum: kendi API anahtarların, CTI güncellemeleri ve otomatik yenileme.</em></td>
-</tr>
-</table>
+- Zeek `conn.log` alanları: `uid`, `id.orig_h`, `id.resp_h`, `conn_state`
+  (`S0`, `SF`, `REJ`...) ve bunların ne anlama geldiği.
+- Beaconing'i sadece "düzenli aralık" diye aramak yetmiyor; güncelleyiciler,
+  bildirim servisleri de düzenli. Bağlam (alan adı, ağ sahibi) olmadan karar
+  vermek zor.
+- CTI listesi eşleşmesi tek başına güçlü bir sinyal, davranış kuralları ise
+  sadece "bakmaya değer" demek.
+- False positive'in analist için ne kadar yorucu olduğunu 24 saatlik testte
+  bizzat gördüm.
 
-### Yeni arayüz (React)
+## Takıldığım yerler
 
-Uygulama, ekran ekran Streamlit'ten **React + FastAPI** arayüzüne taşınıyor.
-Şimdiye kadar taşınanlar: **Bakılacaklar**, **Ayrıntılar**, **Hızlı sorgu**,
-**Telemetriyi analiz et** ve **Kurulum ve CTI güncellemeleri**. Deneysel ML,
-Model değerlendirme ve Analiz geçmişi henüz Streamlit'te (üst menüdeki
-**Streamlit'te aç** bağlantısı oraya götürür). İkisi aynı toplayıcı verisini
-okur, aynı işaretleri paylaşır ve ikisi de yalnızca 127.0.0.1'de dinler.
+- Kurallar normal yazılımı da yakalıyor; eşik değerlerini nasıl seçeceğimi hâlâ
+  tam bilmiyorum.
+- Gerçek zararlı trafikle test etmek zor: etiketli, güncel veri bulmak kolay değil.
+- Kampüs ağında başka cihazların gürültüsü beklemediğim bir sorundu.
 
-Kurulum henüz React sayfasını içermiyor: `threatfusion-ai` hâlâ Streamlit
-arayüzünü açar. Yeni arayüzü kaynak koddan denemek için sayfayı derle ve demoyu
-çalıştır (sentetik veri):
+## Yapay zekâ kullanımı
 
-```bash
-(cd web && npm ci && npm run build)
-scripts/demo_web.sh   # React: http://127.0.0.1:8600 · Streamlit: http://127.0.0.1:8501
-```
+Bu projeyi yazarken yapay zekâdan (Claude, ChatGPT vb.) çok yardım aldım:
+kodun, testlerin ve dokümantasyonun büyük kısmı bu şekilde yazıldı. Ben fikri,
+Zeek kurulumunu, testleri kendi ağımda çalıştırmayı ve sonuçları
+değerlendirmeyi yaptım.
 
-Kendi toplanan verinle çalıştırma ve geliştirme: [web/README.md](web/README.md) (İngilizce).
+## Deneysel kısımlar
 
-## Kurulum (Linux, tek komut)
+- **Makine öğrenmesi:** ayrı bir sekmede random forest tabanlı bir davranış
+  modeli var. İnceleme listesini değiştirmiyor. Sonuçları karışık; detaylar
+  [ML değerlendirmesi](docs/evidence/ML_DATASET.md) dosyasında.
+- **React arayüzü:** Streamlit'ten React + FastAPI'ye geçiş yarım. Kurulum
+  hâlâ Streamlit arayüzünü açıyor.
 
-**Gerekenler:** x86_64 Linux (Python ya da Git olmayan sıfır Debian 12 ve
-Ubuntu 24.04'te test edildi), internet bağlantısı ve yaklaşık 2 GB boş alan.
-Sudo gerekmez. Windows ve macOS desteklenmez.
+## Yapılacaklar
 
-Bir terminal aç ve bu tek satırı normal kullanıcınla yapıştır:
+- [ ] Gerçek, etiketli zararlı trafikle tespit oranını ölçmek
+- [ ] Düzeltmelerden sonra gerçek trafikte false positive sayısını tekrar ölçmek
+- [ ] RITA ile aynı veride karşılaştırmak
+- [ ] Bir saldırı senaryosunu kendi lab ortamımda (VM) oynatıp aracın ne gördüğüne bakmak
+
+## Kurulum (Linux)
+
+Linux x86_64 gerekli (Debian 12 ve Ubuntu 24.04'te denedim). sudo istemiyor,
+yaklaşık 2 GB yer lazım. Windows/macOS desteklenmiyor.
 
 ```bash
 u=https://raw.githubusercontent.com/ConquestorYa/threatfusion-ai/main/scripts/install_linux.sh; f=/tmp/threatfusion-install.sh; { command -v curl >/dev/null && curl -fsSLo "$f" "$u" || wget -qO "$f" "$u"; } && bash "$f"
 ```
 
-Komut, `~/.local/share/threatfusion-ai` içine özel bir Python 3.12 ve
-sağlama toplamı doğrulanmış kütüphaneler indirir, `threatfusion-ai` komutunu ve
-uygulamalar menüsü kısayolunu ekler ve uygulamayı http://127.0.0.1:8501
-adresinde açar (yalnızca bu bilgisayardan erişilebilir). İlk kurulum birkaç
-dakika sürer.
+Sonra:
 
-| Ne için | Komut |
-| --- | --- |
-| Uygulamayı yeniden aç | `threatfusion-ai` (ya da uygulamalar menüsünde **ThreatFusion AI**) |
-| Durdur | `threatfusion-ai stop` |
-| En son sürüme güncelle | durdur, sonra kurulum satırını yeniden çalıştır (veriler ve ayarlar korunur) |
-| Sentetik veriyle dene | `threatfusion-ai --mode demo` |
-| Kaldır (kayıtlı anahtarlar, CTI önbelleği, toplanan veri ve işaretler de silinir; [ayrıntılar](docs/INSTALL_LINUX.tr.md#kaldırma)) | `threatfusion-ai stop; rm -rf ~/.local/share/threatfusion-ai ~/.local/bin/threatfusion-ai ~/.local/share/applications/io.github.ConquestorYa.ThreatFusionAI.desktop` |
+- `threatfusion-ai` uygulamayı açar (http://127.0.0.1:8501, sadece bu bilgisayardan erişilir).
+- `threatfusion-ai --mode demo` sahte verilerle dener.
+- `threatfusion-ai collect --input-dir ~/zeek-sensor/logs` Zeek loglarını toplamaya başlar.
+- `threatfusion-ai stop` durdurur.
 
-Terminal `threatfusion-ai: command not found` derse yeni bir terminal aç.
+ThreatFox ve URLhaus için [auth.abuse.ch](https://auth.abuse.ch/)'den ücretsiz
+anahtar gerekiyor; SGB anahtarsız çalışıyor. Zeek kurulumu:
+[ZEEK_SETUP.tr.md](docs/ZEEK_SETUP.tr.md). Kaldırma ve detaylar:
+[INSTALL_LINUX.tr.md](docs/INSTALL_LINUX.tr.md).
 
-## İlk adımlar
-
-**1. CTI ekle.** Uygulama **Kurulum ve CTI güncellemeleri** sayfasıyla açılır.
-SGB anahtar istemez. [auth.abuse.ch](https://auth.abuse.ch/) üzerinden alınan
-tek bir ücretsiz anahtar hem ThreatFox'u hem URLhaus'u açar. **CTI verilerini
-şimdi güncelle**'ye bas. **Hızlı sorgu** ve **Telemetri analizi** (tek bir Zeek,
-DNS, PCAP ya da benzeri dosya yükle) bundan sonra Zeek olmadan da çalışır.
-
-**2. Zeek'i çalıştır;** saatlik bölünmüş `conn.log` ve `dns.log` dosyaları
-yazsın: [Zeek sensör kurulumu](docs/ZEEK_SETUP.tr.md) (sürümü sabitlenmiş bir
-Docker tarifi; Docker bir kez yönetici yetkisi ister).
-
-**3. Toplayıcıyı başlat;** ikinci bir terminalde çalıştır ve **Toplanan
-bağlantılar** sayfasını aç:
-
-```bash
-threatfusion-ai collect --input-dir ~/zeek-sensor/logs
-```
-
-Toplanan trafiğin 3 günü dolunca **Deneysel ML** sekmesi davranış modelini bu
-bilgisayarda eğitir. Ayrıntılar: [Linux kurulumu](docs/INSTALL_LINUX.tr.md).
-
-## Uygulamadaki diğer araçlar
-
-- **Hızlı sorgu:** Tek bir URL, alan adı ya da IP'yi CTI önbelleğinde ara.
-  Sayfa açılmaz, DNS sorgusu yapılmaz, hiçbir şey indirilmez. İsteğe bağlı:
-  alan adının kayıt yaşı ve IP'nin ağ sahibi.
-- **Telemetriyi analiz et:** Tek seferlik analiz için bir dosya yükle (Zeek,
-  DNS CSV/Excel, PCAP, Suricata EVE, Pi-hole, AdGuard Home, dnstop).
-- **Masaüstü bildirimi:** Toplayıcı tehdit listesindeki bir hedefe giden trafik
-  görünce bildirir.
-- **Demo modu** (`threatfusion-ai --mode demo`): Arayüzü denemek için sentetik
-  veri. Sonuçları ölçüm değildir.
-
-### Deneysel makine öğrenmesi
-
-Toplanan bağlantılar sayfasındaki **Deneysel ML** sekmesi **Bu bilgisayar için
-yeni** listesini gösterir: cihazlarının daha önce hiç kullanmadığı ve düzenli bir
-ritimle aramaya devam ettiği hedefler; "eve telefon eden" bir program böyle
-davranır. ThreatFusion bilgisayarın için hangi hedeflerin normal olduğunu öğrenir
-(3 gün, yalnızca uygulama açıkken; bu hafıza bilgisayardan çıkmaz). Geliştirme
-testlerinde normal bir cihazda günde yaklaşık 0,5 kayıt listeledi. Bakmak için
-bir sebeptir, zararlı yazılım kararı değildir; birkaç gerçek günlük yükü henüz ölçülmedi.
-
-Aynı sekmede **bilgisayarında eğitilen bir davranış modeli** çalışır: her
-cihazın her hedefle *nasıl* konuştuğuna bakan bir rastgele orman (ritim, boyut,
-süre, başarısız denemeler, port, adın ne kadar rastgele göründüğü). Kurulum,
-herkese açık zararlı ve normal kayıtlarının (Stratosphere Lab,
-Malware-Traffic-Analysis.net) sayısal özelliklerini getirir; kendi trafiğinin 3
-günü toplanınca uygulama ormanı birkaç saniyede bu bilgisayarda eğitir ve her
-gün yeniden eğitir. Hiçbir şey bilgisayardan çıkmaz. Tarif, hiç görmediği
-kayıtlarda bir kez test edildi: görmediği bir cihazda 7 zararlı ailesinin 5'ini
-ve görülmemiş zararlı kayıtlarının %56'sını yakaladı, gerçek bir laptopta günde
-en fazla bir yanlış alarm verdi; 2025–2026 zararlılarının yalnızca %27'sini ve
-sanal sinyallerin %20'sini yakaladı. **Model değerlendirme** sayfası bütün
-testleri gösterir. İşaret bakmak için bir sebeptir, karar değildir. Yalnızca
-herkese açık kayıtlarla eğitilen modeller ve eski alan adı puanı başarısız oldu
-ve kapalı. Tüm geçmiş: [ML değerlendirmesi](docs/evidence/ML_DATASET.md)
-(İngilizce).
+![Bakılacaklar ekranı (demo, sahte veri)](docs/screenshots/collected-connections.png)
 
 ## Gizlilik
 
-- Zeek yalnızca bağlantı ve DNS üst bilgisini kaydedecek şekilde ayarlanır;
-  sayfa adresleri, şifreler ya da içerik kaydedilmez. DNS adları yine de hangi
-  sitelere girdiğini gösterir; kayıtları gizli tut.
-- Kayıtlar, toplayıcı verisi, CTI önbelleği, öğrenilen hedef hafızası ve
-  anahtarlar bilgisayarındaki özel klasörlerde kalır. Hiçbir şey yüklenmez.
-  İndirilen raporlar varsayılan olarak takma ad (`Host 1`) kullanır.
-- Şüpheli hedefler hiçbir zaman ziyaret edilmez ya da çözümlenmez. Dış sorgu
-  düğmeleri (VirusTotal, AbuseIPDB, urlscan) adı ya da IP'yi yalnızca sen
-  tıklayınca gönderir.
-- Kendi API anahtarlarını kullanırsın; projede hiçbir anahtar gelmez.
-
-## Şimdiye kadarki kanıtlar
-
-| Ölçülen | Sonuç |
-| --- | --- |
-| Sentetik normal ve simüle trafik | Normal güncelleyiciler ve yoklamalar da İncele'ye düşüyor: kurallar henüz yeterince seçici değil ([inceleme yükü](docs/evidence/REVIEW_WORKLOAD.md)) |
-| Dört bağımsız IoT-23 kaydı (2018–2019) | İki zararsız kayıtta 0 inceleme; iki zararlı kayıttan biri bir inceleme üretti, diğeri hiç üretmedi ([ağ değerlendirmesi](docs/evidence/NETWORK_EVALUATION.md)) |
-| Hata matrisi, 6 saatlik dayanıklılık testi, güvenlik incelemeleri | 9/9 hata senaryosu geçti; 6 saatlik dayanıklılık testi 16/16 kontrolü geçti (toplayıcı en fazla 684 MiB); iki güvenlik incelemesi ([operasyonel güven](docs/evidence/OPERATIONAL_CONFIDENCE.md)) |
-| Bir laptop, 24 saat normal gerçek trafik | 59 inceleme grubu, hepsi zararsız; yalnızca 3'ü ekrandaki bilgiyle karara bağlanabildi. Düzeltildi: bağlantılarda adlar, popüler site ve yerel ad bağlamı, sade bir inceleme listesi ([sonuçlar](docs/evidence/REAL_TRAFFIC_EVALUATION.md#24-hour-test-results)) |
-| Kampüs Wi-Fi'ında sonraki canlı toplama | Toplayıcı sağlık kontrolü başarısız: diğer cihazların yerel ağ duyuruları pencereyi doldurdu. Düzeltildi (toplayıcı filtresi + Zeek yakalama filtresi) ([kayıt](docs/evidence/REAL_TRAFFIC_EVALUATION.md)) |
-| Makine öğrenmesi | Her bilgisayarda eğitilen davranış modeli: görmediği cihazda zararlı ailelerinin %71'i, görülmemiş zararlı kayıtlarının %56'sı, günde ≤ 1 yanlış alarm; 2025–2026 zararlılarında zayıf (%27). Yalnızca herkese açık veriyle ve alan adıyla eğitilen modeller başarısız. "Bu bilgisayar için yeni" geliştirme yük kontrolünü geçti ([ML değerlendirmesi](docs/evidence/ML_DATASET.md)) |
-| **Henüz ölçülmedi** | Düzeltmelerden sonra gerçek trafikte yanlış alarm, etiketli gerçek zararlıyı yakalama, başka kullanıcılar için faydası |
-
-Tüm kayıtlar: [dokümantasyon](docs/README.md#evidence).
+Her şey yerelde kalıyor, hiçbir şey yüklenmiyor. Zeek sadece bağlantı ve DNS
+bilgisini kaydediyor, içerik yok; ama DNS adları hangi sitelere girdiğini
+gösterdiği için loglar gizli tutulmalı. Şüpheli adreslere araç kendisi gitmiyor.
 
 ## Benzer araçlar
 
-[RITA](https://github.com/activecm/rita), Zeek kayıtlarında düzenli tekrar ve
-uzun bağlantıları bulur; ThreatFusion'ın karşılaştırıldığı temel araçtır.
-[Security Onion](https://securityonion.net/) ve [Malcolm](https://github.com/cisagov/Malcolm)
-eksiksiz izleme platformlarıdır; [Suricata](https://suricata.io/) bilinen saldırı
-imzalarını yakalar. ThreatFusion daha küçük olmayı hedefler: CTI'yı (Türkiye'nin
-SGB listesi dahil) açıklanabilir davranış kontrolleriyle birleştiren tek bir
-yerel uygulama. Bu araçlardan daha faydalı olup olmadığı ölçülmedi.
-
-## Dokümantasyon
-
-[Kullanım kılavuzu](docs/USER_GUIDE.tr.md) · [Zeek kurulumu](docs/ZEEK_SETUP.tr.md) ·
-[Kurulum](docs/INSTALL_LINUX.tr.md) · [Mimari](docs/ARCHITECTURE.tr.md) ·
-[Veri kaynakları](docs/DATA_SOURCES.tr.md) · [Güvenlik](SECURITY.tr.md) ·
-[Kanıtlar](docs/README.tr.md#kanıtlar) · [Ürün planı](docs/dev/PRODUCT_PLAN.md)
-(kanıt ve geliştirici kayıtları İngilizce)
-
-## Geliştirme
-
-Python 3.12, FastAPI, Streamlit, SQLite, pandas, Altair, Plotly ve
-scikit-learn; yeni arayüz React 19, TypeScript, Vite ve Tailwind CSS kullanır
-([web/README.md](web/README.md)). CI; kod denetimi, testler, React sayfasının
-tarayıcı testleri, deponun gizlilik denetimi, konteyner kontrolü ve temiz
-kurulumlu Debian ile Ubuntu'da kurulum testlerini çalıştırır. Yalnızca Linux.
-
-Bu proje yoğun yapay zekâ desteğiyle geliştiriliyor (tasarım, kod, test ve
-dokümantasyon); değişiklikler birleştirilmeden önce gözden geçirilir ve test edilir.
+[RITA](https://github.com/activecm/rita) (Zeek'te beaconing bulur, kendimi
+onunla karşılaştırıyorum), [Security Onion](https://securityonion.net/),
+[Malcolm](https://github.com/cisagov/Malcolm), [Suricata](https://suricata.io/).
+Bunlar çok daha olgun araçlar; benimki öğrenme projesi.
 
 ## Lisans
 
-MIT. CTI kaynakları ve veri setleri kendi koşullarına tabidir; bkz.
-[veri kaynakları](docs/DATA_SOURCES.tr.md).
+MIT. CTI listeleri ve veri setleri kendi lisanslarına tabi:
+[DATA_SOURCES.tr.md](docs/DATA_SOURCES.tr.md).
