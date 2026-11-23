@@ -8,7 +8,7 @@ description: ThreatFusion private evaluation protocol. Use before running any me
 Follow these steps for every measured result. Never shortcut them to make a gate pass.
 
 1. **Choose the gate.** Name the `docs/dev/PRODUCT_PLAN.md` gate (P1–P5) the experiment serves.
-2. **Root.** Create a new 0700 directory under `/home/yahya/Work/threatfusion-lab/<protocol>-vN`.
+2. **Root.** Create a new 0700 directory under `~/Work/threatfusion-lab/<protocol>-vN`.
    Never inside the Git checkout. Never reuse a root that already has receipts.
 3. **Declare before outcomes.** Write `plan.json` (`open('x')`, mode 0600) and its SHA-256 in
    `plan.sha256`. It must include: protocol id, `git rev-parse HEAD`, runtime/method fingerprints
