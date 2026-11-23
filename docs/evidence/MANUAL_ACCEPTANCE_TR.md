@@ -168,7 +168,7 @@ cihaz/hedefin neden incelenmesi gerektiğini gösterdiğini görmek.
 1. **Yeni bir terminal** aç (uygulamanınki açık kalsın) ve şunu çalıştır:
 
    ```bash
-   threatfusion-ai collect --input-dir /home/yahya/Work/threatfusion-lab/analyst-guidance-v1/traffic/development/zeek
+   threatfusion-ai collect --input-dir ~/Work/threatfusion-lab/analyst-guidance-v1/traffic/development/zeek
    ```
 
    Komut kapanmaz; 10 saniyede bir tarama yapar ve her taramada bir satır
